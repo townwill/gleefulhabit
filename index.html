@@ -1250,7 +1250,7 @@ function toggleSideQuest(id){
   if(s.cadence==='once'){S.sideQuestDone[id]=tk;if(!S.xpAwarded[awardKey]){S.xpAwarded[awardKey]=true;S.user.sideQuestCount++;addXP(5);}confetti(28);toast(`⭐ "${s.name}" — done forever! +5 XP`);checkBadges();}
   else{if(!S.sideQuestLogs[tk])S.sideQuestLogs[tk]={};const was=!!S.sideQuestLogs[tk][id];S.sideQuestLogs[tk][id]=!was;if(!was){if(!S.xpAwarded[awardKey]){S.xpAwarded[awardKey]=true;S.user.sideQuestCount++;addXP(5);}confetti(10);toast(`✦ Side quest complete! +5 XP`);checkBadges();}}
   const card=document.getElementById(`sc-${id}`);if(card){card.classList.add('bouncing');setTimeout(()=>card.classList.remove('bouncing'),420);}
-  save();renderToday();renderManage();renderXP();
+  save();renderToday();renderManage();renderXP();renderStats();
 }
 function redeemType(type){
   const labels={packs:'pack',hangers:'hanger box',blasters:'blaster box',mega:'mega box',hobby:'hobby box',super:'super box'};
