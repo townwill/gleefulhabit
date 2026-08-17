@@ -275,6 +275,7 @@
   .week-day-dot { flex:1; height:8px; border-radius:4px; background:rgba(255,255,255,.07); transition:all .5s cubic-bezier(.34,1.56,.64,1); }
   .week-day-dot.done { background:linear-gradient(90deg,var(--cyan),var(--purple)); }
   .week-day-dot.today { box-shadow:0 0 8px rgba(0,212,255,.4); }
+  .week-day-dot.rest { background:linear-gradient(90deg,var(--yellow),var(--orange)); opacity:.6; }
   .week-progress-label { display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-bottom:6px; }
   .week-mini-bar { height:5px; background:rgba(255,255,255,.07); border-radius:3px; overflow:hidden; margin-bottom:14px; }
   .week-mini-bar-fill { height:100%; background:linear-gradient(90deg,var(--yellow),var(--lime)); border-radius:3px; transition:width .6s cubic-bezier(.34,1.56,.64,1); }
@@ -545,6 +546,10 @@
         <div class="form-group"><label class="form-label">Unit</label><input class="form-input" id="fUnit" placeholder="g, lbs, oz…" maxlength="12"></div>
       </div>
     </div>
+    <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" id="fRestEligible" style="width:18px;height:18px;">
+      <label class="form-label" for="fRestEligible" style="margin:0;">😴 Allow rest days (up to 2/week — protects streak without counting as done)</label>
+    </div>
     <button class="btn-submit" id="habitSubmit" onclick="saveHabit()">Add Habit ✦</button>
   </div>
 </div>
@@ -656,13 +661,14 @@ const BADGES = [
 function blankState() {
   return {
     habits:[],sideQuests:[],
-    logs:{},logEntries:{},sideQuestLogs:{},sideQuestDone:{},
+    logs:{},logEntries:{},sideQuestLogs:{},sideQuestDone:{},restDayLogs:{},
     xpAwarded:{},
     weight:{logs:{},unit:'lbs',goal:null,startWeight:null,startDate:null},
     user:{xp:0,badges:[],totalDone:0,numericHits:0,sideQuestCount:0,
       packsBank:0,hangersBank:0,blastersBank:0,
-      packHistory:[],weeklyPacksAwarded:{},
-      consecutivePackWeeks:0,lastPackWeek:null,milestones:{}},
+      packHistory:[],weeklyPacksAwarded:{},weeklyPackFlags:{},
+      consecutivePackWeeks:0,lastPackWeek:null,milestones:{},
+      perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null},
   };
 }
 
@@ -693,8 +699,14 @@ let S = (() => {
     if (raw.user.superBank==null)      raw.user.superBank=0;
     if (!raw.user.packHistory)         raw.user.packHistory=[];
     if (!raw.user.weeklyPacksAwarded)  raw.user.weeklyPacksAwarded={};
+    if (!raw.user.weeklyPackFlags)     raw.user.weeklyPackFlags={};
     if (!raw.user.consecutivePackWeeks)raw.user.consecutivePackWeeks=0;
     if (!raw.user.milestones)          raw.user.milestones={};
+    if (raw.user.perfectWeekStreak==null)       raw.user.perfectWeekStreak=0;
+    if (raw.user.perfectWeekBoxesEarned==null)  raw.user.perfectWeekBoxesEarned=0;
+    if (raw.user.lastPerfectCheckWeek===undefined) raw.user.lastPerfectCheckWeek=null;
+    if (!raw.restDayLogs)              raw.restDayLogs={};
+    if (raw.habits) raw.habits.forEach(h=>{ if(h.restEligible==null) h.restEligible=false; });
     if (!raw.weight)                   raw.weight=blankState().weight;
     if (!raw.weight.logs)              raw.weight.logs={};
     if (!raw.weight.unit)              raw.weight.unit='lbs';
@@ -709,16 +721,22 @@ const fmtShortDate=dk=>new Date(dk+'T00:00:00').toLocaleDateString('en-US',{week
 function calMonthKey(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
 function weekKeyFor(d){const j=new Date(d.getFullYear(),0,4);const w=Math.ceil(((d-j)/86400000+j.getDay()+1)/7);return`${d.getFullYear()}-W${String(w).padStart(2,'0')}`;}
 function isoWeek(){return weekKeyFor(new Date());}
-function thisWeekDays(){const now=new Date(),sun=new Date(now);sun.setDate(now.getDate()-now.getDay());sun.setHours(0,0,0,0);return Array.from({length:7},(_,i)=>{const d=new Date(sun);d.setDate(sun.getDate()+i);return d;});}
+function thisWeekDays(){const now=new Date(),mon=new Date(now);const dow=now.getDay();const diffToMon=dow===0?-6:1-dow;mon.setDate(now.getDate()+diffToMon);mon.setHours(0,0,0,0);return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});}
 function isDayComplete(dk){if(!S.habits.length)return false;const log=S.logs[dk]||{};return S.habits.every(h=>h.type==='numeric'?(typeof log[h.id]==='number'&&log[h.id]>=(h.target||100)):log[h.id]===true);}
 function weekCompleteDays(days){return days.filter(d=>isDayComplete(dateKey(d))).length;}
+function daySatisfiedWithRest(dk){if(!S.habits.length)return false;const log=S.logs[dk]||{},rest=S.restDayLogs[dk]||{};return S.habits.every(h=>{const done=h.type==='numeric'?(typeof log[h.id]==='number'&&log[h.id]>=(h.target||100)):log[h.id]===true;if(done)return true;return !!(h.restEligible&&rest[h.id]);});}
+function dayRestSkipCount(dk){const rest=S.restDayLogs[dk]||{};return S.habits.filter(h=>h.restEligible&&rest[h.id]).length;}
+function isHalfPerfect(days3){const skips=days3.reduce((n,d)=>n+dayRestSkipCount(dateKey(d)),0);return days3.every(d=>daySatisfiedWithRest(dateKey(d))) && skips<=1;}
 function weekSideQuestCount(days){let n=0;for(const d of days){const l=S.sideQuestLogs[dateKey(d)]||{};n+=Object.values(l).filter(Boolean).length;}return n;}
 function colorOf(id){return COLORS.find(c=>c.id===id)||COLORS[0];}
 function isDoneToday(hid){const v=(S.logs[todayKey()]||{})[hid];return v===true||(typeof v==='number'&&v>0);}
 function numVal(hid){const v=(S.logs[todayKey()]||{})[hid];return typeof v==='number'?v:0;}
 function numEntries(hid){return(S.logEntries[todayKey()]||{})[hid]||[];}
 function isSideQuestDoneToday(sid){const s=S.sideQuests.find(x=>x.id===sid);if(!s)return false;if(s.cadence==='once')return!!S.sideQuestDone[sid];return!!((S.sideQuestLogs[todayKey()]||{})[sid]);}
-function currentStreak(hid){let streak=0;const now=new Date(),start=isDoneToday(hid)?0:1;for(let i=start;i<400;i++){const d=new Date(now);d.setDate(d.getDate()-i);const log=S.logs[dateKey(d)],done=log&&(log[hid]===true||(typeof log[hid]==='number'&&log[hid]>0));if(done)streak++;else if(i>0||start===1)break;}return streak;}
+function currentStreak(hid){let streak=0;const now=new Date(),start=isDoneToday(hid)?0:1;for(let i=start;i<400;i++){const d=new Date(now);d.setDate(d.getDate()-i);const dk=dateKey(d);const log=S.logs[dk],done=log&&(log[hid]===true||(typeof log[hid]==='number'&&log[hid]>0));if(done){streak++;continue;}if((S.restDayLogs[dk]||{})[hid])continue;if(i>0||start===1)break;}return streak;}
+function restDaysUsedThisWeek(hid){const days=thisWeekDays();return days.filter(d=>(S.restDayLogs[dateKey(d)]||{})[hid]).length;}
+function isRestDayToday(hid){return !!(S.restDayLogs[todayKey()]||{})[hid];}
+function markRestDay(hid){const h=S.habits.find(x=>x.id===hid);if(!h||!h.restEligible)return;const tk=todayKey();if(isDoneToday(hid))return;if(isRestDayToday(hid)){if(!S.restDayLogs[tk])return;delete S.restDayLogs[tk][hid];save();renderToday();return;}if(restDaysUsedThisWeek(hid)>=2){toast('😴 Both rest days used this week');return;}if(!S.restDayLogs[tk])S.restDayLogs[tk]={};S.restDayLogs[tk][hid]=true;save();renderToday();toast(`😴 Rest day marked for ${h.name} — streak protected`);}
 function bestStreak(hid){const keys=Object.keys(S.logs).sort();let best=0,cur=0,prev=null;for(const k of keys){const log=S.logs[k],done=log&&(log[hid]===true||(typeof log[hid]==='number'&&log[hid]>0));if(done){const gap=prev?(new Date(k)-new Date(prev))/86400000:1;cur=gap===1?cur+1:1;best=Math.max(best,cur);prev=k;}else{cur=0;prev=null;}}return best;}
 
 function addXP(amt){const before=levelInfo(S.user.xp);S.user.xp+=amt;const after=levelInfo(S.user.xp);if(after.lv>before.lv)setTimeout(()=>{toast(`🎉 Level Up! You're now: ${after.name}!`);confetti(90);},600);}
@@ -764,18 +782,56 @@ function checkBadges(){
   if(wStreak>=7) earnBadge('weight_log');
 }
 
-function checkWeeklyPacksAndMilestones(){const wk=isoWeek(),days=thisWeekDays(),cdone=weekCompleteDays(days),sct=weekSideQuestCount(days);let packs=0;if(cdone>=5)packs++;if(cdone>=7)packs++;if(sct>=10)packs++;packs=Math.min(packs,3);const prev=(S.user.weeklyPacksAwarded||{})[wk]||0;if(packs>prev){const np=packs-prev;S.user.weeklyPacksAwarded[wk]=packs;S.user.packsBank=(S.user.packsBank||0)+np;const pvd=new Date();pvd.setDate(pvd.getDate()-7);const pvk=weekKeyFor(pvd);if(S.user.lastPackWeek===pvk)S.user.consecutivePackWeeks=(S.user.consecutivePackWeeks||0)+1;else if(S.user.lastPackWeek!==wk)S.user.consecutivePackWeeks=1;S.user.lastPackWeek=wk;const reason=cdone>=7?'Perfect week! 7/7 🔥':cdone>=5?`${cdone}/7 complete days`:'10+ side quests';S.user.packHistory.unshift({date:todayKey(),count:np,type:'pack',reason});earnBadge('pack_earner',(S.user.packHistory||[]).length>=1);save();setTimeout(()=>{toast(`📦 ${np} Pack${np>1?'s':''} earned!`);confetti(50);},400);}checkHangerMilestones();checkBlasterMilestones();}
+function checkWeeklyPacksAndMilestones(){
+  const wk=isoWeek(),days=thisWeekDays(); // Monday..Sunday
+  const halfA=days.slice(0,3), halfB=days.slice(3,6); // Mon-Wed, Thu-Sat (Sunday is days[6])
+  const sct=weekSideQuestCount(days);
+  const isSunday=new Date().getDay()===0;
+  if(!S.user.weeklyPackFlags)S.user.weeklyPackFlags={};
+  const flags=S.user.weeklyPackFlags[wk]||{halfA:false,halfB:false,ten:false};
+  const newlyEarned=[];
+  if(isHalfPerfect(halfA) && !flags.halfA){flags.halfA=true;newlyEarned.push('Perfect Mon–Wed! 🌤️');}
+  if(isHalfPerfect(halfB) && !flags.halfB){flags.halfB=true;newlyEarned.push('Perfect Thu–Sat! 🌆');}
+  if(isSunday && sct>=10 && !flags.ten){flags.ten=true;newlyEarned.push('10+ side quests this week! ⭐');}
+  if(newlyEarned.length){
+    S.user.weeklyPackFlags[wk]=flags;
+    S.user.weeklyPacksAwarded[wk]=(flags.halfA?1:0)+(flags.halfB?1:0)+(flags.ten?1:0);
+    const np=newlyEarned.length;
+    S.user.packsBank=(S.user.packsBank||0)+np;
+    const pvd=new Date();pvd.setDate(pvd.getDate()-7);const pvk=weekKeyFor(pvd);
+    if(S.user.lastPackWeek===pvk)S.user.consecutivePackWeeks=(S.user.consecutivePackWeeks||0)+1;
+    else if(S.user.lastPackWeek!==wk)S.user.consecutivePackWeeks=1;
+    S.user.lastPackWeek=wk;
+    newlyEarned.forEach(reason=>S.user.packHistory.unshift({date:todayKey(),count:1,type:'pack',reason}));
+    earnBadge('pack_earner',(S.user.packHistory||[]).length>=1);
+    save();
+    setTimeout(()=>{toast(`📦 ${np} Pack${np>1?'s':''} earned!`);confetti(50);},400);
+  }
+  checkHangerMilestones();checkBlasterMilestones();
+}
 function checkHangerMilestones(){
   const m=S.user.milestones;
   function aw(key,reason){if(m[key])return;m[key]=true;S.user.hangersBank=(S.user.hangersBank||0)+1;S.user.packHistory.unshift({date:todayKey(),count:1,type:'hanger',reason});save();setTimeout(()=>{toast(`🎁 Hanger Box earned — ${reason}`);confetti(80);},800);}
 
-  // 14-day streak — repeatable, awards once per 14-day window per habit
-  for (const h of S.habits) {
-    const s = currentStreak(h.id);
-    if (s >= 14) {
-      const window = Math.floor(s / 14);
-      const key = `hanger_14streak_${h.id}_w${window}`;
-      aw(key, `14-day streak on ${h.name}! 🔥`);
+  // 2 perfect weeks in a row (both halves — Mon-Wed and Thu-Sat — perfect).
+  // Repeatable: fires again every 2 more consecutive perfect weeks. Evaluated
+  // once per week transition, looking back at last week's already-finalized
+  // pack flags, so a fresh streak after a break can earn this again.
+  const wkNow = isoWeek();
+  if (S.user.lastPerfectCheckWeek !== wkNow) {
+    const pvd = new Date(); pvd.setDate(pvd.getDate()-7);
+    const prevWk = weekKeyFor(pvd);
+    const prevFlags = (S.user.weeklyPackFlags||{})[prevWk];
+    const prevPerfect = !!(prevFlags && prevFlags.halfA && prevFlags.halfB);
+    S.user.perfectWeekStreak = prevPerfect ? (S.user.perfectWeekStreak||0)+1 : 0;
+    S.user.lastPerfectCheckWeek = wkNow;
+  }
+  if (S.user.perfectWeekStreak >= 2) {
+    const window = Math.floor(S.user.perfectWeekStreak / 2);
+    const key = `hanger_perfectweeks_w${window}`;
+    if (!m[key]) {
+      S.user.perfectWeekBoxesEarned = (S.user.perfectWeekBoxesEarned||0)+1;
+      aw(key, `2 Perfect Weeks in a row! 🏅 (#${S.user.perfectWeekBoxesEarned})`);
     }
   }
 
@@ -787,9 +843,6 @@ function checkHangerMilestones(){
 
   // Level milestones — hanger only
   if(levelInfo(S.user.xp).lv>=5) aw('hanger_level5', 'Reached Level 5 💎');
-
-  // 3 consecutive perfect weeks — one-time
-  if ((S.user.consecutivePackWeeks||0) >= 3) aw('hanger_3perfect', '3 perfect weeks in a row! 🏅');
 }
 
 function checkBlasterMilestones(){
@@ -799,11 +852,19 @@ function checkBlasterMilestones(){
   function awHobby(key,reason){if(m[key])return;m[key]=true;S.user.hobbyBank=(S.user.hobbyBank||0)+1;S.user.packHistory.unshift({date:todayKey(),count:1,type:'hobby',reason});save();setTimeout(()=>{toast(`🗃️ Hobby Box earned — ${reason}`);confetti(200);},2000);}
   function awSuper(key,reason){if(m[key])return;m[key]=true;S.user.superBank=(S.user.superBank||0)+1;S.user.packHistory.unshift({date:todayKey(),count:1,type:'super',reason});save();setTimeout(()=>{toast(`🌟 SUPER BOX earned — ${reason}`);confetti(250);},2200);}
 
-  // 25 active days this month
+  // 80% of all possible habit completions this month (habits × days elapsed),
+  // using each habit's real completion bar — not just "logged something".
   if (!m['blaster_month_'+mk]) {
-    const now=new Date(); let ad=0;
-    for (let i=1;i<=now.getDate();i++){const d=new Date(now.getFullYear(),now.getMonth(),i),log=S.logs[dateKey(d)]||{};if(S.habits.some(h=>log[h.id]===true||(typeof log[h.id]==='number'&&log[h.id]>0)))ad++;}
-    if (ad >= 25) awBlaster('blaster_month_'+mk,'25 active days this month! 📅');
+    const now=new Date(), daysSoFar=now.getDate(), nh=S.habits.length;
+    if (nh>0 && daysSoFar>=25) {
+      let totalDone=0;
+      for (let i=1;i<=daysSoFar;i++){
+        const d=new Date(now.getFullYear(),now.getMonth(),i), log=S.logs[dateKey(d)]||{};
+        for (const h of S.habits) if (h.type==='numeric'?(typeof log[h.id]==='number'&&log[h.id]>=(h.target||100)):log[h.id]===true) totalDone++;
+      }
+      const pct = totalDone/(nh*daysSoFar);
+      if (pct >= 0.8) awBlaster('blaster_month_'+mk, `${Math.round(pct*100)}% habit completion this month! 📅`);
+    }
   }
 
   // Level 10 — one-time
@@ -859,6 +920,15 @@ function habitCardHTML(h){
   const done=isDoneToday(h.id),streak=currentStreak(h.id),c=colorOf(h.color);
   const atRisk=!done&&streak>=3&&new Date().getHours()>=17;
   const streakStr=streak>0?`<span class="flame">${streak>=30?'🌟':streak>=7?'🔥':'✦'}</span> ${streak}-day streak${atRisk?' <span class="streak-warn">⚠️ don\'t break it!</span>':''}`:'Start your streak today!';
+  let restHTML='';
+  if(h.restEligible && !done){
+    const resting=isRestDayToday(h.id), used=restDaysUsedThisWeek(h.id), left=Math.max(0,2-used);
+    if(resting){
+      restHTML=`<button class="num-reset-btn" style="margin-top:6px" onclick="event.stopPropagation();markRestDay('${h.id}')">😴 Resting today — tap to undo</button>`;
+    }else if(left>0){
+      restHTML=`<button class="num-reset-btn" style="margin-top:6px" onclick="event.stopPropagation();markRestDay('${h.id}')">😴 Mark rest day (${left} left this week)</button>`;
+    }
+  }
   let numHTML='';
   if(h.type==='numeric'){
     const total=numVal(h.id),tgt=h.target||100,pct=Math.min(total/tgt*100,100),entries=numEntries(h.id);
@@ -879,7 +949,7 @@ function habitCardHTML(h){
       <div class="habit-icon">${renderIcon(h.icon)}</div>
       <div class="habit-info"><div class="habit-name">${h.name}</div><div class="habit-streak">${streakStr}</div></div>
       <div class="habit-check" style="${done?`background:${c.hex};border-color:${c.hex}`:''}"> ${done?'✓':''}</div>
-    </div>${numHTML}</div>`;
+    </div>${numHTML}${restHTML}</div>`;
 }
 
 function sideQuestCardHTML(s){const dt=isSideQuestDoneToday(s.id),forever=s.cadence==='once'&&dt;const cls=forever?'s-done-forever':dt?'s-done':'';const status=forever?'✦ Completed!':dt?'✦ Done today':s.cadence==='once'?'Tap to complete':'Tap when done';return`<div class="side-quest-card ${cls}" id="sc-${s.id}" onclick="toggleSideQuest('${s.id}')"><div class="side-quest-bonus">+5 XP bonus</div><div class="side-quest-card-top"><div class="side-quest-icon">${s.icon}</div><div class="side-quest-info"><div class="side-quest-name">${s.name}</div><div class="side-quest-meta"><span class="side-quest-cadence-pill ${s.cadence==='once'?'once':''}">${s.cadence==='once'?'one & done':'daily'}</span><span>${status}</span></div></div><div class="side-quest-check">${dt?'✓':''}</div></div></div>`;}
@@ -1031,13 +1101,17 @@ function renderStats(){
 }
 
 function renderRewards(){
-  const m=S.user.milestones||{},mk=calMonthKey(),days=thisWeekDays(),cdone=weekCompleteDays(days),sct=weekSideQuestCount(days);
+  const m=S.user.milestones||{},mk=calMonthKey(),days=thisWeekDays(),sct=weekSideQuestCount(days);
+  const halfADays=days.slice(0,3), halfBDays=days.slice(3,6), sundayD=days[6];
+  const halfAPerfect=isHalfPerfect(halfADays), halfBPerfect=isHalfPerfect(halfBDays);
+  const todayDow=new Date().getDay(); // 0=Sun,1=Mon...6=Sat
+  const inHalfA=todayDow>=1&&todayDow<=3, inHalfB=todayDow>=4&&todayDow<=6, isSundayNow=todayDow===0;
   const bank={p:S.user.packsBank||0,h:S.user.hangersBank||0,b:S.user.blastersBank||0,m:S.user.megaBank||0,hb:S.user.hobbyBank||0,sb:S.user.superBank||0};
   const totalBanked=bank.p+bank.h+bank.b+bank.m+bank.hb+bank.sb;
   const curLv=levelInfo(S.user.xp).lv;
   const bestSt=S.habits.length?Math.max(...S.habits.map(h=>currentStreak(h.id))):0;
   const consWeeks=S.user.consecutivePackWeeks||0;
-  const now2=new Date();let mad=0;for(let i=1;i<=now2.getDate();i++){const d=new Date(now2.getFullYear(),now2.getMonth(),i),log=S.logs[dateKey(d)]||{};if(S.habits.some(h=>log[h.id]===true||(typeof log[h.id]==='number'&&log[h.id]>0)))mad++;}
+  const now2=new Date();let monthDone=0;const monthDays=now2.getDate(),monthHabits=S.habits.length;for(let i=1;i<=monthDays;i++){const d=new Date(now2.getFullYear(),now2.getMonth(),i),log=S.logs[dateKey(d)]||{};for(const h of S.habits)if(h.type==='numeric'?(typeof log[h.id]==='number'&&log[h.id]>=(h.target||100)):log[h.id]===true)monthDone++;}const monthPct=monthHabits?Math.round(monthDone/(monthHabits*monthDays)*100):0;
   const fd=Object.keys(S.logs).sort()[0],mt=fd?(new Date()-new Date(fd))/(1000*60*60*24*30.44):0;
   // Weight vars used across all milestone sections
   const wAll=weightEntries();
@@ -1069,21 +1143,20 @@ function renderRewards(){
     ${totalBanked === 0 ? `<button class="vault-redeem-btn" disabled>Nothing to redeem yet</button>` : ''}
   </div>
   <div class="vault-footer">Banked rewards never expire · Redeem when ready</div></div>`;
-  html+=`<div class="week-card"><div class="week-card-title">📅 This Week <span>${cdone}/7 complete days</span></div><div class="week-days-row">${days.map(d=>{const k=dateKey(d),c=isDayComplete(k),t=k===todayKey();return`<div class="week-day-dot ${c?'done':''} ${t?'today':''}"></div>`;}).join('')}</div><div class="week-progress-label"><span>Side quests this week</span><span>${sct} / 10</span></div><div class="week-mini-bar"><div class="week-mini-bar-fill" style="width:${Math.min(sct/10*100,100)}%"></div></div><div class="week-rewards-list"><div class="week-reward-row ${cdone>=5?'earned':''}"><div class="week-reward-icon">📦</div><div class="week-reward-text">Pack — 5 complete days</div><div class="week-reward-status">${cdone>=5?'✓ Earned':cdone+'/5'}</div></div><div class="week-reward-row ${cdone>=7?'earned':''}"><div class="week-reward-icon">📦</div><div class="week-reward-text">Bonus Pack — Perfect 7/7 week</div><div class="week-reward-status">${cdone>=7?'✓ Earned':cdone+'/7'}</div></div><div class="week-reward-row ${sct>=10?'earned':''}"><div class="week-reward-icon">📦</div><div class="week-reward-text">Pack — 10 side quests</div><div class="week-reward-status">${sct>=10?'✓ Earned':sct+'/10'}</div></div></div></div>`;
+  html+=`<div class="week-card"><div class="week-card-title">📅 This Week <span>${halfADays.filter(d=>daySatisfiedWithRest(dateKey(d))).length+halfBDays.filter(d=>daySatisfiedWithRest(dateKey(d))).length}/6 days${isSundayNow?' + bonus day':''}</span></div><div class="week-days-row">${days.map((d,i)=>{const k=dateKey(d),c=isDayComplete(k),rest=dayRestSkipCount(k)>0,t=k===todayKey(),bonus=i===6;return`<div class="week-day-dot ${c?'done':''} ${rest&&!c?'rest':''} ${t?'today':''}" title="${bonus?'Sunday — bonus':''}"></div>`;}).join('')}</div><div class="week-progress-label"><span>Side quests this week</span><span>${sct} / 10</span></div><div class="week-mini-bar"><div class="week-mini-bar-fill" style="width:${Math.min(sct/10*100,100)}%"></div></div><div class="week-rewards-list"><div class="week-reward-row ${halfAPerfect?'earned':''}">${inHalfA?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — Perfect Mon–Wed (1 skip ok)</div><div class="week-reward-status">${halfAPerfect?'✓ Earned':'In progress'}</div></div><div class="week-reward-row ${halfBPerfect?'earned':''}">${inHalfB?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — Perfect Thu–Sat (1 skip ok)</div><div class="week-reward-status">${halfBPerfect?'✓ Earned':'In progress'}</div></div><div class="week-reward-row ${sct>=10?'earned':''}">${isSundayNow?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — 10 side quests (awarded Sunday)</div><div class="week-reward-status">${sct>=10?'✓ Earned':sct+'/10'}</div></div></div></div>`;
 
   const wk=isoWeek(),wkSct=weekSideQuestCount(days);
   const hangers=[
-    {key:`hanger_14streak_${S.habits[0]?.id||'x'}_w1`, icon:'🔥', title:'14-Day Streak',       val:bestSt,    max:14, desc:`Best streak: ${bestSt}/14 days`},
+    {key:`hanger_perfectweeks_w${Math.floor((S.user.perfectWeekStreak||0)/2)}`, icon:'🏅', title:'2 Perfect Weeks in a Row', val:(S.user.perfectWeekStreak||0)%2, max:2, desc:`${S.user.perfectWeekStreak||0}-week streak · ${S.user.perfectWeekBoxesEarned||0} earned total`},
     {key:`hanger_sidequest20_${wk}`,                      icon:'⭐', title:'20 Side Quests / Week', val:wkSct,     max:20, desc:`${wkSct}/20 side quests this week`},
     {key:'hanger_level5',                               icon:'💎', title:'Level 5 (800 XP)',    val:curLv,     max:5,  desc:`Level ${curLv}/5`},
-    {key:'hanger_3perfect',                             icon:'🏅', title:'3 Perfect Weeks',     val:consWeeks, max:3,  desc:`${consWeeks}/3 perfect weeks`},
     {key:'wt_15lbs',                                    icon:'💪', title:'15 lbs Lost',         val:wLost,     max:15, desc:`${wLost.toFixed(1)}/15 lbs lost`},
   ];
   html+=`<div class="rewards-section-label">🎁 Hanger Box Milestones</div><div class="milestone-grid">`;
   html+=hangers.map(h=>{const e=!!m[h.key];return`<div class="milestone-card ${e?'earned':''}"><div class="milestone-icon">${h.icon}</div><div class="milestone-title">${h.title}</div><div class="milestone-desc">${e?'✓ Completed!':h.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(h.val/h.max*100,100)}%"></div></div>${e?'<div class="milestone-earned-tag">✓ Hanger Box Earned</div>':''}</div>`;}).join('');
   html+=`</div><div class="rewards-section-label">🏆 Blaster Box Milestones</div><div class="milestone-grid">`;
   const blasters=[
-    {key:'blaster_month_'+mk, icon:'📅', title:'25 Active Days',  val:mad,   max:25, desc:`${mad}/25 active days`},
+    {key:'blaster_month_'+mk, icon:'📅', title:'80% Habit Completion',  val:monthPct,   max:80, desc:`${monthPct}%/80% completion this month`},
     {key:'blaster_level10',   icon:'🌟', title:'Level 10',        val:curLv, max:10, desc:`Level ${curLv}/10`},
     {key:'blaster_3months',   icon:'🎯', title:'3 Months',        val:mt,    max:3,  desc:`${Math.floor(mt)}/3 months tracked`},
     {key:'wt_20lbs',          icon:'🔥', title:'20 lbs Lost',     val:wLost, max:20, desc:`${wLost.toFixed(1)}/20 lbs lost`},
@@ -1250,7 +1323,8 @@ function toggleSideQuest(id){
   if(s.cadence==='once'){S.sideQuestDone[id]=tk;if(!S.xpAwarded[awardKey]){S.xpAwarded[awardKey]=true;S.user.sideQuestCount++;addXP(5);}confetti(28);toast(`⭐ "${s.name}" — done forever! +5 XP`);checkBadges();}
   else{if(!S.sideQuestLogs[tk])S.sideQuestLogs[tk]={};const was=!!S.sideQuestLogs[tk][id];S.sideQuestLogs[tk][id]=!was;if(!was){if(!S.xpAwarded[awardKey]){S.xpAwarded[awardKey]=true;S.user.sideQuestCount++;addXP(5);}confetti(10);toast(`✦ Side quest complete! +5 XP`);checkBadges();}}
   const card=document.getElementById(`sc-${id}`);if(card){card.classList.add('bouncing');setTimeout(()=>card.classList.remove('bouncing'),420);}
-  save();renderToday();renderManage();renderXP();renderStats();
+  checkWeeklyPacksAndMilestones();
+  save();renderToday();renderManage();renderXP();renderStats();renderRewards();
 }
 function redeemType(type){
   const labels={packs:'pack',hangers:'hanger box',blasters:'blaster box',mega:'mega box',hobby:'hobby box',super:'super box'};
@@ -1345,12 +1419,12 @@ function renderBackdateList(){
     </div>`;
   }).join('');
 }
-function openHabitModal(){_hEditId=null;const plain=EMOJIS.filter(e=>!e.startsWith('__'));_hEmoji=plain[Math.floor(Math.random()*plain.length)];_hColor=COLORS[Math.floor(Math.random()*COLORS.length)].id;_hType='boolean';document.getElementById('fName').value='';document.getElementById('fTarget').value='';document.getElementById('fUnit').value='';document.getElementById('habitModalTitle').textContent='New Habit';document.getElementById('habitSubmit').textContent='Add Habit ✦';_populateHabitModal();document.getElementById('habitModalOverlay').classList.add('open');setTimeout(()=>document.getElementById('fName').focus(),450);}
-function openEditHabitModal(id){const h=S.habits.find(x=>x.id===id);if(!h)return;_hEditId=id;_hEmoji=h.icon;_hColor=h.color;_hType=h.type;document.getElementById('fName').value=h.name;document.getElementById('fTarget').value=h.target??'';document.getElementById('fUnit').value=h.unit??'';document.getElementById('habitModalTitle').textContent='Edit Habit';document.getElementById('habitSubmit').textContent='Save Changes ✦';_populateHabitModal();document.getElementById('habitModalOverlay').classList.add('open');setTimeout(()=>document.getElementById('fName').focus(),450);}
+function openHabitModal(){_hEditId=null;const plain=EMOJIS.filter(e=>!e.startsWith('__'));_hEmoji=plain[Math.floor(Math.random()*plain.length)];_hColor=COLORS[Math.floor(Math.random()*COLORS.length)].id;_hType='boolean';document.getElementById('fName').value='';document.getElementById('fTarget').value='';document.getElementById('fUnit').value='';document.getElementById('fRestEligible').checked=false;document.getElementById('habitModalTitle').textContent='New Habit';document.getElementById('habitSubmit').textContent='Add Habit ✦';_populateHabitModal();document.getElementById('habitModalOverlay').classList.add('open');setTimeout(()=>document.getElementById('fName').focus(),450);}
+function openEditHabitModal(id){const h=S.habits.find(x=>x.id===id);if(!h)return;_hEditId=id;_hEmoji=h.icon;_hColor=h.color;_hType=h.type;document.getElementById('fName').value=h.name;document.getElementById('fTarget').value=h.target??'';document.getElementById('fUnit').value=h.unit??'';document.getElementById('fRestEligible').checked=!!h.restEligible;document.getElementById('habitModalTitle').textContent='Edit Habit';document.getElementById('habitSubmit').textContent='Save Changes ✦';_populateHabitModal();document.getElementById('habitModalOverlay').classList.add('open');setTimeout(()=>document.getElementById('fName').focus(),450);}
 function pickHEmoji(e,el){_hEmoji=e;document.querySelectorAll('#habitEmojiPicker .emoji-opt').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');}
 function pickHColor(id,el){_hColor=id;document.querySelectorAll('#habitColorPicker .color-opt').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');}
 function pickHabitType(t,el){_hType=t;document.querySelectorAll('#habitModalOverlay .type-btn').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');document.getElementById('habitNumericFields').classList.toggle('show',t==='numeric');}
-function saveHabit(){const name=document.getElementById('fName').value.trim();if(!name){const i=document.getElementById('fName');i.style.borderColor='#ff6464';i.focus();setTimeout(()=>i.style.borderColor='',1200);return;}const p={name,icon:_hEmoji,color:_hColor,type:_hType,target:_hType==='numeric'?(parseFloat(document.getElementById('fTarget').value)||100):null,unit:_hType==='numeric'?document.getElementById('fUnit').value.trim():null};if(_hEditId){const idx=S.habits.findIndex(x=>x.id===_hEditId);if(idx===-1)return;S.habits[idx]={...S.habits[idx],...p};save();closeModal('habitModalOverlay');renderAll();toast(`${iconLabel(S.habits[idx].icon)} "${S.habits[idx].name}" updated!`);}else{const h={id:Date.now().toString(36),...p};S.habits.push(h);save();closeModal('habitModalOverlay');renderAll();toast(`${iconLabel(h.icon)} "${h.name}" added!`);earnBadge('collector',S.habits.length>=5);}}
+function saveHabit(){const name=document.getElementById('fName').value.trim();if(!name){const i=document.getElementById('fName');i.style.borderColor='#ff6464';i.focus();setTimeout(()=>i.style.borderColor='',1200);return;}const p={name,icon:_hEmoji,color:_hColor,type:_hType,target:_hType==='numeric'?(parseFloat(document.getElementById('fTarget').value)||100):null,unit:_hType==='numeric'?document.getElementById('fUnit').value.trim():null,restEligible:document.getElementById('fRestEligible').checked};if(_hEditId){const idx=S.habits.findIndex(x=>x.id===_hEditId);if(idx===-1)return;S.habits[idx]={...S.habits[idx],...p};save();closeModal('habitModalOverlay');renderAll();toast(`${iconLabel(S.habits[idx].icon)} "${S.habits[idx].name}" updated!`);}else{const h={id:Date.now().toString(36),...p};S.habits.push(h);save();closeModal('habitModalOverlay');renderAll();toast(`${iconLabel(h.icon)} "${h.name}" added!`);earnBadge('collector',S.habits.length>=5);}}
 
 // ── Side Quest Modal ──
 let _sqEmoji='⭐',_sqCadence='daily';
