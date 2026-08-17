@@ -390,6 +390,7 @@
   .data-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-top:20px; backdrop-filter:blur(20px); }
   .data-card-title { font-size:13px; font-weight:700; color:var(--text-muted); letter-spacing:.06em; text-transform:uppercase; margin-bottom:4px; }
   .data-card-desc { font-size:11px; color:var(--text-muted); margin-bottom:14px; line-height:1.5; }
+  .version-footer { text-align:center; font-size:10px; color:var(--text-dim,#6a6a7a); padding:16px 0 4px; letter-spacing:.02em; }
   .data-btn-row { display:flex; gap:8px; }
   .data-btn { flex:1; padding:11px; border:none; border-radius:var(--radius-sm); font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .2s; }
   .data-btn.export { background:linear-gradient(135deg,var(--purple),var(--cyan)); color:white; }
@@ -518,6 +519,8 @@
       </div>
       <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
     </div>
+
+    <div class="version-footer" id="versionFooter"></div>
   </div>
 
   <!-- STATS -->
@@ -1551,7 +1554,8 @@ function checkBackupReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-17.4';
+const APP_VERSION = '2026-08-17.2128';
+{ const vf = document.getElementById('versionFooter'); if (vf) vf.textContent = `GleefulHabit v${APP_VERSION}`; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
 }
