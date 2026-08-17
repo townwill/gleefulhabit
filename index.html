@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>GleefulHabit ✦</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -280,7 +283,8 @@
   .week-mini-bar { height:5px; background:rgba(255,255,255,.07); border-radius:3px; overflow:hidden; margin-bottom:14px; }
   .week-mini-bar-fill { height:100%; background:linear-gradient(90deg,var(--yellow),var(--lime)); border-radius:3px; transition:width .6s cubic-bezier(.34,1.56,.64,1); }
   .week-rewards-list { display:flex; flex-direction:column; gap:7px; }
-  .week-reward-row { display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:var(--radius-sm); background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); }
+  .week-reward-row { position:relative; display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:var(--radius-sm); background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); }
+  .week-reward-row .milestone-cadence { position:static; display:inline-block; margin-left:4px; }
   .week-reward-row.earned { background:rgba(168,255,62,.07); border-color:rgba(168,255,62,.25); }
   .week-reward-icon { font-size:18px; flex-shrink:0; }
   .week-reward-text { flex:1; font-size:12px; font-weight:600; }
@@ -289,7 +293,7 @@
   .rewards-section-label { font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-muted); margin:18px 0 10px; display:flex; align-items:center; gap:8px; }
   .rewards-section-label::after { content:''; flex:1; height:1px; background:var(--border); }
   .milestone-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:4px; }
-  .milestone-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:15px 13px; backdrop-filter:blur(20px); transition:all .3s; }
+  .milestone-card { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:15px 13px; backdrop-filter:blur(20px); transition:all .3s; }
   .milestone-card.earned { border-color:var(--orange); background:rgba(255,149,68,.06); }
   .milestone-card.blaster.earned { border-color:var(--rose); background:rgba(255,107,138,.06); }
   .milestone-icon { font-size:24px; margin-bottom:7px; }
@@ -300,6 +304,10 @@
   .milestone-card.blaster .milestone-prog-fill { background:linear-gradient(90deg,var(--rose),var(--pink)); }
   .milestone-earned-tag { display:inline-flex; align-items:center; gap:4px; background:rgba(255,149,68,.15); color:var(--orange); border-radius:6px; padding:3px 8px; font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; margin-top:6px; }
   .milestone-card.blaster .milestone-earned-tag { background:rgba(255,107,138,.15); color:var(--rose); }
+  .milestone-pace { display:inline-flex; align-items:center; gap:4px; border-radius:6px; padding:3px 8px; font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; margin-top:6px; }
+  .milestone-pace.pace-good { background:rgba(168,255,62,.15); color:var(--lime); }
+  .milestone-pace.pace-danger { background:rgba(255,100,100,.15); color:#ff6464; }
+  .milestone-cadence { position:absolute; top:8px; right:8px; font-size:8px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim,#8a8a9a); background:rgba(255,255,255,.06); border-radius:5px; padding:2px 6px; }
   .history-list { display:flex; flex-direction:column; gap:7px; margin-bottom:24px; }
   .history-item { display:flex; align-items:center; gap:11px; padding:11px 13px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); backdrop-filter:blur(20px); }
   .history-icon { font-size:20px; flex-shrink:0; }
@@ -1112,6 +1120,21 @@ function renderRewards(){
   const bestSt=S.habits.length?Math.max(...S.habits.map(h=>currentStreak(h.id))):0;
   const consWeeks=S.user.consecutivePackWeeks||0;
   const now2=new Date();let monthDone=0;const monthDays=now2.getDate(),monthHabits=S.habits.length;for(let i=1;i<=monthDays;i++){const d=new Date(now2.getFullYear(),now2.getMonth(),i),log=S.logs[dateKey(d)]||{};for(const h of S.habits)if(h.type==='numeric'?(typeof log[h.id]==='number'&&log[h.id]>=(h.target||100)):log[h.id]===true)monthDone++;}const monthPct=monthHabits?Math.round(monthDone/(monthHabits*monthDays)*100):0;
+  // Pace tracking: are you on track for 80% by month's end, given days elapsed so far?
+  const daysInMonth=new Date(now2.getFullYear(),now2.getMonth()+1,0).getDate();
+  const neededSoFar=Math.floor(0.8*monthHabits*monthDays);
+  const neededFullMonth=Math.ceil(0.8*monthHabits*daysInMonth);
+  const maxPossibleFinal=monthDone+monthHabits*(daysInMonth-monthDays);
+  const paceDiff=monthDone-neededSoFar;
+  const clinched=monthDone>=neededFullMonth;
+  const impossible=maxPossibleFinal<neededFullMonth;
+  let paceNote=null,paceClass='';
+  if(monthHabits>0){
+    if(impossible){paceNote='Behind (out of time)';paceClass='pace-danger';}
+    else if(!clinched && paceDiff<0){paceNote=`Behind (${paceDiff})`;paceClass='pace-danger';}
+    else if(!clinched && paceDiff>=0){paceNote=`On track (+${paceDiff})`;paceClass='pace-good';}
+    // if clinched, paceNote stays null — already guaranteed, not shown so it doesn't invite easing off
+  }
   const fd=Object.keys(S.logs).sort()[0],mt=fd?(new Date()-new Date(fd))/(1000*60*60*24*30.44):0;
   // Weight vars used across all milestone sections
   const wAll=weightEntries();
@@ -1143,46 +1166,46 @@ function renderRewards(){
     ${totalBanked === 0 ? `<button class="vault-redeem-btn" disabled>Nothing to redeem yet</button>` : ''}
   </div>
   <div class="vault-footer">Banked rewards never expire · Redeem when ready</div></div>`;
-  html+=`<div class="week-card"><div class="week-card-title">📅 This Week <span>${halfADays.filter(d=>daySatisfiedWithRest(dateKey(d))).length+halfBDays.filter(d=>daySatisfiedWithRest(dateKey(d))).length}/6 days${isSundayNow?' + bonus day':''}</span></div><div class="week-days-row">${days.map((d,i)=>{const k=dateKey(d),c=isDayComplete(k),rest=dayRestSkipCount(k)>0,t=k===todayKey(),bonus=i===6;return`<div class="week-day-dot ${c?'done':''} ${rest&&!c?'rest':''} ${t?'today':''}" title="${bonus?'Sunday — bonus':''}"></div>`;}).join('')}</div><div class="week-progress-label"><span>Side quests this week</span><span>${sct} / 10</span></div><div class="week-mini-bar"><div class="week-mini-bar-fill" style="width:${Math.min(sct/10*100,100)}%"></div></div><div class="week-rewards-list"><div class="week-reward-row ${halfAPerfect?'earned':''}">${inHalfA?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — Perfect Mon–Wed (1 skip ok)</div><div class="week-reward-status">${halfAPerfect?'✓ Earned':'In progress'}</div></div><div class="week-reward-row ${halfBPerfect?'earned':''}">${inHalfB?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — Perfect Thu–Sat (1 skip ok)</div><div class="week-reward-status">${halfBPerfect?'✓ Earned':'In progress'}</div></div><div class="week-reward-row ${sct>=10?'earned':''}">${isSundayNow?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — 10 side quests (awarded Sunday)</div><div class="week-reward-status">${sct>=10?'✓ Earned':sct+'/10'}</div></div></div></div>`;
+  html+=`<div class="week-card"><div class="week-card-title">📅 This Week <span>${halfADays.filter(d=>daySatisfiedWithRest(dateKey(d))).length+halfBDays.filter(d=>daySatisfiedWithRest(dateKey(d))).length}/6 days${isSundayNow?' + bonus day':''}</span></div><div class="week-days-row">${days.map((d,i)=>{const k=dateKey(d),c=isDayComplete(k),rest=dayRestSkipCount(k)>0,t=k===todayKey(),bonus=i===6;return`<div class="week-day-dot ${c?'done':''} ${rest&&!c?'rest':''} ${t?'today':''}" title="${bonus?'Sunday — bonus':''}"></div>`;}).join('')}</div><div class="week-progress-label"><span>Side quests this week</span><span>${sct} / 10</span></div><div class="week-mini-bar"><div class="week-mini-bar-fill" style="width:${Math.min(sct/10*100,100)}%"></div></div><div class="week-rewards-list"><div class="week-reward-row ${halfAPerfect?'earned':''}">${inHalfA?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — Perfect Mon–Wed (1 skip ok) <span class="milestone-cadence">Weekly</span></div><div class="week-reward-status">${halfAPerfect?'✓ Earned':'In progress'}</div></div><div class="week-reward-row ${halfBPerfect?'earned':''}">${inHalfB?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — Perfect Thu–Sat (1 skip ok) <span class="milestone-cadence">Weekly</span></div><div class="week-reward-status">${halfBPerfect?'✓ Earned':'In progress'}</div></div><div class="week-reward-row ${sct>=10?'earned':''}">${isSundayNow?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — 10 side quests (awarded Sunday) <span class="milestone-cadence">Weekly</span></div><div class="week-reward-status">${sct>=10?'✓ Earned':sct+'/10'}</div></div></div></div>`;
 
   const wk=isoWeek(),wkSct=weekSideQuestCount(days);
   const hangers=[
-    {key:`hanger_perfectweeks_w${Math.floor((S.user.perfectWeekStreak||0)/2)}`, icon:'🏅', title:'2 Perfect Weeks in a Row', val:(S.user.perfectWeekStreak||0)%2, max:2, desc:`${S.user.perfectWeekStreak||0}-week streak · ${S.user.perfectWeekBoxesEarned||0} earned total`},
-    {key:`hanger_sidequest20_${wk}`,                      icon:'⭐', title:'20 Side Quests / Week', val:wkSct,     max:20, desc:`${wkSct}/20 side quests this week`},
-    {key:'hanger_level5',                               icon:'💎', title:'Level 5 (800 XP)',    val:curLv,     max:5,  desc:`Level ${curLv}/5`},
-    {key:'wt_15lbs',                                    icon:'💪', title:'15 lbs Lost',         val:wLost,     max:15, desc:`${wLost.toFixed(1)}/15 lbs lost`},
+    {key:`hanger_perfectweeks_w${Math.floor((S.user.perfectWeekStreak||0)/2)}`, icon:'🏅', title:'2 Perfect Weeks in a Row', val:(S.user.perfectWeekStreak||0)%2, max:2, desc:`${S.user.perfectWeekStreak||0}-week streak · ${S.user.perfectWeekBoxesEarned||0} earned total`, cadence:'Recurring'},
+    {key:`hanger_sidequest20_${wk}`,                      icon:'⭐', title:'20 Side Quests / Week', val:wkSct,     max:20, desc:`${wkSct}/20 side quests this week`, cadence:'Weekly'},
+    {key:'hanger_level5',                               icon:'💎', title:'Level 5 (800 XP)',    val:curLv,     max:5,  desc:`Level ${curLv}/5`, cadence:'One-Time'},
+    {key:'wt_15lbs',                                    icon:'💪', title:'15 lbs Lost',         val:wLost,     max:15, desc:`${wLost.toFixed(1)}/15 lbs lost`, cadence:'One-Time'},
   ];
   html+=`<div class="rewards-section-label">🎁 Hanger Box Milestones</div><div class="milestone-grid">`;
-  html+=hangers.map(h=>{const e=!!m[h.key];return`<div class="milestone-card ${e?'earned':''}"><div class="milestone-icon">${h.icon}</div><div class="milestone-title">${h.title}</div><div class="milestone-desc">${e?'✓ Completed!':h.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(h.val/h.max*100,100)}%"></div></div>${e?'<div class="milestone-earned-tag">✓ Hanger Box Earned</div>':''}</div>`;}).join('');
+  html+=hangers.map(h=>{const e=!!m[h.key];return`<div class="milestone-card ${e?'earned':''}"><div class="milestone-icon">${h.icon}</div><div class="milestone-title">${h.title} <span class="milestone-cadence">${h.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':h.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(h.val/h.max*100,100)}%"></div></div>${e?'<div class="milestone-earned-tag">✓ Hanger Box Earned</div>':''}</div>`;}).join('');
   html+=`</div><div class="rewards-section-label">🏆 Blaster Box Milestones</div><div class="milestone-grid">`;
   const blasters=[
-    {key:'blaster_month_'+mk, icon:'📅', title:'80% Habit Completion',  val:monthPct,   max:80, desc:`${monthPct}%/80% completion this month`},
-    {key:'blaster_level10',   icon:'🌟', title:'Level 10',        val:curLv, max:10, desc:`Level ${curLv}/10`},
-    {key:'blaster_3months',   icon:'🎯', title:'3 Months',        val:mt,    max:3,  desc:`${Math.floor(mt)}/3 months tracked`},
-    {key:'wt_20lbs',          icon:'🔥', title:'20 lbs Lost',     val:wLost, max:20, desc:`${wLost.toFixed(1)}/20 lbs lost`},
+    {key:'blaster_month_'+mk, icon:'📅', title:'80% Habit Completion',  val:monthPct,   max:80, desc:`${monthPct}%/80% completion this month`, paceNote, paceClass, cadence:'Monthly'},
+    {key:'blaster_level10',   icon:'🌟', title:'Level 10',        val:curLv, max:10, desc:`Level ${curLv}/10`, cadence:'One-Time'},
+    {key:'blaster_3months',   icon:'🎯', title:'3 Months',        val:mt,    max:3,  desc:`${Math.floor(mt)}/3 months tracked`, cadence:'One-Time'},
+    {key:'wt_20lbs',          icon:'🔥', title:'20 lbs Lost',     val:wLost, max:20, desc:`${wLost.toFixed(1)}/20 lbs lost`, cadence:'One-Time'},
   ];
-  html+=blasters.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title}</div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%"></div></div>${e?'<div class="milestone-earned-tag">✓ Blaster Box Earned</div>':''}</div>`;}).join('');
+  html+=blasters.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title} <span class="milestone-cadence">${b.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%"></div></div>${!e&&b.paceNote?`<div class="milestone-pace ${b.paceClass}">${b.paceNote}</div>`:''}${e?'<div class="milestone-earned-tag">✓ Blaster Box Earned</div>':''}</div>`;}).join('');
   html+=`</div><div class="rewards-section-label">💎 Mega Box Milestones</div><div class="milestone-grid">`;
   const megas=[
-    {key:'mega_6months', icon:'🦋', title:'6 Months',     val:mt,    max:6,  desc:`${Math.floor(mt)}/6 months tracked`},
-    {key:'mega_level15', icon:'⚡', title:'Level 15',     val:curLv, max:15, desc:`Level ${curLv}/15`},
-    {key:'wt_25lbs',     icon:'⚡', title:'25 lbs Lost',  val:wLost, max:25, desc:`${wLost.toFixed(1)}/25 lbs lost`},
+    {key:'mega_6months', icon:'🦋', title:'6 Months',     val:mt,    max:6,  desc:`${Math.floor(mt)}/6 months tracked`, cadence:'One-Time'},
+    {key:'mega_level15', icon:'⚡', title:'Level 15',     val:curLv, max:15, desc:`Level ${curLv}/15`, cadence:'One-Time'},
+    {key:'wt_25lbs',     icon:'⚡', title:'25 lbs Lost',  val:wLost, max:25, desc:`${wLost.toFixed(1)}/25 lbs lost`, cadence:'One-Time'},
   ];
-  html+=megas.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title}</div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%;background:linear-gradient(90deg,var(--teal),var(--cyan))"></div></div>${e?'<div class="milestone-earned-tag" style="background:rgba(0,255,204,.12);color:var(--teal)">✓ Mega Box Earned</div>':''}</div>`;}).join('');
+  html+=megas.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title} <span class="milestone-cadence">${b.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%;background:linear-gradient(90deg,var(--teal),var(--cyan))"></div></div>${e?'<div class="milestone-earned-tag" style="background:rgba(0,255,204,.12);color:var(--teal)">✓ Mega Box Earned</div>':''}</div>`;}).join('');
   html+=`</div><div class="rewards-section-label">🌟 Super Box Milestones</div><div class="milestone-grid">`;
   const wGoalRange2=wGoal!=null&&wStart!=null?Math.max(1,wStart-wGoal):1;
   const supers=[
-    {key:'wt_goal',      icon:'🏆', title:'Goal Weight Hit', val:wLost, max:wGoalRange2, desc:wGoal!=null?`${wLost.toFixed(1)} lbs lost of ${wGoalRange2.toFixed(1)} needed`:'Set a goal weight first'},
-    {key:'super_level20',icon:'🏆', title:'Level 20 — Gleeful', val:curLv, max:20, desc:`Level ${curLv}/20`},
+    {key:'wt_goal',      icon:'🏆', title:'Goal Weight Hit', val:wLost, max:wGoalRange2, desc:wGoal!=null?`${wLost.toFixed(1)} lbs lost of ${wGoalRange2.toFixed(1)} needed`:'Set a goal weight first', cadence:'One-Time'},
+    {key:'super_level20',icon:'🏆', title:'Level 20 — Gleeful', val:curLv, max:20, desc:`Level ${curLv}/20`, cadence:'One-Time'},
   ];
-  html+=supers.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title}</div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%;background:linear-gradient(90deg,var(--lime),var(--cyan))"></div></div>${e?'<div class="milestone-earned-tag" style="background:rgba(168,255,62,.12);color:var(--lime)">✓ Super Box Earned</div>':''}</div>`;}).join('');
+  html+=supers.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title} <span class="milestone-cadence">${b.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%;background:linear-gradient(90deg,var(--lime),var(--cyan))"></div></div>${e?'<div class="milestone-earned-tag" style="background:rgba(168,255,62,.12);color:var(--lime)">✓ Super Box Earned</div>':''}</div>`;}).join('');
   html+=`</div><div class="rewards-section-label">🗃️ Hobby Box Milestones</div><div class="milestone-grid">`;
   const hobbies=[
-    {key:'hobby_1year',    icon:'🏆', title:'1 Full Year',          val:mt,                  max:12,  desc:`${Math.floor(mt)}/12 months tracked`},
-    {key:'hobby_level30',  icon:'🗃️', title:'Secret Level 30',      val:S.user.xp,           max:4500,desc:`${S.user.xp}/4500 XP · 🤫 secret`},
-    {key:'hobby_365quests',icon:'🌟', title:'365 Side Quests',      val:S.user.sideQuestCount, max:365, desc:`${S.user.sideQuestCount}/365 · 🤫 secret`},
+    {key:'hobby_1year',    icon:'🏆', title:'1 Full Year',          val:mt,                  max:12,  desc:`${Math.floor(mt)}/12 months tracked`, cadence:'One-Time'},
+    {key:'hobby_level30',  icon:'🗃️', title:'Secret Level 30',      val:S.user.xp,           max:4500,desc:`${S.user.xp}/4500 XP · 🤫 secret`, cadence:'One-Time'},
+    {key:'hobby_365quests',icon:'🌟', title:'365 Side Quests',      val:S.user.sideQuestCount, max:365, desc:`${S.user.sideQuestCount}/365 · 🤫 secret`, cadence:'One-Time'},
   ];
-  html+=hobbies.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title}</div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%;background:linear-gradient(90deg,var(--yellow),var(--orange))"></div></div>${e?'<div class="milestone-earned-tag" style="background:rgba(255,229,92,.12);color:var(--yellow)">✓ Hobby Box Earned</div>':''}</div>`;}).join('');
+  html+=hobbies.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title} <span class="milestone-cadence">${b.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%;background:linear-gradient(90deg,var(--yellow),var(--orange))"></div></div>${e?'<div class="milestone-earned-tag" style="background:rgba(255,229,92,.12);color:var(--yellow)">✓ Hobby Box Earned</div>':''}</div>`;}).join('');
   html+=`</div><div class="rewards-section-label">🏅 Badges</div><div class="badges-grid">`;
   html+=BADGES.map(b=>{const e=S.user.badges.includes(b.id);return`<div class="badge-item ${e?'earned':''}" title="${b.d}"><span class="badge-emoji">${b.e}</span><div class="badge-name">${b.n}</div></div>`;}).join('');
   html+=`</div>`;
@@ -1450,6 +1473,12 @@ function switchTab(name,btn){
 let _toastTimer;
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
+
+const APP_VERSION = '2026-08-17.1';
+if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
+  setTimeout(() => toast(`✨ Updated to latest version!`), 900);
+}
+localStorage.setItem('gh_lastVersion', APP_VERSION);
 
 if(S._demoSeeded || S._redeemPreview){ S=blankState(); save(); }
 renderAll();
