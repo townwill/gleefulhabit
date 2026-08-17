@@ -71,6 +71,10 @@
 
   #app { position:relative; z-index:1; max-width:480px; margin:0 auto; height:100dvh; display:flex; flex-direction:column; overflow:hidden; padding:0; }
   .header { flex-shrink:0; padding:calc(env(safe-area-inset-top,20px) + 8px) 24px 12px; text-align:center; }
+  .backup-reminder { display:flex; align-items:center; gap:8px; margin:0 16px 12px; padding:10px 12px; background:rgba(255,229,92,.1); border:1px solid rgba(255,229,92,.25); border-radius:var(--radius-sm); font-size:11px; color:var(--yellow); }
+  .backup-reminder span { flex:1; line-height:1.4; }
+  .backup-reminder button { flex-shrink:0; background:var(--yellow); color:#1a1a1a; border:none; border-radius:6px; padding:6px 10px; font-size:10px; font-weight:800; cursor:pointer; }
+  .backup-reminder-dismiss { background:transparent !important; color:var(--yellow) !important; padding:6px !important; font-size:12px !important; }
   .xp-card { flex-shrink:0; margin:0 16px 12px; padding:12px 16px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); backdrop-filter:blur(24px); }
   .section { display:none; flex:1; overflow-y:auto; padding:0 16px 140px; -webkit-overflow-scrolling:touch; min-height:0; }
   .section.active { display:flex; flex-direction:column; }
@@ -125,6 +129,7 @@
   .habit-info { flex:1; min-width:0; }
   .habit-name { font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .habit-streak { font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:4px; margin-top:2px; }
+  .habit-note { font-size:10.5px; color:var(--text-dim,#8a8a9a); margin-top:3px; line-height:1.3; font-style:italic; }
   .streak-warn { color:var(--orange); font-weight:700; }
   .flame { display:inline-block; animation:flicker .9s ease-in-out infinite alternate; }
   @keyframes flicker { from{transform:scale(1) rotate(-4deg)} to{transform:scale(1.12) rotate(4deg)} }
@@ -419,6 +424,11 @@
     <div class="header-greeting" id="greeting"></div>
     <div class="header-date" id="dateDisplay"></div>
   </div>
+  <div id="backupReminder" class="backup-reminder" style="display:none">
+    <span>🗄️ It's been a while since your last backup — iOS can occasionally clear app data.</span>
+    <button onclick="exportData()">Back Up Now</button>
+    <button class="backup-reminder-dismiss" onclick="hideBackupReminder(true)">✕</button>
+  </div>
   <div class="xp-card">
     <div class="xp-header">
       <div class="xp-level">
@@ -553,6 +563,10 @@
         <div class="form-group"><label class="form-label">Daily Target</label><input class="form-input" id="fTarget" type="number" placeholder="e.g. 150" min="0" step="any"></div>
         <div class="form-group"><label class="form-label">Unit</label><input class="form-input" id="fUnit" placeholder="g, lbs, oz…" maxlength="12"></div>
       </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Reminder Note (optional)</label>
+      <input class="form-input" id="fNote" placeholder="e.g. 20+ minutes counts" maxlength="80">
     </div>
     <div class="form-group" style="display:flex;align-items:center;gap:8px;">
       <input type="checkbox" id="fRestEligible" style="width:18px;height:18px;">
@@ -714,7 +728,22 @@ let S = (() => {
     if (raw.user.perfectWeekBoxesEarned==null)  raw.user.perfectWeekBoxesEarned=0;
     if (raw.user.lastPerfectCheckWeek===undefined) raw.user.lastPerfectCheckWeek=null;
     if (!raw.restDayLogs)              raw.restDayLogs={};
-    if (raw.habits) raw.habits.forEach(h=>{ if(h.restEligible==null) h.restEligible=false; });
+    if (raw.habits) raw.habits.forEach(h=>{ if(h.restEligible==null) h.restEligible=false; if(h.note==null) h.note=''; });
+    if (raw.habits && !raw.user._habitNotesSeeded) {
+      const noteSuggestions = [
+        {match:/work\s*out|exercise/i, note:'Any 20+ min session counts'},
+        {match:/sugar/i,               note:"Food sugar's fine — skip added treats/soda"},
+        {match:/spend/i,               note:'No purchases outside your spending account'},
+        {match:/protein/i,             note:'Hit 150g for the day'},
+      ];
+      raw.habits.forEach(h=>{
+        if (!h.note) {
+          const s = noteSuggestions.find(x=>x.match.test(h.name));
+          if (s) h.note = s.note;
+        }
+      });
+      raw.user._habitNotesSeeded = true;
+    }
     if (!raw.weight)                   raw.weight=blankState().weight;
     if (!raw.weight.logs)              raw.weight.logs={};
     if (!raw.weight.unit)              raw.weight.unit='lbs';
@@ -924,6 +953,7 @@ function renderToday(){
     :`<div class="empty-state" style="padding:24px 20px"><div class="empty-icon" style="font-size:32px">⭐</div><div class="empty-title" style="font-size:15px">No side quests yet</div><div class="empty-desc">Tap <strong>+</strong> to add a side quest.</div></div>`;
 }
 
+function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function habitCardHTML(h){
   const done=isDoneToday(h.id),streak=currentStreak(h.id),c=colorOf(h.color);
   const atRisk=!done&&streak>=3&&new Date().getHours()>=17;
@@ -955,7 +985,7 @@ function habitCardHTML(h){
   return `<div class="habit-card ${done?'completed':''}" id="hc-${h.id}" style="--c-hex:${c.hex};--c-rgb:${c.rgb};--c-accent:rgba(${c.rgb},.07)" onclick="toggleHabit('${h.id}')">
     <div class="habit-card-top">
       <div class="habit-icon">${renderIcon(h.icon)}</div>
-      <div class="habit-info"><div class="habit-name">${h.name}</div><div class="habit-streak">${streakStr}</div></div>
+      <div class="habit-info"><div class="habit-name">${h.name}</div><div class="habit-streak">${streakStr}</div>${h.note?`<div class="habit-note">${escapeHtml(h.note)}</div>`:''}</div>
       <div class="habit-check" style="${done?`background:${c.hex};border-color:${c.hex}`:''}"> ${done?'✓':''}</div>
     </div>${numHTML}${restHTML}</div>`;
 }
@@ -1375,12 +1405,26 @@ function redeemAll(){
   S.user.packsBank=0;S.user.hangersBank=0;S.user.blastersBank=0;S.user.megaBank=0;S.user.hobbyBank=0;S.user.superBank=0;
   save();renderRewards();toast(`✓ Redeemed: ${msg.join(', ')}! Go grab them 🛒`);confetti(55);
 }
-function exportData(){
+async function exportData(){
   const date = new Date().toISOString().slice(0,10);
+  const filename = `gleefulhabit-backup-${date}.json`;
   const blob = new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const file = new File([blob], filename, {type:'application/json'});
+  localStorage.setItem('gh_lastExportDate', new Date().toISOString());
+  hideBackupReminder();
+  if (navigator.canShare && navigator.canShare({files:[file]})) {
+    try {
+      await navigator.share({files:[file], title:'GleefulHabit Backup', text:filename});
+      toast('⬇ Backup saved!');
+      return;
+    } catch (err) {
+      if (err && err.name === 'AbortError') return; // user cancelled the share sheet
+      // fall through to plain download on any other failure
+    }
+  }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `gleefulhabit-backup-${date}.json`;
+  a.download = filename;
   a.click();
   URL.revokeObjectURL(a.href);
   toast('⬇ Backup saved!');
@@ -1401,6 +1445,8 @@ function importData(e){
       if (data.user.stretchCount!=null && data.user.sideQuestCount==null) data.user.sideQuestCount=data.user.stretchCount;
       S = data;
       save();
+      localStorage.setItem('gh_lastExportDate', new Date().toISOString());
+      hideBackupReminder();
       renderAll();
       toast('✅ Data restored successfully!');
       confetti(40);
@@ -1442,12 +1488,12 @@ function renderBackdateList(){
     </div>`;
   }).join('');
 }
-function openHabitModal(){_hEditId=null;const plain=EMOJIS.filter(e=>!e.startsWith('__'));_hEmoji=plain[Math.floor(Math.random()*plain.length)];_hColor=COLORS[Math.floor(Math.random()*COLORS.length)].id;_hType='boolean';document.getElementById('fName').value='';document.getElementById('fTarget').value='';document.getElementById('fUnit').value='';document.getElementById('fRestEligible').checked=false;document.getElementById('habitModalTitle').textContent='New Habit';document.getElementById('habitSubmit').textContent='Add Habit ✦';_populateHabitModal();document.getElementById('habitModalOverlay').classList.add('open');setTimeout(()=>document.getElementById('fName').focus(),450);}
-function openEditHabitModal(id){const h=S.habits.find(x=>x.id===id);if(!h)return;_hEditId=id;_hEmoji=h.icon;_hColor=h.color;_hType=h.type;document.getElementById('fName').value=h.name;document.getElementById('fTarget').value=h.target??'';document.getElementById('fUnit').value=h.unit??'';document.getElementById('fRestEligible').checked=!!h.restEligible;document.getElementById('habitModalTitle').textContent='Edit Habit';document.getElementById('habitSubmit').textContent='Save Changes ✦';_populateHabitModal();document.getElementById('habitModalOverlay').classList.add('open');setTimeout(()=>document.getElementById('fName').focus(),450);}
+function openHabitModal(){_hEditId=null;const plain=EMOJIS.filter(e=>!e.startsWith('__'));_hEmoji=plain[Math.floor(Math.random()*plain.length)];_hColor=COLORS[Math.floor(Math.random()*COLORS.length)].id;_hType='boolean';document.getElementById('fName').value='';document.getElementById('fTarget').value='';document.getElementById('fUnit').value='';document.getElementById('fNote').value='';document.getElementById('fRestEligible').checked=false;document.getElementById('habitModalTitle').textContent='New Habit';document.getElementById('habitSubmit').textContent='Add Habit ✦';_populateHabitModal();document.getElementById('habitModalOverlay').classList.add('open');setTimeout(()=>document.getElementById('fName').focus(),450);}
+function openEditHabitModal(id){const h=S.habits.find(x=>x.id===id);if(!h)return;_hEditId=id;_hEmoji=h.icon;_hColor=h.color;_hType=h.type;document.getElementById('fName').value=h.name;document.getElementById('fTarget').value=h.target??'';document.getElementById('fUnit').value=h.unit??'';document.getElementById('fNote').value=h.note??'';document.getElementById('fRestEligible').checked=!!h.restEligible;document.getElementById('habitModalTitle').textContent='Edit Habit';document.getElementById('habitSubmit').textContent='Save Changes ✦';_populateHabitModal();document.getElementById('habitModalOverlay').classList.add('open');setTimeout(()=>document.getElementById('fName').focus(),450);}
 function pickHEmoji(e,el){_hEmoji=e;document.querySelectorAll('#habitEmojiPicker .emoji-opt').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');}
 function pickHColor(id,el){_hColor=id;document.querySelectorAll('#habitColorPicker .color-opt').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');}
 function pickHabitType(t,el){_hType=t;document.querySelectorAll('#habitModalOverlay .type-btn').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');document.getElementById('habitNumericFields').classList.toggle('show',t==='numeric');}
-function saveHabit(){const name=document.getElementById('fName').value.trim();if(!name){const i=document.getElementById('fName');i.style.borderColor='#ff6464';i.focus();setTimeout(()=>i.style.borderColor='',1200);return;}const p={name,icon:_hEmoji,color:_hColor,type:_hType,target:_hType==='numeric'?(parseFloat(document.getElementById('fTarget').value)||100):null,unit:_hType==='numeric'?document.getElementById('fUnit').value.trim():null,restEligible:document.getElementById('fRestEligible').checked};if(_hEditId){const idx=S.habits.findIndex(x=>x.id===_hEditId);if(idx===-1)return;S.habits[idx]={...S.habits[idx],...p};save();closeModal('habitModalOverlay');renderAll();toast(`${iconLabel(S.habits[idx].icon)} "${S.habits[idx].name}" updated!`);}else{const h={id:Date.now().toString(36),...p};S.habits.push(h);save();closeModal('habitModalOverlay');renderAll();toast(`${iconLabel(h.icon)} "${h.name}" added!`);earnBadge('collector',S.habits.length>=5);}}
+function saveHabit(){const name=document.getElementById('fName').value.trim();if(!name){const i=document.getElementById('fName');i.style.borderColor='#ff6464';i.focus();setTimeout(()=>i.style.borderColor='',1200);return;}const p={name,icon:_hEmoji,color:_hColor,type:_hType,target:_hType==='numeric'?(parseFloat(document.getElementById('fTarget').value)||100):null,unit:_hType==='numeric'?document.getElementById('fUnit').value.trim():null,note:document.getElementById('fNote').value.trim(),restEligible:document.getElementById('fRestEligible').checked};if(_hEditId){const idx=S.habits.findIndex(x=>x.id===_hEditId);if(idx===-1)return;S.habits[idx]={...S.habits[idx],...p};save();closeModal('habitModalOverlay');renderAll();toast(`${iconLabel(S.habits[idx].icon)} "${S.habits[idx].name}" updated!`);}else{const h={id:Date.now().toString(36),...p};S.habits.push(h);save();closeModal('habitModalOverlay');renderAll();toast(`${iconLabel(h.icon)} "${h.name}" added!`);earnBadge('collector',S.habits.length>=5);}}
 
 // ── Side Quest Modal ──
 let _sqEmoji='⭐',_sqCadence='daily';
@@ -1471,10 +1517,20 @@ function switchTab(name,btn){
 }
 
 let _toastTimer;
+function hideBackupReminder(){ const el=document.getElementById('backupReminder'); if(el) el.style.display='none'; }
+function checkBackupReminder(){
+  if(!S.habits.length) return; // nothing worth backing up yet
+  const last = localStorage.getItem('gh_lastExportDate');
+  const daysSince = last ? (Date.now()-new Date(last).getTime())/86400000 : Infinity;
+  if (daysSince >= 7) {
+    const el = document.getElementById('backupReminder');
+    if (el) el.style.display = 'flex';
+  }
+}
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-17.1';
+const APP_VERSION = '2026-08-17.3';
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
 }
@@ -1482,6 +1538,7 @@ localStorage.setItem('gh_lastVersion', APP_VERSION);
 
 if(S._demoSeeded || S._redeemPreview){ S=blankState(); save(); }
 renderAll();
+checkBackupReminder();
 setTimeout(()=>checkWeeklyPacksAndMilestones(),100);
 
 // Re-render when app comes back into focus (date may have changed)
