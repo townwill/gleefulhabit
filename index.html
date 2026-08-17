@@ -156,6 +156,8 @@
   .num-add-btn { padding:8px 18px; border-radius:9px; border:none; background:var(--c-hex,var(--cyan)); color:#0a0a14; font-size:13px; font-weight:800; cursor:pointer; font-family:inherit; transition:all .2s; flex-shrink:0; }
   .num-add-btn:active { transform:scale(.93); }
   .num-reset-btn { width:30px; height:30px; border-radius:50%; border:1px solid var(--border); background:rgba(255,255,255,.04); color:var(--text-muted); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; flex-shrink:0; }
+  .rest-day-btn { display:block; width:100%; margin-top:8px; padding:8px 10px; border-radius:var(--radius-sm); border:1px solid var(--border); background:rgba(255,255,255,.04); color:var(--text-muted); font-size:11px; font-weight:600; text-align:center; cursor:pointer; transition:all .2s; }
+  .rest-day-btn:hover { background:rgba(255,255,255,.08); }
   .num-reset-btn:hover { background:rgba(255,80,80,.12); color:#ff6464; border-color:rgba(255,80,80,.25); }
   .numeric-bar { height:5px; background:rgba(255,255,255,.07); border-radius:3px; overflow:hidden; }
   .numeric-bar-fill { height:100%; background:linear-gradient(90deg,var(--c-hex,var(--cyan)),var(--pink)); border-radius:3px; transition:width .6s cubic-bezier(.34,1.56,.64,1); min-width:4px; }
@@ -744,6 +746,16 @@ let S = (() => {
       });
       raw.user._habitNotesSeeded = true;
     }
+    if (raw.habits && !raw.user._sugarTaperSeeded) {
+      const d = new Date();
+      const todayStr = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      const sugarHabit = raw.habits.find(h=>/sugar/i.test(h.name));
+      if (sugarHabit && !sugarHabit.taperSchedule) {
+        sugarHabit.taperSchedule = [10, 5, 0]; // grams/day, one step per week
+        sugarHabit.taperStart = todayStr;
+      }
+      raw.user._sugarTaperSeeded = true;
+    }
     if (!raw.weight)                   raw.weight=blankState().weight;
     if (!raw.weight.logs)              raw.weight.logs={};
     if (!raw.weight.unit)              raw.weight.unit='lbs';
@@ -953,6 +965,15 @@ function renderToday(){
     :`<div class="empty-state" style="padding:24px 20px"><div class="empty-icon" style="font-size:32px">⭐</div><div class="empty-title" style="font-size:15px">No side quests yet</div><div class="empty-desc">Tap <strong>+</strong> to add a side quest.</div></div>`;
 }
 
+function taperNoteFor(h){
+  if(!h.taperSchedule || !h.taperSchedule.length || !h.taperStart) return null;
+  const start=new Date(h.taperStart+'T00:00:00');
+  const daysSince=Math.floor((new Date()-start)/86400000);
+  const week=Math.max(0,Math.floor(daysSince/7));
+  const idx=Math.min(week,h.taperSchedule.length-1);
+  const g=h.taperSchedule[idx];
+  return g>0 ? `This week: under ${g}g added sugar (tapering down)` : `This week: 0g added sugar — target reached!`;
+}
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function habitCardHTML(h){
   const done=isDoneToday(h.id),streak=currentStreak(h.id),c=colorOf(h.color);
@@ -962,9 +983,9 @@ function habitCardHTML(h){
   if(h.restEligible && !done){
     const resting=isRestDayToday(h.id), used=restDaysUsedThisWeek(h.id), left=Math.max(0,2-used);
     if(resting){
-      restHTML=`<button class="num-reset-btn" style="margin-top:6px" onclick="event.stopPropagation();markRestDay('${h.id}')">😴 Resting today — tap to undo</button>`;
+      restHTML=`<button class="rest-day-btn" onclick="event.stopPropagation();markRestDay('${h.id}')">😴 Resting today — tap to undo</button>`;
     }else if(left>0){
-      restHTML=`<button class="num-reset-btn" style="margin-top:6px" onclick="event.stopPropagation();markRestDay('${h.id}')">😴 Mark rest day (${left} left this week)</button>`;
+      restHTML=`<button class="rest-day-btn" onclick="event.stopPropagation();markRestDay('${h.id}')">😴 Mark rest day (${left} left this week)</button>`;
     }
   }
   let numHTML='';
@@ -985,7 +1006,7 @@ function habitCardHTML(h){
   return `<div class="habit-card ${done?'completed':''}" id="hc-${h.id}" style="--c-hex:${c.hex};--c-rgb:${c.rgb};--c-accent:rgba(${c.rgb},.07)" onclick="toggleHabit('${h.id}')">
     <div class="habit-card-top">
       <div class="habit-icon">${renderIcon(h.icon)}</div>
-      <div class="habit-info"><div class="habit-name">${h.name}</div><div class="habit-streak">${streakStr}</div>${h.note?`<div class="habit-note">${escapeHtml(h.note)}</div>`:''}</div>
+      <div class="habit-info"><div class="habit-name">${h.name}</div><div class="habit-streak">${streakStr}</div>${(taperNoteFor(h)||h.note)?`<div class="habit-note">${escapeHtml(taperNoteFor(h)||h.note)}</div>`:''}</div>
       <div class="habit-check" style="${done?`background:${c.hex};border-color:${c.hex}`:''}"> ${done?'✓':''}</div>
     </div>${numHTML}${restHTML}</div>`;
 }
@@ -1530,7 +1551,7 @@ function checkBackupReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-17.3';
+const APP_VERSION = '2026-08-17.4';
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
 }
