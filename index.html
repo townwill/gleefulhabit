@@ -1437,22 +1437,7 @@ function renderRewards(){
     {key:'hanger_level5',                               icon:'💎', title:'Level 5 (800 XP)',    val:curLv,     max:5,  desc:`Level ${curLv}/5`, cadence:'One-Time'},
     {key:'wt_hanger_10',                                icon:'💪', title:'10 lbs Lost',         val:wLost,     max:10, desc:`${wLost.toFixed(1)}/10 lbs lost`, cadence:'One-Time'},
   ];
-  const secretKeys = ['secret_dumbbell20','secret_incline20','secret_ground15','secret_hang60','secret_plank120','secret_jumprope120'];
-  const secretReasons = {
-    secret_dumbbell20:  '20 reps @ 20lb dumbbell press! 💪',
-    secret_incline20:   '20 incline push-ups! 💪',
-    secret_ground15:    '15 ground push-ups! 💪',
-    secret_hang60:       '1-minute dead hang! 💪',
-    secret_plank120:     '2-minute plank! 💪',
-    secret_jumprope120:  '2-minute jump rope! 💪',
-  };
-  html+=`<div class="rewards-section-label">🔒 Secret Achievements</div><div class="milestone-grid">`;
-  html+=secretKeys.map(key=>{
-    const e=!!m[key];
-    if(e){return`<div class="milestone-card earned"><div class="milestone-icon">💪</div><div class="milestone-title">Secret Found!</div><div class="milestone-desc">${secretReasons[key]}</div><div class="milestone-earned-tag">✓ Pack Earned</div></div>`;}
-    return `<div class="milestone-card secret-locked"><div class="milestone-icon">🔒</div><div class="milestone-title">???</div><div class="milestone-desc">Hidden challenge — keep training to find out</div></div>`;
-  }).join('');
-  html+=`</div><div class="rewards-section-label">🎁 Hanger Box Milestones</div><div class="milestone-grid">`;
+  html+=`<div class="rewards-section-label">🎁 Hanger Box Milestones</div><div class="milestone-grid">`;
   html+=hangers.map(h=>{const e=!!m[h.key];return`<div class="milestone-card ${e?'earned':''}"><div class="milestone-icon">${h.icon}</div><div class="milestone-title">${h.title} <span class="milestone-cadence">${h.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':h.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(h.val/h.max*100,100)}%"></div></div>${e?'<div class="milestone-earned-tag">✓ Hanger Box Earned</div>':''}</div>`;}).join('');
   html+=`</div><div class="rewards-section-label">🏆 Blaster Box Milestones</div><div class="milestone-grid">`;
   const blasters=[
@@ -1486,6 +1471,21 @@ function renderRewards(){
     {key:'wt_mythic_goal', icon:'🏵️', title:'Goal Weight — Celebrini Young Guns', val:wLost, max:wGoalRange2, desc:wGoal!=null?`${wLost.toFixed(1)} lbs lost of ${wGoalRange2.toFixed(1)} needed`:'Set a goal weight first', cadence:'One-Time'},
   ];
   html+=mythics.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title} <span class="milestone-cadence">${b.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%;background:linear-gradient(90deg,var(--rose),var(--purple))"></div></div>${e?'<div class="milestone-earned-tag" style="background:rgba(255,107,138,.12);color:var(--rose)">✓ Mythic Box Earned</div>':''}</div>`;}).join('');
+  html+=`</div><div class="rewards-section-label">🔒 Secret Achievements</div><div class="milestone-grid">`;
+  const secretKeys = ['secret_dumbbell20','secret_incline20','secret_ground15','secret_hang60','secret_plank120','secret_jumprope120'];
+  const secretReasons = {
+    secret_dumbbell20:  '20 reps @ 20lb dumbbell press! 💪',
+    secret_incline20:   '20 incline push-ups! 💪',
+    secret_ground15:    '15 ground push-ups! 💪',
+    secret_hang60:       '1-minute dead hang! 💪',
+    secret_plank120:     '2-minute plank! 💪',
+    secret_jumprope120:  '2-minute jump rope! 💪',
+  };
+  html+=secretKeys.map(key=>{
+    const e=!!m[key];
+    if(e){return`<div class="milestone-card earned"><div class="milestone-icon">💪</div><div class="milestone-title">Secret Found!</div><div class="milestone-desc">${secretReasons[key]}</div><div class="milestone-earned-tag">✓ Pack Earned</div></div>`;}
+    return `<div class="milestone-card secret-locked"><div class="milestone-icon">🔒</div><div class="milestone-title">???</div><div class="milestone-desc">Hidden challenge — keep training to find out</div></div>`;
+  }).join('');
   html+=`</div><div class="rewards-section-label">🏅 Badges</div><div class="badges-grid">`;
   html+=BADGES.map(b=>{const e=S.user.badges.includes(b.id);return`<div class="badge-item ${e?'earned':''}" title="${b.d}"><span class="badge-emoji">${b.e}</span><div class="badge-name">${b.n}</div></div>`;}).join('');
   html+=`</div>`;
@@ -1811,7 +1811,7 @@ function checkBackupReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-18.2114';
+const APP_VERSION = '2026-08-18.2127';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
