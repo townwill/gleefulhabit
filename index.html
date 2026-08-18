@@ -812,74 +812,78 @@ function blankState() {
 }
 
 const STORE_KEY = 'habitflow';
+function migrateState(raw) {
+  // Migrate old field names (stretches -> sideQuests) from saves made before the rename
+  if (raw.stretches && !raw.sideQuests)         raw.sideQuests=raw.stretches;
+  if (raw.stretchLogs && !raw.sideQuestLogs)    raw.sideQuestLogs=raw.stretchLogs;
+  if (raw.stretchDone && !raw.sideQuestDone)    raw.sideQuestDone=raw.stretchDone;
+  if (raw.user && raw.user.stretchCount!=null && raw.user.sideQuestCount==null) raw.user.sideQuestCount=raw.user.stretchCount;
+  if (!raw.sideQuests)                raw.sideQuests=[];
+  if (!raw.sideQuestLogs)              raw.sideQuestLogs={};
+  if (!raw.sideQuestDone)              raw.sideQuestDone={};
+  if (!raw.logEntries)               raw.logEntries={};
+  if (!raw.xpAwarded)                raw.xpAwarded={};
+  if (!raw.user)                     raw.user=blankState().user;
+  if (!raw.user.badges)              raw.user.badges=[];
+  if (!raw.user.sideQuestCount)        raw.user.sideQuestCount=0;
+  if (raw.user.packsBank==null)      raw.user.packsBank=0;
+  if (raw.user.hangersBank==null)    raw.user.hangersBank=0;
+  if (raw.user.blastersBank==null)   raw.user.blastersBank=0;
+  if (raw.user.megaBank==null)       raw.user.megaBank=0;
+  if (raw.user.hobbyBank==null)      raw.user.hobbyBank=0;
+  if (raw.user.superBank==null)      raw.user.superBank=0;
+  if (raw.user.mythicBank==null)     raw.user.mythicBank=0;
+  if (!raw.user.packHistory)         raw.user.packHistory=[];
+  if (!raw.user.weeklyPacksAwarded)  raw.user.weeklyPacksAwarded={};
+  if (!raw.user.weeklyPackFlags)     raw.user.weeklyPackFlags={};
+  if (!raw.user.consecutivePackWeeks)raw.user.consecutivePackWeeks=0;
+  if (!raw.user.milestones)          raw.user.milestones={};
+  if (raw.user.perfectWeekStreak==null)       raw.user.perfectWeekStreak=0;
+  if (raw.user.perfectWeekBoxesEarned==null)  raw.user.perfectWeekBoxesEarned=0;
+  if (raw.user.lastPerfectCheckWeek===undefined) raw.user.lastPerfectCheckWeek=null;
+  if (!raw.user.favoriteQuotes) raw.user.favoriteQuotes=[];
+  if (raw.user.lastQuotePeriod===undefined) raw.user.lastQuotePeriod=null;
+  if (!raw.restDayLogs)              raw.restDayLogs={};
+  if (!raw.exercise) raw.exercise={dumbbellPress:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
+  if (raw.habits) raw.habits.forEach(h=>{ if(h.restEligible==null) h.restEligible=false; if(h.note==null) h.note=''; });
+  if (raw.habits && !raw.user._habitNotesSeeded) {
+    const noteSuggestions = [
+      {match:/work\s*out|exercise/i, note:'Any 20+ min session counts'},
+      {match:/sugar/i,               note:"Food sugar's fine — skip added treats/soda"},
+      {match:/spend/i,               note:'No purchases outside your spending account'},
+      {match:/protein/i,             note:'Hit 150g for the day'},
+    ];
+    raw.habits.forEach(h=>{
+      if (!h.note) {
+        const s = noteSuggestions.find(x=>x.match.test(h.name));
+        if (s) h.note = s.note;
+      }
+    });
+    raw.user._habitNotesSeeded = true;
+  }
+  if (raw.habits && !raw.user._sugarTaperSeeded) {
+    const d = new Date();
+    const todayStr = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const sugarHabit = raw.habits.find(h=>/sugar/i.test(h.name));
+    if (sugarHabit && !sugarHabit.taperSchedule) {
+      sugarHabit.taperSchedule = [10, 5, 0]; // grams/day, one step per week
+      sugarHabit.taperStart = todayStr;
+    }
+    raw.user._sugarTaperSeeded = true;
+  }
+  if (!raw.weight)                   raw.weight=blankState().weight;
+  if (!raw.weight.logs)              raw.weight.logs={};
+  if (!raw.weight.unit)              raw.weight.unit='lbs';
+  return raw;
+}
+
 let S = (() => {
   try {
     let raw = JSON.parse(localStorage.getItem(STORE_KEY)||'null');
     if (!raw) for (const k of ['hf4','hf3']){const o=localStorage.getItem(k);if(o){raw=JSON.parse(o);break;}}
     if (!raw) return blankState();
-    // Migrate old field names (stretches -> sideQuests) from saves made before the rename
-    if (raw.stretches && !raw.sideQuests)         raw.sideQuests=raw.stretches;
-    if (raw.stretchLogs && !raw.sideQuestLogs)    raw.sideQuestLogs=raw.stretchLogs;
-    if (raw.stretchDone && !raw.sideQuestDone)    raw.sideQuestDone=raw.stretchDone;
-    if (raw.user && raw.user.stretchCount!=null && raw.user.sideQuestCount==null) raw.user.sideQuestCount=raw.user.stretchCount;
-    if (!raw.sideQuests)                raw.sideQuests=[];
-    if (!raw.sideQuestLogs)              raw.sideQuestLogs={};
-    if (!raw.sideQuestDone)              raw.sideQuestDone={};
-    if (!raw.logEntries)               raw.logEntries={};
-    if (!raw.xpAwarded)                raw.xpAwarded={};
-    if (!raw.user)                     raw.user=blankState().user;
-    if (!raw.user.badges)              raw.user.badges=[];
-    if (!raw.user.sideQuestCount)        raw.user.sideQuestCount=0;
-    if (raw.user.packsBank==null)      raw.user.packsBank=0;
-    if (raw.user.hangersBank==null)    raw.user.hangersBank=0;
-    if (raw.user.blastersBank==null)   raw.user.blastersBank=0;
-    if (raw.user.megaBank==null)       raw.user.megaBank=0;
-    if (raw.user.hobbyBank==null)      raw.user.hobbyBank=0;
-    if (raw.user.superBank==null)      raw.user.superBank=0;
-    if (raw.user.mythicBank==null)     raw.user.mythicBank=0;
-    if (!raw.user.packHistory)         raw.user.packHistory=[];
-    if (!raw.user.weeklyPacksAwarded)  raw.user.weeklyPacksAwarded={};
-    if (!raw.user.weeklyPackFlags)     raw.user.weeklyPackFlags={};
-    if (!raw.user.consecutivePackWeeks)raw.user.consecutivePackWeeks=0;
-    if (!raw.user.milestones)          raw.user.milestones={};
-    if (raw.user.perfectWeekStreak==null)       raw.user.perfectWeekStreak=0;
-    if (raw.user.perfectWeekBoxesEarned==null)  raw.user.perfectWeekBoxesEarned=0;
-    if (raw.user.lastPerfectCheckWeek===undefined) raw.user.lastPerfectCheckWeek=null;
-    if (!raw.user.favoriteQuotes) raw.user.favoriteQuotes=[];
-    if (raw.user.lastQuotePeriod===undefined) raw.user.lastQuotePeriod=null;
-    if (!raw.restDayLogs)              raw.restDayLogs={};
-    if (!raw.exercise) raw.exercise={dumbbellPress:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
-    if (raw.habits) raw.habits.forEach(h=>{ if(h.restEligible==null) h.restEligible=false; if(h.note==null) h.note=''; });
-    if (raw.habits && !raw.user._habitNotesSeeded) {
-      const noteSuggestions = [
-        {match:/work\s*out|exercise/i, note:'Any 20+ min session counts'},
-        {match:/sugar/i,               note:"Food sugar's fine — skip added treats/soda"},
-        {match:/spend/i,               note:'No purchases outside your spending account'},
-        {match:/protein/i,             note:'Hit 150g for the day'},
-      ];
-      raw.habits.forEach(h=>{
-        if (!h.note) {
-          const s = noteSuggestions.find(x=>x.match.test(h.name));
-          if (s) h.note = s.note;
-        }
-      });
-      raw.user._habitNotesSeeded = true;
-    }
-    if (raw.habits && !raw.user._sugarTaperSeeded) {
-      const d = new Date();
-      const todayStr = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-      const sugarHabit = raw.habits.find(h=>/sugar/i.test(h.name));
-      if (sugarHabit && !sugarHabit.taperSchedule) {
-        sugarHabit.taperSchedule = [10, 5, 0]; // grams/day, one step per week
-        sugarHabit.taperStart = todayStr;
-      }
-      raw.user._sugarTaperSeeded = true;
-    }
-    if (!raw.weight)                   raw.weight=blankState().weight;
-    if (!raw.weight.logs)              raw.weight.logs={};
-    if (!raw.weight.unit)              raw.weight.unit='lbs';
-    return raw;
-  } catch{return blankState();}
+    return migrateState(raw);
+  } catch(err){console.error('GleefulHabit: load failed, starting fresh —',err);return blankState();}
 })();
 function save(){localStorage.setItem(STORE_KEY,JSON.stringify(S));}
 
@@ -1719,14 +1723,14 @@ function importData(e){
       if (data.stretchLogs && !data.sideQuestLogs) data.sideQuestLogs=data.stretchLogs;
       if (data.stretchDone && !data.sideQuestDone) data.sideQuestDone=data.stretchDone;
       if (data.user.stretchCount!=null && data.user.sideQuestCount==null) data.user.sideQuestCount=data.user.stretchCount;
-      S = data;
+      S = migrateState(data);
       save();
       localStorage.setItem('gh_lastExportDate', new Date().toISOString());
       hideBackupReminder();
       renderAll();
       toast('✅ Data restored successfully!');
       confetti(40);
-    } catch { toast('⚠️ Could not read file'); }
+    } catch(err) { console.error('GleefulHabit: import failed —', err); toast('⚠️ Could not read file'); }
   };
   reader.readAsText(file);
   e.target.value = ''; // reset so same file can be imported again
@@ -1806,7 +1810,7 @@ function checkBackupReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-18.1735';
+const APP_VERSION = '2026-08-18.2106';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
