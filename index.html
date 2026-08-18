@@ -226,6 +226,13 @@
   .weight-input-big::placeholder { color:rgba(240,240,255,.2); font-weight:400; font-size:15px; }
   .weight-log-btn { padding:12px 20px; border-radius:var(--radius-sm); border:none; background:linear-gradient(135deg,var(--purple),var(--cyan)); color:white; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit; transition:all .2s; white-space:nowrap; }
   .weight-settings-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:14px; backdrop-filter:blur(20px); }
+  .pr-grid { display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+  .pr-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .pr-row label { font-size:12px; color:var(--text-muted); flex:1; }
+  .pr-input { width:64px; text-align:center; background:rgba(255,255,255,.05); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text-primary); font-size:14px; font-weight:600; padding:7px 4px; }
+  .milestone-card.secret-locked { opacity:.6; border-style:dashed; text-align:center; }
+  .milestone-card.secret-locked .milestone-icon { opacity:.5; }
+  .milestone-card.secret-locked .milestone-title { letter-spacing:.15em; }
   .weight-settings-title { font-size:14px; font-weight:700; margin-bottom:14px; }
   .weight-chart-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:14px; backdrop-filter:blur(20px); }
   .weight-chart-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
@@ -392,6 +399,11 @@
   .data-card-title { font-size:13px; font-weight:700; color:var(--text-muted); letter-spacing:.06em; text-transform:uppercase; margin-bottom:4px; }
   .data-card-desc { font-size:11px; color:var(--text-muted); margin-bottom:14px; line-height:1.5; }
   .version-footer { text-align:center; font-size:10px; color:var(--text-dim,#6a6a7a); padding:16px 0 4px; letter-spacing:.02em; }
+  .fav-quote-item { display:flex; align-items:flex-start; gap:10px; padding:11px 12px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); border-radius:var(--radius-sm); margin-bottom:8px; }
+  .fav-quote-body { flex:1; min-width:0; }
+  .fav-quote-text { font-size:13px; font-style:italic; line-height:1.4; color:var(--text-primary); }
+  .fav-quote-author { font-size:11px; color:var(--text-muted); margin-top:4px; }
+  .fav-quote-remove { flex-shrink:0; background:transparent; border:none; color:var(--text-dim,#777); font-size:14px; cursor:pointer; padding:2px 4px; }
   .data-btn-row { display:flex; gap:8px; }
   .data-btn { flex:1; padding:11px; border:none; border-radius:var(--radius-sm); font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .2s; }
   .data-btn.export { background:linear-gradient(135deg,var(--purple),var(--cyan)); color:white; }
@@ -412,6 +424,30 @@
     transform:translateX(-50%) translateY(-8px);
   }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .quote-overlay {
+    position:fixed; inset:0; z-index:500; display:none; align-items:center; justify-content:center;
+    background:rgba(5,5,15,.72); backdrop-filter:blur(6px); padding:24px;
+    opacity:0; transition:opacity .3s ease;
+  }
+  .quote-overlay.show { display:flex; opacity:1; }
+  .quote-card {
+    width:100%; max-width:380px; background:linear-gradient(160deg,rgba(30,25,55,.97),rgba(18,16,32,.97));
+    border:1px solid rgba(255,255,255,.12); border-radius:22px; padding:28px 24px 22px;
+    text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5);
+    transform:translateY(0) scale(1); transition:transform .25s ease, opacity .25s ease;
+    touch-action:none; cursor:grab;
+  }
+  .quote-card.dragging { transition:none; }
+  .quote-swipe-hint { font-size:10px; color:var(--text-dim,#777); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px; opacity:.6; }
+  .quote-mark { font-size:44px; line-height:1; font-family:Georgia,serif; color:var(--purple); opacity:.5; margin-bottom:2px; }
+  .quote-text { font-size:19px; font-weight:600; line-height:1.4; color:#fff; margin-bottom:14px; }
+  .quote-author { font-size:13px; color:var(--text-muted); margin-bottom:20px; }
+  .quote-author::before { content:'— '; }
+  .quote-actions { display:flex; flex-direction:column; gap:10px; }
+  .quote-fav-btn { background:rgba(255,255,255,.06); border:1px solid var(--border); color:var(--text-primary); border-radius:14px; padding:11px; font-size:14px; font-weight:600; cursor:pointer; transition:all .2s; }
+  .quote-fav-btn.faved { background:rgba(255,107,138,.15); border-color:var(--rose); color:var(--rose); }
+  .quote-dismiss-btn { background:linear-gradient(135deg,var(--purple),var(--cyan)); border:none; color:#fff; border-radius:14px; padding:12px; font-size:14px; font-weight:700; cursor:pointer; }
 
   @keyframes bounce-card    { 0%{transform:scale(1)} 35%{transform:scale(1.042)} 65%{transform:scale(.978)} 100%{transform:scale(1)} }
   @keyframes bounce-sidequest { 0%{transform:scale(1)} 35%{transform:scale(1.038)} 65%{transform:scale(.982)} 100%{transform:scale(1)} }
@@ -521,6 +557,12 @@
       <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
     </div>
 
+    <div class="data-card">
+      <div class="data-card-title">💬 Favorite Quotes</div>
+      <div class="data-card-desc">Quotes you've saved from the popup that greets you when you open the app.</div>
+      <div id="favoriteQuotesList"></div>
+    </div>
+
     <div class="version-footer" id="versionFooter"></div>
   </div>
 
@@ -616,6 +658,18 @@
 
 <div class="confetti-container" id="confettiBox"></div>
 <div class="toast" id="toast"></div>
+<div class="quote-overlay" id="quoteOverlay">
+  <div class="quote-card" id="quoteCard">
+    <div class="quote-swipe-hint">↕ swipe to dismiss</div>
+    <div class="quote-mark">"</div>
+    <div class="quote-text" id="quoteText"></div>
+    <div class="quote-author" id="quoteAuthor"></div>
+    <div class="quote-actions">
+      <button class="quote-fav-btn" id="quoteFavBtn" onclick="toggleFavoriteQuote()">🤍 Favorite</button>
+      <button class="quote-dismiss-btn" onclick="dismissQuote()">Got it ✦</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // Prevent pinch zoom and double-tap zoom
@@ -651,7 +705,63 @@ const COLORS = [
   {id:'orange',hex:'#ff9544',rgb:'255,149,68' },{id:'rose',  hex:'#ff6b8a',rgb:'255,107,138'},
   {id:'teal',  hex:'#00ffcc',rgb:'0,255,204'  },{id:'yellow',hex:'#ffe55c',rgb:'255,229,92' },
 ];
-const LEVELS = ['Newborn','Rookie','Rising','Focused','Consistent','Strong','Driven','Dialed','Locked In','Elite','Unstoppable','Champion','Relentless','Forged','Legendary','Mythic','Ascended','Transcendent','Infinite','Eternal','Gleeful'];
+const QUOTES = [
+  {q:"We are what we repeatedly do. Excellence, then, is not an act, but a habit.", a:"Aristotle"},
+  {q:"The successful warrior is the average man, with laser-like focus.", a:"Bruce Lee"},
+  {q:"It's not that I'm so smart, it's just that I stay with problems longer.", a:"Albert Einstein"},
+  {q:"Discipline is choosing between what you want now and what you want most.", a:"Abraham Lincoln"},
+  {q:"You don't have to be great to start, but you have to start to be great.", a:"Zig Ziglar"},
+  {q:"The pain of discipline weighs ounces; the pain of regret weighs tons.", a:"Jim Rohn"},
+  {q:"Motivation is what gets you started. Habit is what keeps you going.", a:"Jim Ryun"},
+  {q:"I've missed more than 9,000 shots. I've lost almost 300 games. I've failed over and over. That is why I succeed.", a:"Michael Jordan"},
+  {q:"Champions keep playing until they get it right.", a:"Billie Jean King"},
+  {q:"I hated every minute of training, but I said, don't quit. Suffer now and live the rest of your life as a champion.", a:"Muhammad Ali"},
+  {q:"Strength does not come from winning. Your struggles develop your strengths.", a:"Arnold Schwarzenegger"},
+  {q:"The only bad workout is the one that didn't happen.", a:"Unknown"},
+  {q:"Somewhere behind the athlete you've become and the hours of practice and the coaches who have pushed you is a little girl who fell in love with the game and never looked back.", a:"Mia Hamm"},
+  {q:"You have to expect things of yourself before you can do them.", a:"Michael Jordan"},
+  {q:"Small daily improvements are the key to staggering long-term results.", a:"James Clear"},
+  {q:"You do not rise to the level of your goals. You fall to the level of your systems.", a:"James Clear"},
+  {q:"Every action you take is a vote for the type of person you wish to become.", a:"James Clear"},
+  {q:"It's not whether you get knocked down, it's whether you get up.", a:"Vince Lombardi"},
+  {q:"The difference between the impossible and the possible lies in a person's determination.", a:"Tommy Lasorda"},
+  {q:"Hard work beats talent when talent doesn't work hard.", a:"Tim Notke"},
+  {q:"A river cuts through rock, not because of its power, but because of its persistence.", a:"Jim Watkins"},
+  {q:"What you get by achieving your goals is not as important as what you become by achieving your goals.", a:"Zig Ziglar"},
+  {q:"Well done is better than well said.", a:"Benjamin Franklin"},
+  {q:"The body achieves what the mind believes.", a:"Napoleon Hill"},
+  {q:"Take care of your body. It's the only place you have to live.", a:"Jim Rohn"},
+  {q:"If it doesn't challenge you, it doesn't change you.", a:"Fred DeVito"},
+  {q:"You miss 100% of the shots you don't take.", a:"Wayne Gretzky"},
+  {q:"Push yourself, because no one else is going to do it for you.", a:"Unknown"},
+  {q:"The groundwork for all happiness is good health.", a:"Leigh Hunt"},
+  {q:"Success is the sum of small efforts, repeated day in and day out.", a:"Robert Collier"},
+  {q:"There is no royal road to anything. One thing at a time, all things in succession. That which grows fast, withers as rapidly.", a:"Josiah Gilbert Holland"},
+  {q:"Nothing will work unless you do.", a:"Maya Angelou"},
+  {q:"Either you run the day, or the day runs you.", a:"Jim Rohn"},
+  {q:"Don't count the days, make the days count.", a:"Muhammad Ali"},
+  {q:"We generate fears while we sit. We overcome them by action.", a:"Henry Link"},
+  {q:"The mind is everything. What you think you become.", a:"Buddha"},
+  {q:"Fall seven times, stand up eight.", a:"Japanese Proverb"},
+  {q:"A goal without a plan is just a wish.", a:"Antoine de Saint-Exupéry"},
+  {q:"Discipline is the bridge between goals and accomplishment.", a:"Jim Rohn"},
+  {q:"You can't build a reputation on what you are going to do.", a:"Henry Ford"},
+  {q:"The only way to do great work is to love what you do.", a:"Steve Jobs"},
+  {q:"It always seems impossible until it's done.", a:"Nelson Mandela"},
+  {q:"Character is the result of two things: mental attitude and the way we spend our time.", a:"Elbert Hubbard"},
+  {q:"Whether you think you can or you think you can't, you're right.", a:"Henry Ford"},
+  {q:"The best time to plant a tree was 20 years ago. The second best time is now.", a:"Chinese Proverb"},
+  {q:"Energy and persistence conquer all things.", a:"Benjamin Franklin"},
+  {q:"Amateurs sit and wait for inspiration. The rest of us just get up and go to work.", a:"Stephen King"},
+  {q:"You are never too old to set another goal or dream a new dream.", a:"C.S. Lewis"},
+  {q:"Winning isn't everything, but wanting to win is.", a:"Vince Lombardi"},
+  {q:"Excellence is not a singular act but a habit. You are what you repeatedly do.", a:"Shaquille O'Neal"},
+  {q:"There is no substitute for hard work.", a:"Thomas Edison"},
+  {q:"Set your goals high, and don't stop till you get there.", a:"Bo Jackson"},
+  {q:"Do not wait to strike till the iron is hot, but make it hot by striking.", a:"William Butler Yeats"},
+  {q:"I never lose. I either win or learn.", a:"Nelson Mandela"},
+];
+
 const XP_PER_LEVEL = 500;
 
 function levelInfo(xp){
@@ -692,11 +802,12 @@ function blankState() {
     logs:{},logEntries:{},sideQuestLogs:{},sideQuestDone:{},restDayLogs:{},
     xpAwarded:{},
     weight:{logs:{},unit:'lbs',goal:null,startWeight:null,startDate:null},
+    exercise:{dumbbellPress:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0},
     user:{xp:0,badges:[],totalDone:0,numericHits:0,sideQuestCount:0,
       packsBank:0,hangersBank:0,blastersBank:0,megaBank:0,hobbyBank:0,superBank:0,mythicBank:0,
       packHistory:[],weeklyPacksAwarded:{},weeklyPackFlags:{},
       consecutivePackWeeks:0,lastPackWeek:null,milestones:{},
-      perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null},
+      perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null,favoriteQuotes:[],lastQuotePeriod:null},
   };
 }
 
@@ -734,7 +845,10 @@ let S = (() => {
     if (raw.user.perfectWeekStreak==null)       raw.user.perfectWeekStreak=0;
     if (raw.user.perfectWeekBoxesEarned==null)  raw.user.perfectWeekBoxesEarned=0;
     if (raw.user.lastPerfectCheckWeek===undefined) raw.user.lastPerfectCheckWeek=null;
+    if (!raw.user.favoriteQuotes) raw.user.favoriteQuotes=[];
+    if (raw.user.lastQuotePeriod===undefined) raw.user.lastQuotePeriod=null;
     if (!raw.restDayLogs)              raw.restDayLogs={};
+    if (!raw.exercise) raw.exercise={dumbbellPress:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
     if (raw.habits) raw.habits.forEach(h=>{ if(h.restEligible==null) h.restEligible=false; if(h.note==null) h.note=''; });
     if (raw.habits && !raw.user._habitNotesSeeded) {
       const noteSuggestions = [
@@ -1018,9 +1132,89 @@ function renderManage(){
   const sel=document.getElementById('manageSideQuests');
   if(!S.sideQuests.length){sel.innerHTML=`<div class="empty-state" style="padding:20px"><div class="empty-icon" style="font-size:28px">⭐</div><div class="empty-title" style="font-size:14px">No side quests</div></div>`;}
   else{sel.innerHTML=S.sideQuests.map(s=>{const done=isSideQuestDoneToday(s.id),lbl=s.cadence==='once'&&done?'✓ Completed forever':s.cadence==='daily'&&done?'✓ Done today':'—';return`<div class="manage-card" style="border-left:3px solid rgba(255,229,92,.5)"><div class="manage-icon">${s.icon}</div><div class="manage-info"><div class="manage-name">${s.name}</div><div class="manage-meta">${s.cadence==='once'?'One & Done':'Daily'} · ${lbl}</div></div><div class="manage-actions"><button class="btn-del" onclick="deleteSideQuest('${s.id}')">✕</button></div></div>`;}).join('');}
+  renderFavoriteQuotes();
 }
+function renderFavoriteQuotes(){
+  const el=document.getElementById('favoriteQuotesList'); if(!el) return;
+  const favs=S.user.favoriteQuotes||[];
+  if(!favs.length){ el.innerHTML=`<div class="empty-state" style="padding:16px"><div class="empty-icon" style="font-size:24px">💬</div><div class="empty-title" style="font-size:13px">No favorites yet</div><div class="empty-desc" style="font-size:11px">Tap 🤍 on a popup quote to save it here.</div></div>`; return; }
+  el.innerHTML = favs.map((f,i)=>`<div class="fav-quote-item"><div class="fav-quote-body"><div class="fav-quote-text">"${escapeHtml(f.q)}"</div><div class="fav-quote-author">— ${escapeHtml(f.a)}</div></div><button class="fav-quote-remove" onclick="removeFavoriteQuote(${i})">✕</button></div>`).join('');
+}
+function removeFavoriteQuote(i){ (S.user.favoriteQuotes||[]).splice(i,1); save(); renderFavoriteQuotes(); }
 
+let _currentQuote = null;
+function maybeShowDailyQuote(){
+  const now = new Date();
+  const period = `${todayKey()}_${now.getHours() < 12 ? 'AM' : 'PM'}`;
+  if (S.user.lastQuotePeriod === period) return; // already shown one this half of the day
+  S.user.lastQuotePeriod = period;
+  save();
+  showDailyQuote();
+}
+function showDailyQuote(){
+  _currentQuote = QUOTES[Math.floor(Math.random()*QUOTES.length)];
+  document.getElementById('quoteText').textContent = _currentQuote.q;
+  document.getElementById('quoteAuthor').textContent = _currentQuote.a;
+  updateQuoteFavBtn();
+  const overlay = document.getElementById('quoteOverlay');
+  const card = document.getElementById('quoteCard');
+  card.style.transform=''; card.style.opacity='';
+  overlay.classList.add('show');
+}
+function updateQuoteFavBtn(){
+  const btn = document.getElementById('quoteFavBtn'); if(!btn || !_currentQuote) return;
+  const isFaved = (S.user.favoriteQuotes||[]).some(f=>f.q===_currentQuote.q);
+  btn.textContent = isFaved ? '❤️ Favorited' : '🤍 Favorite';
+  btn.classList.toggle('faved', isFaved);
+}
+function toggleFavoriteQuote(){
+  if(!_currentQuote) return;
+  if(!S.user.favoriteQuotes) S.user.favoriteQuotes=[];
+  const idx = S.user.favoriteQuotes.findIndex(f=>f.q===_currentQuote.q);
+  if(idx>=0) S.user.favoriteQuotes.splice(idx,1);
+  else S.user.favoriteQuotes.push({q:_currentQuote.q,a:_currentQuote.a});
+  save();
+  updateQuoteFavBtn();
+  renderFavoriteQuotes();
+}
+function dismissQuote(){
+  document.getElementById('quoteOverlay').classList.remove('show');
+}
+function initQuoteSwipe(){
+  const card = document.getElementById('quoteCard');
+  const overlay = document.getElementById('quoteOverlay');
+  if(!card || !overlay) return;
+  let dragging=false, startX=0, startY=0;
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) dismissQuote(); });
+  card.addEventListener('pointerdown', e=>{
+    dragging=true; startX=e.clientX; startY=e.clientY;
+    card.classList.add('dragging');
+    try{ card.setPointerCapture(e.pointerId); }catch(err){}
+  });
+  card.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    const dx=e.clientX-startX, dy=e.clientY-startY;
+    card.style.transform = `translate(${dx}px,${dy}px) rotate(${dx*0.03}deg)`;
+  });
+  const endDrag = e=>{
+    if(!dragging) return;
+    dragging=false; card.classList.remove('dragging');
+    const dx=e.clientX-startX, dy=e.clientY-startY;
+    const dist = Math.hypot(dx,dy);
+    if(dist > 90){
+      card.style.transition='transform .3s ease, opacity .3s ease';
+      card.style.transform = `translate(${dx*2.5}px,${dy*2.5}px) rotate(${dx*0.06}deg)`;
+      card.style.opacity='0';
+      setTimeout(()=>{ dismissQuote(); card.style.transition=''; }, 280);
+    } else {
+      card.style.transform='';
+    }
+  };
+  card.addEventListener('pointerup', endDrag);
+  card.addEventListener('pointercancel', endDrag);
+}
 let _weightRange=30;
+
 function weightEntries(){return Object.entries(S.weight.logs).map(([d,v])=>({date:d,val:v})).sort((a,b)=>a.date.localeCompare(b.date));}
 function renderWeight(){
   const unit='lbs',goal=S.weight.goal,all=weightEntries();
@@ -1049,6 +1243,18 @@ function renderWeight(){
   </div>`;
   html+=`<div class="weight-entry-card"><div class="weight-entry-label">${loggedToday?'✓ Logged today — update':'Log today\'s weight'}</div><div class="weight-entry-row"><input class="weight-input-big" id="wInput" type="number" step="0.1" min="0" placeholder="${latest!=null?latest.toFixed(1):'0.0'}" value="${loggedToday?(S.weight.logs[tk]).toFixed(1):''}" onkeydown="if(event.key==='Enter')logWeight()"><button class="weight-log-btn" onclick="logWeight()">${loggedToday?'Update':'Log'}</button></div></div>`;
   html+=`<div class="weight-settings-card"><div class="weight-settings-title">⚙️ Goal Weight</div><div class="weight-entry-row"><input class="weight-input-big" id="wGoalInput" type="number" step="0.1" min="0" placeholder="e.g. 180" value="${goal!=null?goal.toFixed(1):''}" onkeydown="if(event.key==='Enter')saveWeightGoal()" style="font-size:18px;padding:10px"><button class="weight-log-btn" onclick="saveWeightGoal()">Set</button></div></div>`;
+  const ex = S.exercise || {};
+  html+=`<div class="weight-settings-card"><div class="weight-settings-title">💪 Strength PRs</div>
+    <div class="pr-grid">
+      <div class="pr-row"><label>Dumbbell Press (reps @ 20lb)</label><input class="pr-input" id="prDumbbell" type="number" min="0" value="${ex.dumbbellPress||''}"></div>
+      <div class="pr-row"><label>Incline Push-ups (30°, reps)</label><input class="pr-input" id="prIncline" type="number" min="0" value="${ex.inclinePushups||''}"></div>
+      <div class="pr-row"><label>Ground Push-ups (reps)</label><input class="pr-input" id="prGround" type="number" min="0" value="${ex.groundPushups||''}"></div>
+      <div class="pr-row"><label>Dead Hang (seconds)</label><input class="pr-input" id="prHang" type="number" min="0" value="${ex.deadHangSec||''}"></div>
+      <div class="pr-row"><label>Plank (seconds)</label><input class="pr-input" id="prPlank" type="number" min="0" value="${ex.plankSec||''}"></div>
+      <div class="pr-row"><label>Jump Rope (seconds)</label><input class="pr-input" id="prJumprope" type="number" min="0" value="${ex.jumpRopeSec||''}"></div>
+    </div>
+    <button class="weight-log-btn" style="width:100%;margin-top:10px" onclick="saveExercisePRs()">Update PRs</button>
+  </div>`;
   if(all.length>=2){
     const rangeData=all.slice(-_weightRange),vals=rangeData.map(e=>e.val),minV=Math.min(...vals),maxV=Math.max(...vals);
     const pad=Math.max((maxV-minV)*.25,1.5),lo=minV-pad,hi=maxV+pad,W=300,H=110;
@@ -1226,7 +1432,22 @@ function renderRewards(){
     {key:'hanger_level5',                               icon:'💎', title:'Level 5 (800 XP)',    val:curLv,     max:5,  desc:`Level ${curLv}/5`, cadence:'One-Time'},
     {key:'wt_hanger_10',                                icon:'💪', title:'10 lbs Lost',         val:wLost,     max:10, desc:`${wLost.toFixed(1)}/10 lbs lost`, cadence:'One-Time'},
   ];
-  html+=`<div class="rewards-section-label">🎁 Hanger Box Milestones</div><div class="milestone-grid">`;
+  const secretKeys = ['secret_dumbbell20','secret_incline20','secret_ground15','secret_hang60','secret_plank120','secret_jumprope120'];
+  const secretReasons = {
+    secret_dumbbell20:  '20 reps @ 20lb dumbbell press! 💪',
+    secret_incline20:   '20 incline push-ups! 💪',
+    secret_ground15:    '15 ground push-ups! 💪',
+    secret_hang60:       '1-minute dead hang! 💪',
+    secret_plank120:     '2-minute plank! 💪',
+    secret_jumprope120:  '2-minute jump rope! 💪',
+  };
+  html+=`<div class="rewards-section-label">🔒 Secret Achievements</div><div class="milestone-grid">`;
+  html+=secretKeys.map(key=>{
+    const e=!!m[key];
+    if(e){return`<div class="milestone-card earned"><div class="milestone-icon">💪</div><div class="milestone-title">Secret Found!</div><div class="milestone-desc">${secretReasons[key]}</div><div class="milestone-earned-tag">✓ Pack Earned</div></div>`;}
+    return `<div class="milestone-card secret-locked"><div class="milestone-icon">🔒</div><div class="milestone-title">???</div><div class="milestone-desc">Hidden challenge — keep training to find out</div></div>`;
+  }).join('');
+  html+=`</div><div class="rewards-section-label">🎁 Hanger Box Milestones</div><div class="milestone-grid">`;
   html+=hangers.map(h=>{const e=!!m[h.key];return`<div class="milestone-card ${e?'earned':''}"><div class="milestone-icon">${h.icon}</div><div class="milestone-title">${h.title} <span class="milestone-cadence">${h.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':h.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(h.val/h.max*100,100)}%"></div></div>${e?'<div class="milestone-earned-tag">✓ Hanger Box Earned</div>':''}</div>`;}).join('');
   html+=`</div><div class="rewards-section-label">🏆 Blaster Box Milestones</div><div class="milestone-grid">`;
   const blasters=[
@@ -1398,6 +1619,30 @@ function checkWeightMilestones(){
 }
 
 function logWeight(){const v=parseFloat(document.getElementById('wInput')?.value);if(!v||v<=0)return;const tk=todayKey();S.weight.logs[tk]=+v.toFixed(1);if(!S.weight.startDate){S.weight.startDate=tk;S.weight.startWeight=+v.toFixed(1);}save();checkWeightMilestones();renderWeight();toast(`⚖️ ${v.toFixed(1)} lbs logged!`);confetti(12);}
+function saveExercisePRs(){
+  if(!S.exercise) S.exercise={dumbbellPress:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
+  const g=id=>Math.max(0,parseFloat(document.getElementById(id)?.value)||0);
+  S.exercise.dumbbellPress   = g('prDumbbell');
+  S.exercise.inclinePushups  = g('prIncline');
+  S.exercise.groundPushups   = g('prGround');
+  S.exercise.deadHangSec     = g('prHang');
+  S.exercise.plankSec        = g('prPlank');
+  S.exercise.jumpRopeSec     = g('prJumprope');
+  save();
+  checkExerciseMilestones();
+  renderWeight();
+  toast('💪 PRs updated!');
+}
+function checkExerciseMilestones(){
+  const m=S.user.milestones, e=S.exercise||{};
+  function awPackSecret(key,reason){if(m[key])return;m[key]=true;S.user.packsBank=(S.user.packsBank||0)+1;S.user.packHistory.unshift({date:todayKey(),count:1,type:'pack',reason});save();setTimeout(()=>{toast(`🔓 Secret unlocked — ${reason}`);confetti(70);},600);}
+  if(e.dumbbellPress  >= 20)  awPackSecret('secret_dumbbell20', '20 reps @ 20lb dumbbell press! 💪');
+  if(e.inclinePushups >= 20)  awPackSecret('secret_incline20',  '20 incline push-ups! 💪');
+  if(e.groundPushups  >= 15)  awPackSecret('secret_ground15',   '15 ground push-ups! 💪');
+  if(e.deadHangSec    >= 60)  awPackSecret('secret_hang60',     '1-minute dead hang! 💪');
+  if(e.plankSec        >= 120) awPackSecret('secret_plank120',   '2-minute plank! 💪');
+  if(e.jumpRopeSec     >= 120) awPackSecret('secret_jumprope120','2-minute jump rope! 💪');
+}
 function saveWeightGoal(){const v=parseFloat(document.getElementById('wGoalInput')?.value);if(!v||v<=0)return;S.weight.goal=+v.toFixed(1);save();renderWeight();toast(`🎯 Goal set: ${v.toFixed(1)} lbs`);}
 function setWeightRange(n){_weightRange=n;renderWeight();}
 function toggleSideQuest(id){
@@ -1561,7 +1806,7 @@ function checkBackupReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-18.1543';
+const APP_VERSION = '2026-08-18.1735';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
@@ -1571,6 +1816,8 @@ localStorage.setItem('gh_lastVersion', APP_VERSION);
 if(S._demoSeeded || S._redeemPreview){ S=blankState(); save(); }
 renderAll();
 checkBackupReminder();
+initQuoteSwipe();
+setTimeout(()=>maybeShowDailyQuote(),500);
 setTimeout(()=>checkWeeklyPacksAndMilestones(),100);
 
 // Re-render when app comes back into focus (date may have changed)
