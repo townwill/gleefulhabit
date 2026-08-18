@@ -300,6 +300,7 @@
   .rewards-section-label { font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-muted); margin:18px 0 10px; display:flex; align-items:center; gap:8px; }
   .rewards-section-label::after { content:''; flex:1; height:1px; background:var(--border); }
   .milestone-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:4px; }
+  .milestone-grid.full-width { grid-template-columns:1fr; }
   .milestone-card { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:15px 13px; backdrop-filter:blur(20px); transition:all .3s; }
   .milestone-card.earned { border-color:var(--orange); background:rgba(255,149,68,.06); }
   .milestone-card.blaster.earned { border-color:var(--rose); background:rgba(255,107,138,.06); }
@@ -651,7 +652,7 @@ const COLORS = [
   {id:'teal',  hex:'#00ffcc',rgb:'0,255,204'  },{id:'yellow',hex:'#ffe55c',rgb:'255,229,92' },
 ];
 const LEVELS = ['Newborn','Rookie','Rising','Focused','Consistent','Strong','Driven','Dialed','Locked In','Elite','Unstoppable','Champion','Relentless','Forged','Legendary','Mythic','Ascended','Transcendent','Infinite','Eternal','Gleeful'];
-const XP_PER_LEVEL = 150;
+const XP_PER_LEVEL = 500;
 
 function levelInfo(xp){
   const lv=Math.min(Math.floor(xp/XP_PER_LEVEL),20);
@@ -692,7 +693,7 @@ function blankState() {
     xpAwarded:{},
     weight:{logs:{},unit:'lbs',goal:null,startWeight:null,startDate:null},
     user:{xp:0,badges:[],totalDone:0,numericHits:0,sideQuestCount:0,
-      packsBank:0,hangersBank:0,blastersBank:0,
+      packsBank:0,hangersBank:0,blastersBank:0,megaBank:0,hobbyBank:0,superBank:0,mythicBank:0,
       packHistory:[],weeklyPacksAwarded:{},weeklyPackFlags:{},
       consecutivePackWeeks:0,lastPackWeek:null,milestones:{},
       perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null},
@@ -724,6 +725,7 @@ let S = (() => {
     if (raw.user.megaBank==null)       raw.user.megaBank=0;
     if (raw.user.hobbyBank==null)      raw.user.hobbyBank=0;
     if (raw.user.superBank==null)      raw.user.superBank=0;
+    if (raw.user.mythicBank==null)     raw.user.mythicBank=0;
     if (!raw.user.packHistory)         raw.user.packHistory=[];
     if (!raw.user.weeklyPacksAwarded)  raw.user.weeklyPacksAwarded={};
     if (!raw.user.weeklyPackFlags)     raw.user.weeklyPackFlags={};
@@ -919,20 +921,13 @@ function checkBlasterMilestones(){
     }
   }
 
-  // Level 10 — one-time
-  // Level milestones
+  // Level milestones — the sole gate per tier now (time-tracked duplicates removed)
   if(levelInfo(S.user.xp).lv>=10) awBlaster('blaster_level10','Reached Level 10! 🌟');
-  if(levelInfo(S.user.xp).lv>=15) awMega('mega_level15','Reached Level 15! ⚡');
-  if(levelInfo(S.user.xp).lv>=20) awSuper('super_level20','Reached Level 20! 🏆');
-  if(S.user.xp>=4500)             awHobby('hobby_level30','Secret Level 30 unlocked! 🗃️');
-  if(S.user.sideQuestCount>=365)    awHobby('hobby_365quests','365 Side Quests — legendary! 🌟');
-
-  // 3 months of tracking
-  const fd=Object.keys(S.logs).sort()[0];
-  const monthsTracked = fd?(new Date()-new Date(fd))/(1000*60*60*24*30.44):0;
-  if (monthsTracked >= 3)  awBlaster('blaster_3months','3 months of tracking! 🎯');
-  if (monthsTracked >= 6)  awMega('mega_6months','6 months of tracking! 🦋');
-  if (monthsTracked >= 12) awHobby('hobby_1year','1 full year of tracking! 🏆');
+  if(S.user.sideQuestCount>=100)  awBlaster('blaster_100quests','100 Side Quests total! 🎯');
+  if(levelInfo(S.user.xp).lv>=20) awMega('mega_level20','Reached Level 20! ⚡');
+  if(levelInfo(S.user.xp).lv>=15) awSuper('super_level15','Reached Level 15! 🏆');
+  if(S.user.xp>=15000)            awHobby('hobby_level30','Secret Level 30 unlocked! 🗃️');
+  if(S.user.sideQuestCount>=365)  awHobby('hobby_365quests','365 Side Quests — legendary! 🌟');
 }
 
 function renderAll(){renderHeader();renderXP();renderToday();renderManage();}
@@ -975,7 +970,7 @@ function taperNoteFor(h){
   const week=Math.max(0,Math.floor(daysSince/7));
   const idx=Math.min(week,h.taperSchedule.length-1);
   const g=h.taperSchedule[idx];
-  return g>0 ? `Taper: under ${g}g sugar this week` : `Taper: 0g sugar — target reached!`;
+  return g>0 ? `Taper: under ${g}g sugar per day` : `Taper: 0g sugar per day — target reached!`;
 }
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function habitCardHTML(h){
@@ -1168,8 +1163,8 @@ function renderRewards(){
   const halfAPerfect=isHalfPerfect(halfADays), halfBPerfect=isHalfPerfect(halfBDays);
   const todayDow=new Date().getDay(); // 0=Sun,1=Mon...6=Sat
   const inHalfA=todayDow>=1&&todayDow<=3, inHalfB=todayDow>=4&&todayDow<=6, isSundayNow=todayDow===0;
-  const bank={p:S.user.packsBank||0,h:S.user.hangersBank||0,b:S.user.blastersBank||0,m:S.user.megaBank||0,hb:S.user.hobbyBank||0,sb:S.user.superBank||0};
-  const totalBanked=bank.p+bank.h+bank.b+bank.m+bank.hb+bank.sb;
+  const bank={p:S.user.packsBank||0,h:S.user.hangersBank||0,b:S.user.blastersBank||0,m:S.user.megaBank||0,hb:S.user.hobbyBank||0,sb:S.user.superBank||0,myt:S.user.mythicBank||0};
+  const totalBanked=bank.p+bank.h+bank.b+bank.m+bank.hb+bank.sb+bank.myt;
   const curLv=levelInfo(S.user.xp).lv;
   const bestSt=S.habits.length?Math.max(...S.habits.map(h=>currentStreak(h.id))):0;
   const consWeeks=S.user.consecutivePackWeeks||0;
@@ -1189,7 +1184,6 @@ function renderRewards(){
     else if(!clinched && paceDiff>=0){paceNote=`On track (+${paceDiff})`;paceClass='pace-good';}
     // if clinched, paceNote stays null — already guaranteed, not shown so it doesn't invite easing off
   }
-  const fd=Object.keys(S.logs).sort()[0],mt=fd?(new Date()-new Date(fd))/(1000*60*60*24*30.44):0;
   // Weight vars used across all milestone sections
   const wAll=weightEntries();
   const wStart=wAll.length?wAll[0].val:null;
@@ -1209,6 +1203,8 @@ function renderRewards(){
     <div class="vault-item" style="flex:1"><div class="vault-num" style="color:var(--yellow)">${bank.hb}</div><div class="vault-lbl">Hobby</div></div>
     <div class="vault-divider"></div>
     <div class="vault-item" style="flex:1"><div class="vault-num" style="color:var(--lime)">${bank.sb}</div><div class="vault-lbl">Super</div></div>
+    <div class="vault-divider"></div>
+    <div class="vault-item" style="flex:1"><div class="vault-num" style="color:var(--rose)">${bank.myt}</div><div class="vault-lbl">Mythic</div></div>
   </div>
   <div class="vault-redeem-list">
     ${bank.p  > 0 ? `<button class="vault-redeem-btn" onclick="redeemType('packs')">Redeem ${bank.p} Pack${bank.p>1?'s':''} 🛒</button>` : ''}
@@ -1217,6 +1213,7 @@ function renderRewards(){
     ${bank.m  > 0 ? `<button class="vault-redeem-btn" style="background:linear-gradient(135deg,var(--teal),var(--cyan))" onclick="redeemType('mega')">Redeem ${bank.m} Mega Box${bank.m>1?'es':''} 🛒</button>` : ''}
     ${bank.hb > 0 ? `<button class="vault-redeem-btn" style="background:linear-gradient(135deg,var(--yellow),var(--orange))" onclick="redeemType('hobby')">Redeem ${bank.hb} Hobby Box${bank.hb>1?'es':''} 🛒</button>` : ''}
     ${bank.sb > 0 ? `<button class="vault-redeem-btn" style="background:linear-gradient(135deg,var(--lime),var(--cyan))" onclick="redeemType('super')">Redeem ${bank.sb} Super Box${bank.sb>1?'es':''} 🛒</button>` : ''}
+    ${bank.myt> 0 ? `<button class="vault-redeem-btn" style="background:linear-gradient(135deg,var(--rose),var(--purple))" onclick="redeemType('mythic')">Redeem ${bank.myt} Mythic Box${bank.myt>1?'es':''} 🛒</button>` : ''}
     ${totalBanked === 0 ? `<button class="vault-redeem-btn" disabled>Nothing to redeem yet</button>` : ''}
   </div>
   <div class="vault-footer">Banked rewards never expire · Redeem when ready</div></div>`;
@@ -1227,7 +1224,7 @@ function renderRewards(){
     {key:`hanger_perfectweeks_w${Math.floor((S.user.perfectWeekStreak||0)/2)}`, icon:'🏅', title:'2 Perfect Weeks in a Row', val:(S.user.perfectWeekStreak||0)%2, max:2, desc:`${S.user.perfectWeekStreak||0}-week streak · ${S.user.perfectWeekBoxesEarned||0} earned total`, cadence:'Recurring'},
     {key:`hanger_sidequest20_${wk}`,                      icon:'⭐', title:'20 Side Quests / Week', val:wkSct,     max:20, desc:`${wkSct}/20 side quests this week`, cadence:'Weekly'},
     {key:'hanger_level5',                               icon:'💎', title:'Level 5 (800 XP)',    val:curLv,     max:5,  desc:`Level ${curLv}/5`, cadence:'One-Time'},
-    {key:'wt_15lbs',                                    icon:'💪', title:'15 lbs Lost',         val:wLost,     max:15, desc:`${wLost.toFixed(1)}/15 lbs lost`, cadence:'One-Time'},
+    {key:'wt_hanger_10',                                icon:'💪', title:'10 lbs Lost',         val:wLost,     max:10, desc:`${wLost.toFixed(1)}/10 lbs lost`, cadence:'One-Time'},
   ];
   html+=`<div class="rewards-section-label">🎁 Hanger Box Milestones</div><div class="milestone-grid">`;
   html+=hangers.map(h=>{const e=!!m[h.key];return`<div class="milestone-card ${e?'earned':''}"><div class="milestone-icon">${h.icon}</div><div class="milestone-title">${h.title} <span class="milestone-cadence">${h.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':h.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(h.val/h.max*100,100)}%"></div></div>${e?'<div class="milestone-earned-tag">✓ Hanger Box Earned</div>':''}</div>`;}).join('');
@@ -1235,36 +1232,43 @@ function renderRewards(){
   const blasters=[
     {key:'blaster_month_'+mk, icon:'📅', title:'80% Habit Completion',  val:monthPct,   max:80, desc:`${monthPct}%/80% completion this month`, paceNote, paceClass, cadence:'Monthly'},
     {key:'blaster_level10',   icon:'🌟', title:'Level 10',        val:curLv, max:10, desc:`Level ${curLv}/10`, cadence:'One-Time'},
-    {key:'blaster_3months',   icon:'🎯', title:'3 Months',        val:mt,    max:3,  desc:`${Math.floor(mt)}/3 months tracked`, cadence:'One-Time'},
-    {key:'wt_20lbs',          icon:'🔥', title:'20 lbs Lost',     val:wLost, max:20, desc:`${wLost.toFixed(1)}/20 lbs lost`, cadence:'One-Time'},
+    {key:'blaster_100quests', icon:'🎯', title:'100 Side Quests', val:S.user.sideQuestCount, max:100, desc:`${S.user.sideQuestCount}/100 total side quests`, cadence:'One-Time'},
+    {key:'wt_blaster_15',     icon:'🔥', title:'15 lbs Lost',     val:wLost, max:15, desc:`${wLost.toFixed(1)}/15 lbs lost`, cadence:'One-Time'},
   ];
   html+=blasters.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title} <span class="milestone-cadence">${b.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%"></div></div>${!e&&b.paceNote?`<div class="milestone-pace ${b.paceClass}">${b.paceNote}</div>`:''}${e?'<div class="milestone-earned-tag">✓ Blaster Box Earned</div>':''}</div>`;}).join('');
   html+=`</div><div class="rewards-section-label">💎 Mega Box Milestones</div><div class="milestone-grid">`;
   const megas=[
-    {key:'mega_6months', icon:'🦋', title:'6 Months',     val:mt,    max:6,  desc:`${Math.floor(mt)}/6 months tracked`, cadence:'One-Time'},
-    {key:'mega_level15', icon:'⚡', title:'Level 15',     val:curLv, max:15, desc:`Level ${curLv}/15`, cadence:'One-Time'},
-    {key:'wt_25lbs',     icon:'⚡', title:'25 lbs Lost',  val:wLost, max:25, desc:`${wLost.toFixed(1)}/25 lbs lost`, cadence:'One-Time'},
+    {key:'mega_level20', icon:'⚡', title:'Level 20',     val:curLv, max:20, desc:`Level ${curLv}/20`, cadence:'One-Time'},
+    {key:'wt_mega_25',   icon:'⚡', title:'25 lbs Lost',  val:wLost, max:25, desc:`${wLost.toFixed(1)}/25 lbs lost`, cadence:'One-Time'},
   ];
   html+=megas.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title} <span class="milestone-cadence">${b.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%;background:linear-gradient(90deg,var(--teal),var(--cyan))"></div></div>${e?'<div class="milestone-earned-tag" style="background:rgba(0,255,204,.12);color:var(--teal)">✓ Mega Box Earned</div>':''}</div>`;}).join('');
   html+=`</div><div class="rewards-section-label">🌟 Super Box Milestones</div><div class="milestone-grid">`;
-  const wGoalRange2=wGoal!=null&&wStart!=null?Math.max(1,wStart-wGoal):1;
   const supers=[
-    {key:'wt_goal',      icon:'🏆', title:'Goal Weight Hit', val:wLost, max:wGoalRange2, desc:wGoal!=null?`${wLost.toFixed(1)} lbs lost of ${wGoalRange2.toFixed(1)} needed`:'Set a goal weight first', cadence:'One-Time'},
-    {key:'super_level20',icon:'🏆', title:'Level 20 — Gleeful', val:curLv, max:20, desc:`Level ${curLv}/20`, cadence:'One-Time'},
+    {key:'wt_super_20',  icon:'🏆', title:'20 lbs Lost',  val:wLost, max:20, desc:`${wLost.toFixed(1)}/20 lbs lost`, cadence:'One-Time'},
+    {key:'super_level15',icon:'🏆', title:'Level 15', val:curLv, max:15, desc:`Level ${curLv}/15`, cadence:'One-Time'},
   ];
   html+=supers.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title} <span class="milestone-cadence">${b.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%;background:linear-gradient(90deg,var(--lime),var(--cyan))"></div></div>${e?'<div class="milestone-earned-tag" style="background:rgba(168,255,62,.12);color:var(--lime)">✓ Super Box Earned</div>':''}</div>`;}).join('');
   html+=`</div><div class="rewards-section-label">🗃️ Hobby Box Milestones</div><div class="milestone-grid">`;
   const hobbies=[
-    {key:'hobby_1year',    icon:'🏆', title:'1 Full Year',          val:mt,                  max:12,  desc:`${Math.floor(mt)}/12 months tracked`, cadence:'One-Time'},
-    {key:'hobby_level30',  icon:'🗃️', title:'Secret Level 30',      val:S.user.xp,           max:4500,desc:`${S.user.xp}/4500 XP · 🤫 secret`, cadence:'One-Time'},
+    {key:'hobby_level30',  icon:'🗃️', title:'Secret Level 30',      val:S.user.xp,           max:15000,desc:`${S.user.xp}/15000 XP · 🤫 secret`, cadence:'One-Time'},
     {key:'hobby_365quests',icon:'🌟', title:'365 Side Quests',      val:S.user.sideQuestCount, max:365, desc:`${S.user.sideQuestCount}/365 · 🤫 secret`, cadence:'One-Time'},
   ];
   html+=hobbies.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title} <span class="milestone-cadence">${b.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%;background:linear-gradient(90deg,var(--yellow),var(--orange))"></div></div>${e?'<div class="milestone-earned-tag" style="background:rgba(255,229,92,.12);color:var(--yellow)">✓ Hobby Box Earned</div>':''}</div>`;}).join('');
+  html+=`</div><div class="rewards-section-label">🏵️ Mythic Box Milestones</div><div class="milestone-grid full-width">`;
+  const wGoalRange2=wGoal!=null&&wStart!=null?Math.max(1,wStart-wGoal):1;
+  const mythics=[
+    {key:'wt_mythic_goal', icon:'🏵️', title:'Goal Weight — Celebrini Young Guns', val:wLost, max:wGoalRange2, desc:wGoal!=null?`${wLost.toFixed(1)} lbs lost of ${wGoalRange2.toFixed(1)} needed`:'Set a goal weight first', cadence:'One-Time'},
+  ];
+  html+=mythics.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title} <span class="milestone-cadence">${b.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%;background:linear-gradient(90deg,var(--rose),var(--purple))"></div></div>${e?'<div class="milestone-earned-tag" style="background:rgba(255,107,138,.12);color:var(--rose)">✓ Mythic Box Earned</div>':''}</div>`;}).join('');
   html+=`</div><div class="rewards-section-label">🏅 Badges</div><div class="badges-grid">`;
   html+=BADGES.map(b=>{const e=S.user.badges.includes(b.id);return`<div class="badge-item ${e?'earned':''}" title="${b.d}"><span class="badge-emoji">${b.e}</span><div class="badge-name">${b.n}</div></div>`;}).join('');
   html+=`</div>`;
   const hist=(S.user.packHistory||[]).slice(0,25);
-  if(hist.length){html+=`<div class="rewards-section-label">📋 Pack History</div><div class="history-list">`;html+=hist.map(h=>{const icon=h.type==='blaster'?'🏆':h.type==='hanger'?'🎁':'📦',lbl=h.type==='blaster'?'Blaster Box':h.type==='hanger'?'Hanger Box':h.count===1?'1 Pack':`${h.count} Packs`;return`<div class="history-item ${h.redeemed?'redeemed':''}"><div class="history-icon">${icon}</div><div class="history-info"><div class="history-reason">${h.reason}</div><div class="history-date">${h.date}${h.redeemed?' · Redeemed':''}</div></div><div class="history-count">${h.redeemed?'✓':'+'+lbl}</div></div>`;}).join('');html+=`</div>`;}
+  if(hist.length){html+=`<div class="rewards-section-label">📋 Pack History</div><div class="history-list">`;html+=hist.map(h=>{
+    const meta={blaster:['🏆','Blaster Box'],hanger:['🎁','Hanger Box'],mega:['💎','Mega Box'],hobby:['🗃️','Hobby Box'],super:['🌟','Super Box'],mythic:['🏵️','Mythic Box']}[h.type];
+    const icon=meta?meta[0]:'📦', lbl=meta?meta[1]:(h.count===1?'1 Pack':`${h.count} Packs`);
+    return`<div class="history-item ${h.redeemed?'redeemed':''}"><div class="history-icon">${icon}</div><div class="history-info"><div class="history-reason">${h.reason}</div><div class="history-date">${h.date}${h.redeemed?' · Redeemed':''}</div></div><div class="history-count">${h.redeemed?'✓':'+'+lbl}</div></div>`;
+  }).join('');html+=`</div>`;}
   document.getElementById('rewardsContent').innerHTML=html;
 }
 
@@ -1352,8 +1356,8 @@ function checkNumTarget(id,prev,next){
     const tk=todayKey(),awardKey=tk+'_num_'+id;
     if(!S.xpAwarded[awardKey]){
       S.xpAwarded[awardKey]=true;
-      S.user.totalDone++;S.user.numericHits++;addXP(15);
-      confetti(22);toast(`🎯 Target hit! +15 XP`);checkBadges();checkWeeklyPacksAndMilestones();
+      S.user.totalDone++;S.user.numericHits++;addXP(10);
+      confetti(22);toast(`🎯 Target hit! +10 XP`);checkBadges();checkWeeklyPacksAndMilestones();
     } else {
       // Target already hit today (e.g. after a reset) — no repeat XP, just a lighter nudge
       confetti(10);toast(`🎯 Target hit again!`);
@@ -1375,20 +1379,22 @@ function checkWeightMilestones(){
   function awBlaster(key,reason){ if(m[key])return; m[key]=true; S.user.blastersBank=(S.user.blastersBank||0)+1; S.user.packHistory.unshift({date:todayKey(),count:1,type:'blaster',reason}); save(); setTimeout(()=>{toast(`🏆 Blaster Box earned — ${reason}`);confetti(120);},1000); }
   function awMega(key,reason){ if(m[key])return; m[key]=true; S.user.megaBank=(S.user.megaBank||0)+1; S.user.packHistory.unshift({date:todayKey(),count:1,type:'mega',reason}); save(); setTimeout(()=>{toast(`💎 Mega Box earned — ${reason}`);confetti(160);},1200); }
   function awSuper(key,reason){ if(m[key])return; m[key]=true; S.user.superBank=(S.user.superBank||0)+1; S.user.packHistory.unshift({date:todayKey(),count:1,type:'super',reason}); save(); setTimeout(()=>{toast(`🌟 SUPER BOX earned — ${reason}`);confetti(250);},1400); }
+  function awMythic(key,reason){ if(m[key])return; m[key]=true; S.user.mythicBank=(S.user.mythicBank||0)+1; S.user.packHistory.unshift({date:todayKey(),count:1,type:'mythic',reason}); save(); setTimeout(()=>{toast(`🏵️ MYTHIC BOX earned — ${reason}`);confetti(300);},1600); }
 
   // Any loss at all (needs 2+ entries)
   if (all.length >= 2 && lost > 0) awBadge('first_drop');
 
-  // Pound milestones (needs 2+ entries)
+  // Pound milestones — even 5lb ladder, ending exactly at goal (Mythic)
   if (all.length >= 2) {
-    if (lost >= 5)  { awBadge('five_lbs');    awPack('wt_5lbs',    '5 lbs lost! 🏃'); }
-    if (lost >= 15) { awBadge('fifteen_lbs'); awHanger('wt_15lbs', '15 lbs lost! 💪'); }
-    if (lost >= 20) { awBadge('twenty_lbs');  awBlaster('wt_20lbs','20 lbs lost! 🔥'); }
-    if (lost >= 25) {                          awMega('wt_25lbs',   '25 lbs lost! ⚡'); }
+    if (lost >= 5)  { awBadge('five_lbs');    awPack('wt_5lbs',        '5 lbs lost! 🏃'); }
+    if (lost >= 10) { awBadge('fifteen_lbs'); awHanger('wt_hanger_10', '10 lbs lost! 💪'); }
+    if (lost >= 15) { awBadge('twenty_lbs');  awBlaster('wt_blaster_15','15 lbs lost! 🔥'); }
+    if (lost >= 20) {                          awSuper('wt_super_20',  '20 lbs lost! 🏆'); }
+    if (lost >= 25) {                          awMega('wt_mega_25',    '25 lbs lost! ⚡'); }
   }
 
-  // Goal weight — only needs current weight and goal, not a delta
-  if (goal != null && current <= goal) awSuper('wt_goal', 'Goal weight reached! 🏆');
+  // Goal weight — the big one. Sole trigger for Mythic.
+  if (goal != null && current <= goal) awMythic('wt_mythic_goal', 'Goal weight reached! 🏵️');
 }
 
 function logWeight(){const v=parseFloat(document.getElementById('wInput')?.value);if(!v||v<=0)return;const tk=todayKey();S.weight.logs[tk]=+v.toFixed(1);if(!S.weight.startDate){S.weight.startDate=tk;S.weight.startWeight=+v.toFixed(1);}save();checkWeightMilestones();renderWeight();toast(`⚖️ ${v.toFixed(1)} lbs logged!`);confetti(12);}
@@ -1404,8 +1410,8 @@ function toggleSideQuest(id){
   save();renderToday();renderManage();renderXP();renderStats();renderRewards();
 }
 function redeemType(type){
-  const labels={packs:'pack',hangers:'hanger box',blasters:'blaster box',mega:'mega box',hobby:'hobby box',super:'super box'};
-  const bankKey={packs:'packsBank',hangers:'hangersBank',blasters:'blastersBank',mega:'megaBank',hobby:'hobbyBank',super:'superBank'};
+  const labels={packs:'pack',hangers:'hanger box',blasters:'blaster box',mega:'mega box',hobby:'hobby box',super:'super box',mythic:'mythic box'};
+  const bankKey={packs:'packsBank',hangers:'hangersBank',blasters:'blastersBank',mega:'megaBank',hobby:'hobbyBank',super:'superBank',mythic:'mythicBank'};
   const key=bankKey[type]; if(!key||!S.user[key])return;
   const count=S.user[key];
   const label=`${count} ${labels[type]}${count>1?'es':''}`;
@@ -1416,7 +1422,7 @@ function redeemType(type){
 }
 
 function redeemAll(){
-  const total=(S.user.packsBank||0)+(S.user.hangersBank||0)+(S.user.blastersBank||0)+(S.user.megaBank||0)+(S.user.hobbyBank||0)+(S.user.superBank||0);
+  const total=(S.user.packsBank||0)+(S.user.hangersBank||0)+(S.user.blastersBank||0)+(S.user.megaBank||0)+(S.user.hobbyBank||0)+(S.user.superBank||0)+(S.user.mythicBank||0);
   if(total===0)return;
   const msg=[];
   if(S.user.packsBank>0)    msg.push(`${S.user.packsBank} pack${S.user.packsBank>1?'s':''}`);
@@ -1425,8 +1431,9 @@ function redeemAll(){
   if(S.user.megaBank>0)     msg.push(`${S.user.megaBank} mega box${S.user.megaBank>1?'es':''}`);
   if(S.user.hobbyBank>0)    msg.push(`${S.user.hobbyBank} hobby box${S.user.hobbyBank>1?'es':''}`);
   if(S.user.superBank>0)    msg.push(`${S.user.superBank} super box${S.user.superBank>1?'es':''}`);
+  if(S.user.mythicBank>0)   msg.push(`${S.user.mythicBank} mythic box${S.user.mythicBank>1?'es':''}`);
   (S.user.packHistory||[]).forEach(h=>h.redeemed=true);
-  S.user.packsBank=0;S.user.hangersBank=0;S.user.blastersBank=0;S.user.megaBank=0;S.user.hobbyBank=0;S.user.superBank=0;
+  S.user.packsBank=0;S.user.hangersBank=0;S.user.blastersBank=0;S.user.megaBank=0;S.user.hobbyBank=0;S.user.superBank=0;S.user.mythicBank=0;
   save();renderRewards();toast(`✓ Redeemed: ${msg.join(', ')}! Go grab them 🛒`);confetti(55);
 }
 async function exportData(){
@@ -1554,7 +1561,7 @@ function checkBackupReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-17.2202';
+const APP_VERSION = '2026-08-18.1543';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
