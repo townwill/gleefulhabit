@@ -808,7 +808,7 @@ function blankState() {
       packsBank:0,hangersBank:0,blastersBank:0,megaBank:0,hobbyBank:0,superBank:0,mythicBank:0,
       packHistory:[],weeklyPacksAwarded:{},weeklyPackFlags:{},
       consecutivePackWeeks:0,lastPackWeek:null,milestones:{},
-      perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null,favoriteQuotes:[],lastQuotePeriod:null},
+      perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null,favoriteQuotes:[],lastQuotePeriod:null,lastQuoteData:null},
   };
 }
 
@@ -844,6 +844,7 @@ function migrateState(raw) {
   if (raw.user.lastPerfectCheckWeek===undefined) raw.user.lastPerfectCheckWeek=null;
   if (!raw.user.favoriteQuotes) raw.user.favoriteQuotes=[];
   if (raw.user.lastQuotePeriod===undefined) raw.user.lastQuotePeriod=null;
+  if (raw.user.lastQuoteData===undefined) raw.user.lastQuoteData=null;
   if (!raw.restDayLogs)              raw.restDayLogs={};
   if (!raw.exercise) raw.exercise={dumbbellPress:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
   if (raw.habits) raw.habits.forEach(h=>{ if(h.restEligible==null) h.restEligible=false; if(h.note==null) h.note=''; });
@@ -1151,12 +1152,17 @@ let _currentQuote = null;
 function maybeShowDailyQuote(){
   const now = new Date();
   const period = `${todayKey()}_${now.getHours() < 12 ? 'AM' : 'PM'}`;
-  if (S.user.lastQuotePeriod === period) return; // already shown one this half of the day
-  S.user.lastQuotePeriod = period;
-  save();
-  showDailyQuote();
+  if (S.user.lastQuotePeriod === period && S.user.lastQuoteData) {
+    _currentQuote = S.user.lastQuoteData; // same window — show the same one again
+  } else {
+    _currentQuote = QUOTES[Math.floor(Math.random()*QUOTES.length)]; // new window — pick fresh
+    S.user.lastQuotePeriod = period;
+    S.user.lastQuoteData = _currentQuote;
+    save();
+  }
+  presentQuote();
 }
-function showDailyQuote(){
+function presentQuote(){
   _currentQuote = QUOTES[Math.floor(Math.random()*QUOTES.length)];
   document.getElementById('quoteText').textContent = _currentQuote.q;
   document.getElementById('quoteAuthor').textContent = _currentQuote.a;
@@ -1811,7 +1817,7 @@ function checkBackupReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-18.2127';
+const APP_VERSION = '2026-08-18.2139';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
