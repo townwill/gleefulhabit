@@ -138,7 +138,7 @@
   }
   @media (max-width:600px){
     header{padding:28px 16px 16px;}
-    .grid{grid-template-columns:repeat(2,1fr);gap:12px;padding:0 16px;}
+    .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:0 16px;}
     .controls{padding:0 16px;}
     .card{padding:16px 12px 12px;min-height:130px;}
     .card h3{font-size:16px;line-height:1.15;padding-right:44px;}
@@ -147,6 +147,7 @@
   }
   .card{
     position:relative;
+    min-width:0;
     background:var(--paper-card);
     border:1.5px solid rgba(43,36,27,0.25);
     border-left:7px solid var(--spine, var(--ink-soft));
@@ -208,6 +209,7 @@
     line-height:1.05;
     margin:10px 0 8px;
     min-height:2.2em;
+    min-width:0;
     padding-right:64px;
     display:flex;
     align-items:flex-start;
@@ -672,7 +674,7 @@
 // It's stamped in the footer and logged to the console on load, so after
 // deploying you can hard-refresh and immediately confirm the new version
 // actually landed, instead of guessing from a cached-looking page.
-const APP_VERSION = 'v16';
+const APP_VERSION = 'v17';
 const APP_BUILD_DATE = '2026-08-21';
 console.log(`UNO Archive ${APP_VERSION} — built ${APP_BUILD_DATE}`);
 
