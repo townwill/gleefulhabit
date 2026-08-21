@@ -563,6 +563,11 @@
       <div id="favoriteQuotesList"></div>
     </div>
 
+    <div class="data-card">
+      <div class="data-card-title">🎮 Lifetime Stats</div>
+      <div class="data-card-desc" id="lifetimeXPDisplay">Lifetime XP: —</div>
+    </div>
+
     <div class="version-footer" id="versionFooter"></div>
   </div>
 
@@ -1052,7 +1057,7 @@ function checkBlasterMilestones(){
 
 function renderAll(){renderHeader();renderXP();renderToday();renderManage();}
 function renderHeader(){const h=new Date().getHours();document.getElementById('greeting').textContent=h<5?'Good Night':h<12?'Good Morning':h<17?'Good Afternoon':h<21?'Good Evening':'Good Night';document.getElementById('dateDisplay').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});}
-function renderXP(){const info=levelInfo(S.user.xp);document.getElementById('levelBadge').textContent=info.lv;document.getElementById('levelName').textContent=info.name;document.getElementById('levelSub').textContent=info.lv<10?`${S.user.xp-info.lo} / ${info.hi-info.lo} XP to next level`:'Max Level!';document.getElementById('xpAmount').textContent=`${S.user.xp} XP`;requestAnimationFrame(()=>{document.getElementById('xpBarFill').style.width=`${Math.round(info.pct*100)}%`;});}
+function renderXP(){const info=levelInfo(S.user.xp);document.getElementById('levelBadge').textContent=info.lv;document.getElementById('levelName').textContent=info.name;document.getElementById('levelSub').textContent=info.lv<20?`${S.user.xp-info.lo} / ${info.hi-info.lo} XP to next level`:'Max Level!';document.getElementById('xpAmount').textContent=info.lv<20?`${S.user.xp-info.lo}/${info.hi-info.lo} XP`:'MAX';const lxp=document.getElementById('lifetimeXPDisplay');if(lxp)lxp.textContent=`Lifetime XP: ${S.user.xp.toLocaleString()}`;requestAnimationFrame(()=>{document.getElementById('xpBarFill').style.width=`${Math.round(info.pct*100)}%`;});}
 
 function switchSubTab(name, btn) {
   document.querySelectorAll('.sub-tab').forEach(b=>b.classList.remove('active'));
@@ -1817,7 +1822,7 @@ function checkBackupReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-19.2211';
+const APP_VERSION = '2026-08-21.2300';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
