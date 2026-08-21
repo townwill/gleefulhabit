@@ -302,6 +302,32 @@
     margin:20px 0 8px;
   }
   .section-label:first-child{margin-top:0;}
+  .section-label-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin:20px 0 8px;
+  }
+  .section-label-row:first-child{margin-top:0;}
+  .section-label-row .section-label{margin:0;}
+  .editSectionBtn{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:0.04em;
+    padding:4px 11px;
+    border-radius:20px;
+    border:1.5px solid rgba(43,36,27,0.3);
+    background:transparent;
+    color:var(--ink-soft);
+    cursor:pointer;
+    text-transform:none;
+  }
+  .empty-section{
+    font-size:13px;
+    color:var(--ink-soft);
+    font-style:italic;
+  }
+  .editTextarea{min-height:80px;}
   ul.rules{margin:0;padding-left:18px;}
   ul.rules li{margin-bottom:7px;font-size:14px;line-height:1.5;}
   .card-meaning{
@@ -688,7 +714,7 @@
 // It's stamped in the footer and logged to the console on load, so after
 // deploying you can hard-refresh and immediately confirm the new version
 // actually landed, instead of guessing from a cached-looking page.
-const APP_VERSION = 'v19';
+const APP_VERSION = 'v21';
 const APP_BUILD_DATE = '2026-08-21';
 console.log(`UNO Archive ${APP_VERSION} — built ${APP_BUILD_DATE}`);
 
@@ -1083,6 +1109,8 @@ function deleteDeck(slug){
     localStorage.removeItem('uno-photo:'+slug);
     localStorage.removeItem('uno-note:'+slug);
     localStorage.removeItem('uno-plays:'+slug);
+    localStorage.removeItem('uno-rules:'+slug);
+    localStorage.removeItem('uno-meanings:'+slug);
     const placements = loadTierPlacements();
     if(placements[slug]){ delete placements[slug]; saveTierPlacements(placements); }
   }catch(e){}
@@ -1181,6 +1209,33 @@ async function saveNote(slug, text){
   }catch(e){ return false; }
 }
 
+// Rules ("How it plays") and card meanings both start out as whatever's
+// baked into BUILTIN_DECKS (or a custom deck's own object), but the person
+// can edit either from the deck's detail view. Edits are stored as a
+// separate per-slug override so they persist across redeploys without
+// needing to touch the deck data itself. null = no override yet, meaning
+// "fall back to the deck's built-in value."
+function loadRulesOverride(slug){
+  try{
+    const val = localStorage.getItem('uno-rules:'+slug);
+    return val !== null ? JSON.parse(val) : null;
+  }catch(e){ return null; }
+}
+function saveRulesOverride(slug, arr){
+  try{ localStorage.setItem('uno-rules:'+slug, JSON.stringify(arr)); return true; }
+  catch(e){ return false; }
+}
+function loadMeaningsOverride(slug){
+  try{
+    const val = localStorage.getItem('uno-meanings:'+slug);
+    return val !== null ? JSON.parse(val) : null;
+  }catch(e){ return null; }
+}
+function saveMeaningsOverride(slug, arr){
+  try{ localStorage.setItem('uno-meanings:'+slug, JSON.stringify(arr)); return true; }
+  catch(e){ return false; }
+}
+
 // Plays: an array of ISO timestamp strings per deck, used by both the
 // modal's play tracker and the Stats tab.
 function loadPlays(slug){
@@ -1216,92 +1271,202 @@ function saveTierPlacements(obj){
 async function openModal(d){
   const overlay = document.getElementById('overlay');
   const modal = document.getElementById('modal');
-  const note = await loadNote(d.slug);
+  let note = await loadNote(d.slug);
+  let editingRules = false;
+  let editingMeanings = false;
 
-  let rulesHtml = '';
-  if(d.rules && d.rules.length){
-    rulesHtml = `<div class="section-label">How it plays</div><ul class="rules">${d.rules.map(r=>`<li>${r}</li>`).join('')}</ul>`;
+  function currentRules(){
+    const override = loadRulesOverride(d.slug);
+    return override !== null ? override : (d.rules || []);
   }
-  let meaningsHtml = '';
-  if(d.cardMeanings && d.cardMeanings.length){
-    meaningsHtml = `<div class="section-label">Card meanings</div>${d.cardMeanings.map(m=>`<div class="card-meaning"><div class="cm-name">${m.name}</div><div class="cm-effect">${m.effect}</div></div>`).join('')}`;
+  function currentMeanings(){
+    const override = loadMeaningsOverride(d.slug);
+    return override !== null ? override : (d.cardMeanings || []);
   }
+
+  function buildRulesSection(){
+    if(editingRules){
+      const text = currentRules().join('\n');
+      return `
+        <div class="section-label-row"><span class="section-label">How it plays</span></div>
+        <textarea id="rulesEditBox" class="editTextarea" placeholder="One rule per line, e.g.
+Plays exactly like Regular UNO — match by color or number.">${text}</textarea>
+        <div class="saveRow">
+          <button id="cancelRulesBtn" class="ghostBtn">Cancel</button>
+          <button id="confirmRulesBtn">Confirm</button>
+        </div>
+      `;
+    }
+    const rules = currentRules();
+    const listHtml = rules.length
+      ? `<ul class="rules">${rules.map(r=>`<li>${r}</li>`).join('')}</ul>`
+      : `<div class="empty-section">No rules logged yet.</div>`;
+    return `
+      <div class="section-label-row">
+        <span class="section-label">How it plays</span>
+        <button class="editSectionBtn" id="editRulesBtn">Edit</button>
+      </div>
+      ${listHtml}
+    `;
+  }
+
+  function buildMeaningsSection(){
+    if(editingMeanings){
+      const text = currentMeanings().map(m=>`${m.name}: ${m.effect}`).join('\n');
+      return `
+        <div class="section-label-row"><span class="section-label">Card meanings</span></div>
+        <textarea id="meaningsEditBox" class="editTextarea" placeholder="One per line, formatted as
+Card Name: what it does">${text}</textarea>
+        <div class="saveRow">
+          <button id="cancelMeaningsBtn" class="ghostBtn">Cancel</button>
+          <button id="confirmMeaningsBtn">Confirm</button>
+        </div>
+      `;
+    }
+    const meanings = currentMeanings();
+    const listHtml = meanings.length
+      ? meanings.map(m=>`<div class="card-meaning"><div class="cm-name">${m.name}</div><div class="cm-effect">${m.effect}</div></div>`).join('')
+      : `<div class="empty-section">No card meanings logged yet.</div>`;
+    return `
+      <div class="section-label-row">
+        <span class="section-label">Card meanings</span>
+        <button class="editSectionBtn" id="editMeaningsBtn">Edit</button>
+      </div>
+      ${listHtml}
+    `;
+  }
+
   let placeholderHtml = '';
   if(d.needsInput){
-    placeholderHtml = `<div class="placeholder-box">We haven't logged this deck's exact special card yet. Dig out the insert (or check the box) and jot the special rule below — it'll be saved here for next game night.</div>`;
+    placeholderHtml = `<div class="placeholder-box">We haven't logged this deck's exact special card yet. Dig out the insert (or check the box) and use the Edit buttons above to jot down the rules and any special cards — it'll be saved here for next game night.</div>`;
   }
 
-  const plays = loadPlays(d.slug);
-  const playCount = plays.length;
-  const lastPlayed = playCount ? new Date(plays[plays.length-1]).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : null;
-  const playTrackerHtml = `
-    <div class="section-label">Play tracker</div>
-    <div class="playTracker">
-      <div class="playCount">${playCount ? `Played <strong>${playCount}</strong> time${playCount===1?'':'s'}${lastPlayed ? ` · last on ${lastPlayed}` : ''}` : 'Not logged yet'}</div>
-      <div class="playBtns">
-        ${playCount ? '<button id="undoPlayBtn" class="ghostBtn">Undo last</button>' : ''}
-        <button id="logPlayBtn">We played this!</button>
-      </div>
-    </div>
-  `;
+  function render(){
+    // preserve an in-progress note draft across a rules/meanings edit toggle
+    const existingNoteBox = document.getElementById('noteBox');
+    if(existingNoteBox) note = existingNoteBox.value;
 
-  modal.innerHTML = `
-    <div class="modal-close" id="modalCloseBtn">&times;</div>
-    <div class="modal-head">
-      <span class="modal-tab" style="background:${catColor(d.category)}">${CATEGORY_META[d.category].label}</span>
-      <h2>${d.name}</h2>
-      <div class="tagline">${d.tagline || ''}</div>
-    </div>
-    <div class="modal-body">
-      ${playTrackerHtml}
-      ${rulesHtml}
-      ${meaningsHtml}
-      ${placeholderHtml}
-      <div class="section-label">Your notes</div>
-      <textarea id="noteBox" placeholder="Anything special about this deck — house rules, the exact wild card effect, whatever you don't want to forget again.">${note}</textarea>
-      <div class="saveRow">
-        <span class="savedNote" id="savedNote">Saved ✓</span>
-        <button id="saveNoteBtn">Save note</button>
+    const plays = loadPlays(d.slug);
+    const playCount = plays.length;
+    const lastPlayed = playCount ? new Date(plays[plays.length-1]).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : null;
+    const playTrackerHtml = `
+      <div class="section-label">Play tracker</div>
+      <div class="playTracker">
+        <div class="playCount">${playCount ? `Played <strong>${playCount}</strong> time${playCount===1?'':'s'}${lastPlayed ? ` · last on ${lastPlayed}` : ''}` : 'Not logged yet'}</div>
+        <div class="playBtns">
+          ${playCount ? '<button id="undoPlayBtn" class="ghostBtn">Undo last</button>' : ''}
+          <button id="logPlayBtn">We played this!</button>
+        </div>
       </div>
-      <div class="dangerZone">
-        <button id="deleteDeckBtn" class="dangerBtn">Delete this deck</button>
-      </div>
-    </div>
-  `;
-  overlay.classList.add('show');
-  document.getElementById('modalCloseBtn').onclick = closeModal;
-  attachSwipeToClose(modal, document.querySelector('#modal .modal-head'));
+    `;
 
-  document.getElementById('logPlayBtn').onclick = ()=>{
-    logPlay(d.slug);
-    openModal(d);
-    renderGrid();
-  };
-  const undoBtn = document.getElementById('undoPlayBtn');
-  if(undoBtn){
-    undoBtn.onclick = ()=>{
-      undoLastPlay(d.slug);
-      openModal(d);
+    modal.innerHTML = `
+      <div class="modal-close" id="modalCloseBtn">&times;</div>
+      <div class="modal-head">
+        <span class="modal-tab" style="background:${catColor(d.category)}">${CATEGORY_META[d.category].label}</span>
+        <h2>${d.name}</h2>
+        <div class="tagline">${d.tagline || ''}</div>
+      </div>
+      <div class="modal-body">
+        ${playTrackerHtml}
+        ${buildRulesSection()}
+        ${buildMeaningsSection()}
+        ${placeholderHtml}
+        <div class="section-label">Your notes</div>
+        <textarea id="noteBox" placeholder="Anything special about this deck — house rules, the exact wild card effect, whatever you don't want to forget again.">${note}</textarea>
+        <div class="saveRow">
+          <span class="savedNote" id="savedNote">Saved ✓</span>
+          <button id="saveNoteBtn">Save note</button>
+        </div>
+        <div class="dangerZone">
+          <button id="deleteDeckBtn" class="dangerBtn">Delete this deck</button>
+        </div>
+      </div>
+    `;
+    overlay.classList.add('show');
+    document.getElementById('modalCloseBtn').onclick = closeModal;
+    attachSwipeToClose(modal, document.querySelector('#modal .modal-head'));
+
+    document.getElementById('logPlayBtn').onclick = ()=>{
+      logPlay(d.slug);
+      render();
       renderGrid();
     };
+    const undoBtn = document.getElementById('undoPlayBtn');
+    if(undoBtn){
+      undoBtn.onclick = ()=>{
+        undoLastPlay(d.slug);
+        render();
+        renderGrid();
+      };
+    }
+
+    document.getElementById('deleteDeckBtn').onclick = ()=>{
+      if(confirm(`Delete "${d.name}"? This removes its notes and play history too — can't be undone.`)){
+        deleteDeck(d.slug);
+        closeModal();
+        renderGrid();
+      }
+    };
+
+    document.getElementById('saveNoteBtn').onclick = async ()=>{
+      const val = document.getElementById('noteBox').value;
+      const ok = await saveNote(d.slug, val);
+      note = val;
+      const sn = document.getElementById('savedNote');
+      sn.textContent = ok ? 'Saved ✓' : 'Save failed';
+      sn.style.opacity = 1;
+      setTimeout(()=>{ sn.style.opacity = 0; }, 1800);
+    };
+
+    const editRulesBtn = document.getElementById('editRulesBtn');
+    if(editRulesBtn){
+      editRulesBtn.onclick = ()=>{
+        editingRules = true;
+        render();
+        document.getElementById('rulesEditBox')?.focus();
+      };
+    }
+    const cancelRulesBtn = document.getElementById('cancelRulesBtn');
+    if(cancelRulesBtn){ cancelRulesBtn.onclick = ()=>{ editingRules = false; render(); }; }
+    const confirmRulesBtn = document.getElementById('confirmRulesBtn');
+    if(confirmRulesBtn){
+      confirmRulesBtn.onclick = ()=>{
+        const val = document.getElementById('rulesEditBox').value;
+        const arr = val.split('\n').map(s=>s.trim()).filter(Boolean);
+        saveRulesOverride(d.slug, arr);
+        editingRules = false;
+        render();
+      };
+    }
+
+    const editMeaningsBtn = document.getElementById('editMeaningsBtn');
+    if(editMeaningsBtn){
+      editMeaningsBtn.onclick = ()=>{
+        editingMeanings = true;
+        render();
+        document.getElementById('meaningsEditBox')?.focus();
+      };
+    }
+    const cancelMeaningsBtn = document.getElementById('cancelMeaningsBtn');
+    if(cancelMeaningsBtn){ cancelMeaningsBtn.onclick = ()=>{ editingMeanings = false; render(); }; }
+    const confirmMeaningsBtn = document.getElementById('confirmMeaningsBtn');
+    if(confirmMeaningsBtn){
+      confirmMeaningsBtn.onclick = ()=>{
+        const val = document.getElementById('meaningsEditBox').value;
+        const arr = val.split('\n').map(s=>s.trim()).filter(Boolean).map(line=>{
+          const idx = line.indexOf(':');
+          if(idx === -1) return {name:line, effect:''};
+          return {name: line.slice(0,idx).trim(), effect: line.slice(idx+1).trim()};
+        });
+        saveMeaningsOverride(d.slug, arr);
+        editingMeanings = false;
+        render();
+      };
+    }
   }
 
-  document.getElementById('deleteDeckBtn').onclick = ()=>{
-    if(confirm(`Delete "${d.name}"? This removes its notes and play history too — can't be undone.`)){
-      deleteDeck(d.slug);
-      closeModal();
-      renderGrid();
-    }
-  };
-
-  document.getElementById('saveNoteBtn').onclick = async ()=>{
-    const val = document.getElementById('noteBox').value;
-    const ok = await saveNote(d.slug, val);
-    const sn = document.getElementById('savedNote');
-    sn.textContent = ok ? 'Saved ✓' : 'Save failed';
-    sn.style.opacity = 1;
-    setTimeout(()=>{ sn.style.opacity = 0; }, 1800);
-  };
+  render();
 }
 
 function closeModal(){
@@ -1475,35 +1640,52 @@ function renderTierList(){
 
 function attachTierDrag(){
   const board = document.getElementById('tierBoard');
-  let dragEl = null, dragSlug = null, floatEl = null;
 
   board.querySelectorAll('.tier-chip').forEach(chip=>{
     chip.addEventListener('pointerdown', (e)=>{
-      dragEl = chip;
-      dragSlug = chip.dataset.slug;
+      // Each drag gesture keeps its own state, rather than sharing
+      // mutable variables across every chip on the board. That sharing
+      // used to be the real cause of "tier list stops responding":
+      // if one drag got interrupted (see below) and left its listeners
+      // attached, the next drag would silently stomp on the same
+      // variables mid-gesture.
+      const dragSlug = chip.dataset.slug;
       chip.setPointerCapture(e.pointerId);
       chip.classList.add('dragging-source');
 
-      floatEl = chip.cloneNode(true);
+      const floatEl = chip.cloneNode(true);
       floatEl.classList.add('tier-chip-float');
       floatEl.style.width = chip.getBoundingClientRect().width + 'px';
       document.body.appendChild(floatEl);
-      moveFloat(e.clientX, e.clientY);
+      moveFloat(floatEl, e.clientX, e.clientY);
 
       const onMove = (ev)=>{
-        moveFloat(ev.clientX, ev.clientY);
+        moveFloat(floatEl, ev.clientX, ev.clientY);
         board.querySelectorAll('.tier-lane').forEach(l=>l.classList.remove('lane-hover'));
         const laneEl = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('.tier-lane');
         if(laneEl) laneEl.classList.add('lane-hover');
       };
-      const onUp = (ev)=>{
-        chip.releasePointerCapture(e.pointerId);
+
+      // Guards against running cleanup twice (e.g. if a browser somehow
+      // fires both pointerup and pointercancel for the same gesture) and
+      // is the ONE place that removes the floating ghost + detaches the
+      // document-level listeners, so nothing can leak.
+      let finished = false;
+      const cleanup = ()=>{
+        if(finished) return;
+        finished = true;
         document.removeEventListener('pointermove', onMove);
         document.removeEventListener('pointerup', onUp);
+        document.removeEventListener('pointercancel', onCancel);
         board.querySelectorAll('.tier-lane').forEach(l=>l.classList.remove('lane-hover'));
-        const laneEl = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('.tier-lane');
-        if(floatEl){ floatEl.remove(); floatEl = null; }
+        if(floatEl.parentNode) floatEl.remove();
         chip.classList.remove('dragging-source');
+        try{ chip.releasePointerCapture(e.pointerId); }catch(err){ /* already released */ }
+      };
+
+      const onUp = (ev)=>{
+        const laneEl = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('.tier-lane');
+        cleanup();
         if(laneEl){
           const placements = loadTierPlacements();
           const targetTier = laneEl.dataset.tier;
@@ -1513,13 +1695,23 @@ function attachTierDrag(){
         }
         renderTierList();
       };
+
+      // The browser can cancel a touch mid-gesture — most commonly when
+      // it decides the pointer is actually trying to scroll the page
+      // instead of drag the chip. Without handling this, the drag just
+      // hangs forever: ghost clone stuck on screen, listeners never
+      // removed. Cancel just aborts cleanly; nothing gets saved.
+      const onCancel = ()=>{
+        cleanup();
+      };
+
       document.addEventListener('pointermove', onMove);
       document.addEventListener('pointerup', onUp);
+      document.addEventListener('pointercancel', onCancel);
     });
   });
 
-  function moveFloat(x,y){
-    if(!floatEl) return;
+  function moveFloat(floatEl, x, y){
     floatEl.style.left = x + 'px';
     floatEl.style.top = y + 'px';
   }
