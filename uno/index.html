@@ -6,12 +6,12 @@
 <meta http-equiv="Cache-Control" content="must-revalidate">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Uno Archive">
+<meta name="apple-mobile-web-app-title" content="UNO Archive">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<title>The Uno Archive</title>
+<title>The UNO Archive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -172,6 +172,9 @@
     font-size:19px;
     line-height:1.05;
     margin:10px 0 8px;
+    min-height:2.2em;
+    display:flex;
+    align-items:flex-end;
   }
   .card p{
     font-size:12.5px;
@@ -392,10 +395,11 @@
 <div class="controls">
   <div class="chip active" data-filter="all">All</div>
   <div class="chip" data-filter="themed">Themed</div>
-  <div class="chip" data-filter="reskin">Uno Reskin</div>
-  <div class="chip" data-filter="regular">Regular Uno</div>
+  <div class="chip" data-filter="reskin">UNO Reskin</div>
+  <div class="chip" data-filter="regular">Regular</div>
   <div class="chip" data-filter="house">House Deck</div>
-  <div id="addBtn">+ add a deck</div>
+  <div class="chip" data-filter="offshoot">Distant Cousins</div>
+  <div id="addBtn" title="Add a deck">(+)</div>
 </div>
 
 <div class="grid" id="grid"></div>
@@ -409,10 +413,11 @@
 
 <script>
 const CATEGORY_META = {
-  themed:  {label:'Themed',      color:'var(--red)'},
-  reskin:  {label:'Uno Reskin',  color:'var(--blue)'},
-  regular: {label:'Regular Uno', color:'var(--green)'},
-  house:   {label:'House Deck',  color:'var(--purple)'},
+  themed:   {label:'Themed',          color:'var(--red)'},
+  reskin:   {label:'UNO Reskin',      color:'var(--blue)'},
+  regular:  {label:'Regular',         color:'var(--green)'},
+  house:    {label:'House Deck',      color:'var(--purple)'},
+  offshoot: {label:'Distant Cousins', color:'var(--yellow)'},
 };
 
 const DECKS = [
@@ -434,7 +439,7 @@ const DECKS = [
     ]
   },
   {
-    slug:'uno-flip', name:'Uno Flip', category:'reskin',
+    slug:'uno-flip', name:'UNO Flip', category:'reskin',
     tagline:'Double-sided deck — Light Side and a much meaner Dark Side.',
     rules:[
       'Light Side plays like classic UNO, but Draw One replaces Draw Two, and Wild Draw Two replaces Wild Draw Four.',
@@ -451,7 +456,7 @@ const DECKS = [
     ]
   },
   {
-    slug:'no-mercy', name:'Uno Show \'em No Mercy', category:'reskin',
+    slug:'no-mercy', name:'No Mercy', category:'reskin',
     tagline:'168 cards, stacking penalties, and a Mercy Rule that knocks players out.',
     rules:[
       '56 more cards than classic UNO (168 total).',
@@ -468,8 +473,8 @@ const DECKS = [
     ]
   },
   {
-    slug:'dos', name:'Dos', category:'reskin',
-    tagline:'The sequel to Uno — two discard piles, and you can play two cards at once.',
+    slug:'dos', name:'Dos', category:'offshoot',
+    tagline:'The sequel to UNO — two discard piles, and you can play two cards at once.',
     rules:[
       'Two discard piles (the "Center Row") instead of one.',
       'On your turn, play one card matching either pile\'s number or color — or two cards whose numbers add up to a pile\'s number.',
@@ -483,7 +488,7 @@ const DECKS = [
     ]
   },
   {
-    slug:'all-wilds', name:'Uno All Wilds', category:'reskin',
+    slug:'all-wilds', name:'UNO All Wilds', category:'reskin',
     tagline:'Every single card is a Wild card — no color or number matching.',
     rules:[
       'No colors or numbers to match — play any card, every turn.',
@@ -500,14 +505,14 @@ const DECKS = [
     ]
   },
   {
-    slug:'uno-golf', name:'Uno Golf', category:'reskin',
+    slug:'uno-golf', name:'UNO Golf', category:'offshoot',
     tagline:'A 2x3 grid of face-down cards, golf-style — lowest score wins.',
     rules:[
       'Deal a 2x3 grid of face-down cards instead of a hand of 7.',
       'Clear columns by matching color or number to lower your score.',
       'Action cards only trigger while they\'re the top Discard Pile card — not while sitting in your grid.',
       'Still yell "UNO!" when you\'re down to one card in your grid.',
-      'Also sold internationally as "Uno Zero" — same rules.'
+      'Also sold internationally as "UNO Zero" — same rules.'
     ],
     cardMeanings:[
       {name:'Double Draw 2', effect:'Two players draw 2 each, or one player draws 4 — dealer\'s choice per the card.'},
@@ -517,12 +522,12 @@ const DECKS = [
     ]
   },
   {
-    slug:'uno-spin', name:'Uno Spin', category:'reskin',
+    slug:'uno-spin', name:'UNO Spin', category:'reskin',
     tagline:'Comes with a wheel — Spin cards send the next player to it.',
     rules:[
       'Playing a Spin card sends the next player to spin the included wheel.',
       'Wheel outcomes range from helpful to brutal — see card meanings.',
-      'First to shout "Uno Spin!" after a spin gets to discard any one card, even an unplayable one.'
+      'First to shout "UNO Spin!" after a spin gets to discard any one card, even an unplayable one.'
     ],
     cardMeanings:[
       {name:'Discard Colour', effect:'Discard any/all cards of one color from your hand.'},
@@ -532,8 +537,8 @@ const DECKS = [
     ]
   },
   {
-    slug:'liars-uno', name:'Liar\'s Uno', category:'reskin',
-    tagline:'Bluffing meets Uno — play cards face-down and lie about what they are.',
+    slug:'liars-uno', name:'Liar\'s UNO', category:'reskin',
+    tagline:'Bluffing meets UNO — play cards face-down and lie about what they are.',
     rules:[
       'Regular Cards play face-up as normal, matching color/number/symbol.',
       'Liar\'s Cards (marked with a white circle) always play face-down — announce what it "is," truthfully or not.',
@@ -547,7 +552,7 @@ const DECKS = [
     ]
   },
   {
-    slug:'regular-uno', name:'Regular Uno', category:'regular',
+    slug:'regular-uno', name:'Regular UNO', category:'regular',
     tagline:'The one that started it all. No twist, just the classic.',
     rules:[
       'Match the top of the Discard Pile by color or number.',
@@ -559,10 +564,10 @@ const DECKS = [
     cardMeanings:[]
   },
   {
-    slug:'travel-uno', name:'Travel Uno', category:'regular',
+    slug:'travel-uno', name:'Travel UNO', category:'regular',
     tagline:'Same classic rules, packed into a compact travel tin.',
     rules:[
-      'Plays identically to Regular Uno — this edition just trades the box for a snap-shut travel tin.',
+      'Plays identically to Regular UNO — this edition just trades the box for a snap-shut travel tin.',
       'No unique mechanic beyond portability.'
     ],
     cardMeanings:[]
@@ -581,8 +586,8 @@ const DECKS = [
   {slug:'disneyland', name:'Disneyland', category:'themed',
     tagline:'Standard play, plus a Wild "Disney Parks Magic" card.',
     rules:[
-      'Plays exactly like Regular Uno — match by color or number.',
-      'Sold as "Uno Disney Parks" — Wild Disney Parks Magic Card replaces one set of the standard Wild cards.'
+      'Plays exactly like Regular UNO — match by color or number.',
+      'Sold as "UNO Disney Parks" — Wild Disney Parks Magic Card replaces one set of the standard Wild cards.'
     ],
     cardMeanings:[
       {name:'Wild Disney Parks Magic', effect:'Everyone passes their entire hand to the player on their left.'},
@@ -591,7 +596,7 @@ const DECKS = [
   {slug:'emoji', name:'Emoji', category:'reskin',
     tagline:'Standard play, plus a Wild Emoji face-mimicking card.',
     rules:[
-      'Plays exactly like Regular Uno — match by color or number (or matching emoji symbol).',
+      'Plays exactly like Regular UNO — match by color or number (or matching emoji symbol).',
       'Wild Emoji Card replaces one set of the standard Wild cards.'
     ],
     cardMeanings:[
@@ -601,7 +606,7 @@ const DECKS = [
   {slug:'mario', name:'Mario', category:'themed',
     tagline:'Standard play, plus a Super Star card and a write-your-own Wild.',
     rules:[
-      'Plays exactly like Regular Uno — match by color or number.',
+      'Plays exactly like Regular UNO — match by color or number.',
       'Super Star and Wild Customizable cards replace some of the standard Wild cards.'
     ],
     cardMeanings:[
@@ -612,7 +617,7 @@ const DECKS = [
   {slug:'encanto', name:'Encanto', category:'themed',
     tagline:'Standard play, plus a Wild "Don\'t Talk" card.',
     rules:[
-      'Plays exactly like Regular Uno — match by color or number.',
+      'Plays exactly like Regular UNO — match by color or number.',
       'Wild Don\'t Talk replaces one set of the standard Wild cards.'
     ],
     cardMeanings:[
@@ -622,7 +627,7 @@ const DECKS = [
   {slug:'hot-wheels', name:'Hot Wheels', category:'themed',
     tagline:'Standard play, plus a Wild Super Charged card.',
     rules:[
-      'Plays exactly like Regular Uno — match by color or number.',
+      'Plays exactly like Regular UNO — match by color or number.',
       'Wild Super Charged Card replaces one set of the standard Wild cards.'
     ],
     cardMeanings:[
@@ -632,7 +637,7 @@ const DECKS = [
   {slug:'lord-of-the-rings', name:'Lord of the Rings', category:'themed',
     tagline:'Standard play, plus a "Hunt for the Ring" rule.',
     rules:[
-      'Plays exactly like Regular Uno — match by color or number.',
+      'Plays exactly like Regular UNO — match by color or number.',
       'Includes Ring cards tied to a special Hunt for the Ring rule.'
     ],
     cardMeanings:[
@@ -642,7 +647,7 @@ const DECKS = [
   {slug:'mickey', name:'Mickey', category:'themed',
     tagline:'Standard play, plus a Wild Friendship card.',
     rules:[
-      'Plays exactly like Regular Uno — match by color or number.',
+      'Plays exactly like Regular UNO — match by color or number.',
       'Wild Friendship Card replaces one set of the standard Wild cards.'
     ],
     cardMeanings:[
@@ -652,7 +657,7 @@ const DECKS = [
   {slug:'ninja-turtles', name:'Ninja Turtles', category:'themed',
     tagline:'Standard play, plus a Wild "From the Sewers" card.',
     rules:[
-      'Plays exactly like Regular Uno — match by color or number.',
+      'Plays exactly like Regular UNO — match by color or number.',
       'Wild From the Sewers replaces one set of the standard Wild cards.'
     ],
     cardMeanings:[
@@ -662,7 +667,7 @@ const DECKS = [
   {slug:'minecraft', name:'Minecraft', category:'themed',
     tagline:'Standard play, plus a Creeper wild card.',
     rules:[
-      'Plays exactly like Regular Uno — match by color or number.',
+      'Plays exactly like Regular UNO — match by color or number.',
       'Creeper Card replaces one set of the standard Wild cards.'
     ],
     cardMeanings:[
@@ -672,7 +677,7 @@ const DECKS = [
   {slug:'x-men', name:'X-Men', category:'themed',
     tagline:'Standard play, plus a Wild Cerebro card.',
     rules:[
-      'Plays exactly like Regular Uno — match by color or number.',
+      'Plays exactly like Regular UNO — match by color or number.',
       'Wild Cerebro Card replaces one set of the standard Wild cards.'
     ],
     cardMeanings:[
@@ -682,7 +687,7 @@ const DECKS = [
   {slug:'amazing-spider-man', name:'Amazing Spider-Man', category:'themed',
     tagline:'Standard play, plus a Wild Web Swing card.',
     rules:[
-      'Plays exactly like Regular Uno — match by color or number.',
+      'Plays exactly like Regular UNO — match by color or number.',
       'Wild Web Swing Card replaces one set of the standard Wild cards.'
     ],
     cardMeanings:[
@@ -692,7 +697,7 @@ const DECKS = [
   {slug:'clueless', name:'Clueless', category:'themed',
     tagline:'Standard play, plus an "Ugh, As If" foil Wild card.',
     rules:[
-      'Plays exactly like Regular Uno — match by color or number.',
+      'Plays exactly like Regular UNO — match by color or number.',
       'Wild "Ugh, As If" Card (foil) replaces one set of the standard Wild cards.'
     ],
     cardMeanings:[
@@ -704,19 +709,27 @@ const DECKS = [
   {slug:'childhood', name:'Childhood', category:'regular',
     tagline:'Your childhood copy of the classic — no special rules, just the one you grew up with.',
     rules:[
-      'Plays exactly like Regular Uno — match by color or number.',
+      'Plays exactly like Regular UNO — match by color or number.',
       'No exclusive cards; this is just an older/well-loved copy of the standard deck.'
     ],
     cardMeanings:[]
   },
   {slug:'custom-wild-card', name:'Custom Wild Card', category:'house'},
-  {slug:'minimalist', name:'Minimalist', category:'house'},
+  {slug:'minimalist', name:'Minimalist', category:'themed',
+    tagline:'Officially "UNO® Minimalista" — a stripped-back redesign that went viral before Mattel made it real.',
+    rules:[
+      'Plays exactly like Regular UNO — match by color or number.',
+      'Design by Warleson Oliveira; Mattel turned the concept into a real deck in under 30 days.',
+      'For 2–10 players, ages 7+. A 2020 special-edition release, not the standard-issue deck.'
+    ],
+    cardMeanings:[]
+  },
 ];
 
 DECKS.push({slug:'no-politics', name:'No Politics', category:'reskin',
-  tagline:'Officially "Nonpartisan Uno" — no red or blue cards, plus a VETO card.',
+  tagline:'Officially "Nonpartisan UNO" — no red or blue cards, plus a VETO card.',
   rules:[
-    'Plays exactly like Regular Uno — match by color or number.',
+    'Plays exactly like Regular UNO — match by color or number.',
     'Red and blue are swapped out for orange and purple, so no color "takes a side."',
     'House rule from the box: bring up politics during the game and you lose your turn.'
   ],
@@ -731,7 +744,7 @@ DECKS.forEach(d=>{
   if(d.category==='themed' && !d.rules){
     d.tagline = d.tagline || 'Standard UNO rules, themed art, plus one exclusive Wild card.';
     d.rules = d.rules || [
-      'Plays exactly like Regular Uno — match by color or number.',
+      'Plays exactly like Regular UNO — match by color or number.',
       'Includes one exclusive themed Wild card not found in a standard deck.'
     ];
     d.cardMeanings = d.cardMeanings || [];
