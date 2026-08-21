@@ -141,7 +141,9 @@
     .grid{grid-template-columns:repeat(2,1fr);gap:12px;padding:0 16px;}
     .controls{padding:0 16px;}
     .card{padding:16px 12px 12px;min-height:130px;}
-    .card h3{font-size:16px;line-height:1.15;}
+    .card h3{font-size:16px;line-height:1.15;padding-right:44px;}
+    .card-corner{top:10px;right:10px;}
+    .cornerTier, .cornerPlays{font-size:9px;padding:3px 6px;}
   }
   .card{
     position:relative;
@@ -163,30 +165,30 @@
     position:absolute;
     top:14px;right:14px;
     display:flex;
-    flex-direction:column;
-    align-items:flex-end;
-    gap:5px;
+    align-items:stretch;
+    border-radius:20px;
+    overflow:hidden;
+    box-shadow:0 2px 5px rgba(43,36,27,0.2);
+    border:1.5px solid rgba(43,36,27,0.2);
   }
   .cornerTier{
     font-family:'Archivo Black',sans-serif;
-    font-size:12px;
+    font-size:11px;
     color:#fff;
-    width:26px;height:26px;
-    border-radius:50%;
+    padding:4px 9px;
     display:flex;
     align-items:center;
     justify-content:center;
-    box-shadow:0 2px 5px rgba(43,36,27,0.2);
   }
   .cornerPlays{
     font-family:'IBM Plex Mono',monospace;
     font-size:10px;
     color:var(--ink-soft);
     background:var(--paper);
-    border:1.5px solid rgba(43,36,27,0.2);
-    border-radius:10px;
-    padding:2px 7px;
+    padding:4px 9px;
     white-space:nowrap;
+    display:flex;
+    align-items:center;
   }
   .tab{
     position:absolute;
@@ -206,6 +208,7 @@
     line-height:1.05;
     margin:10px 0 8px;
     min-height:2.2em;
+    padding-right:64px;
     display:flex;
     align-items:flex-start;
   }
@@ -252,14 +255,14 @@
   }
   .modal-close{
     position:absolute;
-    top:14px;right:14px;
-    width:30px;height:30px;
+    top:10px;right:10px;
+    width:44px;height:44px;
     border-radius:50%;
     border:2px solid var(--ink);
     background:var(--paper-card);
     color:var(--ink);
     font-family:'IBM Plex Mono',monospace;
-    font-size:15px;
+    font-size:20px;
     line-height:1;
     display:flex;
     align-items:center;
@@ -268,14 +271,16 @@
     z-index:2;
   }
   .modal-head{
-    padding:26px 50px 18px 26px;
+    padding:26px 66px 18px 26px;
     border-bottom:2px dashed var(--rule);
     position:relative;
+    touch-action:none;
+    cursor:grab;
   }
   @media (max-width:600px){
     .overlay{padding:16px;}
     .modal{max-height:88vh;}
-    .modal-head{padding:22px 50px 16px 22px;}
+    .modal-head{padding:22px 62px 16px 22px;}
     .modal-body{padding:18px 22px 28px;}
   }
   .modal-tab{
@@ -369,50 +374,6 @@
     font-size:13px;
     color:var(--ink-soft);
     line-height:1.5;
-  }
-  .photo-frame{
-    width:100%;
-    border-radius:6px;
-    overflow:hidden;
-    border:1.5px solid rgba(43,36,27,0.25);
-    box-shadow:var(--shadow);
-  }
-  .photo-frame img{
-    width:100%;
-    display:block;
-  }
-  .photo-empty{
-    width:100%;
-    border:2px dashed var(--ink-soft);
-    border-radius:6px;
-    padding:26px 16px;
-    text-align:center;
-    color:var(--ink-soft);
-    font-size:13px;
-  }
-  .photo-btn-row{
-    display:flex;
-    gap:10px;
-    margin-top:10px;
-    flex-wrap:wrap;
-  }
-  .photoBtn, .photoBtnGhost{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:12px;
-    padding:9px 16px;
-    border-radius:20px;
-    cursor:pointer;
-    display:inline-block;
-  }
-  .photoBtn{
-    border:2px solid var(--ink);
-    background:var(--ink);
-    color:var(--paper);
-  }
-  .photoBtnGhost{
-    border:2px solid rgba(43,36,27,0.3);
-    background:transparent;
-    color:var(--ink-soft);
   }
   footer{
     max-width:1100px;
@@ -517,53 +478,6 @@
     margin-bottom:4px;
   }
   .selectInput{font-family:'IBM Plex Mono',monospace;}
-
-  /* ---------- mask editor ---------- */
-  .mask-body{padding-top:6px;}
-  .mask-canvas-wrap{
-    width:100%;
-    background:
-      linear-gradient(45deg, #ddd 25%, transparent 25%),
-      linear-gradient(-45deg, #ddd 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, #ddd 75%),
-      linear-gradient(-45deg, transparent 75%, #ddd 75%);
-    background-size:16px 16px;
-    background-position:0 0, 0 8px, 8px -8px, -8px 0;
-    background-color:#fff;
-    border:1.5px solid rgba(43,36,27,0.25);
-    border-radius:6px;
-    overflow:hidden;
-    touch-action:none;
-  }
-  #maskCanvas{width:100%;display:block;touch-action:none;}
-  .mask-controls{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    flex-wrap:wrap;
-    gap:12px;
-    margin-top:14px;
-  }
-  .mask-toggle{display:flex;gap:6px;}
-  .modeBtn{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:12px;
-    padding:8px 14px;
-    border-radius:20px;
-    border:2px solid var(--ink);
-    background:transparent;
-    color:var(--ink);
-    cursor:pointer;
-  }
-  .modeBtn.active{background:var(--ink);color:var(--paper);}
-  .mask-brush-label{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:11px;
-    color:var(--ink-soft);
-    display:flex;
-    align-items:center;
-    gap:8px;
-  }
 
   /* ---------- tier list ---------- */
   .tier-toolbar{
@@ -700,7 +614,7 @@
 
 <header>
   <div class="eyebrow">Est. by the Townsends</div>
-  <h1>Townsend <span>Household</span><br>UNO Card Catalog</h1>
+  <h1>UNO <span>Card</span> Catalog</h1>
   <div class="sub">Every deck we own, and the special rule you always forget mid-game. Tap a card to read the fine print.</div>
 </header>
 
@@ -753,16 +667,12 @@
   <div class="modal" id="addModal"></div>
 </div>
 
-<div class="overlay" id="maskOverlay">
-  <div class="modal mask-modal" id="maskModal"></div>
-</div>
-
 <script>
 // Bump APP_VERSION (and APP_BUILD_DATE) every time you push a change.
 // It's stamped in the footer and logged to the console on load, so after
 // deploying you can hard-refresh and immediately confirm the new version
 // actually landed, instead of guessing from a cached-looking page.
-const APP_VERSION = 'v15';
+const APP_VERSION = 'v16';
 const APP_BUILD_DATE = '2026-08-21';
 console.log(`UNO Archive ${APP_VERSION} — built ${APP_BUILD_DATE}`);
 
@@ -1163,173 +1073,7 @@ function deleteDeck(slug){
   rebuildDecks();
 }
 
-// Storage: uses localStorage so notes/photos persist in this browser once hosted.
-// Photos are compressed before saving, but localStorage has roughly a 5MB total
-// budget per site — that's plenty for notes and a couple dozen compressed photos,
-// but if it ever fills up, saves will silently fail (caught below).
-async function loadPhoto(slug){
-  try{
-    const val = localStorage.getItem('uno-photo:'+slug);
-    return val || null;
-  }catch(e){ return null; }
-}
-
-async function savePhoto(slug, dataUrl){
-  try{
-    localStorage.setItem('uno-photo:'+slug, dataUrl);
-    return true;
-  }catch(e){ return false; }
-}
-
-async function deletePhoto(slug){
-  try{
-    localStorage.removeItem('uno-photo:'+slug);
-    return true;
-  }catch(e){ return false; }
-}
-
-// Resizes an uploaded file down to maxDim on its longest side and draws it
-// onto a canvas (not a dataURL) so the mask editor can paint on it directly.
-function loadImageResizedToCanvas(file, maxDim){
-  maxDim = maxDim || 900;
-  return new Promise((resolve, reject)=>{
-    const reader = new FileReader();
-    reader.onload = (e)=>{
-      const img = new Image();
-      img.onload = ()=>{
-        let w = img.width, h = img.height;
-        if(w > h){ if(w > maxDim){ h = Math.round(h * maxDim / w); w = maxDim; } }
-        else { if(h > maxDim){ w = Math.round(w * maxDim / h); h = maxDim; } }
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(canvas);
-      };
-      img.onerror = reject;
-      img.src = e.target.result;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-// Manual background-removal editor: an eraser brush over a canvas. There's
-// no automatic subject-detection here (that'd need a bundled ML model,
-// which doesn't fit the single-file/no-build-step constraint) — instead
-// you paint out the background by hand, with a Restore brush to undo mistakes.
-function openMaskEditor(sourceCanvas, onSave){
-  const overlay = document.getElementById('maskOverlay');
-  const modal = document.getElementById('maskModal');
-
-  modal.innerHTML = `
-    <div class="modal-close" id="maskCloseBtn">&times;</div>
-    <div class="modal-head">
-      <h2>Erase background</h2>
-      <div class="tagline">Drag to erase. Switch to Restore to undo a spot. Nothing saves until you tap Save.</div>
-    </div>
-    <div class="modal-body mask-body">
-      <div class="mask-canvas-wrap">
-        <canvas id="maskCanvas"></canvas>
-      </div>
-      <div class="mask-controls">
-        <div class="mask-toggle">
-          <button id="eraseModeBtn" class="modeBtn active">Erase</button>
-          <button id="restoreModeBtn" class="modeBtn">Restore</button>
-        </div>
-        <label class="mask-brush-label">
-          Brush size
-          <input type="range" id="brushSize" min="12" max="90" value="34">
-        </label>
-      </div>
-      <div class="saveRow">
-        <button id="maskResetBtn" class="ghostBtn">Reset</button>
-        <button id="maskCancelBtn" class="ghostBtn">Cancel</button>
-        <button id="maskSaveBtn">Save</button>
-      </div>
-    </div>
-  `;
-  overlay.classList.add('show');
-
-  const canvas = document.getElementById('maskCanvas');
-  canvas.width = sourceCanvas.width;
-  canvas.height = sourceCanvas.height;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(sourceCanvas, 0, 0);
-
-  // pristine copy, used by the Restore brush and the Reset button
-  const pristine = document.createElement('canvas');
-  pristine.width = sourceCanvas.width;
-  pristine.height = sourceCanvas.height;
-  pristine.getContext('2d').drawImage(sourceCanvas, 0, 0);
-
-  let mode = 'erase';
-  let brushSize = 34;
-  let painting = false;
-
-  document.getElementById('eraseModeBtn').onclick = ()=>{
-    mode = 'erase';
-    document.getElementById('eraseModeBtn').classList.add('active');
-    document.getElementById('restoreModeBtn').classList.remove('active');
-  };
-  document.getElementById('restoreModeBtn').onclick = ()=>{
-    mode = 'restore';
-    document.getElementById('restoreModeBtn').classList.add('active');
-    document.getElementById('eraseModeBtn').classList.remove('active');
-  };
-  document.getElementById('brushSize').oninput = (e)=>{ brushSize = Number(e.target.value); };
-
-  function canvasPoint(e){
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    return { x:(e.clientX - rect.left) * scaleX, y:(e.clientY - rect.top) * scaleY };
-  }
-  function paintAt(pt){
-    if(mode==='erase'){
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y, brushSize/2, 0, Math.PI*2);
-      ctx.fill();
-      ctx.globalCompositeOperation = 'source-over';
-    } else {
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y, brushSize/2, 0, Math.PI*2);
-      ctx.clip();
-      ctx.drawImage(pristine, 0, 0);
-      ctx.restore();
-    }
-  }
-  canvas.addEventListener('pointerdown', (e)=>{
-    painting = true;
-    canvas.setPointerCapture(e.pointerId);
-    paintAt(canvasPoint(e));
-  });
-  canvas.addEventListener('pointermove', (e)=>{
-    if(!painting) return;
-    paintAt(canvasPoint(e));
-  });
-  canvas.addEventListener('pointerup', ()=>{ painting = false; });
-  canvas.addEventListener('pointercancel', ()=>{ painting = false; });
-
-  document.getElementById('maskResetBtn').onclick = ()=>{
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(pristine, 0, 0);
-  };
-  document.getElementById('maskCancelBtn').onclick = closeMaskEditor;
-  document.getElementById('maskCloseBtn').onclick = closeMaskEditor;
-  document.getElementById('maskSaveBtn').onclick = ()=>{
-    const dataUrl = canvas.toDataURL('image/png');
-    closeMaskEditor();
-    onSave(dataUrl);
-  };
-}
-function closeMaskEditor(){
-  document.getElementById('maskOverlay').classList.remove('show');
-}
-document.getElementById('maskOverlay').addEventListener('click', (e)=>{
-  if(e.target.id==='maskOverlay') closeMaskEditor();
-});
+// Storage: uses localStorage so notes persist in this browser once hosted.
 
 let notesCache = {};
 
@@ -1357,12 +1101,14 @@ function renderGrid(){
     el.style.setProperty('--spine', catColor(d.category));
     const playCount = loadPlays(d.slug).length;
     const tier = tierLabelFor(d.slug);
-    const cornerHtml = (playCount || tier) ? `
-      <div class="card-corner">
-        ${tier ? `<span class="cornerTier" style="background:${tier.color}">${tier.label}</span>` : ''}
-        ${playCount ? `<span class="cornerPlays">▶ ${playCount}×</span>` : ''}
-      </div>
-    ` : '';
+    let cornerHtml = '';
+    if(tier && playCount){
+      cornerHtml = `<div class="card-corner"><span class="cornerTier" style="background:${tier.color}">${tier.label}</span><span class="cornerPlays">${playCount}×</span></div>`;
+    } else if(tier){
+      cornerHtml = `<div class="card-corner"><span class="cornerTier" style="background:${tier.color}">${tier.label}</span></div>`;
+    } else if(playCount){
+      cornerHtml = `<div class="card-corner"><span class="cornerPlays">${playCount}×</span></div>`;
+    }
     el.innerHTML = `
       <div class="tab" style="background:${catColor(d.category)}">${CATEGORY_META[d.category].label}</div>
       ${cornerHtml}
@@ -1427,7 +1173,6 @@ async function openModal(d){
   const overlay = document.getElementById('overlay');
   const modal = document.getElementById('modal');
   const note = await loadNote(d.slug);
-  const photo = await loadPhoto(d.slug);
 
   let rulesHtml = '';
   if(d.rules && d.rules.length){
@@ -1441,18 +1186,6 @@ async function openModal(d){
   if(d.needsInput){
     placeholderHtml = `<div class="placeholder-box">We haven't logged this deck's exact special card yet. Dig out the insert (or check the box) and jot the special rule below — it'll be saved here for next game night.</div>`;
   }
-
-  const photoHtml = photo
-    ? `<div class="photo-frame"><img src="${photo}" alt="${d.name} deck back"></div>
-       <div class="photo-btn-row">
-         <label class="photoBtn" for="photoInput">Retake photo</label>
-         <span class="photoBtnGhost" id="removePhotoBtn">Remove photo</span>
-       </div>`
-    : `<div class="photo-empty">No photo yet — snap the back of this box so the art (and any rules printed on it) are here next time.</div>
-       <div class="photo-btn-row">
-         <label class="photoBtn" for="photoInput">Take a photo</label>
-       </div>`;
-  const photoSectionHtml = `<div class="section-label">Box back</div><input type="file" accept="image/*" capture="environment" id="photoInput" style="display:none;">${photoHtml}`;
 
   const plays = loadPlays(d.slug);
   const playCount = plays.length;
@@ -1476,7 +1209,6 @@ async function openModal(d){
       <div class="tagline">${d.tagline || ''}</div>
     </div>
     <div class="modal-body">
-      ${photoSectionHtml}
       ${playTrackerHtml}
       ${rulesHtml}
       ${meaningsHtml}
@@ -1494,47 +1226,29 @@ async function openModal(d){
   `;
   overlay.classList.add('show');
   document.getElementById('modalCloseBtn').onclick = closeModal;
+  attachSwipeToClose(modal, document.querySelector('#modal .modal-head'));
 
   document.getElementById('logPlayBtn').onclick = ()=>{
     logPlay(d.slug);
     openModal(d);
+    renderGrid();
   };
   const undoBtn = document.getElementById('undoPlayBtn');
   if(undoBtn){
     undoBtn.onclick = ()=>{
       undoLastPlay(d.slug);
       openModal(d);
+      renderGrid();
     };
   }
 
   document.getElementById('deleteDeckBtn').onclick = ()=>{
-    if(confirm(`Delete "${d.name}"? This removes its notes, photo, and play history too — can't be undone.`)){
+    if(confirm(`Delete "${d.name}"? This removes its notes and play history too — can't be undone.`)){
       deleteDeck(d.slug);
       closeModal();
       renderGrid();
     }
   };
-
-  const photoInput = document.getElementById('photoInput');
-  photoInput.onchange = async ()=>{
-    const file = photoInput.files[0];
-    if(!file) return;
-    photoInput.value = '';
-    try{
-      const canvas = await loadImageResizedToCanvas(file, 900);
-      openMaskEditor(canvas, async (finalDataUrl)=>{
-        await savePhoto(d.slug, finalDataUrl);
-        openModal(d);
-      });
-    }catch(e){ /* silently ignore a failed capture */ }
-  };
-  const removeBtn = document.getElementById('removePhotoBtn');
-  if(removeBtn){
-    removeBtn.onclick = async ()=>{
-      await deletePhoto(d.slug);
-      openModal(d);
-    };
-  }
 
   document.getElementById('saveNoteBtn').onclick = async ()=>{
     const val = document.getElementById('noteBox').value;
@@ -1548,10 +1262,51 @@ async function openModal(d){
 
 function closeModal(){
   document.getElementById('overlay').classList.remove('show');
+  const modalEl = document.getElementById('modal');
+  modalEl.style.transition = '';
+  modalEl.style.transform = '';
+  modalEl.style.opacity = '';
 }
 document.getElementById('overlay').addEventListener('click', (e)=>{
   if(e.target.id==='overlay') closeModal();
 });
+
+// Drag-down-to-dismiss, scoped to the modal's header/title strip only —
+// deliberately not the whole modal, so it never fights with scrolling the
+// rules/notes content below. Works alongside the × button, not instead of it.
+function attachSwipeToClose(modalEl, handleEl){
+  if(!handleEl) return;
+  let startY = 0, dy = 0, dragging = false;
+
+  handleEl.addEventListener('pointerdown', (e)=>{
+    dragging = true;
+    startY = e.clientY;
+    modalEl.style.transition = 'none';
+    handleEl.setPointerCapture(e.pointerId);
+  });
+  handleEl.addEventListener('pointermove', (e)=>{
+    if(!dragging) return;
+    dy = e.clientY - startY;
+    if(dy > 0){
+      modalEl.style.transform = `translateY(${dy}px)`;
+      modalEl.style.opacity = String(Math.max(0.4, 1 - dy/400));
+    }
+  });
+  const endDrag = ()=>{
+    if(!dragging) return;
+    dragging = false;
+    modalEl.style.transition = 'transform .2s ease, opacity .2s ease';
+    if(dy > 90){
+      closeModal();
+    } else {
+      modalEl.style.transform = '';
+      modalEl.style.opacity = '';
+    }
+    dy = 0;
+  };
+  handleEl.addEventListener('pointerup', endDrag);
+  handleEl.addEventListener('pointercancel', endDrag);
+}
 
 document.querySelectorAll('.chip').forEach(chip=>{
   chip.addEventListener('click', ()=>{
