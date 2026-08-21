@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="must-revalidate">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -30,6 +30,7 @@
     --shadow: 0 6px 18px rgba(43,36,27,0.14);
   }
   *{box-sizing:border-box;}
+  html{touch-action:pan-y;overflow-x:hidden;}
   body{
     margin:0;
     background:
@@ -39,6 +40,8 @@
     font-family:'Inter',sans-serif;
     min-height:100vh;
     padding-bottom:60px;
+    touch-action:pan-y;
+    overflow-x:hidden;
   }
   header{
     padding:36px 20px 20px;
@@ -145,16 +148,34 @@
     justify-content:space-between;
   }
   .card:hover{transform:translateY(-3px) rotate(-0.4deg);box-shadow:0 10px 22px rgba(43,36,27,0.2);}
-  .card-thumb{
+  .card-icon{
     position:absolute;
     top:14px;right:14px;
-    width:46px;height:46px;
-    border-radius:5px;
-    background-size:cover;
-    background-position:center;
-    border:2px solid var(--paper-card);
-    box-shadow:0 2px 6px rgba(0,0,0,0.3);
+    width:38px;height:38px;
+    border-radius:50%;
+    background:var(--paper);
+    border:1.5px solid rgba(43,36,27,0.2);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:7px;
+    box-shadow:0 2px 5px rgba(43,36,27,0.15);
   }
+  .card-icon svg{width:100%;height:100%;}
+  .modal-icon{
+    position:absolute;
+    top:14px;right:56px;
+    width:44px;height:44px;
+    border-radius:50%;
+    background:var(--paper);
+    border:2px solid rgba(43,36,27,0.2);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:9px;
+  }
+  .modal-icon svg{width:100%;height:100%;}
+  @media (max-width:600px){ .modal-icon{display:none;} }
   .tab{
     position:absolute;
     top:-9px;
@@ -181,6 +202,11 @@
     color:var(--ink-soft);
     line-height:1.4;
     margin:0;
+    min-height:calc(1.4em * 3);
+    display:-webkit-box;
+    -webkit-line-clamp:3;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
   }
   .empty-hint{
     font-family:'IBM Plex Mono',monospace;
@@ -194,9 +220,9 @@
     position:fixed;inset:0;
     background:rgba(43,36,27,0.55);
     display:none;
-    align-items:flex-start;
+    align-items:center;
     justify-content:center;
-    padding:30px 16px;
+    padding:24px 16px;
     overflow-y:auto;
     z-index:50;
   }
@@ -205,37 +231,40 @@
     background:var(--paper-card);
     max-width:640px;
     width:100%;
-    border-radius:6px;
+    border-radius:10px;
     box-shadow:0 20px 50px rgba(0,0,0,0.35);
     position:relative;
-    margin-top:20px;
-    touch-action:pan-y;
+    margin:auto;
+    max-height:88vh;
+    overflow-y:auto;
   }
-  .drag-handle{
-    width:40px;
-    height:4px;
-    background:var(--rule);
-    border-radius:3px;
-    margin:10px auto 0;
-    display:none;
+  .modal-close{
+    position:absolute;
+    top:14px;right:14px;
+    width:30px;height:30px;
+    border-radius:50%;
+    border:2px solid var(--ink);
+    background:var(--paper-card);
+    color:var(--ink);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:15px;
+    line-height:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    z-index:2;
   }
   .modal-head{
-    padding:26px 26px 18px;
+    padding:26px 112px 18px 26px;
     border-bottom:2px dashed var(--rule);
     position:relative;
   }
   @media (max-width:600px){
-    .overlay{align-items:flex-end;padding:0;}
-    .modal{
-      max-width:100%;
-      margin-top:0;
-      border-radius:16px 16px 0 0;
-      max-height:88vh;
-      overflow-y:auto;
-    }
-    .drag-handle{display:block;}
-    .modal-head{padding:6px 22px 16px;}
-    .modal-body{padding:18px 22px 40px;}
+    .overlay{padding:16px;}
+    .modal{max-height:88vh;}
+    .modal-head{padding:22px 50px 16px 22px;}
+    .modal-body{padding:18px 22px 28px;}
   }
   .modal-tab{
     display:inline-block;
@@ -412,11 +441,25 @@
   .view header{padding-top:24px;}
 
   /* ---------- play tracker / badges ---------- */
+  .cardMeta{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:8px;
+  }
   .playBadge{
     font-family:'IBM Plex Mono',monospace;
     font-size:10.5px;
     color:var(--ink-soft);
-    margin-top:8px;
+  }
+  .tierBadge{
+    font-family:'Archivo Black',sans-serif;
+    font-size:10.5px;
+    color:#fff;
+    padding:2px 8px;
+    border-radius:3px;
+    line-height:1.5;
   }
   .playTracker{
     display:flex;
@@ -656,7 +699,7 @@
 
 <header>
   <div class="eyebrow">Est. by the Townsends</div>
-  <h1>Townsend <span>Household</span><br>Card Catalog</h1>
+  <h1>Townsend <span>Household</span><br>UNO Card Catalog</h1>
   <div class="sub">Every deck we own, and the special rule you always forget mid-game. Tap a card to read the fine print.</div>
 </header>
 
@@ -719,6 +762,162 @@ const CATEGORY_META = {
   house:    {label:'House Deck',      color:'var(--purple)'},
   offshoot: {label:'Distant Cousins', color:'var(--yellow)'},
 };
+
+// Small hand-drawn icon set, one per deck — generic and thematic rather than
+// reproductions of any studio's logo or character (no mouse ears, no web-head
+// logo, no mustache-and-cap, etc). Anything not listed falls back to
+// DEFAULT_ICON, a plain card-stack glyph matching the site's own card motif.
+// All paths sit on a 48x48 grid and inherit color via currentColor so they
+// pick up each card's category color automatically.
+const DEFAULT_ICON = `
+  <rect x="12" y="10" width="18" height="26" rx="3" transform="rotate(-8 21 23)"/>
+  <rect x="16" y="8" width="18" height="26" rx="3"/>
+`;
+const DECK_ICONS = {
+  'mario-kart': `
+    <circle cx="24" cy="24" r="14"/>
+    <line x1="24" y1="10" x2="24" y2="17"/>
+    <line x1="24" y1="31" x2="24" y2="38"/>
+    <line x1="10" y1="24" x2="17" y2="24"/>
+    <line x1="31" y1="24" x2="38" y2="24"/>
+    <circle cx="24" cy="24" r="4" fill="currentColor" stroke="none"/>
+  `,
+  'uno-flip': `
+    <path d="M14 21a10 10 0 0 1 18-6"/>
+    <path d="M34 15v6h-6"/>
+    <path d="M34 27a10 10 0 0 1-18 6"/>
+    <path d="M14 33v-6h6"/>
+  `,
+  'no-mercy': `
+    <circle cx="24" cy="24" r="16"/>
+    <path d="M27 10 16 27h7l-2 11 15-19h-7z" fill="currentColor" stroke="none"/>
+  `,
+  'dos': `
+    <rect x="8" y="14" width="17" height="24" rx="3"/>
+    <rect x="23" y="10" width="17" height="24" rx="3" fill="#F1E8D6"/>
+  `,
+  'all-wilds': `
+    <path d="M10 30a14 14 0 0 1 28 0" stroke="#C7361F"/>
+    <path d="M14 30a10 10 0 0 1 20 0" stroke="#1D4E89"/>
+    <path d="M18 30a6 6 0 0 1 12 0" stroke="#C98A00"/>
+  `,
+  'uno-golf': `
+    <path d="M16 40V9"/>
+    <path d="M16 10l16 7-16 7z" fill="currentColor" stroke="none"/>
+    <ellipse cx="16" cy="41" rx="11" ry="3"/>
+  `,
+  'uno-spin': `
+    <circle cx="24" cy="26" r="13"/>
+    <path d="M24 6l4 6h-8z" fill="currentColor" stroke="none"/>
+    <circle cx="24" cy="26" r="2" fill="currentColor" stroke="none"/>
+    <path d="M14 33a13 13 0 0 0 5 4"/>
+    <path d="M34 33a13 13 0 0 1-5 4"/>
+  `,
+  'liars-uno': `
+    <path d="M6 20c0-7 8-12 18-12s18 5 18 12c0 3-2 5-5 5-2.5 0-3.5-1.5-3.5-3.5 0 2.5-3 4.5-9.5 4.5s-9.5-2-9.5-4.5c0 2-1 3.5-3.5 3.5-3 0-5-2-5-5z"/>
+    <circle cx="15" cy="17" r="1.6" fill="currentColor" stroke="none"/>
+    <circle cx="33" cy="17" r="1.6" fill="currentColor" stroke="none"/>
+    <line x1="24" y1="8" x2="24" y2="4"/>
+  `,
+  'winnie-the-pooh': `
+    <path d="M15 16h18l-2 22a4 4 0 0 1-4 4H21a4 4 0 0 1-4-4z"/>
+    <ellipse cx="24" cy="16" rx="9" ry="3"/>
+    <path d="M15 24h18" stroke-dasharray="2 3"/>
+  `,
+  'disneyland': `
+    <path d="M9 40V21l4-6 4 6v-5l4-5 4 5v5l4-6 4 6v19z"/>
+    <line x1="13" y1="15" x2="13" y2="9"/>
+    <path d="M13 9l4 2-4 2z" fill="currentColor" stroke="none"/>
+    <line x1="35" y1="15" x2="35" y2="9"/>
+    <path d="M35 9l4 2-4 2z" fill="currentColor" stroke="none"/>
+  `,
+  'emoji': `
+    <circle cx="24" cy="24" r="14"/>
+    <circle cx="19" cy="21" r="1.8" fill="currentColor" stroke="none"/>
+    <circle cx="29" cy="21" r="1.8" fill="currentColor" stroke="none"/>
+    <path d="M17 28c2 3 5 5 7 5s5-2 7-5"/>
+  `,
+  'mario': `
+    <rect x="9" y="12" width="20" height="20" rx="3"/>
+    <text x="19" y="27" font-family="Georgia,serif" font-weight="bold" font-size="15" text-anchor="middle" fill="currentColor" stroke="none">?</text>
+    <circle cx="36" cy="33" r="6"/>
+  `,
+  'encanto': `
+    <rect x="20" y="20" width="8" height="18" rx="2"/>
+    <path d="M24 20c-3-4 0-7 0-10 3 3 5 6 2 10z" fill="currentColor" stroke="none"/>
+    <path d="M13 13l1.4 3.6L18 18l-3.6 1.4L13 23l-1.4-3.6L8 18l3.6-1.4z" fill="currentColor" stroke="none"/>
+  `,
+  'hot-wheels': `
+    <path d="M7 30h4l3-7h20l3 7h4"/>
+    <path d="M15 23l3-6h12l3 6"/>
+    <circle cx="16" cy="32" r="3.5"/>
+    <circle cx="32" cy="32" r="3.5"/>
+    <line x1="3" y1="25" x2="8" y2="25"/>
+    <line x1="2" y1="29" x2="7" y2="29"/>
+  `,
+  'lord-of-the-rings': `
+    <circle cx="20" cy="28" r="11"/>
+    <circle cx="20" cy="28" r="8" stroke-dasharray="3 3"/>
+    <path d="M33 9c-4 4 1 6-1 10 4-1 7-5 4-10z" fill="currentColor" stroke="none"/>
+  `,
+  'mickey': `
+    <line x1="14" y1="35" x2="30" y2="18"/>
+    <path d="M30 11l2.4 4.6L37 18l-4.6 2.4L30 25l-2.4-4.6L23 18l4.6-2.4z" fill="currentColor" stroke="none"/>
+  `,
+  'ninja-turtles': `
+    <path d="M8 20c4-4 10-6 16-6s12 2 16 6c-2 4-2 8 0 12-4 2-8 2-12 0-2 2-6 2-8 0-4 2-8 2-12 0 2-4 2-8 0-12z"/>
+    <circle cx="16" cy="22" r="1.6" fill="currentColor" stroke="none"/>
+    <circle cx="32" cy="22" r="1.6" fill="currentColor" stroke="none"/>
+    <line x1="8" y1="20" x2="4" y2="17"/>
+    <line x1="40" y1="20" x2="44" y2="17"/>
+  `,
+  'minecraft': `
+    <path d="M24 8l14 8-14 8-14-8z"/>
+    <path d="M10 16v14l14 8V24z"/>
+    <path d="M38 16v14l-14 8V24z"/>
+  `,
+  'x-men': `
+    <path d="M24 6l4 12 12 4-12 4-4 12-4-12-12-4 12-4z" fill="currentColor" stroke="none"/>
+  `,
+  'amazing-spider-man': `
+    <circle cx="24" cy="24" r="16"/>
+    <circle cx="24" cy="24" r="10"/>
+    <circle cx="24" cy="24" r="4"/>
+    <line x1="24" y1="8" x2="24" y2="40"/>
+    <line x1="8" y1="24" x2="40" y2="24"/>
+    <line x1="13" y1="13" x2="35" y2="35"/>
+    <line x1="35" y1="13" x2="13" y2="35"/>
+  `,
+  'clueless': `
+    <circle cx="15" cy="25" r="7"/>
+    <circle cx="33" cy="25" r="7"/>
+    <line x1="22" y1="25" x2="26" y2="25"/>
+    <line x1="8" y1="22" x2="3" y2="18"/>
+    <line x1="40" y1="22" x2="45" y2="18"/>
+  `,
+  'childhood': `
+    <rect x="9" y="9" width="30" height="26" rx="2"/>
+    <rect x="13" y="13" width="22" height="15" rx="1"/>
+    <path d="M24 32l1.1 2.3 2.5.4-1.8 1.8.4 2.5-2.2-1.2-2.2 1.2.4-2.5-1.8-1.8 2.5-.4z" fill="currentColor" stroke="none"/>
+  `,
+  'custom-wild-card': `
+    <rect x="10" y="8" width="20" height="28" rx="3"/>
+    <path d="M27 33l11-11 4 4-11 11-5 1z" fill="currentColor" stroke="none"/>
+  `,
+  'minimalist': `
+    <circle cx="24" cy="24" r="14"/>
+    <circle cx="24" cy="24" r="2.5" fill="currentColor" stroke="none"/>
+  `,
+  'no-politics': `
+    <path d="M8 28c3-10 13-14 20-9-2 3-1 5 1 6 3-2 8-1 9 4-7 5-16 4-20-1-4 3-8 3-10 0z"/>
+    <path d="M17 19v-7l4 4z" fill="currentColor" stroke="none"/>
+    <circle cx="28" cy="21" r="1.4" fill="currentColor" stroke="none"/>
+  `,
+};
+function deckIconSvg(slug){
+  const inner = DECK_ICONS[slug] || DEFAULT_ICON;
+  return `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+}
 
 const BUILTIN_DECKS = [
   {
@@ -1167,7 +1366,7 @@ function openMaskEditor(sourceCanvas, onSave){
   const modal = document.getElementById('maskModal');
 
   modal.innerHTML = `
-    <div class="drag-handle"></div>
+    <div class="modal-close" id="maskCloseBtn">&times;</div>
     <div class="modal-head">
       <h2>Erase background</h2>
       <div class="tagline">Drag to erase. Switch to Restore to undo a spot. Nothing saves until you tap Save.</div>
@@ -1262,6 +1461,7 @@ function openMaskEditor(sourceCanvas, onSave){
     ctx.drawImage(pristine, 0, 0);
   };
   document.getElementById('maskCancelBtn').onclick = closeMaskEditor;
+  document.getElementById('maskCloseBtn').onclick = closeMaskEditor;
   document.getElementById('maskSaveBtn').onclick = ()=>{
     const dataUrl = canvas.toDataURL('image/png');
     closeMaskEditor();
@@ -1275,21 +1475,16 @@ document.getElementById('maskOverlay').addEventListener('click', (e)=>{
   if(e.target.id==='maskOverlay') closeMaskEditor();
 });
 
-function setCardThumb(slug, dataUrl){
-  const cardEl = document.querySelector(`.card[data-slug="${slug}"]`);
-  if(!cardEl) return;
-  let thumb = cardEl.querySelector('.card-thumb');
-  if(dataUrl){
-    if(!thumb){ thumb = document.createElement('div'); thumb.className = 'card-thumb'; cardEl.appendChild(thumb); }
-    thumb.style.backgroundImage = `url(${dataUrl})`;
-  } else if(thumb){
-    thumb.remove();
-  }
-}
-
 let notesCache = {};
 
 function catColor(cat){ return CATEGORY_META[cat].color; }
+
+function tierLabelFor(slug){
+  const placements = loadTierPlacements();
+  const key = placements[slug];
+  if(!key) return null;
+  return TIERS.find(t=>t.key===key) || null;
+}
 
 function renderGrid(){
   const activeFilter = document.querySelector('.chip.active').dataset.filter;
@@ -1305,17 +1500,24 @@ function renderGrid(){
     el.dataset.slug = d.slug;
     el.style.setProperty('--spine', catColor(d.category));
     const playCount = loadPlays(d.slug).length;
+    const tier = tierLabelFor(d.slug);
+    const metaHtml = (playCount || tier) ? `
+      <div class="cardMeta">
+        ${tier ? `<span class="tierBadge" style="background:${tier.color}">${tier.label}</span>` : ''}
+        ${playCount ? `<span class="playBadge">▶ played ${playCount}×</span>` : ''}
+      </div>
+    ` : '';
     el.innerHTML = `
       <div class="tab" style="background:${catColor(d.category)}">${CATEGORY_META[d.category].label}</div>
+      <div class="card-icon" style="color:${catColor(d.category)}">${deckIconSvg(d.slug)}</div>
       <div>
         <h3>${d.name}</h3>
         <p>${d.tagline || 'Tap to add what makes this one special.'}</p>
       </div>
-      ${playCount ? `<div class="playBadge">▶ played ${playCount}×</div>` : ''}
+      ${metaHtml}
     `;
     el.onclick = ()=>openModal(d);
     grid.appendChild(el);
-    loadPhoto(d.slug).then(url=>{ if(url) setCardThumb(d.slug, url); });
   });
   document.getElementById('emptyHint').style.display = shown===0 ? 'block':'none';
 }
@@ -1411,10 +1613,10 @@ async function openModal(d){
     </div>
   `;
 
-  modal.style.transform = '';
   modal.innerHTML = `
-    <div class="drag-handle"></div>
+    <div class="modal-close" id="modalCloseBtn">&times;</div>
     <div class="modal-head">
+      <div class="modal-icon" style="color:${catColor(d.category)}">${deckIconSvg(d.slug)}</div>
       <span class="modal-tab" style="background:${catColor(d.category)}">${CATEGORY_META[d.category].label}</span>
       <h2>${d.name}</h2>
       <div class="tagline">${d.tagline || ''}</div>
@@ -1437,6 +1639,7 @@ async function openModal(d){
     </div>
   `;
   overlay.classList.add('show');
+  document.getElementById('modalCloseBtn').onclick = closeModal;
 
   document.getElementById('logPlayBtn').onclick = ()=>{
     logPlay(d.slug);
@@ -1467,7 +1670,6 @@ async function openModal(d){
       const canvas = await loadImageResizedToCanvas(file, 900);
       openMaskEditor(canvas, async (finalDataUrl)=>{
         await savePhoto(d.slug, finalDataUrl);
-        setCardThumb(d.slug, finalDataUrl);
         openModal(d);
       });
     }catch(e){ /* silently ignore a failed capture */ }
@@ -1476,7 +1678,6 @@ async function openModal(d){
   if(removeBtn){
     removeBtn.onclick = async ()=>{
       await deletePhoto(d.slug);
-      setCardThumb(d.slug, null);
       openModal(d);
     };
   }
@@ -1498,31 +1699,6 @@ document.getElementById('overlay').addEventListener('click', (e)=>{
   if(e.target.id==='overlay') closeModal();
 });
 
-(function(){
-  const modalEl = document.getElementById('modal');
-  let startY = 0, dragging = false;
-  modalEl.addEventListener('touchstart', (e)=>{
-    startY = e.touches[0].clientY;
-    dragging = true;
-    modalEl.style.transition = 'none';
-  }, {passive:true});
-  modalEl.addEventListener('touchmove', (e)=>{
-    if(!dragging) return;
-    const dy = e.touches[0].clientY - startY;
-    if(dy > 0){ modalEl.style.transform = `translateY(${dy}px)`; }
-  }, {passive:true});
-  modalEl.addEventListener('touchend', (e)=>{
-    dragging = false;
-    modalEl.style.transition = 'transform .2s ease';
-    const dy = (e.changedTouches[0].clientY - startY);
-    if(dy > 90){
-      closeModal();
-    } else {
-      modalEl.style.transform = '';
-    }
-  });
-})();
-
 document.querySelectorAll('.chip').forEach(chip=>{
   chip.addEventListener('click', ()=>{
     document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
@@ -1537,7 +1713,7 @@ function openAddDeckModal(){
   const options = Object.keys(CATEGORY_META)
     .map(key=>`<option value="${key}">${CATEGORY_META[key].label}</option>`).join('');
   modal.innerHTML = `
-    <div class="drag-handle"></div>
+    <div class="modal-close" id="addModalCloseBtn">&times;</div>
     <div class="modal-head">
       <h2>Add a deck</h2>
       <div class="tagline">Fill in the rest once you've got the box in hand.</div>
@@ -1556,6 +1732,7 @@ function openAddDeckModal(){
   overlay.classList.add('show');
   document.getElementById('newDeckName').focus();
 
+  document.getElementById('addModalCloseBtn').onclick = closeAddDeckModal;
   document.getElementById('cancelAddDeckBtn').onclick = closeAddDeckModal;
   document.getElementById('confirmAddDeckBtn').onclick = ()=>{
     const name = document.getElementById('newDeckName').value.trim();
@@ -1590,6 +1767,7 @@ document.querySelectorAll('.navtab').forEach(tab=>{
     const view = tab.dataset.view;
     document.querySelectorAll('.view').forEach(v=>v.style.display='none');
     document.getElementById('view-'+view).style.display='block';
+    if(view==='catalog') renderGrid();
     if(view==='tier') renderTierList();
     if(view==='stats') renderStats();
   });
