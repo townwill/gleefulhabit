@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta http-equiv="Cache-Control" content="must-revalidate">
+<meta http-equiv="Cache-Control" content="no-cache">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="UNO Archive">
@@ -232,7 +232,7 @@
     display:none;
     align-items:center;
     justify-content:center;
-    padding:24px 16px;
+    padding:calc(24px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom)) 16px;
     overflow-y:auto;
     z-index:50;
   }
@@ -596,10 +596,10 @@
     margin:0 auto;
     padding:0 20px 20px;
     display:grid;
-    grid-template-columns:repeat(3,1fr);
+    grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
     gap:12px;
   }
-  @media (max-width:600px){ .stats-summary{padding:0 16px 16px;gap:8px;} }
+  @media (max-width:600px){ .stats-summary{padding:0 16px 16px;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr));} }
   .stat-box{
     background:var(--paper-card);
     border:1.5px solid rgba(43,36,27,0.25);
@@ -794,7 +794,7 @@
     .card.has-badge h3{padding-right:30px;}
     .card-corner{top:8px;right:8px;}
     .cornerTier, .cornerPlays{font-size:8px;padding:2px 5px;}
-    .overlay{padding:16px;}
+    .overlay{padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)) 16px;}
     .modal{max-height:88vh;}
     .modal-head{padding:22px 62px 16px 22px;}
     .modal-body{padding:18px 22px 28px;}
@@ -889,12 +889,16 @@
   <div class="modal" id="addModal"></div>
 </div>
 
+<div class="overlay" id="logPlayOverlay">
+  <div class="modal" id="logPlayModal"></div>
+</div>
+
 <script>
 // Bump APP_VERSION (and APP_BUILD_DATE) every time you push a change.
 // It's stamped in the footer and logged to the console on load, so after
 // deploying you can hard-refresh and immediately confirm the new version
 // actually landed, instead of guessing from a cached-looking page.
-const APP_VERSION = 'v26';
+const APP_VERSION = 'v27';
 const APP_BUILD_DATE = '2026-08-21';
 console.log(`UNO Archive ${APP_VERSION} — built ${APP_BUILD_DATE}`);
 
@@ -1433,25 +1437,81 @@ function saveNoSpecialFlag(slug, val){
   }catch(e){ return false; }
 }
 
-// Plays: an array of ISO timestamp strings per deck, used by both the
-// modal's play tracker and the Stats tab.
+// Plays: an array of records per deck, used by both the modal's play
+// tracker and the Stats tab. Each record is { date, players, winner, note }
+// — players/winner/note are all optional. Older data (from before session
+// details existed) stored plain ISO date strings instead of objects;
+// loadPlays normalizes those into {date: <string>} on the way out so
+// nothing downstream has to know the difference.
 function loadPlays(slug){
-  try{ return JSON.parse(localStorage.getItem('uno-plays:'+slug)) || []; }
-  catch(e){ return []; }
+  try{
+    const raw = JSON.parse(localStorage.getItem('uno-plays:'+slug)) || [];
+    return raw.map(entry => typeof entry === 'string' ? {date:entry} : entry);
+  }catch(e){ return []; }
 }
 function savePlays(slug, arr){
   try{ localStorage.setItem('uno-plays:'+slug, JSON.stringify(arr)); return true; }
   catch(e){ return false; }
 }
-function logPlay(slug){
+function logPlay(slug, details){
   const arr = loadPlays(slug);
-  arr.push(new Date().toISOString());
+  arr.push(Object.assign({date:new Date().toISOString()}, details || {}));
   savePlays(slug, arr);
 }
 function undoLastPlay(slug){
   const arr = loadPlays(slug);
   arr.pop();
   savePlays(slug, arr);
+}
+
+// Small form for the details of a single play session — how many people,
+// who won, anything worth remembering about how it played out. All fields
+// are optional; hitting "Log it" with everything blank still logs a bare
+// play (same as the old one-tap behavior), it just won't have extra detail.
+function openLogPlayModal(d, onLogged){
+  const overlay = document.getElementById('logPlayOverlay');
+  const modal = document.getElementById('logPlayModal');
+
+  modal.innerHTML = `
+    <div class="modal-close" id="logPlayCloseBtn">&times;</div>
+    <div class="modal-head">
+      <h2>Log a play</h2>
+      <div class="tagline">${d.name} — every field's optional, skip whatever you don't know.</div>
+    </div>
+    <div class="modal-body">
+      <div class="section-label">How many people played?</div>
+      <input type="number" id="playersInput" class="textInput" min="1" max="20" placeholder="e.g. 4" inputmode="numeric">
+      <div class="section-label">Who won?</div>
+      <input type="text" id="winnerInput" class="textInput" placeholder="e.g. Mom">
+      <div class="section-label">How'd it play out?</div>
+      <input type="text" id="playNoteInput" class="textInput" placeholder="Any house rules, how close it was, etc.">
+      <div class="saveRow">
+        <button id="cancelLogPlayBtn" class="ghostBtn">Cancel</button>
+        <button id="confirmLogPlayBtn">Log it</button>
+      </div>
+    </div>
+  `;
+  overlay.classList.add('show');
+  document.getElementById('playersInput').focus();
+
+  const close = ()=> overlay.classList.remove('show');
+  document.getElementById('logPlayCloseBtn').onclick = close;
+  document.getElementById('cancelLogPlayBtn').onclick = close;
+  overlay.onclick = (e)=>{ if(e.target===overlay) close(); };
+
+  document.getElementById('confirmLogPlayBtn').onclick = ()=>{
+    const playersRaw = document.getElementById('playersInput').value;
+    const winnerRaw = document.getElementById('winnerInput').value.trim();
+    const noteRaw = document.getElementById('playNoteInput').value.trim();
+    const details = {};
+    const playersNum = parseInt(playersRaw, 10);
+    if(playersRaw && !isNaN(playersNum) && playersNum > 0) details.players = playersNum;
+    if(winnerRaw) details.winner = winnerRaw;
+    if(noteRaw) details.note = noteRaw;
+    logPlay(d.slug, details);
+    close();
+    onLogged();
+  };
 }
 
 // Tier list placements: { slug: 'S'|'A'|...|'never' }. Decks with no entry
@@ -1560,11 +1620,18 @@ Card Name: what it does">${text}</textarea>
 
     const plays = loadPlays(d.slug);
     const playCount = plays.length;
-    const lastPlayed = playCount ? new Date(plays[plays.length-1]).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : null;
+    const lastPlay = playCount ? plays[plays.length-1] : null;
+    const lastPlayed = lastPlay ? new Date(lastPlay.date).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : null;
+    const lastDetailBits = [];
+    if(lastPlay){
+      if(lastPlay.players) lastDetailBits.push(`${lastPlay.players} player${lastPlay.players===1?'':'s'}`);
+      if(lastPlay.winner) lastDetailBits.push(`${lastPlay.winner} won`);
+    }
+    const lastDetailStr = lastDetailBits.length ? ` · ${lastDetailBits.join(', ')}` : '';
     const playTrackerHtml = `
       <div class="section-label">Play tracker</div>
       <div class="playTracker">
-        <div class="playCount">${playCount ? `Played <strong>${playCount}</strong> time${playCount===1?'':'s'}${lastPlayed ? ` · last on ${lastPlayed}` : ''}` : 'Not logged yet'}</div>
+        <div class="playCount">${playCount ? `Played <strong>${playCount}</strong> time${playCount===1?'':'s'}${lastPlayed ? ` · last on ${lastPlayed}${lastDetailStr}` : ''}` : 'Not logged yet'}</div>
         <div class="playBtns">
           ${playCount ? '<button id="undoPlayBtn" class="ghostBtn">Undo last</button>' : ''}
           <button id="logPlayBtn">We played this!</button>
@@ -1608,9 +1675,7 @@ Card Name: what it does">${text}</textarea>
     }
 
     document.getElementById('logPlayBtn').onclick = ()=>{
-      logPlay(d.slug);
-      render();
-      renderGrid();
+      openLogPlayModal(d, ()=>{ render(); renderGrid(); });
     };
     const undoBtn = document.getElementById('undoPlayBtn');
     if(undoBtn){
@@ -1952,18 +2017,36 @@ function renderStats(){
 
   const rows = DECKS.map(d=>{
     const plays = loadPlays(d.slug);
-    return { deck:d, count:plays.length, last: plays.length ? plays[plays.length-1] : null };
+    return { deck:d, count:plays.length, plays, last: plays.length ? plays[plays.length-1] : null };
   }).filter(r=>r.count>0).sort((a,b)=>b.count-a.count);
 
   const totalPlays = rows.reduce((sum,r)=>sum+r.count,0);
   const decksPlayed = rows.length;
   const topDeck = rows[0] ? rows[0].deck.name : '—';
 
-  summaryEl.innerHTML = `
-    <div class="stat-box"><div class="stat-num">${totalPlays}</div><div class="stat-caption">Total plays logged</div></div>
-    <div class="stat-box"><div class="stat-num">${decksPlayed}</div><div class="stat-caption">Decks played</div></div>
-    <div class="stat-box"><div class="stat-num stat-num-small">${topDeck}</div><div class="stat-caption">Most played</div></div>
-  `;
+  // Tally winners across every logged play, every deck, to surface a
+  // household "most wins" stat — purely from whatever's actually been
+  // filled in, so this stays blank if nobody's ever logged a winner.
+  const winnerCounts = {};
+  rows.forEach(r=>{
+    r.plays.forEach(p=>{
+      if(p.winner){
+        const key = p.winner.trim();
+        if(key) winnerCounts[key] = (winnerCounts[key]||0) + 1;
+      }
+    });
+  });
+  const topWinnerEntry = Object.entries(winnerCounts).sort((a,b)=>b[1]-a[1])[0];
+
+  const summaryBoxes = [
+    `<div class="stat-box"><div class="stat-num">${totalPlays}</div><div class="stat-caption">Total plays logged</div></div>`,
+    `<div class="stat-box"><div class="stat-num">${decksPlayed}</div><div class="stat-caption">Decks played</div></div>`,
+    `<div class="stat-box"><div class="stat-num stat-num-small">${topDeck}</div><div class="stat-caption">Most played</div></div>`,
+  ];
+  if(topWinnerEntry){
+    summaryBoxes.push(`<div class="stat-box"><div class="stat-num stat-num-small">${topWinnerEntry[0]}</div><div class="stat-caption">Most wins (${topWinnerEntry[1]})</div></div>`);
+  }
+  summaryEl.innerHTML = summaryBoxes.join('');
 
   if(!rows.length){
     listEl.innerHTML = `<div class="empty-hint" style="text-align:center;display:block;">No plays logged yet — tap into a deck and hit "We played this!"</div>`;
@@ -1973,7 +2056,11 @@ function renderStats(){
   const maxCount = rows[0].count;
   listEl.innerHTML = rows.map(r=>{
     const pct = Math.max(6, Math.round((r.count/maxCount)*100));
-    const lastStr = r.last ? new Date(r.last).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : '';
+    const lastStr = r.last ? new Date(r.last.date).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : '';
+    const lastBits = [];
+    if(r.last && r.last.players) lastBits.push(`${r.last.players} player${r.last.players===1?'':'s'}`);
+    if(r.last && r.last.winner) lastBits.push(`${r.last.winner} won`);
+    const lastDetailStr = lastBits.length ? ` · ${lastBits.join(', ')}` : '';
     return `
       <div class="stat-row">
         <div class="stat-row-top">
@@ -1981,7 +2068,7 @@ function renderStats(){
           <span class="stat-row-count">${r.count}×</span>
         </div>
         <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct}%;background:${catColor(r.deck.category)}"></div></div>
-        <div class="stat-row-last">last played ${lastStr}</div>
+        <div class="stat-row-last">last played ${lastStr}${lastDetailStr}</div>
       </div>
     `;
   }).join('');
