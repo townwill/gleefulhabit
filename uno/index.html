@@ -827,7 +827,7 @@
   <div class="chip" data-filter="reskin">UNO Reskin</div>
   <div class="chip" data-filter="regular">Regular</div>
   <div class="chip" data-filter="house">House Deck</div>
-  <div class="chip" data-filter="offshoot">Distant Cousins</div>
+  <div class="chip" data-filter="offshoot">Spinoffs</div>
   <div id="addBtn" title="Add a deck">(+)</div>
 </div>
 
@@ -898,7 +898,7 @@
 // It's stamped in the footer and logged to the console on load, so after
 // deploying you can hard-refresh and immediately confirm the new version
 // actually landed, instead of guessing from a cached-looking page.
-const APP_VERSION = 'v27';
+const APP_VERSION = 'v29';
 const APP_BUILD_DATE = '2026-08-21';
 console.log(`UNO Archive ${APP_VERSION} — built ${APP_BUILD_DATE}`);
 
@@ -907,7 +907,7 @@ const CATEGORY_META = {
   reskin:   {label:'UNO Reskin',      color:'var(--blue)'},
   regular:  {label:'Regular',         color:'var(--green)'},
   house:    {label:'House Deck',      color:'var(--purple)'},
-  offshoot: {label:'Distant Cousins', color:'var(--yellow)'},
+  offshoot: {label:'Spinoffs', color:'var(--yellow)'},
 };
 
 
@@ -1329,11 +1329,12 @@ function renderGrid(){
     el.style.setProperty('--spine', catColor(d.category));
     const playCount = loadPlays(d.slug).length;
     const tier = tierLabelFor(d.slug);
+    const tierBadgeText = tier ? (tier.short || tier.label) : '';
     let cornerHtml = '';
     if(tier && playCount){
-      cornerHtml = `<div class="card-corner"><span class="cornerTier" style="background:${tier.color}">${tier.label}</span><span class="cornerPlays">${playCount}×</span></div>`;
+      cornerHtml = `<div class="card-corner"><span class="cornerTier" style="background:${tier.color}">${tierBadgeText}</span><span class="cornerPlays">${playCount}×</span></div>`;
     } else if(tier){
-      cornerHtml = `<div class="card-corner"><span class="cornerTier" style="background:${tier.color}">${tier.label}</span></div>`;
+      cornerHtml = `<div class="card-corner"><span class="cornerTier" style="background:${tier.color}">${tierBadgeText}</span></div>`;
     } else if(playCount){
       cornerHtml = `<div class="card-corner"><span class="cornerPlays">${playCount}×</span></div>`;
     }
@@ -1887,7 +1888,7 @@ const TIERS = [
   {key:'E',     label:'E',  color:'#B84A2A'},
   {key:'F',     label:'F',  color:'#C7361F'},
   {key:'-',     label:'—',  color:'#6B5D45'},
-  {key:'never', label:'Never Again', color:'#2B241B'},
+  {key:'never', label:'Never Again', short:'Never', color:'#2B241B'},
 ];
 
 function renderTierList(){
