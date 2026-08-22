@@ -632,6 +632,147 @@
   .stat-bar-fill{height:100%;border-radius:3px;}
   .stat-row-last{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink-soft);margin-top:6px;}
 
+  /* ---------- spin the wheel ---------- */
+  .skipNeverRow{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    max-width:1100px;
+    margin:0 auto 6px;
+    padding:0 20px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .skipNeverRow input{
+    width:16px;height:16px;
+    accent-color:var(--ink);
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .categoryFilterRow{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px 14px;
+    max-width:1100px;
+    margin:10px auto 0;
+    padding:0 20px;
+  }
+  .categoryFilterItem{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .categoryFilterItem input{
+    width:15px;height:15px;
+    accent-color:var(--ink);
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .categoryFilterDot{
+    width:9px;height:9px;
+    border-radius:50%;
+    flex-shrink:0;
+  }
+  .wheel-stage{
+    position:relative;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    margin:34px auto 10px;
+    --wheel-size:300px;
+    width:var(--wheel-size);
+    height:var(--wheel-size);
+  }
+  .wheel-pointer{
+    position:absolute;
+    top:-16px;
+    left:50%;
+    transform:translateX(-50%);
+    width:0;height:0;
+    border-left:14px solid transparent;
+    border-right:14px solid transparent;
+    border-top:24px solid var(--ink);
+    z-index:3;
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,0.3));
+  }
+  .wheel{
+    width:100%;
+    height:100%;
+    border-radius:50%;
+    border:6px solid var(--ink);
+    box-shadow:0 12px 30px rgba(43,36,27,0.3);
+    transition:transform 4.2s cubic-bezier(0.17,0.67,0.12,0.99);
+    will-change:transform;
+  }
+  .wheel-hub{
+    position:absolute;
+    top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    width:72px;height:72px;
+    border-radius:50%;
+    border:4px solid var(--ink);
+    background:var(--paper-card);
+    color:var(--ink);
+    font-family:'Archivo Black',sans-serif;
+    font-size:14px;
+    cursor:pointer;
+    box-shadow:0 4px 10px rgba(0,0,0,0.25);
+    z-index:2;
+  }
+  .wheel-hub:disabled{opacity:0.55;cursor:default;}
+  .spin-result{
+    max-width:420px;
+    margin:30px auto 60px;
+    padding:0 20px;
+    text-align:center;
+  }
+  .spin-result-card{
+    background:var(--paper-card);
+    border:1.5px solid rgba(43,36,27,0.25);
+    border-left:7px solid var(--spine,var(--ink-soft));
+    border-radius:6px;
+    padding:24px 22px;
+    box-shadow:var(--shadow);
+  }
+  .spin-result-tab{
+    display:inline-block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:#fff;
+    padding:3px 10px;
+    border-radius:3px;
+    margin-bottom:10px;
+  }
+  .spin-result-name{font-family:'Archivo Black',sans-serif;font-size:26px;margin:4px 0 8px;line-height:1.1;}
+  .spin-result-tagline{font-size:13.5px;color:var(--ink-soft);line-height:1.5;margin-bottom:20px;}
+  .spin-result-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+  .spin-result-btns button{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    padding:10px 20px;
+    border-radius:20px;
+    cursor:pointer;
+  }
+  #spinAgainBtn{border:2px solid var(--ink);background:var(--ink);color:var(--paper);}
+  #viewDeckBtn{border:2px solid rgba(43,36,27,0.3);background:transparent;color:var(--ink);}
+  .spin-empty{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:14px;
+    line-height:1.6;
+    padding:50px 24px;
+    max-width:380px;
+    margin:0 auto;
+  }
+
   /* ---------------------------------------------------------------------
      Mobile overrides — deliberately placed LAST in the stylesheet.
      Every selector below has an equal-specificity counterpart defined
@@ -657,6 +798,7 @@
     .modal{max-height:88vh;}
     .modal-head{padding:22px 62px 16px 22px;}
     .modal-body{padding:18px 22px 28px;}
+    .wheel-stage{--wheel-size:250px;margin:26px auto 6px;}
   }
 </style>
 </head>
@@ -668,6 +810,7 @@
   <div class="navtab active" data-view="catalog">Catalog</div>
   <div class="navtab" data-view="tier">Tier List</div>
   <div class="navtab" data-view="stats">Stats</div>
+  <div class="navtab" data-view="spin">Spin</div>
 </nav>
 
 <section id="view-catalog" class="view">
@@ -717,6 +860,25 @@
   <div id="statsList" class="stats-list"></div>
 </section>
 
+<section id="view-spin" class="view" style="display:none">
+  <header>
+    <div class="eyebrow">Est. by the Townsends</div>
+    <h1>Spin the <span>Wheel</span></h1>
+    <div class="sub">Can't decide? Let the wheel pick tonight's deck.</div>
+  </header>
+  <label class="skipNeverRow">
+    <input type="checkbox" id="skipNeverCheckbox">
+    Skip decks ranked "Never Again"
+  </label>
+  <div class="categoryFilterRow" id="categoryFilterRow"></div>
+  <div class="wheel-stage">
+    <div class="wheel-pointer"></div>
+    <div class="wheel" id="spinWheel"></div>
+    <button id="wheelHub" class="wheel-hub">SPIN</button>
+  </div>
+  <div id="spinResult" class="spin-result" style="display:none"></div>
+</section>
+
 </div>
 
 <div class="overlay" id="overlay">
@@ -732,7 +894,7 @@
 // It's stamped in the footer and logged to the console on load, so after
 // deploying you can hard-refresh and immediately confirm the new version
 // actually landed, instead of guessing from a cached-looking page.
-const APP_VERSION = 'v22';
+const APP_VERSION = 'v26';
 const APP_BUILD_DATE = '2026-08-21';
 console.log(`UNO Archive ${APP_VERSION} — built ${APP_BUILD_DATE}`);
 
@@ -1646,6 +1808,7 @@ document.querySelectorAll('.navtab').forEach(tab=>{
     if(view==='catalog') renderGrid();
     if(view==='tier') renderTierList();
     if(view==='stats') renderStats();
+    if(view==='spin') renderSpinView();
   });
 });
 
@@ -1822,6 +1985,227 @@ function renderStats(){
       </div>
     `;
   }).join('');
+}
+
+// ---------- Spin the wheel ----------
+function loadSkipNeverFlag(){
+  try{
+    const val = localStorage.getItem('uno-spin-skip-never');
+    return val === null ? true : val === '1'; // defaults to on
+  }catch(e){ return true; }
+}
+function saveSkipNeverFlag(val){
+  try{ localStorage.setItem('uno-spin-skip-never', val ? '1' : '0'); return true; }
+  catch(e){ return false; }
+}
+
+// Per-category include/exclude for the wheel. Stored as {categoryKey: bool}.
+// Built fresh from CATEGORY_META every time (rather than trusting whatever
+// shape was last saved) so a category added later always defaults to
+// included, instead of silently vanishing from the wheel because an old
+// saved object doesn't have that key yet — the same class of bug as the
+// add-deck dropdown going stale.
+function loadSpinCategoryFilter(){
+  const defaults = {};
+  Object.keys(CATEGORY_META).forEach(k=>{ defaults[k] = true; });
+  try{
+    const raw = localStorage.getItem('uno-spin-categories');
+    if(!raw) return defaults;
+    const saved = JSON.parse(raw);
+    return Object.assign(defaults, saved);
+  }catch(e){ return defaults; }
+}
+function saveSpinCategoryFilter(obj){
+  try{ localStorage.setItem('uno-spin-categories', JSON.stringify(obj)); return true; }
+  catch(e){ return false; }
+}
+
+function getSpinEligibleDecks(){
+  const skipNever = loadSkipNeverFlag();
+  const catFilter = loadSpinCategoryFilter();
+  return DECKS.filter(d=>{
+    if(catFilter[d.category] === false) return false;
+    if(skipNever){
+      const tier = tierLabelFor(d.slug);
+      if(tier && tier.key === 'never') return false;
+    }
+    return true;
+  });
+}
+
+function buildCategoryFilterRow(){
+  const row = document.getElementById('categoryFilterRow');
+  const filter = loadSpinCategoryFilter();
+  row.innerHTML = Object.keys(CATEGORY_META).map(key=>{
+    const meta = CATEGORY_META[key];
+    const checked = filter[key] !== false ? 'checked' : '';
+    return `
+      <label class="categoryFilterItem">
+        <input type="checkbox" data-cat="${key}" ${checked}>
+        <span class="categoryFilterDot" style="background:${meta.color}"></span>
+        ${meta.label}
+      </label>
+    `;
+  }).join('');
+  row.querySelectorAll('input[data-cat]').forEach(input=>{
+    input.onchange = ()=>{
+      const f = loadSpinCategoryFilter();
+      f[input.dataset.cat] = input.checked;
+      saveSpinCategoryFilter(f);
+      spinRotation = 0;
+      buildWheel();
+    };
+  });
+}
+
+let spinAnimating = false;
+let spinRotation = 0;
+let activeSpinEndHandler = null; // lets a mid-flight spin be cleanly cancelled
+
+// Guarantees spinAnimating/hub state never gets stuck, however the wheel
+// ends up being rebuilt mid-animation (filter checkbox toggled during a
+// spin, tab switched away and back, etc). Without this, forcibly resetting
+// the wheel's transition to "none" mid-spin (see buildWheel below) meant
+// the CSS transitionend that normally clears this state would never fire,
+// permanently wedging the Spin button disabled.
+function cancelAnyActiveSpin(){
+  const wheel = document.getElementById('spinWheel');
+  if(activeSpinEndHandler){
+    wheel.removeEventListener('transitionend', activeSpinEndHandler);
+    activeSpinEndHandler = null;
+  }
+  spinAnimating = false;
+  const hub = document.getElementById('wheelHub');
+  if(hub) hub.disabled = false;
+}
+
+function renderSpinView(){
+  spinAnimating = false;
+  document.getElementById('spinResult').style.display = 'none';
+  document.getElementById('spinResult').innerHTML = '';
+
+  const checkbox = document.getElementById('skipNeverCheckbox');
+  checkbox.checked = loadSkipNeverFlag();
+  checkbox.onchange = ()=>{
+    saveSkipNeverFlag(checkbox.checked);
+    spinRotation = 0;
+    buildWheel();
+  };
+
+  buildCategoryFilterRow();
+  buildWheel();
+
+  const hub = document.getElementById('wheelHub');
+  hub.onclick = spinWheel;
+}
+
+function buildWheel(){
+  const wheel = document.getElementById('spinWheel');
+  const hub = document.getElementById('wheelHub');
+  const eligible = getSpinEligibleDecks();
+
+  cancelAnyActiveSpin();
+  wheel.style.transition = 'none';
+  wheel.style.transform = `rotate(${spinRotation}deg)`;
+
+  if(eligible.length === 0){
+    wheel.style.background = 'var(--paper-dark)';
+    hub.disabled = true;
+    const catFilter = loadSpinCategoryFilter();
+    const anyCategoryChecked = Object.values(catFilter).some(v=>v);
+    const msg = !anyCategoryChecked
+      ? `Check at least one category above to spin.`
+      : `Nothing matches your current filters — try turning a category back on, or unchecking "Skip decks ranked Never Again."`;
+    document.getElementById('spinResult').style.display = 'block';
+    document.getElementById('spinResult').innerHTML = `<div class="spin-empty">${msg}</div>`;
+    return;
+  }
+  hub.disabled = false;
+  // clear any stale empty-state message (or prior result) left over from
+  // before the eligible list changed — e.g. unchecking "skip Never Again"
+  // right after seeing the empty state
+  document.getElementById('spinResult').style.display = 'none';
+  document.getElementById('spinResult').innerHTML = '';
+
+  const n = eligible.length;
+  const sliceAngle = 360 / n;
+  const stops = eligible.map((d,i)=>{
+    const color = catColor(d.category);
+    const start = (i*sliceAngle).toFixed(3);
+    const end = ((i+1)*sliceAngle).toFixed(3);
+    return `${color} ${start}deg ${end}deg`;
+  }).join(', ');
+  // Adjacent decks in the same category share a color, which without any
+  // separator makes several slices visually fuse into one big blob (e.g.
+  // a long run of "Themed" decks reads as a single giant red wedge). A
+  // second, thin repeating-conic-gradient layered on top — sized to the
+  // same period as the color wedges — draws a dividing line at every
+  // slice boundary regardless of color, so each deck stays a distinct
+  // wedge even next to same-colored neighbors.
+  const lineWidth = Math.max(0.5, Math.min(1.6, sliceAngle * 0.06));
+  const separators = `repeating-conic-gradient(var(--ink) 0deg ${lineWidth}deg, transparent ${lineWidth}deg ${sliceAngle}deg)`;
+  wheel.style.background = `${separators}, conic-gradient(${stops})`;
+
+  // force layout so the transition:none takes effect before spins re-enable it
+  void wheel.offsetHeight;
+  wheel.style.transition = '';
+}
+
+function spinWheel(){
+  if(spinAnimating) return;
+  const eligible = getSpinEligibleDecks();
+  if(eligible.length === 0) return;
+
+  spinAnimating = true;
+  document.getElementById('wheelHub').disabled = true;
+  document.getElementById('spinResult').style.display = 'none';
+
+  const n = eligible.length;
+  const sliceAngle = 360 / n;
+  const targetIndex = Math.floor(Math.random() * n);
+  const winner = eligible[targetIndex];
+
+  // land somewhere inside the slice, not always dead-center
+  const jitter = (Math.random() - 0.5) * sliceAngle * 0.6;
+  const targetCenter = targetIndex * sliceAngle + sliceAngle/2 + jitter;
+
+  const extraSpins = 5 + Math.floor(Math.random() * 3); // 5-7 full spins
+  const desiredFinalMod = ((360 - targetCenter) % 360 + 360) % 360;
+  const currentMod = ((spinRotation % 360) + 360) % 360;
+  let diff = desiredFinalMod - currentMod;
+  if(diff < 0) diff += 360;
+  spinRotation += extraSpins*360 + diff;
+
+  const wheel = document.getElementById('spinWheel');
+  wheel.style.transform = `rotate(${spinRotation}deg)`;
+
+  const onDone = ()=>{
+    wheel.removeEventListener('transitionend', onDone);
+    activeSpinEndHandler = null;
+    spinAnimating = false;
+    document.getElementById('wheelHub').disabled = false;
+    showSpinResult(winner);
+  };
+  activeSpinEndHandler = onDone;
+  wheel.addEventListener('transitionend', onDone);
+}
+
+function showSpinResult(d){
+  const box = document.getElementById('spinResult');
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div class="spin-result-card" style="--spine:${catColor(d.category)}">
+      <span class="spin-result-tab" style="background:${catColor(d.category)}">${CATEGORY_META[d.category].label}</span>
+      <div class="spin-result-name">${d.name}</div>
+      <div class="spin-result-tagline">${d.tagline || ''}</div>
+      <div class="spin-result-btns">
+        <button id="spinAgainBtn">Spin again</button>
+        <button id="viewDeckBtn">View deck</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('spinAgainBtn').onclick = spinWheel;
+  document.getElementById('viewDeckBtn').onclick = ()=>openModal(d);
 }
 
 renderGrid();
