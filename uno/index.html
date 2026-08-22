@@ -390,6 +390,24 @@
     color:var(--ink-soft);
     line-height:1.5;
   }
+  .noSpecialCheck{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px dashed rgba(43,36,27,0.25);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .noSpecialCheck input{
+    width:16px;height:16px;
+    accent-color:var(--ink);
+    cursor:pointer;
+    flex-shrink:0;
+  }
   footer{
     max-width:1100px;
     margin:40px auto 0;
@@ -714,7 +732,7 @@
 // It's stamped in the footer and logged to the console on load, so after
 // deploying you can hard-refresh and immediately confirm the new version
 // actually landed, instead of guessing from a cached-looking page.
-const APP_VERSION = 'v21';
+const APP_VERSION = 'v22';
 const APP_BUILD_DATE = '2026-08-21';
 console.log(`UNO Archive ${APP_VERSION} — built ${APP_BUILD_DATE}`);
 
@@ -1111,6 +1129,7 @@ function deleteDeck(slug){
     localStorage.removeItem('uno-plays:'+slug);
     localStorage.removeItem('uno-rules:'+slug);
     localStorage.removeItem('uno-meanings:'+slug);
+    localStorage.removeItem('uno-no-special:'+slug);
     const placements = loadTierPlacements();
     if(placements[slug]){ delete placements[slug]; saveTierPlacements(placements); }
   }catch(e){}
@@ -1236,6 +1255,22 @@ function saveMeaningsOverride(slug, arr){
   catch(e){ return false; }
 }
 
+// Explicit "this deck genuinely has no special rule" flag — separate from
+// just having empty rules/meanings, so the placeholder nudge can be
+// dismissed on purpose instead of only ever disappearing once something
+// gets typed in.
+function loadNoSpecialFlag(slug){
+  try{ return localStorage.getItem('uno-no-special:'+slug) === '1'; }
+  catch(e){ return false; }
+}
+function saveNoSpecialFlag(slug, val){
+  try{
+    if(val) localStorage.setItem('uno-no-special:'+slug, '1');
+    else localStorage.removeItem('uno-no-special:'+slug);
+    return true;
+  }catch(e){ return false; }
+}
+
 // Plays: an array of ISO timestamp strings per deck, used by both the
 // modal's play tracker and the Stats tab.
 function loadPlays(slug){
@@ -1336,9 +1371,24 @@ Card Name: what it does">${text}</textarea>
     `;
   }
 
-  let placeholderHtml = '';
-  if(d.needsInput){
-    placeholderHtml = `<div class="placeholder-box">We haven't logged this deck's exact special card yet. Dig out the insert (or check the box) and use the Edit buttons above to jot down the rules and any special cards — it'll be saved here for next game night.</div>`;
+  function buildPlaceholder(){
+    if(!d.needsInput) return '';
+    // Once there's actually content, or the person has explicitly said
+    // "this deck doesn't have one," stop nagging — the placeholder was
+    // previously keyed off a flag set once at deck-definition time, so it
+    // kept showing even after rules/meanings had been filled in.
+    const hasContent = currentRules().length > 0 || currentMeanings().length > 0;
+    const noSpecial = loadNoSpecialFlag(d.slug);
+    if(hasContent || noSpecial) return '';
+    return `
+      <div class="placeholder-box">
+        We haven't logged this deck's exact special card yet. Dig out the insert (or check the box) and use the Edit buttons above to jot down the rules and any special cards — it'll be saved here for next game night.
+        <label class="noSpecialCheck">
+          <input type="checkbox" id="noSpecialCheckbox">
+          This deck doesn't have a special rule
+        </label>
+      </div>
+    `;
   }
 
   function render(){
@@ -1371,7 +1421,7 @@ Card Name: what it does">${text}</textarea>
         ${playTrackerHtml}
         ${buildRulesSection()}
         ${buildMeaningsSection()}
-        ${placeholderHtml}
+        ${buildPlaceholder()}
         <div class="section-label">Your notes</div>
         <textarea id="noteBox" placeholder="Anything special about this deck — house rules, the exact wild card effect, whatever you don't want to forget again.">${note}</textarea>
         <div class="saveRow">
@@ -1386,6 +1436,14 @@ Card Name: what it does">${text}</textarea>
     overlay.classList.add('show');
     document.getElementById('modalCloseBtn').onclick = closeModal;
     attachSwipeToClose(modal, document.querySelector('#modal .modal-head'));
+
+    const noSpecialCheckbox = document.getElementById('noSpecialCheckbox');
+    if(noSpecialCheckbox){
+      noSpecialCheckbox.onchange = ()=>{
+        saveNoSpecialFlag(d.slug, noSpecialCheckbox.checked);
+        render();
+      };
+    }
 
     document.getElementById('logPlayBtn').onclick = ()=>{
       logPlay(d.slug);
