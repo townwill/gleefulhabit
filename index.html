@@ -808,12 +808,12 @@ function blankState() {
     logs:{},logEntries:{},sideQuestLogs:{},sideQuestDone:{},restDayLogs:{},
     xpAwarded:{},
     weight:{logs:{},unit:'lbs',goal:null,startWeight:null,startDate:null},
-    exercise:{dumbbellPress:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0},
+    exercise:{dumbbellPress:0,dumbbellPress25:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0},
     user:{xp:0,badges:[],totalDone:0,numericHits:0,sideQuestCount:0,
       packsBank:0,hangersBank:0,blastersBank:0,megaBank:0,hobbyBank:0,superBank:0,mythicBank:0,
       packHistory:[],weeklyPacksAwarded:{},weeklyPackFlags:{},
       consecutivePackWeeks:0,lastPackWeek:null,milestones:{},
-      perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null,favoriteQuotes:[],lastQuotePeriod:null,lastQuoteData:null},
+      perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null,favoriteQuotes:[],lastQuotePeriod:null,lastQuoteData:null,milestonesRedeemed:{}},
   };
 }
 
@@ -850,8 +850,10 @@ function migrateState(raw) {
   if (!raw.user.favoriteQuotes) raw.user.favoriteQuotes=[];
   if (raw.user.lastQuotePeriod===undefined) raw.user.lastQuotePeriod=null;
   if (raw.user.lastQuoteData===undefined) raw.user.lastQuoteData=null;
+  if (!raw.user.milestonesRedeemed) raw.user.milestonesRedeemed={};
   if (!raw.restDayLogs)              raw.restDayLogs={};
-  if (!raw.exercise) raw.exercise={dumbbellPress:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
+  if (!raw.exercise) raw.exercise={dumbbellPress:0,dumbbellPress25:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
+  if (raw.exercise.dumbbellPress25==null) raw.exercise.dumbbellPress25=0;
   if (raw.habits) raw.habits.forEach(h=>{ if(h.restEligible==null) h.restEligible=false; if(h.note==null) h.note=''; });
   if (raw.habits && !raw.user._habitNotesSeeded) {
     const noteSuggestions = [
@@ -1260,11 +1262,13 @@ function renderWeight(){
   html+=`<div class="weight-entry-card"><div class="weight-entry-label">${loggedToday?'✓ Logged today — update':'Log today\'s weight'}</div><div class="weight-entry-row"><input class="weight-input-big" id="wInput" type="number" step="0.1" min="0" placeholder="${latest!=null?latest.toFixed(1):'0.0'}" value="${loggedToday?(S.weight.logs[tk]).toFixed(1):''}" onkeydown="if(event.key==='Enter')logWeight()"><button class="weight-log-btn" onclick="logWeight()">${loggedToday?'Update':'Log'}</button></div></div>`;
   html+=`<div class="weight-settings-card"><div class="weight-settings-title">⚙️ Goal Weight</div><div class="weight-entry-row"><input class="weight-input-big" id="wGoalInput" type="number" step="0.1" min="0" placeholder="e.g. 180" value="${goal!=null?goal.toFixed(1):''}" onkeydown="if(event.key==='Enter')saveWeightGoal()" style="font-size:18px;padding:10px"><button class="weight-log-btn" onclick="saveWeightGoal()">Set</button></div></div>`;
   const ex = S.exercise || {};
+  const _m = S.user.milestones || {};
   html+=`<div class="weight-settings-card"><div class="weight-settings-title">💪 Strength PRs</div>
     <div class="pr-grid">
       <div class="pr-row"><label>Dumbbell Press (reps @ 20lb)</label><input class="pr-input" id="prDumbbell" type="number" min="0" value="${ex.dumbbellPress||''}"></div>
+      ${_m.secret_dumbbell20 ? `<div class="pr-row"><label>Dumbbell Press (reps @ 25lb)</label><input class="pr-input" id="prDumbbell25" type="number" min="0" value="${ex.dumbbellPress25||''}"></div>` : ''}
       <div class="pr-row"><label>Incline Push-ups (30°, reps)</label><input class="pr-input" id="prIncline" type="number" min="0" value="${ex.inclinePushups||''}"></div>
-      <div class="pr-row"><label>Ground Push-ups (reps)</label><input class="pr-input" id="prGround" type="number" min="0" value="${ex.groundPushups||''}"></div>
+      ${_m.secret_incline20 ? `<div class="pr-row"><label>Ground Push-ups (reps)</label><input class="pr-input" id="prGround" type="number" min="0" value="${ex.groundPushups||''}"></div>` : ''}
       <div class="pr-row"><label>Dead Hang (seconds)</label><input class="pr-input" id="prHang" type="number" min="0" value="${ex.deadHangSec||''}"></div>
       <div class="pr-row"><label>Plank (seconds)</label><input class="pr-input" id="prPlank" type="number" min="0" value="${ex.plankSec||''}"></div>
       <div class="pr-row"><label>Jump Rope (seconds)</label><input class="pr-input" id="prJumprope" type="number" min="0" value="${ex.jumpRopeSec||''}"></div>
@@ -1483,19 +1487,23 @@ function renderRewards(){
   ];
   html+=mythics.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title} <span class="milestone-cadence">${b.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%;background:linear-gradient(90deg,var(--rose),var(--purple))"></div></div>${e?'<div class="milestone-earned-tag" style="background:rgba(255,107,138,.12);color:var(--rose)">✓ Mythic Box Earned</div>':''}</div>`;}).join('');
   html+=`</div><div class="rewards-section-label">🔒 Secret Achievements</div><div class="milestone-grid">`;
-  const secretKeys = ['secret_dumbbell20','secret_incline20','secret_ground15','secret_hang60','secret_plank120','secret_jumprope120'];
-  const secretReasons = {
-    secret_dumbbell20:  '20 reps @ 20lb dumbbell press! 💪',
-    secret_incline20:   '20 incline push-ups! 💪',
-    secret_ground15:    '15 ground push-ups! 💪',
-    secret_hang60:       '1-minute dead hang! 💪',
-    secret_plank120:     '2-minute plank! 💪',
-    secret_jumprope120:  '2-minute jump rope! 💪',
-  };
-  html+=secretKeys.map(key=>{
-    const e=!!m[key];
-    if(e){return`<div class="milestone-card earned"><div class="milestone-icon">💪</div><div class="milestone-title">Secret Found!</div><div class="milestone-desc">${secretReasons[key]}</div><div class="milestone-earned-tag">✓ Pack Earned</div></div>`;}
-    return `<div class="milestone-card secret-locked"><div class="milestone-icon">🔒</div><div class="milestone-title">???</div><div class="milestone-desc">Hidden challenge — keep training to find out</div></div>`;
+  const prCategories = [
+    {tier1:{key:'secret_dumbbell20', label:'20 reps @ 20lb dumbbell press! 💪'}, tier2:{key:'secret_dumbbell25', label:'20 reps @ 25lb dumbbell press! 💪'}},
+    {tier1:{key:'secret_incline20',  label:'20 incline push-ups! 💪'},           tier2:{key:'secret_ground15',   label:'15 ground push-ups! 💪'}},
+    {tier1:{key:'secret_hang60',     label:'1:00 dead hang! 💪'},                tier2:{key:'secret_hang90',     label:'1:30 dead hang! 💪'}},
+    {tier1:{key:'secret_plank120',   label:'2:00 plank! 💪'},                    tier2:{key:'secret_plank180',   label:'3:00 plank! 💪'}},
+    {tier1:{key:'secret_jumprope120',label:'2:00 jump rope! 💪'},                tier2:{key:'secret_jumprope180',label:'3:00 jump rope! 💪'}},
+  ];
+  const lockedCard = `<div class="milestone-card secret-locked"><div class="milestone-icon">🔒</div><div class="milestone-title">???</div><div class="milestone-desc">Hidden challenge — keep training to find out</div></div>`;
+  const foundCard = label => `<div class="milestone-card earned"><div class="milestone-icon">💪</div><div class="milestone-title">Secret Found!</div><div class="milestone-desc">${label}</div><div class="milestone-earned-tag">✓ Pack Earned</div></div>`;
+  const mr = S.user.milestonesRedeemed||{};
+  html += prCategories.map(cat => {
+    const t1 = !!m[cat.tier1.key], t1r = !!mr[cat.tier1.key];
+    const t2 = !!m[cat.tier2.key];
+    if (t2) return foundCard(cat.tier2.label);   // reached the top tier — show it, even if T1 wasn't redeemed first (skip-ahead)
+    if (!t1) return lockedCard;                  // nothing found yet — one hidden slot
+    if (!t1r) return foundCard(cat.tier1.label); // found, not yet redeemed — show what you got
+    return lockedCard;                           // redeemed — next tier's requirement is now hidden
   }).join('');
   html+=`</div><div class="rewards-section-label">🏅 Badges</div><div class="badges-grid">`;
   html+=BADGES.map(b=>{const e=S.user.badges.includes(b.id);return`<div class="badge-item ${e?'earned':''}" title="${b.d}"><span class="badge-emoji">${b.e}</span><div class="badge-name">${b.n}</div></div>`;}).join('');
@@ -1639,6 +1647,7 @@ function saveExercisePRs(){
   if(!S.exercise) S.exercise={dumbbellPress:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
   const g=id=>Math.max(0,parseFloat(document.getElementById(id)?.value)||0);
   S.exercise.dumbbellPress   = g('prDumbbell');
+  S.exercise.dumbbellPress25 = g('prDumbbell25');
   S.exercise.inclinePushups  = g('prIncline');
   S.exercise.groundPushups   = g('prGround');
   S.exercise.deadHangSec     = g('prHang');
@@ -1653,11 +1662,15 @@ function checkExerciseMilestones(){
   const m=S.user.milestones, e=S.exercise||{};
   function awPackSecret(key,reason){if(m[key])return;m[key]=true;S.user.packsBank=(S.user.packsBank||0)+1;S.user.packHistory.unshift({date:todayKey(),count:1,type:'pack',reason});save();setTimeout(()=>{toast(`🔓 Secret unlocked — ${reason}`);confetti(70);},600);}
   if(e.dumbbellPress  >= 20)  awPackSecret('secret_dumbbell20', '20 reps @ 20lb dumbbell press! 💪');
+  if(e.dumbbellPress25 >= 20) awPackSecret('secret_dumbbell25', '20 reps @ 25lb dumbbell press! 💪');
   if(e.inclinePushups >= 20)  awPackSecret('secret_incline20',  '20 incline push-ups! 💪');
   if(e.groundPushups  >= 15)  awPackSecret('secret_ground15',   '15 ground push-ups! 💪');
   if(e.deadHangSec    >= 60)  awPackSecret('secret_hang60',     '1-minute dead hang! 💪');
+  if(e.deadHangSec    >= 90)  awPackSecret('secret_hang90',     '1:30 dead hang! 💪');
   if(e.plankSec        >= 120) awPackSecret('secret_plank120',   '2-minute plank! 💪');
+  if(e.plankSec        >= 180) awPackSecret('secret_plank180',   '3-minute plank! 💪');
   if(e.jumpRopeSec     >= 120) awPackSecret('secret_jumprope120','2-minute jump rope! 💪');
+  if(e.jumpRopeSec     >= 180) awPackSecret('secret_jumprope180','3-minute jump rope! 💪');
 }
 function saveWeightGoal(){const v=parseFloat(document.getElementById('wGoalInput')?.value);if(!v||v<=0)return;S.weight.goal=+v.toFixed(1);save();renderWeight();toast(`🎯 Goal set: ${v.toFixed(1)} lbs`);}
 function setWeightRange(n){_weightRange=n;renderWeight();}
@@ -1670,6 +1683,12 @@ function toggleSideQuest(id){
   checkWeeklyPacksAndMilestones();
   save();renderToday();renderManage();renderXP();renderStats();renderRewards();
 }
+function markSecretPacksRedeemed(){
+  const secretKeys = ['secret_dumbbell20','secret_dumbbell25','secret_incline20','secret_ground15','secret_hang60','secret_hang90','secret_plank120','secret_plank180','secret_jumprope120','secret_jumprope180'];
+  const m=S.user.milestones||{};
+  if(!S.user.milestonesRedeemed) S.user.milestonesRedeemed={};
+  secretKeys.forEach(k=>{ if(m[k] && !S.user.milestonesRedeemed[k]) S.user.milestonesRedeemed[k]=true; });
+}
 function redeemType(type){
   const labels={packs:'pack',hangers:'hanger box',blasters:'blaster box',mega:'mega box',hobby:'hobby box',super:'super box',mythic:'mythic box'};
   const bankKey={packs:'packsBank',hangers:'hangersBank',blasters:'blastersBank',mega:'megaBank',hobby:'hobbyBank',super:'superBank',mythic:'mythicBank'};
@@ -1678,6 +1697,7 @@ function redeemType(type){
   const label=`${count} ${labels[type]}${count>1?'es':''}`;
   (S.user.packHistory||[]).filter(h=>h.type===(type==='packs'?'pack':type==='hangers'?'hanger':type==='blasters'?'blaster':type)).forEach(h=>h.redeemed=true);
   S.user[key]=0;
+  if(type==='packs') markSecretPacksRedeemed();
   save();renderRewards();
   toast(`✓ Redeemed ${label}! Go grab them 🛒`);confetti(45);
 }
@@ -1695,6 +1715,7 @@ function redeemAll(){
   if(S.user.mythicBank>0)   msg.push(`${S.user.mythicBank} mythic box${S.user.mythicBank>1?'es':''}`);
   (S.user.packHistory||[]).forEach(h=>h.redeemed=true);
   S.user.packsBank=0;S.user.hangersBank=0;S.user.blastersBank=0;S.user.megaBank=0;S.user.hobbyBank=0;S.user.superBank=0;S.user.mythicBank=0;
+  markSecretPacksRedeemed();
   save();renderRewards();toast(`✓ Redeemed: ${msg.join(', ')}! Go grab them 🛒`);confetti(55);
 }
 async function exportData(){
@@ -1822,7 +1843,7 @@ function checkBackupReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-21.2307';
+const APP_VERSION = '2026-08-22.0005';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
