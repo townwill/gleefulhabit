@@ -813,7 +813,7 @@ function blankState() {
       packsBank:0,hangersBank:0,blastersBank:0,megaBank:0,hobbyBank:0,superBank:0,mythicBank:0,
       packHistory:[],weeklyPacksAwarded:{},weeklyPackFlags:{},
       consecutivePackWeeks:0,lastPackWeek:null,milestones:{},
-      perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null,favoriteQuotes:[],lastQuotePeriod:null,lastQuoteData:null,milestonesRedeemed:{}},
+      perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null,favoriteQuotes:[],lastQuotePeriod:null,lastQuoteData:null,milestonesRedeemed:{},blasterAnchorMonth:null},
   };
 }
 
@@ -851,6 +851,10 @@ function migrateState(raw) {
   if (raw.user.lastQuotePeriod===undefined) raw.user.lastQuotePeriod=null;
   if (raw.user.lastQuoteData===undefined) raw.user.lastQuoteData=null;
   if (!raw.user.milestonesRedeemed) raw.user.milestonesRedeemed={};
+  if (!raw.user.blasterAnchorMonth) {
+    const d=new Date();
+    raw.user.blasterAnchorMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  }
   if (!raw.restDayLogs)              raw.restDayLogs={};
   if (!raw.exercise) raw.exercise={dumbbellPress:0,dumbbellPress25:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
   if (raw.exercise.dumbbellPress25==null) raw.exercise.dumbbellPress25=0;
@@ -900,7 +904,17 @@ const todayKey=()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getM
 const dateKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const fmtShortDate=dk=>new Date(dk+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
 function calMonthKey(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
-function weekKeyFor(d){const j=new Date(d.getFullYear(),0,4);const w=Math.ceil(((d-j)/86400000+j.getDay()+1)/7);return`${d.getFullYear()}-W${String(w).padStart(2,'0')}`;}
+function monthlyTargetPct(){
+  // Escalates 2% per month from 80%, capped at 90%. Anchored to the first month
+  // the user started tracking so the ramp reflects their actual tenure.
+  const anchor = S.user.blasterAnchorMonth;
+  if (!anchor) return 0.80;
+  const [ay, am] = anchor.split('-').map(Number);
+  const now = new Date();
+  const monthsElapsed = (now.getFullYear() - ay) * 12 + (now.getMonth() + 1 - am);
+  return Math.min(0.80 + 0.02 * Math.max(0, monthsElapsed), 0.90);
+}
+function weekKeyFor(d){const date=new Date(d.getTime());date.setHours(0,0,0,0);date.setDate(date.getDate()+3-(date.getDay()+6)%7);const week1=new Date(date.getFullYear(),0,4);const weekNum=1+Math.round(((date.getTime()-week1.getTime())/86400000-3+(week1.getDay()+6)%7)/7);return`${date.getFullYear()}-W${String(weekNum).padStart(2,'0')}`;}
 function isoWeek(){return weekKeyFor(new Date());}
 function thisWeekDays(){const now=new Date(),mon=new Date(now);const dow=now.getDay();const diffToMon=dow===0?-6:1-dow;mon.setDate(now.getDate()+diffToMon);mon.setHours(0,0,0,0);return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});}
 function isDayComplete(dk){if(!S.habits.length)return false;const log=S.logs[dk]||{};return S.habits.every(h=>h.type==='numeric'?(typeof log[h.id]==='number'&&log[h.id]>=(h.target||100)):log[h.id]===true);}
@@ -1039,8 +1053,8 @@ function checkBlasterMilestones(){
   function awHobby(key,reason){if(m[key])return;m[key]=true;S.user.hobbyBank=(S.user.hobbyBank||0)+1;S.user.packHistory.unshift({date:todayKey(),count:1,type:'hobby',reason});save();setTimeout(()=>{toast(`🗃️ Hobby Box earned — ${reason}`);confetti(200);},2000);}
   function awSuper(key,reason){if(m[key])return;m[key]=true;S.user.superBank=(S.user.superBank||0)+1;S.user.packHistory.unshift({date:todayKey(),count:1,type:'super',reason});save();setTimeout(()=>{toast(`🌟 SUPER BOX earned — ${reason}`);confetti(250);},2200);}
 
-  // 80% of all possible habit completions this month (habits × days elapsed),
-  // using each habit's real completion bar — not just "logged something".
+  // Escalating % of all possible habit completions this month (habits × days
+  // elapsed), using each habit's real completion bar — not just "logged something".
   if (!m['blaster_month_'+mk]) {
     const now=new Date(), daysSoFar=now.getDate(), nh=S.habits.length;
     if (nh>0 && daysSoFar>=25) {
@@ -1050,7 +1064,8 @@ function checkBlasterMilestones(){
         for (const h of S.habits) if (h.type==='numeric'?(typeof log[h.id]==='number'&&log[h.id]>=(h.target||100)):log[h.id]===true) totalDone++;
       }
       const pct = totalDone/(nh*daysSoFar);
-      if (pct >= 0.8) awBlaster('blaster_month_'+mk, `${Math.round(pct*100)}% habit completion this month! 📅`);
+      const target = monthlyTargetPct();
+      if (pct >= target) awBlaster('blaster_month_'+mk, `${Math.round(pct*100)}% habit completion this month! 📅`);
     }
   }
 
@@ -1065,7 +1080,7 @@ function checkBlasterMilestones(){
 
 function renderAll(){renderHeader();renderXP();renderToday();renderManage();}
 function renderHeader(){const h=new Date().getHours();document.getElementById('greeting').textContent=h<5?'Good Night':h<12?'Good Morning':h<17?'Good Afternoon':h<21?'Good Evening':'Good Night';document.getElementById('dateDisplay').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});}
-function renderXP(){const info=levelInfo(S.user.xp);document.getElementById('levelBadge').textContent=info.lv;document.getElementById('levelName').textContent=info.name;document.getElementById('levelSub').textContent=info.lv<20?`${S.user.xp-info.lo} / ${info.hi-info.lo} XP to next level`:'Max Level!';document.getElementById('xpAmount').textContent=info.lv<20?`${S.user.xp-info.lo}/${info.hi-info.lo} XP`:'MAX';const lxp=document.getElementById('lifetimeXPDisplay');if(lxp)lxp.textContent=`Lifetime XP: ${S.user.xp.toLocaleString()}`;requestAnimationFrame(()=>{document.getElementById('xpBarFill').style.width=`${Math.round(info.pct*100)}%`;});}
+function renderXP(){const info=levelInfo(S.user.xp);document.getElementById('levelBadge').textContent=info.lv;document.getElementById('levelName').textContent=info.name;document.getElementById('levelSub').textContent=info.lv<20?`${S.user.xp} / ${info.hi} XP to next level`:'Max Level!';document.getElementById('xpAmount').textContent=info.lv<20?`${S.user.xp}/${info.hi} XP`:'MAX';const lxp=document.getElementById('lifetimeXPDisplay');if(lxp)lxp.textContent=`Lifetime XP: ${S.user.xp.toLocaleString()}`;requestAnimationFrame(()=>{document.getElementById('xpBarFill').style.width=`${Math.round(info.pct*100)}%`;});}
 
 function switchSubTab(name, btn) {
   document.querySelectorAll('.sub-tab').forEach(b=>b.classList.remove('active'));
@@ -1404,8 +1419,9 @@ function renderRewards(){
   const now2=new Date();let monthDone=0;const monthDays=now2.getDate(),monthHabits=S.habits.length;for(let i=1;i<=monthDays;i++){const d=new Date(now2.getFullYear(),now2.getMonth(),i),log=S.logs[dateKey(d)]||{};for(const h of S.habits)if(h.type==='numeric'?(typeof log[h.id]==='number'&&log[h.id]>=(h.target||100)):log[h.id]===true)monthDone++;}const monthPct=monthHabits?Math.round(monthDone/(monthHabits*monthDays)*100):0;
   // Pace tracking: are you on track for 80% by month's end, given days elapsed so far?
   const daysInMonth=new Date(now2.getFullYear(),now2.getMonth()+1,0).getDate();
-  const neededSoFar=Math.floor(0.8*monthHabits*monthDays);
-  const neededFullMonth=Math.ceil(0.8*monthHabits*daysInMonth);
+  const targetPct=monthlyTargetPct(), targetPctDisplay=Math.round(targetPct*100);
+  const neededSoFar=Math.floor(targetPct*monthHabits*monthDays);
+  const neededFullMonth=Math.ceil(targetPct*monthHabits*daysInMonth);
   const maxPossibleFinal=monthDone+monthHabits*(daysInMonth-monthDays);
   const paceDiff=monthDone-neededSoFar;
   const clinched=monthDone>=neededFullMonth;
@@ -1463,7 +1479,7 @@ function renderRewards(){
   html+=hangers.map(h=>{const e=!!m[h.key];return`<div class="milestone-card ${e?'earned':''}"><div class="milestone-icon">${h.icon}</div><div class="milestone-title">${h.title} <span class="milestone-cadence">${h.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':h.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(h.val/h.max*100,100)}%"></div></div>${e?'<div class="milestone-earned-tag">✓ Hanger Box Earned</div>':''}</div>`;}).join('');
   html+=`</div><div class="rewards-section-label">🏆 Blaster Box Milestones</div><div class="milestone-grid">`;
   const blasters=[
-    {key:'blaster_month_'+mk, icon:'📅', title:'80% Habit Completion',  val:monthPct,   max:80, desc:`${monthPct}%/80% completion this month`, paceNote, paceClass, cadence:'Monthly'},
+    {key:'blaster_month_'+mk, icon:'📅', title:`${targetPctDisplay}% Habit Completion`,  val:monthPct,   max:targetPctDisplay, desc:`${monthPct}%/${targetPctDisplay}% completion this month`, paceNote, paceClass, cadence:'Monthly'},
     {key:'blaster_level10',   icon:'🌟', title:'Level 10',        val:curLv, max:10, desc:`Level ${curLv}/10`, cadence:'One-Time'},
     {key:'blaster_100quests', icon:'🎯', title:'100 Side Quests', val:S.user.sideQuestCount, max:100, desc:`${S.user.sideQuestCount}/100 total side quests`, cadence:'One-Time'},
     {key:'wt_blaster_15',     icon:'🔥', title:'15 lbs Lost',     val:wLost, max:15, desc:`${wLost.toFixed(1)}/15 lbs lost`, cadence:'One-Time'},
@@ -1850,7 +1866,7 @@ function checkBackupReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-23.2027';
+const APP_VERSION = '2026-08-25.1720';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
