@@ -134,6 +134,9 @@
   .flame { display:inline-block; animation:flicker .9s ease-in-out infinite alternate; }
   @keyframes flicker { from{transform:scale(1) rotate(-4deg)} to{transform:scale(1.12) rotate(4deg)} }
   .habit-check { width:28px; height:28px; border-radius:50%; border:2px solid rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; font-size:14px; transition:all .3s cubic-bezier(.34,1.56,.64,1); flex-shrink:0; }
+  .habit-mini-progress { width:34px; flex-shrink:0; }
+  .habit-mini-progress-track { height:5px; background:rgba(255,255,255,.09); border-radius:3px; overflow:hidden; }
+  .habit-mini-progress-fill { height:100%; border-radius:3px; transition:width .5s cubic-bezier(.34,1.56,.64,1); min-width:2px; }
   .habit-card.completed .habit-check { background:var(--c-hex,var(--cyan)); border-color:var(--c-hex,var(--cyan)); transform:scale(1.12); }
 
   .habit-numeric { margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
@@ -161,6 +164,25 @@
   .num-reset-btn:hover { background:rgba(255,80,80,.12); color:#ff6464; border-color:rgba(255,80,80,.25); }
   .numeric-bar { height:5px; background:rgba(255,255,255,.07); border-radius:3px; overflow:hidden; }
   .numeric-bar-fill { height:100%; background:linear-gradient(90deg,var(--c-hex,var(--cyan)),var(--pink)); border-radius:3px; transition:width .6s cubic-bezier(.34,1.56,.64,1); min-width:4px; }
+
+  .ai-log-row { display:flex; gap:6px; margin-bottom:7px; }
+  .ai-log-input { flex:1; background:rgba(255,255,255,.07); border:1px solid var(--border); border-radius:9px; color:var(--text); font-size:13px; padding:8px 10px; font-family:inherit; min-width:0; }
+  .ai-log-input:focus { outline:none; border-color:var(--c-hex,var(--cyan)); }
+  .ai-log-input::placeholder { color:rgba(240,240,255,.3); }
+  .ai-log-photo-btn { width:34px; height:34px; flex-shrink:0; border-radius:9px; border:1px solid var(--border); background:rgba(255,255,255,.06); color:var(--text-muted); font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .ai-log-analyze-btn { width:100%; padding:9px; border-radius:9px; border:none; background:var(--c-hex,var(--cyan)); color:#0a0a14; font-size:12.5px; font-weight:800; cursor:pointer; font-family:inherit; }
+  .ai-log-analyze-btn:disabled { opacity:.5; }
+  .ai-log-thumb { width:100%; max-height:120px; object-fit:cover; border-radius:8px; margin-bottom:7px; display:none; }
+  .ai-log-thumb.show { display:block; }
+  .ai-log-status { font-size:11px; color:var(--text-muted); text-align:center; margin-bottom:2px; min-height:14px; }
+  .ai-log-result { font-size:12.5px; padding:8px 10px; border-radius:8px; background:rgba(var(--c-rgb,0,212,255),.08); border:1px solid rgba(var(--c-rgb,0,212,255),.2); margin-top:6px; display:none; }
+  .ai-log-result.show { display:block; }
+  .food-log-row { display:flex; align-items:baseline; gap:9px; padding:9px 0; border-bottom:1px solid var(--border); }
+  .food-log-row:last-child { border-bottom:none; }
+  .food-log-amt { font-size:14px; font-weight:800; flex-shrink:0; color:var(--c-hex,var(--cyan)); }
+  .food-log-label { font-size:12.5px; color:var(--text); }
+  .food-log-label.food-log-manual { color:var(--text-muted); font-style:italic; }
+  .food-log-empty { font-size:12.5px; color:var(--text-muted); text-align:center; padding:10px 0; }
 
   .streak-alert { background:linear-gradient(135deg,rgba(255,149,68,.13),rgba(255,107,255,.13)); border:1px solid rgba(255,149,68,.28); border-radius:var(--radius); padding:13px 15px; margin-bottom:14px; display:flex; align-items:center; gap:11px; animation:slide-down .4s cubic-bezier(.34,1.56,.64,1); }
   @keyframes slide-down { from{transform:translateY(-8px);opacity:0} to{transform:translateY(0);opacity:1} }
@@ -571,6 +593,9 @@
     <div class="version-footer" id="versionFooter"></div>
   </div>
 
+  <!-- PROTEIN -->
+  <div id="section-protein" class="section"><div id="proteinContent"></div></div>
+
   <!-- STATS -->
   <div id="section-stats" class="section">
     <div class="section-title" style="margin-bottom:14px">Stats</div>
@@ -591,6 +616,7 @@
   <div class="tab-bar-inner">
     <button class="tab-btn active" onclick="switchTab('today',this)"><span class="tab-icon">🏠</span><span>Today</span></button>
     <button class="tab-btn" onclick="switchTab('habits',this)"><span class="tab-icon">✅</span><span>✦ Habits</span></button>
+    <button class="tab-btn" onclick="switchTab('protein',this)"><span class="tab-icon">🍗</span><span>Protein</span></button>
     <button class="tab-btn" onclick="switchTab('stats',this)"><span class="tab-icon">📊</span><span>Stats</span></button>
     <button class="tab-btn" onclick="switchTab('weight',this)"><span class="tab-icon">⚖️</span><span>Weight</span></button>
     <button class="tab-btn" onclick="switchTab('rewards',this)"><span class="tab-icon">🎴</span><span>Packs</span></button>
@@ -1121,6 +1147,85 @@ function taperNoteFor(h){
   return g>0 ? `Taper: under ${g}g sugar per day` : `Taper: 0g sugar per day — target reached!`;
 }
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function clearAiPanel(id){
+  const txt=document.getElementById(`ailog-text-${id}`),thumb=document.getElementById(`ailog-thumb-${id}`),
+    res=document.getElementById(`ailog-result-${id}`),status=document.getElementById(`ailog-status-${id}`),
+    file=document.getElementById(`ailog-file-${id}`);
+  if(txt)txt.value='';
+  if(thumb){thumb.classList.remove('show');thumb.removeAttribute('src');delete thumb.dataset.b64;delete thumb.dataset.mediaType;}
+  if(res){res.classList.remove('show');res.textContent='';}
+  if(status)status.textContent='';
+  if(file)file.value='';
+}
+function aiLogPhotoPicked(id,ev){
+  const file=ev.target.files&&ev.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const dataUrl=reader.result;
+    const thumb=document.getElementById(`ailog-thumb-${id}`);
+    thumb.src=dataUrl;thumb.classList.add('show');
+    thumb.dataset.b64=dataUrl.split(',')[1];
+    thumb.dataset.mediaType=file.type||'image/jpeg';
+  };
+  reader.readAsDataURL(file);
+}
+async function analyzeFood(id){
+  const key=localStorage.getItem('gh_ai_key');
+  const statusEl=document.getElementById(`ailog-status-${id}`),btn=document.getElementById(`ailog-btn-${id}`),
+    resultEl=document.getElementById(`ailog-result-${id}`),textInp=document.getElementById(`ailog-text-${id}`),
+    thumb=document.getElementById(`ailog-thumb-${id}`);
+  if(!key){statusEl.textContent='Add your Anthropic API key below first.';return;}
+  const desc=(textInp?.value||'').trim(),hasPhoto=!!(thumb&&thumb.dataset.b64);
+  if(!desc&&!hasPhoto){statusEl.textContent='Type what you ate or add a photo first.';return;}
+  btn.disabled=true;statusEl.textContent='Analyzing…';resultEl.classList.remove('show');
+  try{
+    const content=[];
+    if(hasPhoto)content.push({type:'image',source:{type:'base64',media_type:thumb.dataset.mediaType,data:thumb.dataset.b64}});
+    content.push({type:'text',text:desc?`Food description: ${desc}`:'Estimate the protein content of the food in this photo.'});
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'content-type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:300,
+        system:'You are a nutrition estimator inside a habit tracking app. Given a text description and/or photo of a food or meal, estimate its protein content in grams. Respond ONLY with a JSON object, no markdown fences, no other text: {"food":"short name","grams_protein":number,"confidence":"low"|"medium"|"high"}. If multiple items are shown, sum the protein and name the food generically (e.g. "chicken & rice bowl").',
+        messages:[{role:'user',content}]
+      })
+    });
+    if(!resp.ok){
+      const errBody=await resp.text().catch(()=>'');
+      if(resp.status===401)statusEl.textContent='API key rejected — check it in the settings below.';
+      else statusEl.textContent=`Request failed (${resp.status}). Try again.`;
+      console.error('Food analysis error',resp.status,errBody);
+      btn.disabled=false;return;
+    }
+    const data=await resp.json();
+    const textBlock=(data.content||[]).find(b=>b.type==='text');
+    if(!textBlock){statusEl.textContent='No response — try again.';btn.disabled=false;return;}
+    const cleaned=textBlock.text.replace(/```json|```/g,'').trim();
+    let parsed;
+    try{parsed=JSON.parse(cleaned);}catch(e){statusEl.textContent='Could not parse estimate — try rephrasing.';btn.disabled=false;return;}
+    const grams=Math.round((+parsed.grams_protein||0)*10)/10;
+    if(!grams||grams<=0){statusEl.textContent="Couldn't estimate protein for that — try adding more detail.";btn.disabled=false;return;}
+    const h=S.habits.find(x=>x.id===id);
+    const amtInp=document.getElementById(`padd-${id}`);
+    if(amtInp)amtInp.value=grams;
+    _pendingFoodLabel[id]=String(parsed.food||desc||'food').slice(0,40);
+    const confEmoji=parsed.confidence==='high'?'🟢':parsed.confidence==='low'?'🟡':'🟠';
+    resultEl.textContent=`${confEmoji} ${parsed.food||'Food'} — ~${grams}g protein${h&&h.unit&&h.unit!=='g'?` (target unit is ${h.unit})`:''}. Review the amount above, then tap Add.`;
+    resultEl.classList.add('show');
+    statusEl.textContent='';
+  }catch(e){
+    console.error('Food analysis error',e);
+    statusEl.textContent='Something went wrong — check your connection and try again.';
+  }
+  btn.disabled=false;
+}
 function habitCardHTML(h){
   const done=isDoneToday(h.id),streak=currentStreak(h.id),c=colorOf(h.color);
   const atRisk=!done&&streak>=3&&new Date().getHours()>=17;
@@ -1134,10 +1239,13 @@ function habitCardHTML(h){
       restHTML=`<button class="rest-day-btn" onclick="event.stopPropagation();markRestDay('${h.id}')">😴 Mark rest day (${left} left this week)</button>`;
     }
   }
-  let numHTML='';
+  let numHTML='',miniProgressHTML='';
   if(h.type==='numeric'){
     const total=numVal(h.id),tgt=h.target||100,pct=Math.min(total/tgt*100,100),entries=numEntries(h.id);
-    const chips=entries.length?entries.map(v=>`<span class="entry-chip">+${v}${h.unit?' '+h.unit:''}</span>`).join(''):'';
+    miniProgressHTML=`<div class="habit-mini-progress" title="${total}/${tgt}${h.unit?' '+h.unit:''}"><div class="habit-mini-progress-track"><div class="habit-mini-progress-fill" style="width:${pct}%;background:${c.hex}"></div></div></div>`;
+    const chips=entries.length?entries.map(v=>typeof v==='object'
+      ?`<span class="entry-chip" title="${escapeHtml(v.label)}">+${v.amt}${h.unit?' '+h.unit:''} · ${escapeHtml(v.label.length>16?v.label.slice(0,16)+'…':v.label)}</span>`
+      :`<span class="entry-chip">+${v}${h.unit?' '+h.unit:''}</span>`).join(''):'';
     numHTML=`<div class="habit-numeric" onclick="event.stopPropagation()">
       <div class="numeric-total-row"><span class="numeric-total-val" style="--c-hex:${c.hex}">${total}</span><span class="numeric-total-target">/ ${tgt}${h.unit?' '+h.unit:''}</span></div>
       ${chips?`<div class="numeric-entries-chips" style="--c-hex:${c.hex};--c-rgb:${c.rgb}">${chips}</div>`:''}
@@ -1153,6 +1261,7 @@ function habitCardHTML(h){
     <div class="habit-card-top">
       <div class="habit-icon">${renderIcon(h.icon)}</div>
       <div class="habit-info"><div class="habit-name">${h.name}</div><div class="habit-streak">${streakStr}</div>${(taperNoteFor(h)||h.note)?`<div class="habit-note">${escapeHtml(taperNoteFor(h)||h.note)}</div>`:''}</div>
+      ${miniProgressHTML}
       <div class="habit-check" style="${done?`background:${c.hex};border-color:${c.hex}`:''}"> ${done?'✓':''}</div>
     </div>${numHTML}${restHTML}</div>`;
 }
@@ -1167,6 +1276,92 @@ function renderManage(){
   if(!S.sideQuests.length){sel.innerHTML=`<div class="empty-state" style="padding:20px"><div class="empty-icon" style="font-size:28px">⭐</div><div class="empty-title" style="font-size:14px">No side quests</div></div>`;}
   else{sel.innerHTML=S.sideQuests.map(s=>{const done=isSideQuestDoneToday(s.id),lbl=s.cadence==='once'&&done?'✓ Completed forever':s.cadence==='daily'&&done?'✓ Done today':'—';return`<div class="manage-card" style="border-left:3px solid rgba(255,229,92,.5)"><div class="manage-icon">${s.icon}</div><div class="manage-info"><div class="manage-name">${s.name}</div><div class="manage-meta">${s.cadence==='once'?'One & Done':'Daily'} · ${lbl}</div></div><div class="manage-actions"><button class="btn-del" onclick="deleteSideQuest('${s.id}')">✕</button></div></div>`;}).join('');}
   renderFavoriteQuotes();
+  renderAiKeyStatus();
+}
+function saveAiKey(){
+  const inp=document.getElementById('aiKeyInput');const val=(inp?.value||'').trim();
+  if(!val){toast('⚠️ Enter a key first');return;}
+  localStorage.setItem('gh_ai_key',val);
+  if(inp)inp.value='';
+  renderAiKeyStatus();
+  const statusEl=document.getElementById('ailog-status-'+(S.habits.find(x=>isProteinHabit(x))||{}).id);
+  if(statusEl&&statusEl.textContent.includes('API key'))statusEl.textContent='';
+  toast('🔑 API key saved to this device');
+}
+function clearAiKey(){
+  localStorage.removeItem('gh_ai_key');
+  renderAiKeyStatus();
+  toast('🔑 API key cleared');
+}
+function renderAiKeyStatus(){
+  const el=document.getElementById('aiKeyStatus');if(!el)return;
+  const key=localStorage.getItem('gh_ai_key');
+  el.textContent=key?`✅ Key saved (ends …${key.slice(-4)})`:'No key saved yet — AI food logging is off until you add one.';
+}
+function renderProteinTab(){
+  const el=document.getElementById('proteinContent');if(!el)return;
+  const h=S.habits.find(x=>isProteinHabit(x));
+  if(!h){
+    el.innerHTML=`<div class="empty-state"><div class="empty-icon">🍗</div><div class="empty-title">No Protein habit yet</div><div class="empty-desc">Add a numeric habit named "Protein" in ✦ Habits to unlock this tab.</div></div>`;
+    return;
+  }
+  const c=colorOf(h.color),total=numVal(h.id),tgt=h.target||150,pct=Math.min(total/tgt*100,100),
+    streak=currentStreak(h.id),entries=numEntries(h.id),unit=h.unit?' '+h.unit:'';
+  const rows=entries.length?entries.slice().reverse().map(v=>typeof v==='object'
+    ?`<div class="food-log-row"><span class="food-log-amt" style="--c-hex:${c.hex}">+${v.amt}${unit}</span><span class="food-log-label">${escapeHtml(v.label)}</span></div>`
+    :`<div class="food-log-row"><span class="food-log-amt" style="--c-hex:${c.hex}">+${v}${unit}</span><span class="food-log-label food-log-manual">Manual entry</span></div>`
+  ).join(''):`<div class="food-log-empty">No entries logged yet today.</div>`;
+  const hasKey=!!localStorage.getItem('gh_ai_key');
+  el.innerHTML=`
+    <div class="weight-hero">
+      <div style="line-height:1"><span class="weight-current-num" style="background:linear-gradient(135deg,${c.hex},var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${total}</span><span class="weight-unit-lbl">${h.unit||'g'} / ${tgt}</span></div>
+      <div class="weight-delta ${pct>=100?'good':'neutral'}">${pct>=100?'🎯 Target hit today!':`${Math.round(pct)}% of today's target`}</div>
+      <div class="weight-stats-row">
+        <div class="wstat"><div class="wstat-val">${tgt}${unit}</div><div class="wstat-lbl">Daily Target</div></div>
+        <div class="wstat"><div class="wstat-val">${entries.length}</div><div class="wstat-lbl">Logged Today</div></div>
+        <div class="wstat"><div class="wstat-val">${streak}</div><div class="wstat-lbl">Day Streak</div></div>
+      </div>
+      <div class="weight-goal-track"><div class="weight-goal-labels"><span>0${unit}</span><span>${Math.round(pct)}%</span><span>${tgt}${unit}</span></div><div class="weight-goal-bar"><div class="weight-goal-fill" style="width:${pct}%;background:linear-gradient(90deg,${c.hex},var(--pink))"></div></div></div>
+    </div>
+
+    <div class="weight-entry-card">
+      <div class="weight-entry-label">Add Protein</div>
+      <div class="weight-entry-row">
+        <input class="weight-input-big" id="padd-${h.id}" type="number" min="0" step="any" placeholder="grams" style="font-size:20px" onkeydown="if(event.key==='Enter'){addProteinEntry('${h.id}');event.preventDefault();}">
+        <button class="weight-log-btn" style="background:${c.hex};color:#0a0a14" onclick="addProteinEntry('${h.id}')">Add</button>
+      </div>
+      <button class="num-reset-btn" style="margin-top:10px;width:auto;border-radius:var(--radius-sm);padding:6px 12px;font-size:11px;font-weight:700" onclick="resetNum('${h.id}')" title="Reset today">↺ Reset today</button>
+    </div>
+
+    <div class="weight-settings-card">
+      <div class="weight-settings-title">📷 Log Food With AI</div>
+      <img class="ai-log-thumb" id="ailog-thumb-${h.id}">
+      <div class="ai-log-row">
+        <input class="ai-log-input" id="ailog-text-${h.id}" placeholder="what'd you eat? e.g. grilled chicken breast" onkeydown="if(event.key==='Enter'){analyzeFood('${h.id}');event.preventDefault();}">
+        <button class="ai-log-photo-btn" onclick="document.getElementById('ailog-file-${h.id}').click()" title="Add a photo">📷</button>
+        <input type="file" id="ailog-file-${h.id}" accept="image/*" capture="environment" style="display:none" onchange="aiLogPhotoPicked('${h.id}',event)">
+      </div>
+      <button class="ai-log-analyze-btn" id="ailog-btn-${h.id}" style="background:${c.hex}" onclick="analyzeFood('${h.id}')">Analyze protein</button>
+      <div class="ai-log-status" id="ailog-status-${h.id}">${hasKey?'':'Add your Anthropic API key below to enable this.'}</div>
+      <div class="ai-log-result" id="ailog-result-${h.id}" style="--c-hex:${c.hex};--c-rgb:${c.rgb}"></div>
+    </div>
+
+    <div class="weight-settings-card">
+      <div class="weight-settings-title">🍽️ Today's Food Log</div>
+      ${rows}
+    </div>
+
+    <div class="weight-settings-card">
+      <div class="weight-settings-title">🔑 AI API Key</div>
+      <div class="data-card-desc" style="margin-bottom:12px">Powers the food analyzer above. From console.anthropic.com — stored only in this browser's local storage, never uploaded, never in backups. Each estimate costs a fraction of a cent, billed to your account.</div>
+      <div class="data-btn-row"><input type="password" class="form-input" id="aiKeyInput" placeholder="sk-ant-…" style="flex:1;margin:0" autocomplete="off"></div>
+      <div class="data-btn-row" style="margin-top:8px">
+        <button class="data-btn export" onclick="saveAiKey()">Save Key</button>
+        <button class="data-btn import" onclick="clearAiKey()">Clear</button>
+      </div>
+      <div class="data-card-desc" id="aiKeyStatus" style="margin:8px 0 0"></div>
+    </div>`;
+  renderAiKeyStatus();
 }
 function renderFavoriteQuotes(){
   const el=document.getElementById('favoriteQuotesList'); if(!el) return;
@@ -1602,8 +1797,32 @@ function reevaluateBadges(){
     }
   });
 }
-function addNum(id){const h=S.habits.find(x=>x.id===id);if(!h)return;const inp=document.getElementById(`nadd-${id}`);const amt=parseFloat(inp?.value||0);if(!amt||amt<=0){if(inp){inp.style.borderColor='#ff6464';setTimeout(()=>inp.style.borderColor='',900);}return;}const tk=todayKey();if(!S.logs[tk])S.logs[tk]={};if(!S.logEntries[tk])S.logEntries[tk]={};if(!S.logEntries[tk][id])S.logEntries[tk][id]=[];const prev=numVal(id),next=prev+amt;S.logs[tk][id]=next;S.logEntries[tk][id].push(+amt.toFixed(2));if(inp)inp.value='';checkNumTarget(id,prev,next);save();renderToday();renderXP();}
+let _pendingFoodLabel={};
+function isProteinHabit(h){return !!h && h.type==='numeric' && /protein/i.test(h.name);}
+function addNumCore(id,amt,label){
+  const h=S.habits.find(x=>x.id===id);if(!h||!amt||amt<=0)return false;
+  const tk=todayKey();if(!S.logs[tk])S.logs[tk]={};if(!S.logEntries[tk])S.logEntries[tk]={};if(!S.logEntries[tk][id])S.logEntries[tk][id]=[];
+  const prev=numVal(id),next=prev+amt;S.logs[tk][id]=next;
+  if(label)S.logEntries[tk][id].push({amt:+amt.toFixed(2),label});
+  else S.logEntries[tk][id].push(+amt.toFixed(2));
+  checkNumTarget(id,prev,next);save();return true;
+}
+function addNum(id){
+  const inp=document.getElementById(`nadd-${id}`);const amt=parseFloat(inp?.value||0);
+  if(!addNumCore(id,amt,null)){if(inp){inp.style.borderColor='#ff6464';setTimeout(()=>inp.style.borderColor='',900);}return;}
+  if(inp)inp.value='';renderToday();renderXP();
+  const h=S.habits.find(x=>x.id===id);if(isProteinHabit(h))renderProteinTab();
+}
+function addProteinEntry(id){
+  const inp=document.getElementById(`padd-${id}`);const amt=parseFloat(inp?.value||0);const label=_pendingFoodLabel[id];
+  if(!addNumCore(id,amt,label)){if(inp){inp.style.borderColor='#ff6464';setTimeout(()=>inp.style.borderColor='',900);}return;}
+  if(label)delete _pendingFoodLabel[id];
+  if(inp)inp.value='';
+  clearAiPanel(id);
+  renderToday();renderXP();renderProteinTab();
+}
 function resetNum(id){
+  delete _pendingFoodLabel[id];
   const tk=todayKey();if(!S.logs[tk])return;
   const awardKey=tk+'_num_'+id;
   if(S.xpAwarded[awardKey]){
@@ -1617,6 +1836,7 @@ function resetNum(id){
   delete S.logs[tk][id];
   if(S.logEntries[tk])delete S.logEntries[tk][id];
   save();renderToday();renderXP();
+  const h=S.habits.find(x=>x.id===id);if(isProteinHabit(h))renderProteinTab();
 }
 function checkNumTarget(id,prev,next){
   const h=S.habits.find(x=>x.id===id);if(!h||!h.target)return;
@@ -1850,6 +2070,7 @@ function switchTab(name,btn){
   if(name==='stats')   renderStats();
   if(name==='weight')  renderWeight();
   if(name==='rewards') renderRewards();
+  if(name==='protein') renderProteinTab();
 }
 
 let _toastTimer;
@@ -1866,7 +2087,7 @@ function checkBackupReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-25.1720';
+const APP_VERSION = '2026-08-26.1830';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
