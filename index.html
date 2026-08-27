@@ -134,8 +134,9 @@
   .flame { display:inline-block; animation:flicker .9s ease-in-out infinite alternate; }
   @keyframes flicker { from{transform:scale(1) rotate(-4deg)} to{transform:scale(1.12) rotate(4deg)} }
   .habit-check { width:28px; height:28px; border-radius:50%; border:2px solid rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; font-size:14px; transition:all .3s cubic-bezier(.34,1.56,.64,1); flex-shrink:0; }
-  .habit-mini-progress { width:34px; flex-shrink:0; }
-  .habit-mini-progress-track { height:5px; background:rgba(255,255,255,.09); border-radius:3px; overflow:hidden; }
+  .habit-mini-progress { display:flex; flex-direction:column; align-items:flex-end; gap:3px; flex-shrink:0; }
+  .habit-mini-progress-num { font-size:9.5px; font-weight:800; white-space:nowrap; line-height:1; }
+  .habit-mini-progress-track { width:46px; height:5px; background:rgba(255,255,255,.09); border-radius:3px; overflow:hidden; }
   .habit-mini-progress-fill { height:100%; border-radius:3px; transition:width .5s cubic-bezier(.34,1.56,.64,1); min-width:2px; }
   .habit-card.completed .habit-check { background:var(--c-hex,var(--cyan)); border-color:var(--c-hex,var(--cyan)); transform:scale(1.12); }
 
@@ -1241,21 +1242,26 @@ function habitCardHTML(h){
   }
   let numHTML='',miniProgressHTML='';
   if(h.type==='numeric'){
-    const total=numVal(h.id),tgt=h.target||100,pct=Math.min(total/tgt*100,100),entries=numEntries(h.id);
-    miniProgressHTML=`<div class="habit-mini-progress" title="${total}/${tgt}${h.unit?' '+h.unit:''}"><div class="habit-mini-progress-track"><div class="habit-mini-progress-fill" style="width:${pct}%;background:${c.hex}"></div></div></div>`;
-    const chips=entries.length?entries.map(v=>typeof v==='object'
-      ?`<span class="entry-chip" title="${escapeHtml(v.label)}">+${v.amt}${h.unit?' '+h.unit:''} · ${escapeHtml(v.label.length>16?v.label.slice(0,16)+'…':v.label)}</span>`
-      :`<span class="entry-chip">+${v}${h.unit?' '+h.unit:''}</span>`).join(''):'';
-    numHTML=`<div class="habit-numeric" onclick="event.stopPropagation()">
-      <div class="numeric-total-row"><span class="numeric-total-val" style="--c-hex:${c.hex}">${total}</span><span class="numeric-total-target">/ ${tgt}${h.unit?' '+h.unit:''}</span></div>
-      ${chips?`<div class="numeric-entries-chips" style="--c-hex:${c.hex};--c-rgb:${c.rgb}">${chips}</div>`:''}
-      <div class="numeric-add-row">
-        <input class="num-add-input" id="nadd-${h.id}" type="number" placeholder="enter amount…" min="0" step="any" style="--c-hex:${c.hex}" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter'){addNum('${h.id}');event.preventDefault();}">
-        <button class="num-add-btn" style="background:${c.hex}" onclick="addNum('${h.id}')">Add</button>
-        <button class="num-reset-btn" onclick="resetNum('${h.id}')" title="Reset today">↺</button>
-      </div>
-      <div class="numeric-bar"><div class="numeric-bar-fill" style="width:${pct}%;--c-hex:${c.hex}"></div></div>
+    const total=numVal(h.id),tgt=h.target||100,pct=Math.min(total/tgt*100,100),entries=numEntries(h.id),compact=isProteinHabit(h);
+    miniProgressHTML=`<div class="habit-mini-progress" title="${total}/${tgt}${h.unit?' '+h.unit:''}">
+      <div class="habit-mini-progress-num" style="color:${c.hex}">${total}/${tgt}${h.unit||''}</div>
+      <div class="habit-mini-progress-track"><div class="habit-mini-progress-fill" style="width:${pct}%;background:${c.hex}"></div></div>
     </div>`;
+    if(!compact){
+      const chips=entries.length?entries.map(v=>typeof v==='object'
+        ?`<span class="entry-chip" title="${escapeHtml(v.label)}">+${v.amt}${h.unit?' '+h.unit:''} · ${escapeHtml(v.label.length>16?v.label.slice(0,16)+'…':v.label)}</span>`
+        :`<span class="entry-chip">+${v}${h.unit?' '+h.unit:''}</span>`).join(''):'';
+      numHTML=`<div class="habit-numeric" onclick="event.stopPropagation()">
+        <div class="numeric-total-row"><span class="numeric-total-val" style="--c-hex:${c.hex}">${total}</span><span class="numeric-total-target">/ ${tgt}${h.unit?' '+h.unit:''}</span></div>
+        ${chips?`<div class="numeric-entries-chips" style="--c-hex:${c.hex};--c-rgb:${c.rgb}">${chips}</div>`:''}
+        <div class="numeric-add-row">
+          <input class="num-add-input" id="nadd-${h.id}" type="number" placeholder="enter amount…" min="0" step="any" style="--c-hex:${c.hex}" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter'){addNum('${h.id}');event.preventDefault();}">
+          <button class="num-add-btn" style="background:${c.hex}" onclick="addNum('${h.id}')">Add</button>
+          <button class="num-reset-btn" onclick="resetNum('${h.id}')" title="Reset today">↺</button>
+        </div>
+        <div class="numeric-bar"><div class="numeric-bar-fill" style="width:${pct}%;--c-hex:${c.hex}"></div></div>
+      </div>`;
+    }
   }
   return `<div class="habit-card ${done?'completed':''}" id="hc-${h.id}" style="--c-hex:${c.hex};--c-rgb:${c.rgb};--c-accent:rgba(${c.rgb},.07)" onclick="toggleHabit('${h.id}')">
     <div class="habit-card-top">
@@ -2087,7 +2093,7 @@ function checkBackupReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-26.1830';
+const APP_VERSION = '2026-08-26.2215';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
