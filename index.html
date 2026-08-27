@@ -968,15 +968,16 @@ function weekSideQuestCount(days){
   return n;
 }
 function colorOf(id){return COLORS.find(c=>c.id===id)||COLORS[0];}
-function isDoneToday(hid){const v=(S.logs[todayKey()]||{})[hid];return v===true||(typeof v==='number'&&v>0);}
+function isDoneOnDate(hid,dk){const h=S.habits.find(x=>x.id===hid);if(!h)return false;const v=(S.logs[dk]||{})[hid];return h.type==='numeric'?(typeof v==='number'&&v>=(h.target||100)):v===true;}
+function isDoneToday(hid){return isDoneOnDate(hid,todayKey());}
 function numVal(hid){const v=(S.logs[todayKey()]||{})[hid];return typeof v==='number'?v:0;}
 function numEntries(hid){return(S.logEntries[todayKey()]||{})[hid]||[];}
 function isSideQuestDoneToday(sid){const s=S.sideQuests.find(x=>x.id===sid);if(!s)return false;if(s.cadence==='once')return!!S.sideQuestDone[sid];return!!((S.sideQuestLogs[todayKey()]||{})[sid]);}
-function currentStreak(hid){let streak=0;const now=new Date(),start=isDoneToday(hid)?0:1;for(let i=start;i<400;i++){const d=new Date(now);d.setDate(d.getDate()-i);const dk=dateKey(d);const log=S.logs[dk],done=log&&(log[hid]===true||(typeof log[hid]==='number'&&log[hid]>0));if(done){streak++;continue;}if((S.restDayLogs[dk]||{})[hid])continue;if(i>0||start===1)break;}return streak;}
+function currentStreak(hid){let streak=0;const now=new Date(),start=isDoneToday(hid)?0:1;for(let i=start;i<400;i++){const d=new Date(now);d.setDate(d.getDate()-i);const dk=dateKey(d);const done=isDoneOnDate(hid,dk);if(done){streak++;continue;}if((S.restDayLogs[dk]||{})[hid])continue;if(i>0||start===1)break;}return streak;}
 function restDaysUsedThisWeek(hid){const days=thisWeekDays();return days.filter(d=>(S.restDayLogs[dateKey(d)]||{})[hid]).length;}
 function isRestDayToday(hid){return !!(S.restDayLogs[todayKey()]||{})[hid];}
 function markRestDay(hid){const h=S.habits.find(x=>x.id===hid);if(!h||!h.restEligible)return;const tk=todayKey();if(isDoneToday(hid))return;if(isRestDayToday(hid)){if(!S.restDayLogs[tk])return;delete S.restDayLogs[tk][hid];save();renderToday();return;}if(restDaysUsedThisWeek(hid)>=2){toast('😴 Both rest days used this week');return;}if(!S.restDayLogs[tk])S.restDayLogs[tk]={};S.restDayLogs[tk][hid]=true;save();renderToday();toast(`😴 Rest day marked for ${h.name} — streak protected`);}
-function bestStreak(hid){const keys=Object.keys(S.logs).sort();let best=0,cur=0,prev=null;for(const k of keys){const log=S.logs[k],done=log&&(log[hid]===true||(typeof log[hid]==='number'&&log[hid]>0));if(done){const gap=prev?(new Date(k)-new Date(prev))/86400000:1;cur=gap===1?cur+1:1;best=Math.max(best,cur);prev=k;}else{cur=0;prev=null;}}return best;}
+function bestStreak(hid){const keys=Object.keys(S.logs).sort();let best=0,cur=0,prev=null;for(const k of keys){const done=isDoneOnDate(hid,k);if(done){const gap=prev?(new Date(k)-new Date(prev))/86400000:1;cur=gap===1?cur+1:1;best=Math.max(best,cur);prev=k;}else{cur=0;prev=null;}}return best;}
 
 function addXP(amt){const before=levelInfo(S.user.xp);S.user.xp+=amt;const after=levelInfo(S.user.xp);if(after.lv>before.lv)setTimeout(()=>{toast(`🎉 Level Up! You're now: ${after.name}!`);confetti(90);},600);}
 function earnBadge(id,cond=true){if(!cond||S.user.badges.includes(id))return;S.user.badges.push(id);const b=BADGES.find(x=>x.id===id);if(b)setTimeout(()=>{toast(`${b.e} Badge Unlocked: ${b.n}!`);confetti(35);},900);save();}
@@ -1010,8 +1011,8 @@ function checkBadges(){
   let activeStreak=0;
   for(let i=0;i<14;i++){
     const d=new Date();d.setDate(d.getDate()-i);
-    const log=S.logs[dateKey(d)]||{};
-    if(S.habits.some(h=>log[h.id]===true||(typeof log[h.id]==='number'&&log[h.id]>0)))activeStreak++;
+    const dk=dateKey(d);
+    if(S.habits.some(h=>isDoneOnDate(h.id,dk)))activeStreak++;
     else break;
   }
   if(activeStreak>=14) earnBadge('no_days_off');
@@ -2149,7 +2150,7 @@ function checkBackupReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-27.1330';
+const APP_VERSION = '2026-08-27.1445';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
