@@ -184,6 +184,17 @@
   .food-log-label { font-size:12.5px; color:var(--text); }
   .food-log-label.food-log-manual { color:var(--text-muted); font-style:italic; }
   .food-log-empty { font-size:12.5px; color:var(--text-muted); text-align:center; padding:10px 0; }
+  .ai-key-header { display:flex; align-items:center; justify-content:space-between; cursor:pointer; }
+  .ai-key-header-right { display:flex; align-items:center; gap:8px; }
+  .ai-key-header-status { font-size:11px; font-weight:700; color:var(--text-muted); }
+  .ai-key-chevron { font-size:11px; color:var(--text-muted); }
+  .ai-key-panel { display:none; }
+  .ai-key-panel.open { display:block; }
+  .quickfood-wrap { display:flex; flex-wrap:wrap; gap:8px; }
+  .quickfood-chip { display:flex; align-items:center; gap:7px; padding:7px 10px; border-radius:20px; background:rgba(255,255,255,.06); border:1px solid var(--border); }
+  .quickfood-chip .qf-add { background:none; border:none; color:var(--text); font:inherit; font-size:12px; font-weight:600; cursor:pointer; padding:0; }
+  .quickfood-chip .qf-del { opacity:.45; cursor:pointer; padding:0 1px; font-size:11px; flex-shrink:0; }
+  .quickfood-chip .qf-del:active { opacity:.9; }
 
   .streak-alert { background:linear-gradient(135deg,rgba(255,149,68,.13),rgba(255,107,255,.13)); border:1px solid rgba(255,149,68,.28); border-radius:var(--radius); padding:13px 15px; margin-bottom:14px; display:flex; align-items:center; gap:11px; animation:slide-down .4s cubic-bezier(.34,1.56,.64,1); }
   @keyframes slide-down { from{transform:translateY(-8px);opacity:0} to{transform:translateY(0);opacity:1} }
@@ -1284,6 +1295,12 @@ function renderManage(){
   renderFavoriteQuotes();
   renderAiKeyStatus();
 }
+let _keyPanelOpen=false;
+function toggleKeyPanel(){
+  _keyPanelOpen=!_keyPanelOpen;
+  const panel=document.getElementById('aiKeyPanel');if(panel)panel.classList.toggle('open',_keyPanelOpen);
+  const chevron=document.getElementById('aiKeyChevron');if(chevron)chevron.textContent=_keyPanelOpen?'▾':'▸';
+}
 function saveAiKey(){
   const inp=document.getElementById('aiKeyInput');const val=(inp?.value||'').trim();
   if(!val){toast('⚠️ Enter a key first');return;}
@@ -1300,9 +1317,10 @@ function clearAiKey(){
   toast('🔑 API key cleared');
 }
 function renderAiKeyStatus(){
-  const el=document.getElementById('aiKeyStatus');if(!el)return;
+  const el=document.getElementById('aiKeyStatus');const headerEl=document.getElementById('aiKeyHeaderStatus');
   const key=localStorage.getItem('gh_ai_key');
-  el.textContent=key?`✅ Key saved (ends …${key.slice(-4)})`:'No key saved yet — AI food logging is off until you add one.';
+  if(el)el.textContent=key?`✅ Key saved (ends …${key.slice(-4)})`:'No key saved yet — AI food logging is off until you add one.';
+  if(headerEl)headerEl.textContent=key?'✅ Set':'Not set';
 }
 function renderProteinTab(){
   const el=document.getElementById('proteinContent');if(!el)return;
@@ -1318,6 +1336,15 @@ function renderProteinTab(){
     :`<div class="food-log-row"><span class="food-log-amt" style="--c-hex:${c.hex}">+${v}${unit}</span><span class="food-log-label food-log-manual">Manual entry</span></div>`
   ).join(''):`<div class="food-log-empty">No entries logged yet today.</div>`;
   const hasKey=!!localStorage.getItem('gh_ai_key');
+  const foodHist=getFoodHistory();
+  const quickAddHTML=foodHist.length?`
+    <div class="weight-settings-card">
+      <div class="weight-settings-title">⭐ Quick Add</div>
+      <div class="data-card-desc" style="margin-bottom:10px">Foods you've logged before — tap to add instantly, no AI call needed.</div>
+      <div class="quickfood-wrap">
+        ${foodHist.map((f,idx)=>`<div class="quickfood-chip"><button class="qf-add" onclick="quickAddFoodAt('${h.id}',${idx})">${escapeHtml(f.name)} <b style="color:${c.hex}">+${f.grams}${unit}</b></button><span class="qf-del" onclick="event.stopPropagation();removeQuickFoodAt(${idx})" title="Remove">✕</span></div>`).join('')}
+      </div>
+    </div>`:'';
   el.innerHTML=`
     <div class="weight-hero">
       <div style="line-height:1"><span class="weight-current-num" style="background:linear-gradient(135deg,${c.hex},var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${total}</span><span class="weight-unit-lbl">${h.unit||'g'} / ${tgt}</span></div>
@@ -1329,7 +1356,7 @@ function renderProteinTab(){
       </div>
       <div class="weight-goal-track"><div class="weight-goal-labels"><span>0${unit}</span><span>${Math.round(pct)}%</span><span>${tgt}${unit}</span></div><div class="weight-goal-bar"><div class="weight-goal-fill" style="width:${pct}%;background:linear-gradient(90deg,${c.hex},var(--pink))"></div></div></div>
     </div>
-
+    ${quickAddHTML}
     <div class="weight-entry-card">
       <div class="weight-entry-label">Add Protein</div>
       <div class="weight-entry-row">
@@ -1358,14 +1385,19 @@ function renderProteinTab(){
     </div>
 
     <div class="weight-settings-card">
-      <div class="weight-settings-title">🔑 AI API Key</div>
-      <div class="data-card-desc" style="margin-bottom:12px">Powers the food analyzer above. From console.anthropic.com — stored only in this browser's local storage, never uploaded, never in backups. Each estimate costs a fraction of a cent, billed to your account.</div>
-      <div class="data-btn-row"><input type="password" class="form-input" id="aiKeyInput" placeholder="sk-ant-…" style="flex:1;margin:0" autocomplete="off"></div>
-      <div class="data-btn-row" style="margin-top:8px">
-        <button class="data-btn export" onclick="saveAiKey()">Save Key</button>
-        <button class="data-btn import" onclick="clearAiKey()">Clear</button>
+      <div class="ai-key-header" onclick="toggleKeyPanel()">
+        <span class="weight-settings-title" style="margin:0">🔑 AI API Key</span>
+        <span class="ai-key-header-right"><span id="aiKeyHeaderStatus" class="ai-key-header-status"></span><span id="aiKeyChevron" class="ai-key-chevron">${_keyPanelOpen?'▾':'▸'}</span></span>
       </div>
-      <div class="data-card-desc" id="aiKeyStatus" style="margin:8px 0 0"></div>
+      <div id="aiKeyPanel" class="ai-key-panel${_keyPanelOpen?' open':''}">
+        <div class="data-card-desc" style="margin:12px 0">Powers the food analyzer above. From console.anthropic.com — stored only in this browser's local storage, never uploaded, never in backups. Each estimate costs a fraction of a cent, billed to your account.</div>
+        <div class="data-btn-row"><input type="password" class="form-input" id="aiKeyInput" placeholder="sk-ant-…" style="flex:1;margin:0" autocomplete="off"></div>
+        <div class="data-btn-row" style="margin-top:8px">
+          <button class="data-btn export" onclick="saveAiKey()">Save Key</button>
+          <button class="data-btn import" onclick="clearAiKey()">Clear</button>
+        </div>
+        <div class="data-card-desc" id="aiKeyStatus" style="margin:8px 0 0"></div>
+      </div>
     </div>`;
   renderAiKeyStatus();
 }
@@ -1803,6 +1835,27 @@ function reevaluateBadges(){
     }
   });
 }
+function getFoodHistory(){
+  try{const list=JSON.parse(localStorage.getItem('gh_food_history')||'[]');return Array.isArray(list)?list:[];}catch(e){return [];}
+}
+function saveFoodHistory(list){localStorage.setItem('gh_food_history',JSON.stringify(list.slice(0,12)));}
+function rememberFood(name,grams){
+  if(!name||!grams||grams<=0)return;
+  const key=String(name).trim().toLowerCase();if(!key)return;
+  let list=getFoodHistory().filter(f=>String(f.name).trim().toLowerCase()!==key);
+  list.unshift({name:String(name).trim().slice(0,40),grams:Math.round(grams*10)/10});
+  saveFoodHistory(list);
+}
+function quickAddFoodAt(id,idx){
+  const list=getFoodHistory();const item=list[idx];if(!item)return;
+  if(!addNumCore(id,item.grams,item.name))return;
+  renderToday();renderXP();renderProteinTab();
+  const h=S.habits.find(x=>x.id===id);
+  toast(`✅ +${item.grams}${(h&&h.unit)||'g'} · ${item.name}`);
+}
+function removeQuickFoodAt(idx){
+  const list=getFoodHistory();list.splice(idx,1);saveFoodHistory(list);renderProteinTab();
+}
 let _pendingFoodLabel={};
 function isProteinHabit(h){return !!h && h.type==='numeric' && /protein/i.test(h.name);}
 function addNumCore(id,amt,label){
@@ -1822,7 +1875,7 @@ function addNum(id){
 function addProteinEntry(id){
   const inp=document.getElementById(`padd-${id}`);const amt=parseFloat(inp?.value||0);const label=_pendingFoodLabel[id];
   if(!addNumCore(id,amt,label)){if(inp){inp.style.borderColor='#ff6464';setTimeout(()=>inp.style.borderColor='',900);}return;}
-  if(label)delete _pendingFoodLabel[id];
+  if(label){delete _pendingFoodLabel[id];rememberFood(label,amt);}
   if(inp)inp.value='';
   clearAiPanel(id);
   renderToday();renderXP();renderProteinTab();
@@ -2093,7 +2146,7 @@ function checkBackupReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-26.2215';
+const APP_VERSION = '2026-08-27.1100';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
