@@ -160,8 +160,10 @@
   .num-add-btn { padding:8px 18px; border-radius:9px; border:none; background:var(--c-hex,var(--cyan)); color:#0a0a14; font-size:13px; font-weight:800; cursor:pointer; font-family:inherit; transition:all .2s; flex-shrink:0; }
   .num-add-btn:active { transform:scale(.93); }
   .num-reset-btn { width:30px; height:30px; border-radius:50%; border:1px solid var(--border); background:rgba(255,255,255,.04); color:var(--text-muted); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; flex-shrink:0; }
-  .rest-day-btn { display:block; width:100%; margin-top:6px; padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border); background:rgba(255,255,255,.04); color:var(--text-muted); font-size:10px; font-weight:600; text-align:center; cursor:pointer; transition:all .2s; }
-  .rest-day-btn:hover { background:rgba(255,255,255,.08); }
+  .rest-day-mini { width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:rgba(255,255,255,.04); color:var(--text-muted); font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; position:relative; transition:all .2s; }
+  .rest-day-mini:hover { background:rgba(255,255,255,.09); }
+  .rest-day-mini.active { background:rgba(255,193,7,.18); border-color:rgba(255,193,7,.5); }
+  .rest-day-mini-count { position:absolute; bottom:-3px; right:-3px; width:13px; height:13px; border-radius:50%; background:var(--bg); border:1px solid var(--border); font-size:8px; font-weight:800; color:var(--text-muted); display:flex; align-items:center; justify-content:center; }
   .num-reset-btn:hover { background:rgba(255,80,80,.12); color:#ff6464; border-color:rgba(255,80,80,.25); }
   .numeric-bar { height:5px; background:rgba(255,255,255,.07); border-radius:3px; overflow:hidden; }
   .numeric-bar-fill { height:100%; background:linear-gradient(90deg,var(--c-hex,var(--cyan)),var(--pink)); border-radius:3px; transition:width .6s cubic-bezier(.34,1.56,.64,1); min-width:4px; }
@@ -1247,9 +1249,9 @@ function habitCardHTML(h){
   if(h.restEligible && !done){
     const resting=isRestDayToday(h.id), used=restDaysUsedThisWeek(h.id), left=Math.max(0,2-used);
     if(resting){
-      restHTML=`<button class="rest-day-btn" onclick="event.stopPropagation();markRestDay('${h.id}')">😴 Resting today — tap to undo</button>`;
+      restHTML=`<button class="rest-day-mini active" onclick="event.stopPropagation();markRestDay('${h.id}')" title="Resting today — tap to undo">😴</button>`;
     }else if(left>0){
-      restHTML=`<button class="rest-day-btn" onclick="event.stopPropagation();markRestDay('${h.id}')">😴 Mark rest day (${left} left this week)</button>`;
+      restHTML=`<button class="rest-day-mini" onclick="event.stopPropagation();markRestDay('${h.id}')" title="Mark rest day (${left} left this week)">😴<span class="rest-day-mini-count">${left}</span></button>`;
     }
   }
   let numHTML='',miniProgressHTML='';
@@ -1280,8 +1282,9 @@ function habitCardHTML(h){
       <div class="habit-icon">${renderIcon(h.icon)}</div>
       <div class="habit-info"><div class="habit-name">${h.name}</div><div class="habit-streak">${streakStr}</div>${(taperNoteFor(h)||h.note)?`<div class="habit-note">${escapeHtml(taperNoteFor(h)||h.note)}</div>`:''}</div>
       ${miniProgressHTML}
+      ${restHTML}
       <div class="habit-check" style="${done?`background:${c.hex};border-color:${c.hex}`:''}"> ${done?'✓':''}</div>
-    </div>${numHTML}${restHTML}</div>`;
+    </div>${numHTML}</div>`;
 }
 
 function sideQuestCardHTML(s){const dt=isSideQuestDoneToday(s.id),forever=s.cadence==='once'&&dt;const cls=forever?'s-done-forever':dt?'s-done':'';const status=forever?'✦ Completed!':dt?'✦ Done today':s.cadence==='once'?'Tap to complete':'Tap when done';return`<div class="side-quest-card ${cls}" id="sc-${s.id}" onclick="toggleSideQuest('${s.id}')"><div class="side-quest-bonus">+5 XP bonus</div><div class="side-quest-card-top"><div class="side-quest-icon">${s.icon}</div><div class="side-quest-info"><div class="side-quest-name">${s.name}</div><div class="side-quest-meta"><span class="side-quest-cadence-pill ${s.cadence==='once'?'once':''}">${s.cadence==='once'?'one & done':'daily'}</span><span>${status}</span></div></div><div class="side-quest-check">${dt?'✓':''}</div></div></div>`;}
@@ -2158,7 +2161,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-27.1530';
+const APP_VERSION = '2026-08-27.1615';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
