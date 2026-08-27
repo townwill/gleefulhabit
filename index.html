@@ -1208,7 +1208,7 @@ async function analyzeFood(id){
       body:JSON.stringify({
         model:'claude-haiku-4-5-20251001',
         max_tokens:300,
-        system:'You are a nutrition estimator inside a habit tracking app. Given a text description and/or photo of a food or meal, estimate its protein content in grams. Respond ONLY with a JSON object, no markdown fences, no other text: {"food":"short name","grams_protein":number,"confidence":"low"|"medium"|"high"}. If multiple items are shown, sum the protein and name the food generically (e.g. "chicken & rice bowl").',
+        system:'You are a nutrition estimator inside a habit tracking app. Given a text description and/or photo of a food or meal, estimate its protein content in grams and its ADDED sugar content in grams (the FDA nutrition-label "Added Sugars" line — sugar/syrup added during processing — NOT total sugars. Naturally-occurring sugar like lactose in milk/whey/yogurt or fructose in whole fruit counts as 0 added sugar unless the product is also sweetened). Respond ONLY with a JSON object, no markdown fences, no other text: {"food":"short name","grams_protein":number,"added_sugar_g":number,"confidence":"low"|"medium"|"high"}. If multiple items are shown, sum the protein and added sugar and name the food generically (e.g. "chicken & rice bowl").',
         messages:[{role:'user',content}]
       })
     });
@@ -1227,12 +1227,14 @@ async function analyzeFood(id){
     try{parsed=JSON.parse(cleaned);}catch(e){statusEl.textContent='Could not parse estimate — try rephrasing.';btn.disabled=false;return;}
     const grams=Math.round((+parsed.grams_protein||0)*10)/10;
     if(!grams||grams<=0){statusEl.textContent="Couldn't estimate protein for that — try adding more detail.";btn.disabled=false;return;}
+    const addedSugar=Math.max(0,Math.round((+parsed.added_sugar_g||0)*10)/10);
     const h=S.habits.find(x=>x.id===id);
     const amtInp=document.getElementById(`padd-${id}`);
     if(amtInp)amtInp.value=grams;
     _pendingFoodLabel[id]=String(parsed.food||desc||'food').slice(0,40);
+    _pendingFoodSugar[id]=addedSugar;
     const confEmoji=parsed.confidence==='high'?'🟢':parsed.confidence==='low'?'🟡':'🟠';
-    resultEl.textContent=`${confEmoji} ${parsed.food||'Food'} — ~${grams}g protein${h&&h.unit&&h.unit!=='g'?` (target unit is ${h.unit})`:''}. Review the amount above, then tap Add.`;
+    resultEl.textContent=`${confEmoji} ${parsed.food||'Food'} — ~${grams}g protein, ~${addedSugar}g added sugar${h&&h.unit&&h.unit!=='g'?` (target unit is ${h.unit})`:''}. Review the amount above, then tap Add.`;
     resultEl.classList.add('show');
     statusEl.textContent='';
   }catch(e){
@@ -1334,9 +1336,9 @@ function renderProteinTab(){
     return;
   }
   const c=colorOf(h.color),total=numVal(h.id),tgt=h.target||150,pct=Math.min(total/tgt*100,100),
-    streak=currentStreak(h.id),entries=numEntries(h.id),unit=h.unit?' '+h.unit:'';
+    streak=currentStreak(h.id),entries=numEntries(h.id),unit=h.unit?' '+h.unit:'',addedSugar=todaysAddedSugar(h.id);
   const rows=entries.length?entries.slice().reverse().map(v=>typeof v==='object'
-    ?`<div class="food-log-row"><span class="food-log-amt" style="--c-hex:${c.hex}">+${v.amt}${unit}</span><span class="food-log-label">${escapeHtml(v.label)}</span></div>`
+    ?`<div class="food-log-row"><span class="food-log-amt" style="--c-hex:${c.hex}">+${v.amt}${unit}</span><span class="food-log-label">${escapeHtml(v.label)}${typeof v.sugar==='number'&&v.sugar>0?` · 🍬${v.sugar}g added sugar`:''}</span></div>`
     :`<div class="food-log-row"><span class="food-log-amt" style="--c-hex:${c.hex}">+${v}${unit}</span><span class="food-log-label food-log-manual">Manual entry</span></div>`
   ).join(''):`<div class="food-log-empty">No entries logged yet today.</div>`;
   const hasKey=!!localStorage.getItem('gh_ai_key');
@@ -1357,6 +1359,7 @@ function renderProteinTab(){
         <div class="wstat"><div class="wstat-val">${tgt}${unit}</div><div class="wstat-lbl">Daily Target</div></div>
         <div class="wstat"><div class="wstat-val">${entries.length}</div><div class="wstat-lbl">Logged Today</div></div>
         <div class="wstat"><div class="wstat-val">${streak}</div><div class="wstat-lbl">Day Streak</div></div>
+        <div class="wstat"><div class="wstat-val">🍬${addedSugar}g</div><div class="wstat-lbl">Added Sugar</div></div>
       </div>
       <div class="weight-goal-track"><div class="weight-goal-labels"><span>0${unit}</span><span>${Math.round(pct)}%</span><span>${tgt}${unit}</span></div><div class="weight-goal-bar"><div class="weight-goal-fill" style="width:${pct}%;background:linear-gradient(90deg,${c.hex},var(--pink))"></div></div></div>
     </div>
@@ -1378,7 +1381,7 @@ function renderProteinTab(){
         <button class="ai-log-photo-btn" onclick="document.getElementById('ailog-file-${h.id}').click()" title="Add a photo">📷</button>
         <input type="file" id="ailog-file-${h.id}" accept="image/*" capture="environment" style="display:none" onchange="aiLogPhotoPicked('${h.id}',event)">
       </div>
-      <button class="ai-log-analyze-btn" id="ailog-btn-${h.id}" style="background:${c.hex}" onclick="analyzeFood('${h.id}')">Analyze protein</button>
+      <button class="ai-log-analyze-btn" id="ailog-btn-${h.id}" style="background:${c.hex}" onclick="analyzeFood('${h.id}')">Analyze protein & sugar</button>
       <div class="ai-log-status" id="ailog-status-${h.id}">${hasKey?'':'Add your Anthropic API key below to enable this.'}</div>
       <div class="ai-log-result" id="ailog-result-${h.id}" style="--c-hex:${c.hex};--c-rgb:${c.rgb}"></div>
     </div>
@@ -1846,16 +1849,18 @@ function getFoodHistory(){
   try{const list=JSON.parse(localStorage.getItem('gh_food_history')||'[]');return Array.isArray(list)?list:[];}catch(e){return [];}
 }
 function saveFoodHistory(list){localStorage.setItem('gh_food_history',JSON.stringify(list.slice(0,12)));}
-function rememberFood(name,grams){
+function rememberFood(name,grams,sugar){
   if(!name||!grams||grams<=0)return;
   const key=String(name).trim().toLowerCase();if(!key)return;
   let list=getFoodHistory().filter(f=>String(f.name).trim().toLowerCase()!==key);
-  list.unshift({name:String(name).trim().slice(0,40),grams:Math.round(grams*10)/10});
+  const entry={name:String(name).trim().slice(0,40),grams:Math.round(grams*10)/10};
+  if(typeof sugar==='number'&&sugar>0)entry.sugar=Math.round(sugar*10)/10;
+  list.unshift(entry);
   saveFoodHistory(list);
 }
 function quickAddFoodAt(id,idx){
   const list=getFoodHistory();const item=list[idx];if(!item)return;
-  if(!addNumCore(id,item.grams,item.name))return;
+  if(!addNumCore(id,item.grams,item.name,item.sugar))return;
   renderToday();renderXP();renderProteinTab();
   const h=S.habits.find(x=>x.id===id);
   toast(`✅ +${item.grams}${(h&&h.unit)||'g'} · ${item.name}`);
@@ -1864,14 +1869,21 @@ function removeQuickFoodAt(idx){
   const list=getFoodHistory();list.splice(idx,1);saveFoodHistory(list);renderProteinTab();
 }
 let _pendingFoodLabel={};
+let _pendingFoodSugar={};
 function isProteinHabit(h){return !!h && h.type==='numeric' && /protein/i.test(h.name);}
-function addNumCore(id,amt,label){
+function addNumCore(id,amt,label,sugar){
   const h=S.habits.find(x=>x.id===id);if(!h||!amt||amt<=0)return false;
   const tk=todayKey();if(!S.logs[tk])S.logs[tk]={};if(!S.logEntries[tk])S.logEntries[tk]={};if(!S.logEntries[tk][id])S.logEntries[tk][id]=[];
   const prev=numVal(id),next=prev+amt;S.logs[tk][id]=next;
-  if(label)S.logEntries[tk][id].push({amt:+amt.toFixed(2),label});
-  else S.logEntries[tk][id].push(+amt.toFixed(2));
+  if(label){
+    const entry={amt:+amt.toFixed(2),label};
+    if(typeof sugar==='number'&&sugar>0)entry.sugar=Math.round(sugar*10)/10;
+    S.logEntries[tk][id].push(entry);
+  }else S.logEntries[tk][id].push(+amt.toFixed(2));
   checkNumTarget(id,prev,next);save();return true;
+}
+function todaysAddedSugar(hid){
+  return numEntries(hid).reduce((sum,v)=>sum+(typeof v==='object'&&typeof v.sugar==='number'?v.sugar:0),0);
 }
 function addNum(id){
   const inp=document.getElementById(`nadd-${id}`);const amt=parseFloat(inp?.value||0);
@@ -1880,15 +1892,17 @@ function addNum(id){
   const h=S.habits.find(x=>x.id===id);if(isProteinHabit(h))renderProteinTab();
 }
 function addProteinEntry(id){
-  const inp=document.getElementById(`padd-${id}`);const amt=parseFloat(inp?.value||0);const label=_pendingFoodLabel[id];
-  if(!addNumCore(id,amt,label)){if(inp){inp.style.borderColor='#ff6464';setTimeout(()=>inp.style.borderColor='',900);}return;}
-  if(label){delete _pendingFoodLabel[id];rememberFood(label,amt);}
+  const inp=document.getElementById(`padd-${id}`);const amt=parseFloat(inp?.value||0);const label=_pendingFoodLabel[id],sugar=_pendingFoodSugar[id];
+  if(!addNumCore(id,amt,label,sugar)){if(inp){inp.style.borderColor='#ff6464';setTimeout(()=>inp.style.borderColor='',900);}return;}
+  if(label){delete _pendingFoodLabel[id];rememberFood(label,amt,sugar);}
+  delete _pendingFoodSugar[id];
   if(inp)inp.value='';
   clearAiPanel(id);
   renderToday();renderXP();renderProteinTab();
 }
 function resetNum(id){
   delete _pendingFoodLabel[id];
+  delete _pendingFoodSugar[id];
   const tk=todayKey();if(!S.logs[tk])return;
   const awardKey=tk+'_num_'+id;
   if(S.xpAwarded[awardKey]){
@@ -2161,7 +2175,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-27.1615';
+const APP_VERSION = '2026-08-27.1730';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
