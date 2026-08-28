@@ -1255,11 +1255,12 @@ async function analyzeFood(id){
 }
 function habitCardHTML(h){
   const done=isDoneToday(h.id),streak=currentStreak(h.id),c=colorOf(h.color);
-  const atRisk=!done&&streak>=3&&new Date().getHours()>=17;
+  const resting=h.restEligible&&isRestDayToday(h.id);
+  const atRisk=!done&&!resting&&streak>=3&&new Date().getHours()>=17;
   const streakStr=streak>0?`<span class="flame">${streak>=30?'🌟':streak>=7?'🔥':'✦'}</span> ${streak}-day streak${atRisk?' <span class="streak-warn">⚠️ don\'t break it!</span>':''}`:'Start your streak today!';
   let restHTML='';
   if(h.restEligible && !done){
-    const resting=isRestDayToday(h.id), used=restDaysUsedThisWeek(h.id), left=Math.max(0,2-used);
+    const used=restDaysUsedThisWeek(h.id), left=Math.max(0,2-used);
     if(resting){
       restHTML=`<button class="rest-day-mini active" onclick="event.stopPropagation();markRestDay('${h.id}')" title="Resting today — tap to undo">😴</button>`;
     }else if(left>0){
@@ -2192,7 +2193,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-27.1900';
+const APP_VERSION = '2026-08-27.1930';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
