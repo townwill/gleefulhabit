@@ -898,7 +898,7 @@ function migrateState(raw) {
   if (!raw.restDayLogs)              raw.restDayLogs={};
   if (!raw.exercise) raw.exercise={dumbbellPress:0,dumbbellPress25:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
   if (raw.exercise.dumbbellPress25==null) raw.exercise.dumbbellPress25=0;
-  if (raw.habits) raw.habits.forEach(h=>{ if(h.restEligible==null) h.restEligible=false; if(h.note==null) h.note=''; });
+  if (raw.habits) raw.habits.forEach(h=>{ if(h.restEligible==null) h.restEligible=false; if(h.note==null) h.note=''; if(!h.createdAt) h.createdAt='2000-01-01'; });
   if (raw.habits && !raw.user._habitNotesSeeded) {
     const noteSuggestions = [
       {match:/work\s*out|exercise/i, note:'Any 20+ min session counts'},
@@ -953,6 +953,20 @@ function monthlyTargetPct(){
   const now = new Date();
   const monthsElapsed = (now.getFullYear() - ay) * 12 + (now.getMonth() + 1 - am);
   return Math.min(0.80 + 0.02 * Math.max(0, monthsElapsed), 0.90);
+}
+// Sums habit-completions and habit-days for the first `daysSoFar` days of the
+// current month, counting a habit toward a day only if it existed yet
+// (h.createdAt <= that day) - so adding a habit mid-month can't dilute the
+// percentage with days it wasn't around to be completed on.
+function monthCompletionStats(daysSoFar){
+  const now=new Date();let done=0,possible=0;
+  for(let i=1;i<=daysSoFar;i++){
+    const d=new Date(now.getFullYear(),now.getMonth(),i),dk=dateKey(d),log=S.logs[dk]||{};
+    const activeHabits=S.habits.filter(h=>(h.createdAt||'2000-01-01')<=dk);
+    possible+=activeHabits.length;
+    for(const h of activeHabits) if(h.type==='numeric'?(typeof log[h.id]==='number'&&log[h.id]>=(h.target||100)):log[h.id]===true) done++;
+  }
+  return {done,possible};
 }
 function weekKeyFor(d){const date=new Date(d.getTime());date.setHours(0,0,0,0);date.setDate(date.getDate()+3-(date.getDay()+6)%7);const week1=new Date(date.getFullYear(),0,4);const weekNum=1+Math.round(((date.getTime()-week1.getTime())/86400000-3+(week1.getDay()+6)%7)/7);return`${date.getFullYear()}-W${String(weekNum).padStart(2,'0')}`;}
 function isoWeek(){return weekKeyFor(new Date());}
@@ -1097,14 +1111,10 @@ function checkBlasterMilestones(){
   // Escalating % of all possible habit completions this month (habits × days
   // elapsed), using each habit's real completion bar — not just "logged something".
   if (!m['blaster_month_'+mk]) {
-    const now=new Date(), daysSoFar=now.getDate(), nh=S.habits.length;
-    if (nh>0 && daysSoFar>=25) {
-      let totalDone=0;
-      for (let i=1;i<=daysSoFar;i++){
-        const d=new Date(now.getFullYear(),now.getMonth(),i), log=S.logs[dateKey(d)]||{};
-        for (const h of S.habits) if (h.type==='numeric'?(typeof log[h.id]==='number'&&log[h.id]>=(h.target||100)):log[h.id]===true) totalDone++;
-      }
-      const pct = totalDone/(nh*daysSoFar);
+    const now=new Date(), daysSoFar=now.getDate();
+    if (S.habits.length>0 && daysSoFar>=25) {
+      const {done,possible} = monthCompletionStats(daysSoFar);
+      const pct = possible>0 ? done/possible : 0;
       const target = monthlyTargetPct();
       if (pct >= target) awBlaster('blaster_month_'+mk, `${Math.round(pct*100)}% habit completion this month! 📅`);
     }
@@ -1659,13 +1669,19 @@ function renderRewards(){
   const curLv=levelInfo(S.user.xp).lv;
   const bestSt=S.habits.length?Math.max(...S.habits.map(h=>currentStreak(h.id))):0;
   const consWeeks=S.user.consecutivePackWeeks||0;
-  const now2=new Date();let monthDone=0;const monthDays=now2.getDate(),monthHabits=S.habits.length;for(let i=1;i<=monthDays;i++){const d=new Date(now2.getFullYear(),now2.getMonth(),i),log=S.logs[dateKey(d)]||{};for(const h of S.habits)if(h.type==='numeric'?(typeof log[h.id]==='number'&&log[h.id]>=(h.target||100)):log[h.id]===true)monthDone++;}const monthPct=monthHabits?Math.round(monthDone/(monthHabits*monthDays)*100):0;
+  const now2=new Date();const monthDays=now2.getDate(),monthHabits=S.habits.length;
+  const {done:monthDone,possible:monthPossible}=monthCompletionStats(monthDays);
+  const monthPct=monthPossible?Math.round(monthDone/monthPossible*100):0;
   // Pace tracking: are you on track for 80% by month's end, given days elapsed so far?
+  // Uses the createdAt-aware historical total (monthPossible) so a habit added
+  // mid-month doesn't get counted as "missed" on days before it existed; future
+  // days assume the current habit count holds steady through month's end.
   const daysInMonth=new Date(now2.getFullYear(),now2.getMonth()+1,0).getDate();
   const targetPct=monthlyTargetPct(), targetPctDisplay=Math.round(targetPct*100);
-  const neededSoFar=Math.floor(targetPct*monthHabits*monthDays);
-  const neededFullMonth=Math.ceil(targetPct*monthHabits*daysInMonth);
-  const maxPossibleFinal=monthDone+monthHabits*(daysInMonth-monthDays);
+  const projectedRemaining=monthHabits*(daysInMonth-monthDays);
+  const neededSoFar=Math.floor(targetPct*monthPossible);
+  const neededFullMonth=Math.ceil(targetPct*(monthPossible+projectedRemaining));
+  const maxPossibleFinal=monthDone+projectedRemaining;
   const paceDiff=monthDone-neededSoFar;
   const clinched=monthDone>=neededFullMonth;
   const impossible=maxPossibleFinal<neededFullMonth;
@@ -2130,7 +2146,7 @@ function openEditHabitModal(id){const h=S.habits.find(x=>x.id===id);if(!h)return
 function pickHEmoji(e,el){_hEmoji=e;document.querySelectorAll('#habitEmojiPicker .emoji-opt').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');}
 function pickHColor(id,el){_hColor=id;document.querySelectorAll('#habitColorPicker .color-opt').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');}
 function pickHabitType(t,el){_hType=t;document.querySelectorAll('#habitModalOverlay .type-btn').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');document.getElementById('habitNumericFields').classList.toggle('show',t==='numeric');}
-function saveHabit(){const name=document.getElementById('fName').value.trim();if(!name){const i=document.getElementById('fName');i.style.borderColor='#ff6464';i.focus();setTimeout(()=>i.style.borderColor='',1200);return;}const p={name,icon:_hEmoji,color:_hColor,type:_hType,target:_hType==='numeric'?(parseFloat(document.getElementById('fTarget').value)||100):null,unit:_hType==='numeric'?document.getElementById('fUnit').value.trim():null,note:document.getElementById('fNote').value.trim(),restEligible:document.getElementById('fRestEligible').checked};if(_hEditId){const idx=S.habits.findIndex(x=>x.id===_hEditId);if(idx===-1)return;S.habits[idx]={...S.habits[idx],...p};save();closeModal('habitModalOverlay');renderAll();toast(`${iconLabel(S.habits[idx].icon)} "${S.habits[idx].name}" updated!`);}else{const h={id:Date.now().toString(36),...p};S.habits.push(h);save();closeModal('habitModalOverlay');renderAll();toast(`${iconLabel(h.icon)} "${h.name}" added!`);earnBadge('collector',S.habits.length>=5);}}
+function saveHabit(){const name=document.getElementById('fName').value.trim();if(!name){const i=document.getElementById('fName');i.style.borderColor='#ff6464';i.focus();setTimeout(()=>i.style.borderColor='',1200);return;}const p={name,icon:_hEmoji,color:_hColor,type:_hType,target:_hType==='numeric'?(parseFloat(document.getElementById('fTarget').value)||100):null,unit:_hType==='numeric'?document.getElementById('fUnit').value.trim():null,note:document.getElementById('fNote').value.trim(),restEligible:document.getElementById('fRestEligible').checked};if(_hEditId){const idx=S.habits.findIndex(x=>x.id===_hEditId);if(idx===-1)return;S.habits[idx]={...S.habits[idx],...p};save();closeModal('habitModalOverlay');renderAll();toast(`${iconLabel(S.habits[idx].icon)} "${S.habits[idx].name}" updated!`);}else{const h={id:Date.now().toString(36),createdAt:todayKey(),...p};S.habits.push(h);save();closeModal('habitModalOverlay');renderAll();toast(`${iconLabel(h.icon)} "${h.name}" added!`);earnBadge('collector',S.habits.length>=5);}}
 
 // ── Side Quest Modal ──
 let _sqEmoji='⭐',_sqCadence='daily';
@@ -2176,7 +2192,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-27.1815';
+const APP_VERSION = '2026-08-27.1900';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
