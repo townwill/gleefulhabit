@@ -168,8 +168,8 @@
   .numeric-bar { height:5px; background:rgba(255,255,255,.07); border-radius:3px; overflow:hidden; }
   .numeric-bar-fill { height:100%; background:linear-gradient(90deg,var(--c-hex,var(--cyan)),var(--pink)); border-radius:3px; transition:width .6s cubic-bezier(.34,1.56,.64,1); min-width:4px; }
 
-  .ai-log-row { display:flex; gap:6px; margin-bottom:7px; }
-  .ai-log-input { flex:1; background:rgba(255,255,255,.07); border:1px solid var(--border); border-radius:9px; color:var(--text); font-size:13px; padding:8px 10px; font-family:inherit; min-width:0; }
+  .ai-log-row { display:flex; gap:6px; margin-bottom:7px; align-items:flex-start; }
+  .ai-log-input { flex:1; background:rgba(255,255,255,.07); border:1px solid var(--border); border-radius:9px; color:var(--text); font-size:13px; padding:8px 10px; font-family:inherit; min-width:0; resize:none; overflow-y:hidden; line-height:1.35; max-height:160px; }
   .ai-log-input:focus { outline:none; border-color:var(--c-hex,var(--cyan)); }
   .ai-log-input::placeholder { color:rgba(240,240,255,.3); }
   .ai-log-photo-btn { width:34px; height:34px; flex-shrink:0; border-radius:9px; border:1px solid var(--border); background:rgba(255,255,255,.06); color:var(--text-muted); font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
@@ -180,6 +180,7 @@
   .ai-log-status { font-size:11px; color:var(--text-muted); text-align:center; margin-bottom:2px; min-height:14px; }
   .ai-log-result { font-size:12.5px; padding:8px 10px; border-radius:8px; background:rgba(var(--c-rgb,0,212,255),.08); border:1px solid rgba(var(--c-rgb,0,212,255),.2); margin-top:6px; display:none; }
   .ai-log-result.show { display:block; }
+  .ai-log-add-btn { display:block; width:100%; margin-top:8px; padding:8px; border-radius:8px; border:none; background:var(--c-hex,var(--cyan)); color:#0a0a14; font-size:12.5px; font-weight:800; cursor:pointer; font-family:inherit; }
   .food-log-row { display:flex; align-items:baseline; gap:9px; padding:9px 0; border-bottom:1px solid var(--border); }
   .food-log-row:last-child { border-bottom:none; }
   .food-log-amt { font-size:14px; font-weight:800; flex-shrink:0; color:var(--c-hex,var(--cyan)); }
@@ -195,6 +196,8 @@
   .quickfood-wrap { display:flex; flex-wrap:wrap; gap:8px; }
   .quickfood-chip { display:flex; align-items:center; gap:7px; padding:7px 10px; border-radius:20px; background:rgba(255,255,255,.06); border:1px solid var(--border); }
   .quickfood-chip .qf-add { background:none; border:none; color:var(--text); font:inherit; font-size:12px; font-weight:600; cursor:pointer; padding:0; }
+  .quickfood-chip .qf-edit { opacity:.45; cursor:pointer; padding:0 1px; font-size:11px; flex-shrink:0; }
+  .quickfood-chip .qf-edit:active { opacity:.9; }
   .quickfood-chip .qf-del { opacity:.45; cursor:pointer; padding:0 1px; font-size:11px; flex-shrink:0; }
   .quickfood-chip .qf-del:active { opacity:.9; }
 
@@ -1176,9 +1179,9 @@ function clearAiPanel(id){
   const txt=document.getElementById(`ailog-text-${id}`),thumb=document.getElementById(`ailog-thumb-${id}`),
     res=document.getElementById(`ailog-result-${id}`),status=document.getElementById(`ailog-status-${id}`),
     file=document.getElementById(`ailog-file-${id}`);
-  if(txt)txt.value='';
+  if(txt){txt.value='';txt.style.height='';}
   if(thumb){thumb.classList.remove('show');thumb.removeAttribute('src');delete thumb.dataset.b64;delete thumb.dataset.mediaType;}
-  if(res){res.classList.remove('show');res.textContent='';}
+  if(res){res.classList.remove('show');res.innerHTML='';}
   if(status)status.textContent='';
   if(file)file.value='';
 }
@@ -1244,7 +1247,8 @@ async function analyzeFood(id){
     _pendingFoodLabel[id]=String(parsed.food||desc||'food').slice(0,40);
     _pendingFoodSugar[id]=addedSugar;
     const confEmoji=parsed.confidence==='high'?'🟢':parsed.confidence==='low'?'🟡':'🟠';
-    resultEl.textContent=`${confEmoji} ${parsed.food||'Food'} — ~${grams}g protein, ~${addedSugar}g added sugar${h&&h.unit&&h.unit!=='g'?` (target unit is ${h.unit})`:''}. Review the amount above, then tap Add.`;
+    const foodLabel=escapeHtml(parsed.food||'Food');
+    resultEl.innerHTML=`${confEmoji} ${foodLabel} — ~${grams}g protein, ~${addedSugar}g added sugar${h&&h.unit&&h.unit!=='g'?` (target unit is ${h.unit})`:''}.<button class="ai-log-add-btn" onclick="addProteinEntry('${id}')">✅ Add ${grams}${(h&&h.unit)||'g'}${addedSugar>0?` · 🍬${addedSugar}g sugar`:''}</button>`;
     resultEl.classList.add('show');
     statusEl.textContent='';
   }catch(e){
@@ -1359,7 +1363,7 @@ function renderProteinTab(){
       <div class="weight-settings-title">⭐ Quick Add</div>
       <div class="data-card-desc" style="margin-bottom:10px">Foods you've logged before — tap to add instantly, no AI call needed.</div>
       <div class="quickfood-wrap">
-        ${foodHist.map((f,idx)=>`<div class="quickfood-chip"><button class="qf-add" onclick="quickAddFoodAt('${h.id}',${idx})">${escapeHtml(f.name)} <b style="color:${c.hex}">+${f.grams}${unit}</b></button><span class="qf-del" onclick="event.stopPropagation();removeQuickFoodAt(${idx})" title="Remove">✕</span></div>`).join('')}
+        ${foodHist.map((f,idx)=>`<div class="quickfood-chip"><button class="qf-add" onclick="quickAddFoodAt('${h.id}',${idx})">${escapeHtml(f.name)} <b style="color:${c.hex}">+${f.grams}${unit}</b></button><span class="qf-edit" onclick="event.stopPropagation();renameQuickFoodAt(${idx})" title="Rename">✏️</span><span class="qf-del" onclick="event.stopPropagation();removeQuickFoodAt(${idx})" title="Remove">✕</span></div>`).join('')}
       </div>
     </div>`:'';
   el.innerHTML=`
@@ -1388,7 +1392,7 @@ function renderProteinTab(){
       <div class="weight-settings-title">📷 Log Food With AI</div>
       <img class="ai-log-thumb" id="ailog-thumb-${h.id}">
       <div class="ai-log-row">
-        <input class="ai-log-input" id="ailog-text-${h.id}" placeholder="what'd you eat? e.g. grilled chicken breast" onkeydown="if(event.key==='Enter'){analyzeFood('${h.id}');event.preventDefault();}">
+        <textarea class="ai-log-input" id="ailog-text-${h.id}" rows="2" placeholder="what'd you eat? e.g. grilled chicken breast" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px'"></textarea>
         <button class="ai-log-photo-btn" onclick="document.getElementById('ailog-file-${h.id}').click()" title="Add a photo">📷</button>
         <input type="file" id="ailog-file-${h.id}" accept="image/*" capture="environment" style="display:none" onchange="aiLogPhotoPicked('${h.id}',event)">
       </div>
@@ -1883,6 +1887,17 @@ function quickAddFoodAt(id,idx){
   const h=S.habits.find(x=>x.id===id);
   toast(`✅ +${item.grams}${(h&&h.unit)||'g'} · ${item.name}`);
 }
+function renameQuickFoodAt(idx){
+  const list=getFoodHistory();const item=list[idx];if(!item)return;
+  const name=prompt('Rename this food:',item.name);
+  if(name==null)return;
+  const trimmed=name.trim();if(!trimmed)return;
+  const key=trimmed.toLowerCase();
+  const filtered=list.filter((f,i)=>i===idx||String(f.name).trim().toLowerCase()!==key);
+  filtered[filtered.indexOf(item)].name=trimmed.slice(0,40);
+  saveFoodHistory(filtered);
+  renderProteinTab();
+}
 function removeQuickFoodAt(idx){
   const list=getFoodHistory();list.splice(idx,1);saveFoodHistory(list);renderProteinTab();
 }
@@ -2193,7 +2208,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-27.1930';
+const APP_VERSION = '2026-08-28.1030';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
