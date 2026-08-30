@@ -75,6 +75,10 @@
   .backup-reminder span { flex:1; line-height:1.4; }
   .backup-reminder button { flex-shrink:0; background:var(--yellow); color:#1a1a1a; border:none; border-radius:6px; padding:6px 10px; font-size:10px; font-weight:800; cursor:pointer; }
   .backup-reminder-dismiss { background:transparent !important; color:var(--yellow) !important; padding:6px !important; font-size:12px !important; }
+  .update-banner { display:flex; align-items:center; gap:8px; margin:0 16px 12px; padding:10px 12px; background:rgba(0,212,255,.1); border:1px solid rgba(0,212,255,.25); border-radius:var(--radius-sm); font-size:11px; color:var(--cyan); }
+  .update-banner span { flex:1; line-height:1.4; }
+  .update-banner button { flex-shrink:0; background:var(--cyan); color:#0a0a14; border:none; border-radius:6px; padding:6px 10px; font-size:10px; font-weight:800; cursor:pointer; }
+  .update-banner-dismiss { background:transparent !important; color:var(--cyan) !important; padding:6px !important; font-size:12px !important; }
   .xp-card { flex-shrink:0; margin:0 16px 12px; padding:12px 16px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); backdrop-filter:blur(24px); }
   .section { display:none; flex:1; overflow-y:auto; padding:0 16px 140px; -webkit-overflow-scrolling:touch; min-height:0; }
   .section.active { display:flex; flex-direction:column; }
@@ -507,6 +511,11 @@
     <span>🗄️ It's been a while since your last backup — iOS can occasionally clear app data.</span>
     <button onclick="exportData()">Back Up Now</button>
     <button class="backup-reminder-dismiss" onclick="hideBackupReminder(true)">✕</button>
+  </div>
+  <div id="updateBanner" class="update-banner" style="display:none">
+    <span>✨ A new version is ready.</span>
+    <button onclick="reloadForUpdate()">Refresh Now</button>
+    <button class="update-banner-dismiss" onclick="hideUpdateBanner()">✕</button>
   </div>
   <div class="xp-card">
     <div class="xp-header">
@@ -2211,6 +2220,24 @@ function checkBackupReminder(){
     if (el) el.style.display = 'flex';
   }
 }
+function hideUpdateBanner(){ const el=document.getElementById('updateBanner'); if(el) el.style.display='none'; }
+function reloadForUpdate(){ location.href = location.pathname + '?_reload=' + Date.now(); }
+async function checkForUpdate(){
+  // iOS often resumes a frozen, previously-loaded page instead of fetching fresh
+  // content, so no ordinary page load can be trusted to notice a new deploy.
+  // This does its own cache-busted fetch specifically to detect that case and
+  // surface a manual refresh, regardless of what the browser/CDN cached.
+  try{
+    const resp = await fetch(location.pathname + '?_cb=' + Date.now(), {cache:'no-store'});
+    if(!resp.ok) return;
+    const text = await resp.text();
+    const m = text.match(/const APP_VERSION\s*=\s*'([^']+)'/);
+    if(m && m[1] && m[1] !== APP_VERSION){
+      const el = document.getElementById('updateBanner');
+      if(el) el.style.display = 'flex';
+    }
+  }catch(e){ /* offline or blocked - not worth surfacing, just skip this check */ }
+}
 function checkProteinReminder(){
   const h=S.habits.find(x=>isProteinHabit(x));
   if(!h||new Date().getHours()<19||isDoneToday(h.id))return;
@@ -2222,7 +2249,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-30.1100';
+const APP_VERSION = '2026-08-30.1230';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
@@ -2236,6 +2263,7 @@ checkProteinReminder();
 initQuoteSwipe();
 setTimeout(()=>maybeShowDailyQuote(),500);
 setTimeout(()=>checkWeeklyPacksAndMilestones(),100);
+setTimeout(()=>checkForUpdate(),1500);
 
 // Re-render when app comes back into focus (date may have changed)
 let _lastRenderedDay = todayKey();
@@ -2249,6 +2277,7 @@ document.addEventListener('visibilitychange', ()=>{
       renderToday(); // always refresh Today view on focus
     }
     checkProteinReminder();
+    checkForUpdate();
   }
 });
 </script>
