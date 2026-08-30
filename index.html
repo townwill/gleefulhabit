@@ -1084,18 +1084,21 @@ function checkHangerMilestones(){
   function aw(key,reason){if(m[key])return;m[key]=true;S.user.hangersBank=(S.user.hangersBank||0)+1;S.user.packHistory.unshift({date:todayKey(),count:1,type:'hanger',reason});save();setTimeout(()=>{toast(`🎁 Hanger Box earned — ${reason}`);confetti(80);},800);}
 
   // 2 perfect weeks in a row (both halves — Mon-Wed and Thu-Sat — perfect).
-  // Repeatable: fires again every 2 more consecutive perfect weeks. Evaluated
-  // once per week transition, looking back at last week's already-finalized
-  // pack flags, so a fresh streak after a break can earn this again.
+  // Repeatable: fires again every 2 more consecutive perfect weeks. Recomputed
+  // live by walking backward week-by-week through already-finalized pack
+  // flags, so the moment THIS week's own Thu-Sat half completes (even mid-week,
+  // e.g. Saturday) it counts immediately instead of waiting for next Monday.
+  // Self-corrects regardless of how many weeks pass between app opens.
+  const isWeekPerfect = wk => { const f=(S.user.weeklyPackFlags||{})[wk]; return !!(f && f.halfA && f.halfB); };
   const wkNow = isoWeek();
-  if (S.user.lastPerfectCheckWeek !== wkNow) {
-    const pvd = new Date(); pvd.setDate(pvd.getDate()-7);
-    const prevWk = weekKeyFor(pvd);
-    const prevFlags = (S.user.weeklyPackFlags||{})[prevWk];
-    const prevPerfect = !!(prevFlags && prevFlags.halfA && prevFlags.halfB);
-    S.user.perfectWeekStreak = prevPerfect ? (S.user.perfectWeekStreak||0)+1 : 0;
-    S.user.lastPerfectCheckWeek = wkNow;
+  let streak = 0, cursor = new Date();
+  if (!isWeekPerfect(wkNow)) cursor.setDate(cursor.getDate()-7); // this week isn't done yet - start from last week
+  for (let i=0; i<104; i++) {
+    if (!isWeekPerfect(weekKeyFor(cursor))) break;
+    streak++;
+    cursor.setDate(cursor.getDate()-7);
   }
+  S.user.perfectWeekStreak = streak;
   if (S.user.perfectWeekStreak >= 2) {
     const window = Math.floor(S.user.perfectWeekStreak / 2);
     const key = `hanger_perfectweeks_w${window}`;
@@ -2219,7 +2222,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-30.0900';
+const APP_VERSION = '2026-08-30.1100';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
