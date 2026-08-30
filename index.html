@@ -978,7 +978,18 @@ function isDayComplete(dk){if(!S.habits.length)return false;const log=S.logs[dk]
 function weekCompleteDays(days){return days.filter(d=>isDayComplete(dateKey(d))).length;}
 function daySatisfiedWithRest(dk){if(!S.habits.length)return false;const log=S.logs[dk]||{},rest=S.restDayLogs[dk]||{};return S.habits.every(h=>{const done=h.type==='numeric'?(typeof log[h.id]==='number'&&log[h.id]>=(h.target||100)):log[h.id]===true;if(done)return true;return !!(h.restEligible&&rest[h.id]);});}
 function dayRestSkipCount(dk){const rest=S.restDayLogs[dk]||{};return S.habits.filter(h=>h.restEligible&&rest[h.id]).length;}
-function isHalfPerfect(days3){const skips=days3.reduce((n,d)=>n+dayRestSkipCount(dateKey(d)),0);return days3.every(d=>daySatisfiedWithRest(dateKey(d))) && skips<=1;}
+function isHalfPerfect(days3){
+  if(!days3.every(d=>daySatisfiedWithRest(dateKey(d))))return false;
+  // Each habit gets its own 1-skip allowance within the window - a Workout
+  // exception and a No Sugar exception in the same 3 days don't collide,
+  // but the same habit resting twice in one window still isn't "perfect".
+  const skipsByHabit={};
+  for(const d of days3){
+    const rest=S.restDayLogs[dateKey(d)]||{};
+    for(const h of S.habits) if(h.restEligible&&rest[h.id]) skipsByHabit[h.id]=(skipsByHabit[h.id]||0)+1;
+  }
+  return Object.values(skipsByHabit).every(n=>n<=1);
+}
 function weekSideQuestCount(days){
   let n=0;
   const dayKeys = new Set(days.map(d=>dateKey(d)));
@@ -2208,7 +2219,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-29.1015';
+const APP_VERSION = '2026-08-30.0900';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
