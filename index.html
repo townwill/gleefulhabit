@@ -1846,25 +1846,6 @@ function renderRewards(){
   const daysDoneCount=(wkFlags.halfA?3:halfADays.filter(d=>daySatisfiedWithRest(dateKey(d))).length)+(wkFlags.halfB?3:halfBDays.filter(d=>daySatisfiedWithRest(dateKey(d))).length);
   html+=`<div class="week-card"><div class="week-card-title">📅 This Week <span>${daysDoneCount}/6 days${isSundayNow?' + bonus day':''}</span></div><div class="week-days-row">${days.map((d,i)=>{const k=dateKey(d),flagged=(i<3&&wkFlags.halfA)||(i>=3&&i<6&&wkFlags.halfB),c=flagged||isDayComplete(k),rest=dayRestSkipCount(k)>0,t=k===todayKey(),bonus=i===6;return`<div class="week-day-dot ${c?'done':''} ${rest&&!c?'rest':''} ${t?'today':''}" title="${bonus?'Sunday — bonus':''}"></div>`;}).join('')}</div><div class="week-progress-label"><span>Side quests this week</span><span>${sct} / 10</span></div><div class="week-mini-bar"><div class="week-mini-bar-fill" style="width:${Math.min(sct/10*100,100)}%"></div></div><div class="week-rewards-list"><div class="week-reward-row ${halfAPerfect?'earned':''}">${inHalfA?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — Perfect Mon–Wed (1 skip ok) <span class="milestone-cadence">Weekly</span></div><div class="week-reward-status">${halfAPerfect?'✓ Earned':'In progress'}</div></div><div class="week-reward-row ${halfBPerfect?'earned':''}">${inHalfB?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — Perfect Thu–Sat (1 skip ok) <span class="milestone-cadence">Weekly</span></div><div class="week-reward-status">${halfBPerfect?'✓ Earned':'In progress'}</div></div><div class="week-reward-row ${sct>=10?'earned':''}">${isSundayNow?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — 10 side quests (awarded Sunday) <span class="milestone-cadence">Weekly</span></div><div class="week-reward-status">${sct>=10?'✓ Earned':sct+'/10'}</div></div></div></div>`;
 
-  const customGoals=S.customGoals||[];
-  html+=`<div class="rewards-section-label">🎯 Custom Rewards</div>`;
-  if(customGoals.length){
-    html+=`<div class="milestone-grid">`+customGoals.map(g=>{
-      let desc='';
-      if(g.type==='circuit'){
-        const w=S.customWorkouts.find(x=>x.id===g.workoutId);
-        const best=Math.max(0,...Object.keys(S.customWorkoutLogs).filter(dk=>!g.createdAt||dk>=g.createdAt).map(dk=>((S.customWorkoutLogs[dk]||{})[g.workoutId]||{}).rounds||0));
-        desc=`${w?escapeHtml(w.name):'Circuit (deleted)'} · best ${best}/${g.targetRounds} rounds`;
-      }else{
-        const w=S.customWorkouts.find(x=>x.id===g.workoutId);
-        const ex=w&&w.exercises.find(e=>e.name===g.exerciseName);
-        desc=`${w?escapeHtml(w.name):'Circuit (deleted)'} · ${escapeHtml(g.exerciseName)} · currently ${ex&&ex.weight?escapeHtml(ex.weight):'—'} · target ${g.targetWeight}`;
-      }
-      return `<div class="milestone-card ${g.achieved?'earned':''}"><div class="milestone-icon">${g.type==='circuit'?'🏋️':'💪'}</div><div class="milestone-title">${escapeHtml(g.name)}</div><div class="milestone-desc">${g.achieved?'✓ Achieved!':desc}</div>${g.achieved?'<div class="milestone-earned-tag">✓ Pack Earned</div>':''}<button class="circuit-icon-btn" style="margin-top:8px" onclick="event.stopPropagation();deleteCustomGoal('${g.id}')" title="Delete">🗑️</button></div>`;
-    }).join('')+`</div>`;
-  }
-  html+=`<button class="btn-submit" style="margin-bottom:20px" onclick="openGoalModal()">+ New Custom Reward</button>`;
-
   const wk=isoWeek(),wkSct=weekSideQuestCount(days);
   const hangers=[
     {key:`hanger_perfectweeks_w${Math.floor((S.user.perfectWeekStreak||0)/2)}`, icon:'🏅', title:'2 Perfect Weeks in a Row', val:(S.user.perfectWeekStreak||0)%2, max:2, desc:`${S.user.perfectWeekStreak||0}-week streak · ${S.user.perfectWeekBoxesEarned||0} earned total`, cadence:'Recurring'},
@@ -1934,6 +1915,24 @@ function renderRewards(){
     const icon=meta?meta[0]:'📦', lbl=meta?meta[1]:(h.count===1?'1 Pack':`${h.count} Packs`);
     return`<div class="history-item ${h.redeemed?'redeemed':''}"><div class="history-icon">${icon}</div><div class="history-info"><div class="history-reason">${h.reason}</div><div class="history-date">${h.date}${h.redeemed?' · Redeemed':''}</div></div><div class="history-count">${h.redeemed?'✓':'+'+lbl}</div></div>`;
   }).join('');html+=`</div>`;}
+  const customGoals=S.customGoals||[];
+  html+=`<div class="rewards-section-label">🎯 Custom Rewards</div>`;
+  if(customGoals.length){
+    html+=`<div class="milestone-grid">`+customGoals.map(g=>{
+      let desc='';
+      if(g.type==='circuit'){
+        const w=S.customWorkouts.find(x=>x.id===g.workoutId);
+        const best=Math.max(0,...Object.keys(S.customWorkoutLogs).filter(dk=>!g.createdAt||dk>=g.createdAt).map(dk=>((S.customWorkoutLogs[dk]||{})[g.workoutId]||{}).rounds||0));
+        desc=`${w?escapeHtml(w.name):'Circuit (deleted)'} · best ${best}/${g.targetRounds} rounds`;
+      }else{
+        const w=S.customWorkouts.find(x=>x.id===g.workoutId);
+        const ex=w&&w.exercises.find(e=>e.name===g.exerciseName);
+        desc=`${w?escapeHtml(w.name):'Circuit (deleted)'} · ${escapeHtml(g.exerciseName)} · currently ${ex&&ex.weight?escapeHtml(ex.weight):'—'} · target ${g.targetWeight}`;
+      }
+      return `<div class="milestone-card ${g.achieved?'earned':''}"><div class="milestone-icon">${g.type==='circuit'?'🏋️':'💪'}</div><div class="milestone-title">${escapeHtml(g.name)}</div><div class="milestone-desc">${g.achieved?'✓ Achieved!':desc}</div>${g.achieved?'<div class="milestone-earned-tag">✓ Pack Earned</div>':''}<button class="circuit-icon-btn" style="margin-top:8px" onclick="event.stopPropagation();deleteCustomGoal('${g.id}')" title="Delete">🗑️</button></div>`;
+    }).join('')+`</div>`;
+  }
+  html+=`<button class="btn-submit" style="margin-bottom:20px" onclick="openGoalModal()">+ New Custom Reward</button>`;
   document.getElementById('rewardsContent').innerHTML=html;
 }
 
@@ -2602,7 +2601,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-31.1500';
+const APP_VERSION = '2026-08-31.1600';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
