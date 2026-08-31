@@ -199,7 +199,10 @@
   .ai-key-panel.open { display:block; }
   .quickfood-wrap { display:flex; flex-wrap:wrap; gap:8px; }
   .quickfood-chip { display:flex; align-items:center; gap:7px; padding:7px 10px; border-radius:20px; background:rgba(255,255,255,.06); border:1px solid var(--border); }
+  .quickfood-chip.starred { border-color:rgba(255,229,92,.4); background:rgba(255,229,92,.08); }
   .quickfood-chip .qf-add { background:none; border:none; color:var(--text); font:inherit; font-size:12px; font-weight:600; cursor:pointer; padding:0; }
+  .quickfood-chip .qf-star { opacity:.5; cursor:pointer; padding:0 1px; font-size:12px; flex-shrink:0; }
+  .quickfood-chip .qf-star.active { opacity:1; }
   .quickfood-chip .qf-edit { opacity:.45; cursor:pointer; padding:0 1px; font-size:11px; flex-shrink:0; }
   .quickfood-chip .qf-edit:active { opacity:.9; }
   .quickfood-chip .qf-del { opacity:.45; cursor:pointer; padding:0 1px; font-size:11px; flex-shrink:0; }
@@ -1386,7 +1389,7 @@ function renderProteinTab(){
       <div class="weight-settings-title">⭐ Quick Add</div>
       <div class="data-card-desc" style="margin-bottom:10px">Foods you've logged before — tap to add instantly, no AI call needed.</div>
       <div class="quickfood-wrap">
-        ${foodHist.map((f,idx)=>`<div class="quickfood-chip"><button class="qf-add" onclick="quickAddFoodAt('${h.id}',${idx})">${escapeHtml(f.name)} <b style="color:${c.hex}">+${f.grams}${unit}</b></button><span class="qf-edit" onclick="event.stopPropagation();renameQuickFoodAt(${idx})" title="Rename">✏️</span><span class="qf-del" onclick="event.stopPropagation();removeQuickFoodAt(${idx})" title="Remove">✕</span></div>`).join('')}
+        ${foodHist.map((f,idx)=>`<div class="quickfood-chip ${f.favorite?'starred':''}"><button class="qf-add" onclick="quickAddFoodAt('${h.id}',${idx})">${escapeHtml(f.name)} <b style="color:${c.hex}">+${f.grams}${unit}</b></button><span class="qf-star ${f.favorite?'active':''}" onclick="event.stopPropagation();toggleFavoriteFood(${idx})" title="${f.favorite?'Unstar':'Star so it never gets evicted'}">${f.favorite?'⭐':'☆'}</span><span class="qf-edit" onclick="event.stopPropagation();renameQuickFoodAt(${idx})" title="Rename">✏️</span><span class="qf-del" onclick="event.stopPropagation();removeQuickFoodAt(${idx})" title="Remove">✕</span></div>`).join('')}
       </div>
     </div>`:'';
   el.innerHTML=`
@@ -1893,15 +1896,29 @@ function reevaluateBadges(){
 function getFoodHistory(){
   try{const list=JSON.parse(localStorage.getItem('gh_food_history')||'[]');return Array.isArray(list)?list:[];}catch(e){return [];}
 }
-function saveFoodHistory(list){localStorage.setItem('gh_food_history',JSON.stringify(list.slice(0,12)));}
+function saveFoodHistory(list){
+  // Starred foods are exempt from the recency cap so a favorite you eat
+  // occasionally can't get silently evicted by a run of one-off items.
+  const favs=list.filter(f=>f.favorite).slice(0,30), rest=list.filter(f=>!f.favorite).slice(0,12);
+  localStorage.setItem('gh_food_history',JSON.stringify(favs.concat(rest)));
+}
 function rememberFood(name,grams,sugar){
   if(!name||!grams||grams<=0)return;
   const key=String(name).trim().toLowerCase();if(!key)return;
-  let list=getFoodHistory().filter(f=>String(f.name).trim().toLowerCase()!==key);
+  const list=getFoodHistory();
+  const old=list.find(f=>String(f.name).trim().toLowerCase()===key);
+  const filtered=list.filter(f=>String(f.name).trim().toLowerCase()!==key);
   const entry={name:String(name).trim().slice(0,40),grams:Math.round(grams*10)/10};
   if(typeof sugar==='number'&&sugar>0)entry.sugar=Math.round(sugar*10)/10;
-  list.unshift(entry);
+  if(old&&old.favorite)entry.favorite=true; // re-logging a favorite shouldn't un-star it
+  filtered.unshift(entry);
+  saveFoodHistory(filtered);
+}
+function toggleFavoriteFood(idx){
+  const list=getFoodHistory();const item=list[idx];if(!item)return;
+  item.favorite=!item.favorite;
   saveFoodHistory(list);
+  renderProteinTab();
 }
 function quickAddFoodAt(id,idx){
   const list=getFoodHistory();const item=list[idx];if(!item)return;
@@ -2249,7 +2266,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-30.1300';
+const APP_VERSION = '2026-08-31.0900';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
