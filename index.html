@@ -208,6 +208,13 @@
   .quickfood-chip .qf-del { opacity:.45; cursor:pointer; padding:0 1px; font-size:11px; flex-shrink:0; }
   .quickfood-chip .qf-del:active { opacity:.9; }
 
+  .circuit-ex-wrap { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }
+  .circuit-ex-chip { padding:5px 9px; border-radius:14px; background:rgba(255,255,255,.06); border:1px solid var(--border); font-size:11px; color:var(--text-muted); }
+  .circuit-ex-row { display:flex; gap:6px; margin-bottom:8px; align-items:center; }
+  .circuit-ex-row .form-input { margin:0; }
+  .circuit-card-header { display:flex; justify-content:space-between; align-items:center; }
+  .circuit-icon-btn { background:none; border:1px solid var(--border); border-radius:8px; width:28px; height:28px; font-size:12px; color:var(--text-muted); cursor:pointer; }
+
   .streak-alert { background:linear-gradient(135deg,rgba(255,149,68,.13),rgba(255,107,255,.13)); border:1px solid rgba(255,149,68,.28); border-radius:var(--radius); padding:13px 15px; margin-bottom:14px; display:flex; align-items:center; gap:11px; animation:slide-down .4s cubic-bezier(.34,1.56,.64,1); }
   @keyframes slide-down { from{transform:translateY(-8px);opacity:0} to{transform:translateY(0);opacity:1} }
   .streak-alert-icon { font-size:22px; flex-shrink:0; }
@@ -639,6 +646,9 @@
 
   <!-- PACKS -->
   <div id="section-rewards" class="section"><div id="rewardsContent"></div></div>
+
+  <!-- CIRCUITS -->
+  <div id="section-circuits" class="section"><div id="circuitsContent"></div></div>
 </div>
 
 <div class="tab-bar">
@@ -646,6 +656,7 @@
     <button class="tab-btn active" onclick="switchTab('today',this)"><span class="tab-icon">🏠</span><span>Today</span></button>
     <button class="tab-btn" onclick="switchTab('habits',this)"><span class="tab-icon">✅</span><span>✦ Habits</span></button>
     <button class="tab-btn" onclick="switchTab('protein',this)"><span class="tab-icon">🍗</span><span>Protein</span></button>
+    <button class="tab-btn" onclick="switchTab('circuits',this)"><span class="tab-icon">🏋️</span><span>Circuits</span></button>
     <button class="tab-btn" onclick="switchTab('stats',this)"><span class="tab-icon">📊</span><span>Stats</span></button>
     <button class="tab-btn" onclick="switchTab('weight',this)"><span class="tab-icon">⚖️</span><span>Weight</span></button>
     <button class="tab-btn" onclick="switchTab('rewards',this)"><span class="tab-icon">🎴</span><span>Packs</span></button>
@@ -701,6 +712,21 @@
       <p style="font-size:12px;color:var(--text-muted);line-height:1.5;">✦ Side Quests are <strong style="color:var(--yellow)">bonus</strong> — don't count against streaks or rewards.</p>
     </div>
     <button class="btn-submit" style="background:linear-gradient(135deg,#b8940a,var(--yellow));color:#0a0a14" onclick="saveSideQuest()">Add Side Quest ✦</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="circuitModalOverlay" onclick="overlayClick(event,'circuitModalOverlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="circuitModalTitle">New Circuit</div>
+    <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="cName" placeholder="e.g. Kettlebell Circuit" maxlength="40"></div>
+    <div class="form-group"><label class="form-label">Duration (minutes, optional)</label><input class="form-input" id="cDuration" type="number" min="0" placeholder="e.g. 20"></div>
+    <div class="form-group">
+      <label class="form-label">Exercises (name, reps per round, weight)</label>
+      <div id="circuitExerciseRows"></div>
+      <button type="button" class="data-btn import" style="width:100%" onclick="addCircuitDraftExercise()">+ Add Exercise</button>
+    </div>
+    <button class="btn-submit" id="circuitSubmit" onclick="saveCircuit()">Add Circuit 🏋️</button>
   </div>
 </div>
 
@@ -864,11 +890,12 @@ function blankState() {
     xpAwarded:{},
     weight:{logs:{},unit:'lbs',goal:null,startWeight:null,startDate:null},
     exercise:{dumbbellPress:0,dumbbellPress25:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0},
+    customWorkouts:[],customWorkoutLogs:{},
     user:{xp:0,badges:[],totalDone:0,numericHits:0,sideQuestCount:0,
       packsBank:0,hangersBank:0,blastersBank:0,megaBank:0,hobbyBank:0,superBank:0,mythicBank:0,
       packHistory:[],weeklyPacksAwarded:{},weeklyPackFlags:{},
       consecutivePackWeeks:0,lastPackWeek:null,milestones:{},
-      perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null,favoriteQuotes:[],lastQuotePeriod:null,lastQuoteData:null,milestonesRedeemed:{},blasterAnchorMonth:null},
+      perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null,favoriteQuotes:[],lastQuotePeriod:null,lastQuoteData:null,milestonesRedeemed:{},blasterAnchorMonth:null,calorieGoal:null},
   };
 }
 
@@ -911,6 +938,9 @@ function migrateState(raw) {
     raw.user.blasterAnchorMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
   }
   if (!raw.restDayLogs)              raw.restDayLogs={};
+  if (!raw.customWorkouts)           raw.customWorkouts=[];
+  if (!raw.customWorkoutLogs)        raw.customWorkoutLogs={};
+  if (raw.user.calorieGoal===undefined) raw.user.calorieGoal=null;
   if (!raw.exercise) raw.exercise={dumbbellPress:0,dumbbellPress25:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
   if (raw.exercise.dumbbellPress25==null) raw.exercise.dumbbellPress25=0;
   if (raw.habits) raw.habits.forEach(h=>{ if(h.restEligible==null) h.restEligible=false; if(h.note==null) h.note=''; if(!h.createdAt) h.createdAt='2000-01-01'; });
@@ -1247,7 +1277,7 @@ async function analyzeFood(id){
       body:JSON.stringify({
         model:'claude-haiku-4-5-20251001',
         max_tokens:300,
-        system:'You are a nutrition estimator inside a habit tracking app. Given a text description and/or photo of a food or meal, estimate its protein content in grams and its ADDED sugar content in grams (the FDA nutrition-label "Added Sugars" line — sugar/syrup added during processing — NOT total sugars. Naturally-occurring sugar like lactose in milk/whey/yogurt or fructose in whole fruit counts as 0 added sugar unless the product is also sweetened). Respond ONLY with a JSON object, no markdown fences, no other text: {"food":"short name","grams_protein":number,"added_sugar_g":number,"confidence":"low"|"medium"|"high"}. If multiple items are shown, sum the protein and added sugar and name the food generically (e.g. "chicken & rice bowl").',
+        system:'You are a nutrition estimator inside a habit tracking app. Given a text description and/or photo of a food or meal, estimate its protein content in grams, its ADDED sugar content in grams (the FDA nutrition-label "Added Sugars" line — sugar/syrup added during processing — NOT total sugars. Naturally-occurring sugar like lactose in milk/whey/yogurt or fructose in whole fruit counts as 0 added sugar unless the product is also sweetened), and its total calories. Respond ONLY with a JSON object, no markdown fences, no other text: {"food":"short name","grams_protein":number,"added_sugar_g":number,"calories":number,"confidence":"low"|"medium"|"high"}. If multiple items are shown, sum the protein, added sugar, and calories, and name the food generically (e.g. "chicken & rice bowl").',
         messages:[{role:'user',content}]
       })
     });
@@ -1267,14 +1297,16 @@ async function analyzeFood(id){
     const grams=Math.round((+parsed.grams_protein||0)*10)/10;
     if(!grams||grams<=0){statusEl.textContent="Couldn't estimate protein for that — try adding more detail.";btn.disabled=false;return;}
     const addedSugar=Math.max(0,Math.round((+parsed.added_sugar_g||0)*10)/10);
+    const calories=Math.max(0,Math.round(+parsed.calories||0));
     const h=S.habits.find(x=>x.id===id);
     const amtInp=document.getElementById(`padd-${id}`);
     if(amtInp)amtInp.value=grams;
     _pendingFoodLabel[id]=String(parsed.food||desc||'food').slice(0,40);
     _pendingFoodSugar[id]=addedSugar;
+    _pendingFoodCalories[id]=calories;
     const confEmoji=parsed.confidence==='high'?'🟢':parsed.confidence==='low'?'🟡':'🟠';
     const foodLabel=escapeHtml(parsed.food||'Food');
-    resultEl.innerHTML=`${confEmoji} ${foodLabel} — ~${grams}g protein, ~${addedSugar}g added sugar${h&&h.unit&&h.unit!=='g'?` (target unit is ${h.unit})`:''}.<button class="ai-log-add-btn" onclick="addProteinEntry('${id}')">✅ Add ${grams}${(h&&h.unit)||'g'}${addedSugar>0?` · 🍬${addedSugar}g sugar`:''}</button>`;
+    resultEl.innerHTML=`${confEmoji} ${foodLabel} — ~${grams}g protein, ~${addedSugar}g added sugar, ~${calories} cal${h&&h.unit&&h.unit!=='g'?` (target unit is ${h.unit})`:''}.<button class="ai-log-add-btn" onclick="addProteinEntry('${id}')">✅ Add ${grams}${(h&&h.unit)||'g'}${addedSugar>0?` · 🍬${addedSugar}g sugar`:''}${calories>0?` · 🔥${calories}cal`:''}</button>`;
     resultEl.classList.add('show');
     statusEl.textContent='';
   }catch(e){
@@ -1377,9 +1409,10 @@ function renderProteinTab(){
     return;
   }
   const c=colorOf(h.color),total=numVal(h.id),tgt=h.target||150,pct=Math.min(total/tgt*100,100),
-    streak=currentStreak(h.id),entries=numEntries(h.id),unit=h.unit?' '+h.unit:'',addedSugar=todaysAddedSugar(h.id);
+    streak=currentStreak(h.id),entries=numEntries(h.id),unit=h.unit?' '+h.unit:'',addedSugar=todaysAddedSugar(h.id),
+    calToday=todaysCalories(h.id),calGoal=S.user.calorieGoal,calPct=calGoal?Math.min(calToday/calGoal*100,100):0;
   const rows=entries.length?entries.slice().reverse().map(v=>typeof v==='object'
-    ?`<div class="food-log-row"><span class="food-log-amt" style="--c-hex:${c.hex}">+${v.amt}${unit}</span><span class="food-log-label">${escapeHtml(v.label)}${typeof v.sugar==='number'&&v.sugar>0?` · 🍬${v.sugar}g added sugar`:''}</span></div>`
+    ?`<div class="food-log-row"><span class="food-log-amt" style="--c-hex:${c.hex}">+${v.amt}${unit}</span><span class="food-log-label">${escapeHtml(v.label)}${typeof v.sugar==='number'&&v.sugar>0?` · 🍬${v.sugar}g added sugar`:''}${typeof v.calories==='number'&&v.calories>0?` · 🔥${v.calories}cal`:''}</span></div>`
     :`<div class="food-log-row"><span class="food-log-amt" style="--c-hex:${c.hex}">+${v}${unit}</span><span class="food-log-label food-log-manual">Manual entry</span></div>`
   ).join(''):`<div class="food-log-empty">No entries logged yet today.</div>`;
   const hasKey=!!localStorage.getItem('gh_ai_key');
@@ -1404,6 +1437,15 @@ function renderProteinTab(){
       </div>
       <div class="weight-goal-track"><div class="weight-goal-labels"><span>0${unit}</span><span>${Math.round(pct)}%</span><span>${tgt}${unit}</span></div><div class="weight-goal-bar"><div class="weight-goal-fill" style="width:${pct}%;background:linear-gradient(90deg,${c.hex},var(--pink))"></div></div></div>
     </div>
+    <div class="weight-settings-card">
+      <div class="weight-settings-title">🔥 Calories</div>
+      <div class="weight-entry-row">
+        <input class="weight-input-big" id="calGoalInput" type="number" min="0" step="1" placeholder="daily goal" value="${calGoal!=null?calGoal:''}" style="font-size:18px;padding:10px" onkeydown="if(event.key==='Enter')saveCalorieGoal()">
+        <button class="weight-log-btn" onclick="saveCalorieGoal()">Set</button>
+      </div>
+      ${calGoal!=null?`<div class="weight-goal-track"><div class="weight-goal-labels"><span>0</span><span>${calToday} / ${calGoal} cal</span><span>${Math.round(calPct)}%</span></div><div class="weight-goal-bar"><div class="weight-goal-fill" style="width:${calPct}%;background:linear-gradient(90deg,var(--orange),var(--yellow))"></div></div></div>`
+        :`<div class="data-card-desc" style="margin-top:8px">${calToday} cal logged today. Set a daily goal above to track progress.</div>`}
+    </div>
     ${quickAddHTML}
     <div class="weight-entry-card">
       <div class="weight-entry-label">Add Protein</div>
@@ -1422,7 +1464,7 @@ function renderProteinTab(){
         <button class="ai-log-photo-btn" onclick="document.getElementById('ailog-file-${h.id}').click()" title="Add a photo">📷</button>
         <input type="file" id="ailog-file-${h.id}" accept="image/*" capture="environment" style="display:none" onchange="aiLogPhotoPicked('${h.id}',event)">
       </div>
-      <button class="ai-log-analyze-btn" id="ailog-btn-${h.id}" style="background:${c.hex}" onclick="analyzeFood('${h.id}')">Analyze protein & sugar</button>
+      <button class="ai-log-analyze-btn" id="ailog-btn-${h.id}" style="background:${c.hex}" onclick="analyzeFood('${h.id}')">Analyze protein, sugar & calories</button>
       <div class="ai-log-status" id="ailog-status-${h.id}">${hasKey?'':'Add your Anthropic API key below to enable this.'}</div>
       <div class="ai-log-result" id="ailog-result-${h.id}" style="--c-hex:${c.hex};--c-rgb:${c.rgb}"></div>
     </div>
@@ -1902,7 +1944,7 @@ function saveFoodHistory(list){
   const favs=list.filter(f=>f.favorite).slice(0,30), rest=list.filter(f=>!f.favorite).slice(0,12);
   localStorage.setItem('gh_food_history',JSON.stringify(favs.concat(rest)));
 }
-function rememberFood(name,grams,sugar){
+function rememberFood(name,grams,sugar,calories){
   if(!name||!grams||grams<=0)return;
   const key=String(name).trim().toLowerCase();if(!key)return;
   const list=getFoodHistory();
@@ -1910,6 +1952,7 @@ function rememberFood(name,grams,sugar){
   const filtered=list.filter(f=>String(f.name).trim().toLowerCase()!==key);
   const entry={name:String(name).trim().slice(0,40),grams:Math.round(grams*10)/10};
   if(typeof sugar==='number'&&sugar>0)entry.sugar=Math.round(sugar*10)/10;
+  if(typeof calories==='number'&&calories>0)entry.calories=Math.round(calories);
   if(old&&old.favorite)entry.favorite=true; // re-logging a favorite shouldn't un-star it
   filtered.unshift(entry);
   saveFoodHistory(filtered);
@@ -1922,7 +1965,7 @@ function toggleFavoriteFood(idx){
 }
 function quickAddFoodAt(id,idx){
   const list=getFoodHistory();const item=list[idx];if(!item)return;
-  if(!addNumCore(id,item.grams,item.name,item.sugar))return;
+  if(!addNumCore(id,item.grams,item.name,item.sugar,item.calories))return;
   renderToday();renderXP();renderProteinTab();
   const h=S.habits.find(x=>x.id===id);
   toast(`✅ +${item.grams}${(h&&h.unit)||'g'} · ${item.name}`);
@@ -1943,20 +1986,25 @@ function removeQuickFoodAt(idx){
 }
 let _pendingFoodLabel={};
 let _pendingFoodSugar={};
+let _pendingFoodCalories={};
 function isProteinHabit(h){return !!h && h.type==='numeric' && /protein/i.test(h.name);}
-function addNumCore(id,amt,label,sugar){
+function addNumCore(id,amt,label,sugar,calories){
   const h=S.habits.find(x=>x.id===id);if(!h||!amt||amt<=0)return false;
   const tk=todayKey();if(!S.logs[tk])S.logs[tk]={};if(!S.logEntries[tk])S.logEntries[tk]={};if(!S.logEntries[tk][id])S.logEntries[tk][id]=[];
   const prev=numVal(id),next=prev+amt;S.logs[tk][id]=next;
   if(label){
     const entry={amt:+amt.toFixed(2),label};
     if(typeof sugar==='number'&&sugar>0)entry.sugar=Math.round(sugar*10)/10;
+    if(typeof calories==='number'&&calories>0)entry.calories=Math.round(calories);
     S.logEntries[tk][id].push(entry);
   }else S.logEntries[tk][id].push(+amt.toFixed(2));
   checkNumTarget(id,prev,next);save();return true;
 }
 function todaysAddedSugar(hid){
   return numEntries(hid).reduce((sum,v)=>sum+(typeof v==='object'&&typeof v.sugar==='number'?v.sugar:0),0);
+}
+function todaysCalories(hid){
+  return numEntries(hid).reduce((sum,v)=>sum+(typeof v==='object'&&typeof v.calories==='number'?v.calories:0),0);
 }
 function addNum(id){
   const inp=document.getElementById(`nadd-${id}`);const amt=parseFloat(inp?.value||0);
@@ -1965,10 +2013,11 @@ function addNum(id){
   const h=S.habits.find(x=>x.id===id);if(isProteinHabit(h))renderProteinTab();
 }
 function addProteinEntry(id){
-  const inp=document.getElementById(`padd-${id}`);const amt=parseFloat(inp?.value||0);const label=_pendingFoodLabel[id],sugar=_pendingFoodSugar[id];
-  if(!addNumCore(id,amt,label,sugar)){if(inp){inp.style.borderColor='#ff6464';setTimeout(()=>inp.style.borderColor='',900);}return;}
-  if(label){delete _pendingFoodLabel[id];rememberFood(label,amt,sugar);}
+  const inp=document.getElementById(`padd-${id}`);const amt=parseFloat(inp?.value||0);const label=_pendingFoodLabel[id],sugar=_pendingFoodSugar[id],calories=_pendingFoodCalories[id];
+  if(!addNumCore(id,amt,label,sugar,calories)){if(inp){inp.style.borderColor='#ff6464';setTimeout(()=>inp.style.borderColor='',900);}return;}
+  if(label){delete _pendingFoodLabel[id];rememberFood(label,amt,sugar,calories);}
   delete _pendingFoodSugar[id];
+  delete _pendingFoodCalories[id];
   if(inp)inp.value='';
   clearAiPanel(id);
   renderToday();renderXP();renderProteinTab();
@@ -1976,6 +2025,7 @@ function addProteinEntry(id){
 function resetNum(id){
   delete _pendingFoodLabel[id];
   delete _pendingFoodSugar[id];
+  delete _pendingFoodCalories[id];
   const tk=todayKey();if(!S.logs[tk])return;
   const awardKey=tk+'_num_'+id;
   if(S.xpAwarded[awardKey]){
@@ -2069,6 +2119,7 @@ function checkExerciseMilestones(){
   if(e.jumpRopeSec     >= 180) awPackSecret('secret_jumprope180','3-minute jump rope! 💪');
 }
 function saveWeightGoal(){const v=parseFloat(document.getElementById('wGoalInput')?.value);if(!v||v<=0)return;S.weight.goal=+v.toFixed(1);save();renderWeight();toast(`🎯 Goal set: ${v.toFixed(1)} lbs`);}
+function saveCalorieGoal(){const v=parseFloat(document.getElementById('calGoalInput')?.value);if(!v||v<=0)return;S.user.calorieGoal=Math.round(v);save();renderProteinTab();toast(`🔥 Calorie goal set: ${Math.round(v)} cal`);}
 function setWeightRange(n){_weightRange=n;renderWeight();}
 function toggleSideQuest(id){
   const s=S.sideQuests.find(x=>x.id===id);if(!s)return;if(s.cadence==='once'&&S.sideQuestDone[id])return;
@@ -2211,6 +2262,128 @@ function pickSQEmoji(e,el){_sqEmoji=e;document.querySelectorAll('#sideQuestEmoji
 function pickSideQuestCadence(c,el){_sqCadence=c;document.querySelectorAll('#sideQuestModalOverlay .type-btn').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');}
 function saveSideQuest(){const name=document.getElementById('sqName').value.trim();if(!name){const i=document.getElementById('sqName');i.style.borderColor='#ff6464';i.focus();setTimeout(()=>i.style.borderColor='',1200);return;}const s={id:Date.now().toString(36),name,icon:_sqEmoji,cadence:_sqCadence};S.sideQuests.push(s);save();closeModal('sideQuestModalOverlay');renderAll();toast(`${s.icon} "${s.name}" added!`);}
 
+// ── Custom Workout Circuits (AMRAP-style: define exercises once, log rounds completed each session) ──
+let _circuitEditId=null, _circuitDraftExercises=[];
+function syncCircuitDraftFromDOM(){
+  _circuitDraftExercises=_circuitDraftExercises.map((_,i)=>({
+    name:(document.getElementById(`cexName-${i}`)?.value||'').trim(),
+    reps:document.getElementById(`cexReps-${i}`)?.value||'',
+    weight:(document.getElementById(`cexWeight-${i}`)?.value||'').trim()
+  }));
+}
+function renderCircuitDraftRows(){
+  const el=document.getElementById('circuitExerciseRows');if(!el)return;
+  el.innerHTML=_circuitDraftExercises.map((ex,i)=>`
+    <div class="circuit-ex-row">
+      <input class="form-input" id="cexName-${i}" placeholder="Exercise" value="${escapeHtml(ex.name)}" style="flex:2">
+      <input class="form-input" id="cexReps-${i}" type="number" min="0" placeholder="Reps" value="${ex.reps}" style="flex:1;min-width:0">
+      <input class="form-input" id="cexWeight-${i}" placeholder="Weight" value="${escapeHtml(ex.weight)}" style="flex:1;min-width:0">
+      <button type="button" class="circuit-icon-btn" onclick="removeCircuitDraftExercise(${i})" title="Remove">✕</button>
+    </div>`).join('');
+}
+function addCircuitDraftExercise(){
+  syncCircuitDraftFromDOM();
+  _circuitDraftExercises.push({name:'',reps:10,weight:''});
+  renderCircuitDraftRows();
+}
+function removeCircuitDraftExercise(idx){
+  syncCircuitDraftFromDOM();
+  _circuitDraftExercises.splice(idx,1);
+  renderCircuitDraftRows();
+}
+function openCircuitModal(editId){
+  _circuitEditId=editId||null;
+  if(editId){
+    const w=S.customWorkouts.find(x=>x.id===editId);if(!w)return;
+    document.getElementById('cName').value=w.name;
+    document.getElementById('cDuration').value=w.durationMin||'';
+    _circuitDraftExercises=w.exercises.map(e=>({...e}));
+    document.getElementById('circuitModalTitle').textContent='Edit Circuit';
+    document.getElementById('circuitSubmit').textContent='Save Changes 🏋️';
+  }else{
+    document.getElementById('cName').value='';
+    document.getElementById('cDuration').value='';
+    _circuitDraftExercises=[{name:'',reps:10,weight:''}];
+    document.getElementById('circuitModalTitle').textContent='New Circuit';
+    document.getElementById('circuitSubmit').textContent='Add Circuit 🏋️';
+  }
+  renderCircuitDraftRows();
+  document.getElementById('circuitModalOverlay').classList.add('open');
+}
+function saveCircuit(){
+  syncCircuitDraftFromDOM();
+  const name=document.getElementById('cName').value.trim();
+  if(!name){const i=document.getElementById('cName');i.style.borderColor='#ff6464';i.focus();setTimeout(()=>i.style.borderColor='',1200);return;}
+  const durationMin=parseFloat(document.getElementById('cDuration').value)||null;
+  const exercises=_circuitDraftExercises.filter(e=>e.name).map(e=>({name:e.name.slice(0,40),reps:parseFloat(e.reps)||0,weight:String(e.weight||'').slice(0,20)}));
+  if(_circuitEditId){
+    const idx=S.customWorkouts.findIndex(x=>x.id===_circuitEditId);
+    if(idx!==-1)S.customWorkouts[idx]={...S.customWorkouts[idx],name,durationMin,exercises};
+  }else{
+    S.customWorkouts.push({id:Date.now().toString(36),name,durationMin,exercises});
+  }
+  save();
+  closeModal('circuitModalOverlay');
+  renderCircuitsTab();
+  toast(`🏋️ "${name}" saved!`);
+}
+function deleteCircuit(id){
+  if(!confirm('Delete this circuit? Logged history is kept.'))return;
+  S.customWorkouts=S.customWorkouts.filter(w=>w.id!==id);
+  save();
+  renderCircuitsTab();
+}
+function logCircuitRounds(id){
+  const inp=document.getElementById(`circuit-rounds-${id}`);
+  const rounds=parseFloat(inp?.value);
+  if(!rounds&&rounds!==0){if(inp){inp.style.borderColor='#ff6464';setTimeout(()=>inp.style.borderColor='',900);}return;}
+  const tk=todayKey();
+  if(!S.customWorkoutLogs[tk])S.customWorkoutLogs[tk]={};
+  S.customWorkoutLogs[tk][id]={rounds};
+  save();
+  renderCircuitsTab();
+  toast(`✅ Logged ${rounds} round${rounds===1?'':'s'}!`);
+}
+function circuitHistory(id,days){
+  const out=[];
+  for(let i=0;i<days;i++){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const dk=dateKey(d);
+    const log=(S.customWorkoutLogs[dk]||{})[id];
+    if(log)out.push({date:dk,rounds:log.rounds});
+  }
+  return out;
+}
+function renderCircuitsTab(){
+  const el=document.getElementById('circuitsContent');if(!el)return;
+  if(!S.customWorkouts.length){
+    el.innerHTML=`<div class="empty-state"><div class="empty-icon">🏋️</div><div class="empty-title">No circuits yet</div><div class="empty-desc">Define a circuit workout (e.g. 5 kettlebell exercises, 10 reps each) and log how many rounds you complete each session.</div><button class="btn-submit" style="margin-top:14px" onclick="openCircuitModal()">+ New Circuit</button></div>`;
+    return;
+  }
+  const tk=todayKey();
+  el.innerHTML=S.customWorkouts.map(w=>{
+    const todayLog=(S.customWorkoutLogs[tk]||{})[w.id];
+    const hist=circuitHistory(w.id,7).filter(x=>x.date!==tk);
+    const exList=w.exercises.map(e=>`<span class="circuit-ex-chip">${escapeHtml(e.name)}${e.reps?` ×${e.reps}`:''}${e.weight?` @ ${escapeHtml(e.weight)}`:''}</span>`).join('');
+    return `<div class="weight-settings-card">
+      <div class="circuit-card-header">
+        <span class="weight-settings-title" style="margin:0">🏋️ ${escapeHtml(w.name)}</span>
+        <span style="display:flex;gap:6px">
+          <button class="circuit-icon-btn" onclick="openCircuitModal('${w.id}')" title="Edit">✏️</button>
+          <button class="circuit-icon-btn" onclick="deleteCircuit('${w.id}')" title="Delete">🗑️</button>
+        </span>
+      </div>
+      ${w.durationMin?`<div class="data-card-desc" style="margin-top:4px">${w.durationMin} min · as many rounds as possible</div>`:''}
+      <div class="circuit-ex-wrap">${exList}</div>
+      <div class="weight-entry-row" style="margin-top:6px">
+        <input class="weight-input-big" id="circuit-rounds-${w.id}" type="number" min="0" step="1" placeholder="Rounds completed" value="${todayLog?todayLog.rounds:''}" style="font-size:20px">
+        <button class="weight-log-btn" onclick="logCircuitRounds('${w.id}')">${todayLog?'Update':'Log'} Today</button>
+      </div>
+      ${hist.length?`<div class="data-card-desc" style="margin-top:10px">Recent: ${hist.map(x=>`${x.rounds} (${x.date.slice(5)})`).join(' · ')}</div>`:''}
+    </div>`;
+  }).join('')+`<button class="btn-submit" onclick="openCircuitModal()">+ New Circuit</button>`;
+}
+
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function overlayClick(e,id){if(e.target===document.getElementById(id))closeModal(id);}
 function switchTab(name,btn){
@@ -2224,6 +2397,7 @@ function switchTab(name,btn){
   if(name==='weight')  renderWeight();
   if(name==='rewards') renderRewards();
   if(name==='protein') renderProteinTab();
+  if(name==='circuits') renderCircuitsTab();
 }
 
 let _toastTimer;
@@ -2266,7 +2440,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-31.0900';
+const APP_VERSION = '2026-08-31.1100';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
