@@ -750,18 +750,22 @@
       <label class="form-label">Goal Type</label>
       <div class="type-toggle">
         <button type="button" class="type-btn sel" id="goalTypeCircuitBtn" onclick="pickGoalType('circuit',this)">🏋️ Circuit Rounds</button>
-        <button type="button" class="type-btn" id="goalTypeWeightBtn" onclick="pickGoalType('weight',this)">⚖️ Weight Target</button>
+        <button type="button" class="type-btn" id="goalTypeWeightBtn" onclick="pickGoalType('weight',this)">💪 Exercise Weight</button>
       </div>
     </div>
-    <div class="form-group" id="goalCircuitFields">
+    <div class="form-group">
       <label class="form-label">Circuit</label>
-      <select class="form-input" id="gWorkoutId"></select>
-      <label class="form-label" style="margin-top:10px">Target Rounds</label>
+      <select class="form-input" id="gWorkoutId" onchange="populateGoalExerciseOptions()"></select>
+    </div>
+    <div class="form-group" id="goalCircuitFields">
+      <label class="form-label">Target Rounds</label>
       <input class="form-input" id="gTargetRounds" type="number" min="1" placeholder="e.g. 10">
     </div>
     <div class="form-group" id="goalWeightFields" style="display:none">
-      <label class="form-label">Target Weight (lbs)</label>
-      <input class="form-input" id="gTargetWeight" type="number" step="0.1" min="0" placeholder="e.g. 175">
+      <label class="form-label">Exercise</label>
+      <select class="form-input" id="gExerciseName"></select>
+      <label class="form-label" style="margin-top:10px">Target Weight (number, e.g. 40 for "40lb")</label>
+      <input class="form-input" id="gTargetWeight" type="number" step="0.5" min="0" placeholder="e.g. 40">
     </div>
     <button class="btn-submit" onclick="saveCustomGoal()">Add Reward 🎯</button>
   </div>
@@ -1852,10 +1856,11 @@ function renderRewards(){
         const best=Math.max(0,...Object.keys(S.customWorkoutLogs).filter(dk=>!g.createdAt||dk>=g.createdAt).map(dk=>((S.customWorkoutLogs[dk]||{})[g.workoutId]||{}).rounds||0));
         desc=`${w?escapeHtml(w.name):'Circuit (deleted)'} · best ${best}/${g.targetRounds} rounds`;
       }else{
-        const all=weightEntries();const latest=all.length?all[all.length-1].val:null;
-        desc=`Target ${g.targetWeight} lbs${latest!=null?` · currently ${latest.toFixed(1)}`:''}`;
+        const w=S.customWorkouts.find(x=>x.id===g.workoutId);
+        const ex=w&&w.exercises.find(e=>e.name===g.exerciseName);
+        desc=`${w?escapeHtml(w.name):'Circuit (deleted)'} · ${escapeHtml(g.exerciseName)} · currently ${ex&&ex.weight?escapeHtml(ex.weight):'—'} · target ${g.targetWeight}`;
       }
-      return `<div class="milestone-card ${g.achieved?'earned':''}"><div class="milestone-icon">${g.type==='circuit'?'🏋️':'⚖️'}</div><div class="milestone-title">${escapeHtml(g.name)}</div><div class="milestone-desc">${g.achieved?'✓ Achieved!':desc}</div>${g.achieved?'<div class="milestone-earned-tag">✓ Pack Earned</div>':''}<button class="circuit-icon-btn" style="margin-top:8px" onclick="event.stopPropagation();deleteCustomGoal('${g.id}')" title="Delete">🗑️</button></div>`;
+      return `<div class="milestone-card ${g.achieved?'earned':''}"><div class="milestone-icon">${g.type==='circuit'?'🏋️':'💪'}</div><div class="milestone-title">${escapeHtml(g.name)}</div><div class="milestone-desc">${g.achieved?'✓ Achieved!':desc}</div>${g.achieved?'<div class="milestone-earned-tag">✓ Pack Earned</div>':''}<button class="circuit-icon-btn" style="margin-top:8px" onclick="event.stopPropagation();deleteCustomGoal('${g.id}')" title="Delete">🗑️</button></div>`;
     }).join('')+`</div>`;
   }
   html+=`<button class="btn-submit" style="margin-bottom:20px" onclick="openGoalModal()">+ New Custom Reward</button>`;
@@ -2382,6 +2387,7 @@ function saveCircuit(){
     S.customWorkouts.push({id:Date.now().toString(36),name,durationMin,exercises});
   }
   save();
+  checkCustomGoals();
   closeModal('circuitModalOverlay');
   renderCircuitsTab();
   toast(`🏋️ "${name}" saved!`);
@@ -2444,14 +2450,23 @@ function renderCircuitsTab(){
   }).join('')+`<button class="btn-submit" onclick="openCircuitModal()">+ New Circuit</button>`;
 }
 
-// ── Custom Rewards (user-defined goals: circuit rounds or a weight target) ──
+// ── Custom Rewards (user-defined goals: circuit rounds, or progressing the weight used on a specific exercise within a circuit) ──
 let _goalType='circuit';
+function populateGoalExerciseOptions(){
+  const workoutId=document.getElementById('gWorkoutId').value;
+  const w=(S.customWorkouts||[]).find(x=>x.id===workoutId);
+  const sel=document.getElementById('gExerciseName');if(!sel)return;
+  sel.innerHTML=(w&&w.exercises.length)
+    ?w.exercises.map(e=>`<option value="${escapeHtml(e.name)}">${escapeHtml(e.name)}${e.weight?` (currently ${escapeHtml(e.weight)})`:''}</option>`).join('')
+    :'<option value="">No exercises in this circuit</option>';
+}
 function pickGoalType(type,btn){
   _goalType=type;
   document.querySelectorAll('#goalModalOverlay .type-btn').forEach(b=>b.classList.remove('sel'));
   btn.classList.add('sel');
   document.getElementById('goalCircuitFields').style.display=type==='circuit'?'block':'none';
   document.getElementById('goalWeightFields').style.display=type==='weight'?'block':'none';
+  if(type==='weight')populateGoalExerciseOptions();
 }
 function openGoalModal(){
   document.getElementById('gName').value='';
@@ -2461,25 +2476,25 @@ function openGoalModal(){
   sel.innerHTML=(S.customWorkouts||[]).length
     ?S.customWorkouts.map(w=>`<option value="${w.id}">${escapeHtml(w.name)}</option>`).join('')
     :'<option value="">No circuits defined yet</option>';
+  populateGoalExerciseOptions();
   pickGoalType('circuit',document.getElementById('goalTypeCircuitBtn'));
   document.getElementById('goalModalOverlay').classList.add('open');
 }
 function saveCustomGoal(){
   S.customGoals=S.customGoals||[];
+  const workoutId=document.getElementById('gWorkoutId').value;
+  const w=S.customWorkouts.find(x=>x.id===workoutId);
   if(_goalType==='circuit'){
-    const workoutId=document.getElementById('gWorkoutId').value;
     const targetRounds=parseFloat(document.getElementById('gTargetRounds').value);
     if(!workoutId||!targetRounds||targetRounds<=0){toast('Pick a circuit and a target rounds number.');return;}
-    const w=S.customWorkouts.find(x=>x.id===workoutId);
     const name=document.getElementById('gName').value.trim()||`${targetRounds} rounds — ${w?w.name:'Circuit'}`;
     S.customGoals.push({id:Date.now().toString(36),type:'circuit',name,workoutId,targetRounds,achieved:false,createdAt:todayKey()});
   }else{
+    const exerciseName=document.getElementById('gExerciseName').value;
     const targetWeight=parseFloat(document.getElementById('gTargetWeight').value);
-    if(!targetWeight||targetWeight<=0){toast('Enter a target weight.');return;}
-    const all=weightEntries();const latest=all.length?all[all.length-1].val:null;
-    const direction=(latest!=null&&targetWeight>latest)?'above':'below';
-    const name=document.getElementById('gName').value.trim()||`Reach ${targetWeight} lbs`;
-    S.customGoals.push({id:Date.now().toString(36),type:'weight',name,targetWeight,direction,achieved:false,createdAt:todayKey()});
+    if(!workoutId||!exerciseName||!targetWeight||targetWeight<=0){toast('Pick a circuit, an exercise, and a target weight.');return;}
+    const name=document.getElementById('gName').value.trim()||`${exerciseName} @ ${targetWeight}`;
+    S.customGoals.push({id:Date.now().toString(36),type:'exercise_weight',name,workoutId,exerciseName,targetWeight,achieved:false,createdAt:todayKey()});
   }
   save();
   closeModal('goalModalOverlay');
@@ -2504,9 +2519,13 @@ function checkCustomGoals(){
         const entry=(S.customWorkoutLogs[dk]||{})[g.workoutId];
         return entry&&entry.rounds>=g.targetRounds;
       });
-    }else if(g.type==='weight'){
-      const all=weightEntries();const latest=all.length?all[all.length-1].val:null;
-      if(latest!=null)met=g.direction==='below'?latest<=g.targetWeight:latest>=g.targetWeight;
+    }else if(g.type==='exercise_weight'){
+      const w=(S.customWorkouts||[]).find(x=>x.id===g.workoutId);
+      const ex=w&&w.exercises.find(e=>e.name===g.exerciseName);
+      if(ex){
+        const cur=parseFloat(String(ex.weight||'').match(/[\d.]+/)?.[0]);
+        met=!isNaN(cur)&&cur>=g.targetWeight;
+      }
     }
     if(met){
       g.achieved=true;g.achievedDate=todayKey();
@@ -2583,7 +2602,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-31.1400';
+const APP_VERSION = '2026-08-31.1500';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
