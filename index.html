@@ -741,6 +741,32 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="goalModalOverlay" onclick="overlayClick(event,'goalModalOverlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">New Custom Reward</div>
+    <div class="form-group"><label class="form-label">Name (optional)</label><input class="form-input" id="gName" placeholder="e.g. Kettlebell PR" maxlength="40"></div>
+    <div class="form-group">
+      <label class="form-label">Goal Type</label>
+      <div class="type-toggle">
+        <button type="button" class="type-btn sel" id="goalTypeCircuitBtn" onclick="pickGoalType('circuit',this)">🏋️ Circuit Rounds</button>
+        <button type="button" class="type-btn" id="goalTypeWeightBtn" onclick="pickGoalType('weight',this)">⚖️ Weight Target</button>
+      </div>
+    </div>
+    <div class="form-group" id="goalCircuitFields">
+      <label class="form-label">Circuit</label>
+      <select class="form-input" id="gWorkoutId"></select>
+      <label class="form-label" style="margin-top:10px">Target Rounds</label>
+      <input class="form-input" id="gTargetRounds" type="number" min="1" placeholder="e.g. 10">
+    </div>
+    <div class="form-group" id="goalWeightFields" style="display:none">
+      <label class="form-label">Target Weight (lbs)</label>
+      <input class="form-input" id="gTargetWeight" type="number" step="0.1" min="0" placeholder="e.g. 175">
+    </div>
+    <button class="btn-submit" onclick="saveCustomGoal()">Add Reward 🎯</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="backdateModalOverlay" onclick="overlayClick(event,'backdateModalOverlay')">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -901,7 +927,7 @@ function blankState() {
     xpAwarded:{},
     weight:{logs:{},unit:'lbs',goal:null,startWeight:null,startDate:null},
     exercise:{dumbbellPress:0,dumbbellPress25:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0},
-    customWorkouts:[],customWorkoutLogs:{},
+    customWorkouts:[],customWorkoutLogs:{},customGoals:[],
     user:{xp:0,badges:[],totalDone:0,numericHits:0,sideQuestCount:0,
       packsBank:0,hangersBank:0,blastersBank:0,megaBank:0,hobbyBank:0,superBank:0,mythicBank:0,
       packHistory:[],weeklyPacksAwarded:{},weeklyPackFlags:{},
@@ -951,6 +977,7 @@ function migrateState(raw) {
   if (!raw.restDayLogs)              raw.restDayLogs={};
   if (!raw.customWorkouts)           raw.customWorkouts=[];
   if (!raw.customWorkoutLogs)        raw.customWorkoutLogs={};
+  if (!raw.customGoals)              raw.customGoals=[];
   if (raw.user.calorieGoal===undefined) raw.user.calorieGoal=null;
   if (!raw.exercise) raw.exercise={dumbbellPress:0,dumbbellPress25:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
   if (raw.exercise.dumbbellPress25==null) raw.exercise.dumbbellPress25=0;
@@ -1815,6 +1842,24 @@ function renderRewards(){
   const daysDoneCount=(wkFlags.halfA?3:halfADays.filter(d=>daySatisfiedWithRest(dateKey(d))).length)+(wkFlags.halfB?3:halfBDays.filter(d=>daySatisfiedWithRest(dateKey(d))).length);
   html+=`<div class="week-card"><div class="week-card-title">📅 This Week <span>${daysDoneCount}/6 days${isSundayNow?' + bonus day':''}</span></div><div class="week-days-row">${days.map((d,i)=>{const k=dateKey(d),flagged=(i<3&&wkFlags.halfA)||(i>=3&&i<6&&wkFlags.halfB),c=flagged||isDayComplete(k),rest=dayRestSkipCount(k)>0,t=k===todayKey(),bonus=i===6;return`<div class="week-day-dot ${c?'done':''} ${rest&&!c?'rest':''} ${t?'today':''}" title="${bonus?'Sunday — bonus':''}"></div>`;}).join('')}</div><div class="week-progress-label"><span>Side quests this week</span><span>${sct} / 10</span></div><div class="week-mini-bar"><div class="week-mini-bar-fill" style="width:${Math.min(sct/10*100,100)}%"></div></div><div class="week-rewards-list"><div class="week-reward-row ${halfAPerfect?'earned':''}">${inHalfA?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — Perfect Mon–Wed (1 skip ok) <span class="milestone-cadence">Weekly</span></div><div class="week-reward-status">${halfAPerfect?'✓ Earned':'In progress'}</div></div><div class="week-reward-row ${halfBPerfect?'earned':''}">${inHalfB?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — Perfect Thu–Sat (1 skip ok) <span class="milestone-cadence">Weekly</span></div><div class="week-reward-status">${halfBPerfect?'✓ Earned':'In progress'}</div></div><div class="week-reward-row ${sct>=10?'earned':''}">${isSundayNow?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — 10 side quests (awarded Sunday) <span class="milestone-cadence">Weekly</span></div><div class="week-reward-status">${sct>=10?'✓ Earned':sct+'/10'}</div></div></div></div>`;
 
+  const customGoals=S.customGoals||[];
+  html+=`<div class="rewards-section-label">🎯 Custom Rewards</div>`;
+  if(customGoals.length){
+    html+=`<div class="milestone-grid">`+customGoals.map(g=>{
+      let desc='';
+      if(g.type==='circuit'){
+        const w=S.customWorkouts.find(x=>x.id===g.workoutId);
+        const best=Math.max(0,...Object.keys(S.customWorkoutLogs).filter(dk=>!g.createdAt||dk>=g.createdAt).map(dk=>((S.customWorkoutLogs[dk]||{})[g.workoutId]||{}).rounds||0));
+        desc=`${w?escapeHtml(w.name):'Circuit (deleted)'} · best ${best}/${g.targetRounds} rounds`;
+      }else{
+        const all=weightEntries();const latest=all.length?all[all.length-1].val:null;
+        desc=`Target ${g.targetWeight} lbs${latest!=null?` · currently ${latest.toFixed(1)}`:''}`;
+      }
+      return `<div class="milestone-card ${g.achieved?'earned':''}"><div class="milestone-icon">${g.type==='circuit'?'🏋️':'⚖️'}</div><div class="milestone-title">${escapeHtml(g.name)}</div><div class="milestone-desc">${g.achieved?'✓ Achieved!':desc}</div>${g.achieved?'<div class="milestone-earned-tag">✓ Pack Earned</div>':''}<button class="circuit-icon-btn" style="margin-top:8px" onclick="event.stopPropagation();deleteCustomGoal('${g.id}')" title="Delete">🗑️</button></div>`;
+    }).join('')+`</div>`;
+  }
+  html+=`<button class="btn-submit" style="margin-bottom:20px" onclick="openGoalModal()">+ New Custom Reward</button>`;
+
   const wk=isoWeek(),wkSct=weekSideQuestCount(days);
   const hangers=[
     {key:`hanger_perfectweeks_w${Math.floor((S.user.perfectWeekStreak||0)/2)}`, icon:'🏅', title:'2 Perfect Weeks in a Row', val:(S.user.perfectWeekStreak||0)%2, max:2, desc:`${S.user.perfectWeekStreak||0}-week streak · ${S.user.perfectWeekBoxesEarned||0} earned total`, cadence:'Recurring'},
@@ -2102,7 +2147,7 @@ function checkWeightMilestones(){
   if (goal != null && current <= goal) awMythic('wt_mythic_goal', 'Goal weight reached! 🏵️');
 }
 
-function logWeight(){const v=parseFloat(document.getElementById('wInput')?.value);if(!v||v<=0)return;const tk=todayKey();S.weight.logs[tk]=+v.toFixed(1);if(!S.weight.startDate){S.weight.startDate=tk;S.weight.startWeight=+v.toFixed(1);}save();checkWeightMilestones();renderWeight();toast(`⚖️ ${v.toFixed(1)} lbs logged!`);confetti(12);}
+function logWeight(){const v=parseFloat(document.getElementById('wInput')?.value);if(!v||v<=0)return;const tk=todayKey();S.weight.logs[tk]=+v.toFixed(1);if(!S.weight.startDate){S.weight.startDate=tk;S.weight.startWeight=+v.toFixed(1);}save();checkWeightMilestones();checkCustomGoals();renderWeight();toast(`⚖️ ${v.toFixed(1)} lbs logged!`);confetti(12);}
 function saveExercisePRs(){
   if(!S.exercise) S.exercise={dumbbellPress:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
   const g=id=>Math.max(0,parseFloat(document.getElementById(id)?.value)||0);
@@ -2355,6 +2400,7 @@ function logCircuitRounds(id){
   if(!S.customWorkoutLogs[tk])S.customWorkoutLogs[tk]={};
   S.customWorkoutLogs[tk][id]={rounds};
   save();
+  checkCustomGoals();
   renderCircuitsTab();
   toast(`✅ Logged ${rounds} round${rounds===1?'':'s'}!`);
 }
@@ -2396,6 +2442,81 @@ function renderCircuitsTab(){
       ${hist.length?`<div class="data-card-desc" style="margin-top:10px">Recent: ${hist.map(x=>`${x.rounds} (${x.date.slice(5)})`).join(' · ')}</div>`:''}
     </div>`;
   }).join('')+`<button class="btn-submit" onclick="openCircuitModal()">+ New Circuit</button>`;
+}
+
+// ── Custom Rewards (user-defined goals: circuit rounds or a weight target) ──
+let _goalType='circuit';
+function pickGoalType(type,btn){
+  _goalType=type;
+  document.querySelectorAll('#goalModalOverlay .type-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('goalCircuitFields').style.display=type==='circuit'?'block':'none';
+  document.getElementById('goalWeightFields').style.display=type==='weight'?'block':'none';
+}
+function openGoalModal(){
+  document.getElementById('gName').value='';
+  document.getElementById('gTargetRounds').value='';
+  document.getElementById('gTargetWeight').value='';
+  const sel=document.getElementById('gWorkoutId');
+  sel.innerHTML=(S.customWorkouts||[]).length
+    ?S.customWorkouts.map(w=>`<option value="${w.id}">${escapeHtml(w.name)}</option>`).join('')
+    :'<option value="">No circuits defined yet</option>';
+  pickGoalType('circuit',document.getElementById('goalTypeCircuitBtn'));
+  document.getElementById('goalModalOverlay').classList.add('open');
+}
+function saveCustomGoal(){
+  S.customGoals=S.customGoals||[];
+  if(_goalType==='circuit'){
+    const workoutId=document.getElementById('gWorkoutId').value;
+    const targetRounds=parseFloat(document.getElementById('gTargetRounds').value);
+    if(!workoutId||!targetRounds||targetRounds<=0){toast('Pick a circuit and a target rounds number.');return;}
+    const w=S.customWorkouts.find(x=>x.id===workoutId);
+    const name=document.getElementById('gName').value.trim()||`${targetRounds} rounds — ${w?w.name:'Circuit'}`;
+    S.customGoals.push({id:Date.now().toString(36),type:'circuit',name,workoutId,targetRounds,achieved:false,createdAt:todayKey()});
+  }else{
+    const targetWeight=parseFloat(document.getElementById('gTargetWeight').value);
+    if(!targetWeight||targetWeight<=0){toast('Enter a target weight.');return;}
+    const all=weightEntries();const latest=all.length?all[all.length-1].val:null;
+    const direction=(latest!=null&&targetWeight>latest)?'above':'below';
+    const name=document.getElementById('gName').value.trim()||`Reach ${targetWeight} lbs`;
+    S.customGoals.push({id:Date.now().toString(36),type:'weight',name,targetWeight,direction,achieved:false,createdAt:todayKey()});
+  }
+  save();
+  closeModal('goalModalOverlay');
+  checkCustomGoals();
+  renderRewards();
+  toast('🎯 Custom reward added!');
+}
+function deleteCustomGoal(id){
+  if(!confirm('Delete this custom reward?'))return;
+  S.customGoals=(S.customGoals||[]).filter(g=>g.id!==id);
+  save();
+  renderRewards();
+}
+function checkCustomGoals(){
+  let anyNew=false;
+  (S.customGoals||[]).forEach(g=>{
+    if(g.achieved)return;
+    let met=false;
+    if(g.type==='circuit'){
+      met=Object.keys(S.customWorkoutLogs).some(dk=>{
+        if(g.createdAt&&dk<g.createdAt)return false;
+        const entry=(S.customWorkoutLogs[dk]||{})[g.workoutId];
+        return entry&&entry.rounds>=g.targetRounds;
+      });
+    }else if(g.type==='weight'){
+      const all=weightEntries();const latest=all.length?all[all.length-1].val:null;
+      if(latest!=null)met=g.direction==='below'?latest<=g.targetWeight:latest>=g.targetWeight;
+    }
+    if(met){
+      g.achieved=true;g.achievedDate=todayKey();
+      S.user.packsBank=(S.user.packsBank||0)+1;
+      S.user.packHistory.unshift({date:todayKey(),count:1,type:'pack',reason:`🎯 ${g.name}`});
+      anyNew=true;
+      setTimeout(()=>{toast(`🎯 ${g.name} — achieved! 📦 Pack earned`);confetti(60);},600);
+    }
+  });
+  if(anyNew)save();
 }
 
 function closeModal(id){document.getElementById(id).classList.remove('open');}
@@ -2462,7 +2583,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-31.1245';
+const APP_VERSION = '2026-08-31.1400';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
@@ -2476,6 +2597,7 @@ checkProteinReminder();
 initQuoteSwipe();
 setTimeout(()=>maybeShowDailyQuote(),500);
 setTimeout(()=>checkWeeklyPacksAndMilestones(),100);
+setTimeout(()=>checkCustomGoals(),150);
 setTimeout(()=>checkForUpdate(),1500);
 
 // Re-render when app comes back into focus (date may have changed)
