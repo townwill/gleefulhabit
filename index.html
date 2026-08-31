@@ -122,6 +122,12 @@
   .sub-panel { display:none; }
   .sub-panel.active { display:block; }
 
+  .track-tabs { display:flex; gap:8px; margin-bottom:14px; }
+  .track-tab { flex:1; display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 6px; border-radius:var(--radius-sm); background:rgba(255,255,255,.04); border:1px solid var(--border); color:var(--text-muted); font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap; }
+  .track-tab.active { background:rgba(255,255,255,.09); border-color:rgba(255,255,255,.16); color:var(--text); }
+  .track-panel { display:none; }
+  .track-panel.active { display:block; }
+
   .habit-list { display:flex; flex-direction:column; gap:5px; }
   .habit-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:9px 14px; cursor:pointer; transition:border-color .3s,background .3s; position:relative; overflow:hidden; backdrop-filter:blur(24px); -webkit-tap-highlight-color:transparent; }
   .habit-card::before { content:''; position:absolute; inset:0; border-radius:var(--radius); opacity:0; transition:opacity .3s; background:var(--c-accent,rgba(0,212,255,.07)); }
@@ -641,14 +647,20 @@
     <div id="ranksSection"></div>
   </div>
 
-  <!-- WEIGHT -->
-  <div id="section-weight" class="section"><div id="weightContent"></div></div>
+  <!-- TRACKING (Weight / Circuits / Fitness Goals sub-tabs) -->
+  <div id="section-tracking" class="section">
+    <div class="track-tabs">
+      <button class="track-tab active" onclick="switchTrackingSubTab('weight',this)">⚖️ Weight</button>
+      <button class="track-tab" onclick="switchTrackingSubTab('circuits',this)">🏋️ Circuits</button>
+      <button class="track-tab" onclick="switchTrackingSubTab('fitness',this)">🏆 Fitness Goals</button>
+    </div>
+    <div class="track-panel active" id="panel-track-weight"><div id="weightContent"></div></div>
+    <div class="track-panel" id="panel-track-circuits"><div id="circuitsContent"></div></div>
+    <div class="track-panel" id="panel-track-fitness"><div id="fitnessContent"></div></div>
+  </div>
 
   <!-- PACKS -->
   <div id="section-rewards" class="section"><div id="rewardsContent"></div></div>
-
-  <!-- CIRCUITS -->
-  <div id="section-circuits" class="section"><div id="circuitsContent"></div></div>
 </div>
 
 <div class="tab-bar">
@@ -656,9 +668,8 @@
     <button class="tab-btn active" onclick="switchTab('today',this)"><span class="tab-icon">🏠</span><span>Today</span></button>
     <button class="tab-btn" onclick="switchTab('habits',this)"><span class="tab-icon">✅</span><span>✦ Habits</span></button>
     <button class="tab-btn" onclick="switchTab('protein',this)"><span class="tab-icon">🍗</span><span>Protein</span></button>
-    <button class="tab-btn" onclick="switchTab('circuits',this)"><span class="tab-icon">🏋️</span><span>Circuits</span></button>
     <button class="tab-btn" onclick="switchTab('stats',this)"><span class="tab-icon">📊</span><span>Stats</span></button>
-    <button class="tab-btn" onclick="switchTab('weight',this)"><span class="tab-icon">⚖️</span><span>Weight</span></button>
+    <button class="tab-btn" onclick="switchTab('tracking',this)"><span class="tab-icon">📈</span><span>Tracking</span></button>
     <button class="tab-btn" onclick="switchTab('rewards',this)"><span class="tab-icon">🎴</span><span>Packs</span></button>
   </div>
 </div>
@@ -1606,20 +1617,6 @@ function renderWeight(){
   </div>`;
   html+=`<div class="weight-entry-card"><div class="weight-entry-label">${loggedToday?'✓ Logged today — update':'Log today\'s weight'}</div><div class="weight-entry-row"><input class="weight-input-big" id="wInput" type="number" step="0.1" min="0" placeholder="${latest!=null?latest.toFixed(1):'0.0'}" value="${loggedToday?(S.weight.logs[tk]).toFixed(1):''}" onkeydown="if(event.key==='Enter')logWeight()"><button class="weight-log-btn" onclick="logWeight()">${loggedToday?'Update':'Log'}</button></div></div>`;
   html+=`<div class="weight-settings-card"><div class="weight-settings-title">⚙️ Goal Weight</div><div class="weight-entry-row"><input class="weight-input-big" id="wGoalInput" type="number" step="0.1" min="0" placeholder="e.g. 180" value="${goal!=null?goal.toFixed(1):''}" onkeydown="if(event.key==='Enter')saveWeightGoal()" style="font-size:18px;padding:10px"><button class="weight-log-btn" onclick="saveWeightGoal()">Set</button></div></div>`;
-  const ex = S.exercise || {};
-  const _m = S.user.milestones || {};
-  html+=`<div class="weight-settings-card"><div class="weight-settings-title">💪 Strength PRs</div>
-    <div class="pr-grid">
-      <div class="pr-row"><label>Dumbbell Press (reps @ 20lb)</label><input class="pr-input" id="prDumbbell" type="number" min="0" value="${ex.dumbbellPress||''}"></div>
-      ${_m.secret_dumbbell20 ? `<div class="pr-row"><label>Dumbbell Press (reps @ 25lb)</label><input class="pr-input" id="prDumbbell25" type="number" min="0" value="${ex.dumbbellPress25||''}"></div>` : ''}
-      <div class="pr-row"><label>Incline Push-ups (30°, reps)</label><input class="pr-input" id="prIncline" type="number" min="0" value="${ex.inclinePushups||''}"></div>
-      ${_m.secret_incline20 ? `<div class="pr-row"><label>Ground Push-ups (reps)</label><input class="pr-input" id="prGround" type="number" min="0" value="${ex.groundPushups||''}"></div>` : ''}
-      <div class="pr-row"><label>Dead Hang (seconds)</label><input class="pr-input" id="prHang" type="number" min="0" value="${ex.deadHangSec||''}"></div>
-      <div class="pr-row"><label>Plank (seconds)</label><input class="pr-input" id="prPlank" type="number" min="0" value="${ex.plankSec||''}"></div>
-      <div class="pr-row"><label>Jump Rope (seconds)</label><input class="pr-input" id="prJumprope" type="number" min="0" value="${ex.jumpRopeSec||''}"></div>
-    </div>
-    <button class="weight-log-btn" style="width:100%;margin-top:10px" onclick="saveExercisePRs()">Update PRs</button>
-  </div>`;
   if(all.length>=2){
     const rangeData=all.slice(-_weightRange),vals=rangeData.map(e=>e.val),minV=Math.min(...vals),maxV=Math.max(...vals);
     const pad=Math.max((maxV-minV)*.25,1.5),lo=minV-pad,hi=maxV+pad,W=300,H=110;
@@ -1650,6 +1647,23 @@ function renderWeight(){
     html+=`</div>`;
   }
   document.getElementById('weightContent').innerHTML=html;
+}
+function renderFitnessTab(){
+  const el=document.getElementById('fitnessContent');if(!el)return;
+  const ex=S.exercise||{},_m=S.user.milestones||{};
+  el.innerHTML=`<div class="weight-settings-card"><div class="weight-settings-title">💪 Strength PRs</div>
+    <div class="data-card-desc" style="margin-bottom:10px">Personal records — update whenever you beat one. Unlocks secret packs at key thresholds.</div>
+    <div class="pr-grid">
+      <div class="pr-row"><label>Dumbbell Press (reps @ 20lb)</label><input class="pr-input" id="prDumbbell" type="number" min="0" value="${ex.dumbbellPress||''}"></div>
+      ${_m.secret_dumbbell20 ? `<div class="pr-row"><label>Dumbbell Press (reps @ 25lb)</label><input class="pr-input" id="prDumbbell25" type="number" min="0" value="${ex.dumbbellPress25||''}"></div>` : ''}
+      <div class="pr-row"><label>Incline Push-ups (30°, reps)</label><input class="pr-input" id="prIncline" type="number" min="0" value="${ex.inclinePushups||''}"></div>
+      ${_m.secret_incline20 ? `<div class="pr-row"><label>Ground Push-ups (reps)</label><input class="pr-input" id="prGround" type="number" min="0" value="${ex.groundPushups||''}"></div>` : ''}
+      <div class="pr-row"><label>Dead Hang (seconds)</label><input class="pr-input" id="prHang" type="number" min="0" value="${ex.deadHangSec||''}"></div>
+      <div class="pr-row"><label>Plank (seconds)</label><input class="pr-input" id="prPlank" type="number" min="0" value="${ex.plankSec||''}"></div>
+      <div class="pr-row"><label>Jump Rope (seconds)</label><input class="pr-input" id="prJumprope" type="number" min="0" value="${ex.jumpRopeSec||''}"></div>
+    </div>
+    <button class="weight-log-btn" style="width:100%;margin-top:10px" onclick="saveExercisePRs()">Update PRs</button>
+  </div>`;
 }
 
 let _ranksExpanded = false;
@@ -2101,7 +2115,7 @@ function saveExercisePRs(){
   S.exercise.jumpRopeSec     = g('prJumprope');
   save();
   checkExerciseMilestones();
-  renderWeight();
+  renderFitnessTab();
   toast('💪 PRs updated!');
 }
 function checkExerciseMilestones(){
@@ -2394,10 +2408,18 @@ function switchTab(name,btn){
   // Lock body scroll on Today tab, free it on all others
   document.body.style.overflow = name==='today' ? 'hidden' : '';
   if(name==='stats')   renderStats();
-  if(name==='weight')  renderWeight();
   if(name==='rewards') renderRewards();
   if(name==='protein') renderProteinTab();
+  if(name==='tracking'){renderWeight();renderCircuitsTab();renderFitnessTab();}
+}
+function switchTrackingSubTab(name,btn){
+  document.querySelectorAll('.track-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.track-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-track-'+name).classList.add('active');
+  if(name==='weight')   renderWeight();
   if(name==='circuits') renderCircuitsTab();
+  if(name==='fitness')  renderFitnessTab();
 }
 
 let _toastTimer;
@@ -2440,7 +2462,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-31.1100';
+const APP_VERSION = '2026-08-31.1245';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
