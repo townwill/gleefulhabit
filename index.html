@@ -308,6 +308,11 @@
   .weight-history-val  { font-size:17px; font-weight:800; flex:1; }
   .weight-history-delta { font-size:12px; font-weight:700; flex-shrink:0; }
   .wd-up { color:var(--rose); } .wd-down { color:var(--lime); } .wd-same { color:var(--text-muted); }
+  .trend-block { margin-bottom:20px; }
+  .trend-block:last-child { margin-bottom:0; }
+  .trend-block-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  .trend-block-title { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; }
+  .trend-block-avg { font-size:12px; font-weight:800; }
 
   /* Stats */
   .stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
@@ -1084,8 +1089,10 @@ function weekSideQuestCount(days){
 function colorOf(id){return COLORS.find(c=>c.id===id)||COLORS[0];}
 function isDoneOnDate(hid,dk){const h=S.habits.find(x=>x.id===hid);if(!h)return false;const v=(S.logs[dk]||{})[hid];return h.type==='numeric'?(typeof v==='number'&&v>=(h.target||100)):v===true;}
 function isDoneToday(hid){return isDoneOnDate(hid,todayKey());}
-function numVal(hid){const v=(S.logs[todayKey()]||{})[hid];return typeof v==='number'?v:0;}
-function numEntries(hid){return(S.logEntries[todayKey()]||{})[hid]||[];}
+function numVal(hid){return numValOn(hid,todayKey());}
+function numEntries(hid){return numEntriesOn(hid,todayKey());}
+function numValOn(hid,dk){const v=(S.logs[dk]||{})[hid];return typeof v==='number'?v:0;}
+function numEntriesOn(hid,dk){return(S.logEntries[dk]||{})[hid]||[];}
 function isSideQuestDoneToday(sid){const s=S.sideQuests.find(x=>x.id===sid);if(!s)return false;if(s.cadence==='once')return!!S.sideQuestDone[sid];return!!((S.sideQuestLogs[todayKey()]||{})[sid]);}
 function currentStreak(hid){let streak=0;const now=new Date(),start=isDoneToday(hid)?0:1;for(let i=start;i<400;i++){const d=new Date(now);d.setDate(d.getDate()-i);const dk=dateKey(d);const done=isDoneOnDate(hid,dk);if(done){streak++;continue;}if((S.restDayLogs[dk]||{})[hid])continue;if(i>0||start===1)break;}return streak;}
 function restDaysUsedThisWeek(hid){const days=thisWeekDays();return days.filter(d=>(S.restDayLogs[dateKey(d)]||{})[hid]).length;}
@@ -1516,6 +1523,8 @@ function renderProteinTab(){
       ${rows}
     </div>
 
+    ${renderTrendsSection(h,c)}
+
     <div class="weight-settings-card">
       <div class="ai-key-header" onclick="toggleKeyPanel()">
         <span class="weight-settings-title" style="margin:0">🔑 AI API Key</span>
@@ -1619,6 +1628,69 @@ function initQuoteSwipe(){
   card.addEventListener('pointercancel', endDrag);
 }
 let _weightRange=30;
+let _trendsRange=14;
+function setTrendsRange(n){_trendsRange=n;renderProteinTab();}
+function trendsSeries(hid,days){
+  const h=S.habits.find(x=>x.id===hid);
+  const floorDate=h&&h.createdAt?new Date(h.createdAt+'T00:00:00'):null;
+  const now=new Date();now.setHours(0,0,0,0);
+  let n=days;
+  if(days>=9999){
+    n=floorDate?Math.min(730,Math.max(1,Math.round((now-floorDate)/86400000)+1)):90;
+  }
+  const out=[];
+  for(let i=n-1;i>=0;i--){
+    const d=new Date(now);d.setDate(d.getDate()-i);
+    if(floorDate&&d<floorDate)continue;
+    const dk=dateKey(d);
+    out.push({date:dk,protein:numValOn(hid,dk),sugar:addedSugarOn(hid,dk),calories:caloriesOn(hid,dk)});
+  }
+  return out;
+}
+function miniTrendChart(title,unit,hex,points,goal){
+  const vals=points.map(p=>p.v);
+  const sum=vals.reduce((a,b)=>a+b,0),loggedDays=vals.filter(v=>v>0).length;
+  const avg=points.length?sum/points.length:0;
+  const avgLabel=`avg ${avg%1===0?avg:avg.toFixed(1)}${unit}/day`;
+  if(points.length<2){
+    return `<div class="trend-block"><div class="trend-block-header"><span class="trend-block-title">${title}</span></div><div class="data-card-desc">Not enough data yet.</div></div>`;
+  }
+  const minV=Math.min(...vals,goal!=null?goal:Infinity),maxV=Math.max(...vals,goal!=null?goal:0,1);
+  const pad=Math.max((maxV-minV)*.25,maxV*.08,1);
+  const lo=Math.max(0,minV-pad),hi=maxV+pad,W=300,H=64;
+  const toX=i=>(i/Math.max(points.length-1,1))*W,toY=v=>H-((v-lo)/(hi-lo||1))*H;
+  function smoothPath(pts){if(pts.length<2)return'';let d=`M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;for(let i=1;i<pts.length;i++){const pv=pts[i-1],cu=pts[i];const cpx=(pv[0]+cu[0])/2;d+=` C ${cpx.toFixed(1)} ${pv[1].toFixed(1)}, ${cpx.toFixed(1)} ${cu[1].toFixed(1)}, ${cu[0].toFixed(1)} ${cu[1].toFixed(1)}`;}return d;}
+  const pts=points.map((p,i)=>[toX(i),toY(p.v)]),linePath=smoothPath(pts);
+  const areaPath=linePath+` L ${pts[pts.length-1][0].toFixed(1)} ${H} L ${pts[0][0].toFixed(1)} ${H} Z`;
+  const goalY=goal!=null?toY(goal):null,gradId='tr'+Math.random().toString(36).slice(2,7);
+  const labelIdxs=[0,Math.floor((points.length-1)/2),points.length-1].filter((v,i,a)=>a.indexOf(v)===i);
+  return `<div class="trend-block">
+    <div class="trend-block-header"><span class="trend-block-title">${title}</span><span class="trend-block-avg" style="color:${hex}">${avgLabel}</span></div>
+    <div class="weight-svg-wrap"><svg viewBox="-4 -8 ${W+8} ${H+26}" width="100%" style="overflow:visible">
+      <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${hex}" stop-opacity="0.18"/><stop offset="100%" stop-color="${hex}" stop-opacity="0"/></linearGradient></defs>
+      ${goalY!=null?`<line x1="0" y1="${goalY.toFixed(1)}" x2="${W}" y2="${goalY.toFixed(1)}" stroke="rgba(168,255,62,.35)" stroke-width="1.5" stroke-dasharray="5,4"/><text x="${W+2}" y="${(goalY+3).toFixed(1)}" font-size="7" fill="rgba(168,255,62,.6)" font-family="system-ui">target</text>`:''}
+      <path d="${areaPath}" fill="url(#${gradId})"/>
+      <path d="${linePath}" fill="none" stroke="${hex}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+      ${points.map((p,i)=>{const x=toX(i),y=toY(p.v),isToday=p.date===todayKey();return isToday?`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="white" stroke="${hex}" stroke-width="2"/>`:`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2" fill="${hex}" opacity="0.6"/>`;}).join('')}
+      ${labelIdxs.map(i=>{const p=points[i];const lbl=new Date(p.date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});const anchor=i===0?'start':i===points.length-1?'end':'middle';return`<text x="${toX(i).toFixed(1)}" y="${H+13}" font-size="7" fill="rgba(240,240,255,.3)" font-family="system-ui" text-anchor="${anchor}">${lbl}</text>`;}).join('')}
+    </svg></div>
+  </div>`;
+}
+function renderTrendsSection(h,c){
+  const data=trendsSeries(h.id,_trendsRange);
+  const proteinPts=data.map(d=>({date:d.date,v:d.protein})),sugarPts=data.map(d=>({date:d.date,v:d.sugar})),calPts=data.map(d=>({date:d.date,v:d.calories}));
+  return `<div class="weight-chart-card">
+    <div class="weight-chart-header"><div class="weight-chart-title">📈 Weekly Trends</div><div class="chart-range-toggle">
+      <button class="chart-range-btn ${_trendsRange===14?'sel':''}" onclick="setTrendsRange(14)">2W</button>
+      <button class="chart-range-btn ${_trendsRange===30?'sel':''}" onclick="setTrendsRange(30)">1M</button>
+      <button class="chart-range-btn ${_trendsRange===90?'sel':''}" onclick="setTrendsRange(90)">3M</button>
+      <button class="chart-range-btn ${_trendsRange===9999?'sel':''}" onclick="setTrendsRange(9999)">All</button>
+    </div></div>
+    ${miniTrendChart('Protein','g',c.hex,proteinPts,h.target||150)}
+    ${miniTrendChart('Added Sugar','g','#ff6b8a',sugarPts,null)}
+    ${miniTrendChart('Calories','cal','#ff9544',calPts,S.user.calorieGoal)}
+  </div>`;
+}
 
 function weightEntries(){return Object.entries(S.weight.logs).map(([d,v])=>({date:d,val:v})).sort((a,b)=>a.date.localeCompare(b.date));}
 function renderWeight(){
@@ -2064,12 +2136,14 @@ function addNumCore(id,amt,label,sugar,calories){
   }else S.logEntries[tk][id].push(+amt.toFixed(2));
   checkNumTarget(id,prev,next);save();return true;
 }
-function todaysAddedSugar(hid){
-  return numEntries(hid).reduce((sum,v)=>sum+(typeof v==='object'&&typeof v.sugar==='number'?v.sugar:0),0);
+function addedSugarOn(hid,dk){
+  return numEntriesOn(hid,dk).reduce((sum,v)=>sum+(typeof v==='object'&&typeof v.sugar==='number'?v.sugar:0),0);
 }
-function todaysCalories(hid){
-  return numEntries(hid).reduce((sum,v)=>sum+(typeof v==='object'&&typeof v.calories==='number'?v.calories:0),0);
+function caloriesOn(hid,dk){
+  return numEntriesOn(hid,dk).reduce((sum,v)=>sum+(typeof v==='object'&&typeof v.calories==='number'?v.calories:0),0);
 }
+function todaysAddedSugar(hid){ return addedSugarOn(hid,todayKey()); }
+function todaysCalories(hid){ return caloriesOn(hid,todayKey()); }
 function addNum(id){
   const inp=document.getElementById(`nadd-${id}`);const amt=parseFloat(inp?.value||0);
   if(!addNumCore(id,amt,null)){if(inp){inp.style.borderColor='#ff6464';setTimeout(()=>inp.style.borderColor='',900);}return;}
@@ -2602,7 +2676,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-09-01.0945';
+const APP_VERSION = '2026-09-01.1030';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
