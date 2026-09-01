@@ -896,6 +896,7 @@ const QUOTES = [
 ];
 
 const XP_PER_LEVEL = 500;
+const SUGAR_LIMIT_G = 10; // reference line on the Added Sugar trend chart, not yet a tracked goal
 
 function levelInfo(xp){
   const lv=Math.min(Math.floor(xp/XP_PER_LEVEL),20);
@@ -1647,7 +1648,7 @@ function trendsSeries(hid,days){
   }
   return out;
 }
-function miniTrendChart(title,unit,hex,points,goal){
+function miniTrendChart(title,unit,hex,points,goal,goalLabel,goalColor){
   const vals=points.map(p=>p.v);
   const sum=vals.reduce((a,b)=>a+b,0),loggedDays=vals.filter(v=>v>0).length;
   const avg=points.length?sum/points.length:0;
@@ -1663,12 +1664,14 @@ function miniTrendChart(title,unit,hex,points,goal){
   const pts=points.map((p,i)=>[toX(i),toY(p.v)]),linePath=smoothPath(pts);
   const areaPath=linePath+` L ${pts[pts.length-1][0].toFixed(1)} ${H} L ${pts[0][0].toFixed(1)} ${H} Z`;
   const goalY=goal!=null?toY(goal):null,gradId='tr'+Math.random().toString(36).slice(2,7);
+  const gc=goalColor||'168,255,62';
   const labelIdxs=[0,Math.floor((points.length-1)/2),points.length-1].filter((v,i,a)=>a.indexOf(v)===i);
   return `<div class="trend-block">
     <div class="trend-block-header"><span class="trend-block-title">${title}</span><span class="trend-block-avg" style="color:${hex}">${avgLabel}</span></div>
-    <div class="weight-svg-wrap"><svg viewBox="-4 -8 ${W+8} ${H+26}" width="100%" style="overflow:visible">
+    <div class="weight-svg-wrap"><svg viewBox="-22 -8 ${W+30} ${H+26}" width="100%" style="overflow:visible">
       <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${hex}" stop-opacity="0.18"/><stop offset="100%" stop-color="${hex}" stop-opacity="0"/></linearGradient></defs>
-      ${goalY!=null?`<line x1="0" y1="${goalY.toFixed(1)}" x2="${W}" y2="${goalY.toFixed(1)}" stroke="rgba(168,255,62,.35)" stroke-width="1.5" stroke-dasharray="5,4"/><text x="${W+2}" y="${(goalY+3).toFixed(1)}" font-size="7" fill="rgba(168,255,62,.6)" font-family="system-ui">target</text>`:''}
+      ${[0,.5,1].map(t=>{const v=lo+t*(hi-lo),y=toY(v);return`<text x="-6" y="${(y+3).toFixed(1)}" font-size="7.5" fill="rgba(240,240,255,.28)" font-family="system-ui" text-anchor="end">${v%1===0?v:v.toFixed(1)}</text><line x1="0" y1="${y.toFixed(1)}" x2="${W}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,.04)" stroke-width="1"/>`;}).join('')}
+      ${goalY!=null?`<line x1="0" y1="${goalY.toFixed(1)}" x2="${W}" y2="${goalY.toFixed(1)}" stroke="rgba(${gc},.4)" stroke-width="1.5" stroke-dasharray="5,4"/><text x="${W+2}" y="${(goalY+3).toFixed(1)}" font-size="7" fill="rgba(${gc},.7)" font-family="system-ui">${goalLabel||'target'} ${goal%1===0?goal:goal.toFixed(1)}</text>`:''}
       <path d="${areaPath}" fill="url(#${gradId})"/>
       <path d="${linePath}" fill="none" stroke="${hex}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
       ${points.map((p,i)=>{const x=toX(i),y=toY(p.v),isToday=p.date===todayKey();return isToday?`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="white" stroke="${hex}" stroke-width="2"/>`:`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2" fill="${hex}" opacity="0.6"/>`;}).join('')}
@@ -1686,9 +1689,9 @@ function renderTrendsSection(h,c){
       <button class="chart-range-btn ${_trendsRange===90?'sel':''}" onclick="setTrendsRange(90)">3M</button>
       <button class="chart-range-btn ${_trendsRange===9999?'sel':''}" onclick="setTrendsRange(9999)">All</button>
     </div></div>
-    ${miniTrendChart('Protein','g',c.hex,proteinPts,h.target||150)}
-    ${miniTrendChart('Added Sugar','g','#ff6b8a',sugarPts,null)}
-    ${miniTrendChart('Calories','cal','#ff9544',calPts,S.user.calorieGoal)}
+    ${miniTrendChart('Protein','g',c.hex,proteinPts,h.target||150,'target')}
+    ${miniTrendChart('Added Sugar','g','#ff6b8a',sugarPts,SUGAR_LIMIT_G,'limit','255,107,138')}
+    ${miniTrendChart('Calories','cal','#ff9544',calPts,S.user.calorieGoal,'goal')}
   </div>`;
 }
 
@@ -2676,7 +2679,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-09-01.1030';
+const APP_VERSION = '2026-09-01.1100';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
