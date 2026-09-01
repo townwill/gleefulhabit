@@ -1887,7 +1887,26 @@ function renderRewards(){
     {key:'wt_mythic_goal', icon:'🏵️', title:'Goal Weight — Celebrini Young Guns', val:wLost, max:wGoalRange2, desc:wGoal!=null?`${wLost.toFixed(1)} lbs lost of ${wGoalRange2.toFixed(1)} needed`:'Set a goal weight first', cadence:'One-Time'},
   ];
   html+=mythics.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title} <span class="milestone-cadence">${b.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%;background:linear-gradient(90deg,var(--rose),var(--purple))"></div></div>${e?'<div class="milestone-earned-tag" style="background:rgba(255,107,138,.12);color:var(--rose)">✓ Mythic Box Earned</div>':''}</div>`;}).join('');
-  html+=`</div><div class="rewards-section-label">🔒 Secret Achievements</div><div class="milestone-grid">`;
+  html+=`</div>`;
+  const customGoals=S.customGoals||[];
+  html+=`<div class="rewards-section-label">🎯 Custom Rewards</div>`;
+  if(customGoals.length){
+    html+=`<div class="milestone-grid">`+customGoals.map(g=>{
+      let desc='';
+      if(g.type==='circuit'){
+        const w=S.customWorkouts.find(x=>x.id===g.workoutId);
+        const best=Math.max(0,...Object.keys(S.customWorkoutLogs).filter(dk=>!g.createdAt||dk>=g.createdAt).map(dk=>((S.customWorkoutLogs[dk]||{})[g.workoutId]||{}).rounds||0));
+        desc=`${w?escapeHtml(w.name):'Circuit (deleted)'} · best ${best}/${g.targetRounds} rounds`;
+      }else{
+        const w=S.customWorkouts.find(x=>x.id===g.workoutId);
+        const ex=w&&w.exercises.find(e=>e.name===g.exerciseName);
+        desc=`${w?escapeHtml(w.name):'Circuit (deleted)'} · ${escapeHtml(g.exerciseName)} · currently ${ex&&ex.weight?escapeHtml(ex.weight):'—'} · target ${g.targetWeight}`;
+      }
+      return `<div class="milestone-card ${g.achieved?'earned':''}"><div class="milestone-icon">${g.type==='circuit'?'🏋️':'💪'}</div><div class="milestone-title">${escapeHtml(g.name)}</div><div class="milestone-desc">${g.achieved?'✓ Achieved!':desc}</div>${g.achieved?'<div class="milestone-earned-tag">✓ Pack Earned</div>':''}<button class="circuit-icon-btn" style="margin-top:8px" onclick="event.stopPropagation();deleteCustomGoal('${g.id}')" title="Delete">🗑️</button></div>`;
+    }).join('')+`</div>`;
+  }
+  html+=`<button class="btn-submit" style="margin-bottom:20px" onclick="openGoalModal()">+ New Custom Reward</button>`;
+  html+=`<div class="rewards-section-label">🔒 Secret Achievements</div><div class="milestone-grid">`;
   const prCategories = [
     {tier1:{key:'secret_dumbbell20', label:'20 reps @ 20lb dumbbell press! 💪'}, tier2:{key:'secret_dumbbell25', label:'20 reps @ 25lb dumbbell press! 💪'}},
     {tier1:{key:'secret_incline20',  label:'20 incline push-ups! 💪'},           tier2:{key:'secret_ground15',   label:'15 ground push-ups! 💪'}},
@@ -1915,24 +1934,6 @@ function renderRewards(){
     const icon=meta?meta[0]:'📦', lbl=meta?meta[1]:(h.count===1?'1 Pack':`${h.count} Packs`);
     return`<div class="history-item ${h.redeemed?'redeemed':''}"><div class="history-icon">${icon}</div><div class="history-info"><div class="history-reason">${h.reason}</div><div class="history-date">${h.date}${h.redeemed?' · Redeemed':''}</div></div><div class="history-count">${h.redeemed?'✓':'+'+lbl}</div></div>`;
   }).join('');html+=`</div>`;}
-  const customGoals=S.customGoals||[];
-  html+=`<div class="rewards-section-label">🎯 Custom Rewards</div>`;
-  if(customGoals.length){
-    html+=`<div class="milestone-grid">`+customGoals.map(g=>{
-      let desc='';
-      if(g.type==='circuit'){
-        const w=S.customWorkouts.find(x=>x.id===g.workoutId);
-        const best=Math.max(0,...Object.keys(S.customWorkoutLogs).filter(dk=>!g.createdAt||dk>=g.createdAt).map(dk=>((S.customWorkoutLogs[dk]||{})[g.workoutId]||{}).rounds||0));
-        desc=`${w?escapeHtml(w.name):'Circuit (deleted)'} · best ${best}/${g.targetRounds} rounds`;
-      }else{
-        const w=S.customWorkouts.find(x=>x.id===g.workoutId);
-        const ex=w&&w.exercises.find(e=>e.name===g.exerciseName);
-        desc=`${w?escapeHtml(w.name):'Circuit (deleted)'} · ${escapeHtml(g.exerciseName)} · currently ${ex&&ex.weight?escapeHtml(ex.weight):'—'} · target ${g.targetWeight}`;
-      }
-      return `<div class="milestone-card ${g.achieved?'earned':''}"><div class="milestone-icon">${g.type==='circuit'?'🏋️':'💪'}</div><div class="milestone-title">${escapeHtml(g.name)}</div><div class="milestone-desc">${g.achieved?'✓ Achieved!':desc}</div>${g.achieved?'<div class="milestone-earned-tag">✓ Pack Earned</div>':''}<button class="circuit-icon-btn" style="margin-top:8px" onclick="event.stopPropagation();deleteCustomGoal('${g.id}')" title="Delete">🗑️</button></div>`;
-    }).join('')+`</div>`;
-  }
-  html+=`<button class="btn-submit" style="margin-bottom:20px" onclick="openGoalModal()">+ New Custom Reward</button>`;
   document.getElementById('rewardsContent').innerHTML=html;
 }
 
@@ -2601,7 +2602,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-08-31.1600';
+const APP_VERSION = '2026-09-01.0900';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
