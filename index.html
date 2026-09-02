@@ -128,6 +128,12 @@
   .track-panel { display:none; }
   .track-panel.active { display:block; }
 
+  .macro-tabs { display:flex; gap:8px; margin-bottom:14px; }
+  .macro-tab { flex:1; display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 6px; border-radius:var(--radius-sm); background:rgba(255,255,255,.04); border:1px solid var(--border); color:var(--text-muted); font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap; }
+  .macro-tab.active { background:rgba(255,255,255,.09); border-color:rgba(255,255,255,.16); color:var(--text); }
+  .macro-panel { display:none; }
+  .macro-panel.active { display:block; }
+
   .habit-list { display:flex; flex-direction:column; gap:5px; }
   .habit-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:9px 14px; cursor:pointer; transition:border-color .3s,background .3s; position:relative; overflow:hidden; backdrop-filter:blur(24px); -webkit-tap-highlight-color:transparent; }
   .habit-card::before { content:''; position:absolute; inset:0; border-radius:var(--radius); opacity:0; transition:opacity .3s; background:var(--c-accent,rgba(0,212,255,.07)); }
@@ -203,10 +209,10 @@
   .ai-key-chevron { font-size:11px; color:var(--text-muted); }
   .ai-key-panel { display:none; }
   .ai-key-panel.open { display:block; }
-  .quickfood-wrap { display:flex; flex-wrap:wrap; gap:8px; }
-  .quickfood-chip { display:flex; align-items:center; gap:7px; padding:7px 10px; border-radius:20px; background:rgba(255,255,255,.06); border:1px solid var(--border); }
+  .quickfood-wrap { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .quickfood-chip { display:flex; align-items:center; gap:7px; padding:7px 10px; border-radius:14px; background:rgba(255,255,255,.06); border:1px solid var(--border); min-width:0; }
   .quickfood-chip.starred { border-color:rgba(255,229,92,.4); background:rgba(255,229,92,.08); }
-  .quickfood-chip .qf-add { background:none; border:none; color:var(--text); font:inherit; font-size:12px; font-weight:600; cursor:pointer; padding:0; }
+  .quickfood-chip .qf-add { flex:1; min-width:0; text-align:left; background:none; border:none; color:var(--text); font:inherit; font-size:12px; font-weight:600; cursor:pointer; padding:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .quickfood-chip .qf-star { opacity:.5; cursor:pointer; padding:0 1px; font-size:12px; flex-shrink:0; }
   .quickfood-chip .qf-star.active { opacity:1; }
   .quickfood-chip .qf-edit { opacity:.45; cursor:pointer; padding:0 1px; font-size:11px; flex-shrink:0; }
@@ -640,8 +646,15 @@
     <div class="version-footer" id="versionFooter"></div>
   </div>
 
-  <!-- PROTEIN -->
-  <div id="section-protein" class="section"><div id="proteinContent"></div></div>
+  <!-- MACROS (Log / Trends sub-tabs) -->
+  <div id="section-protein" class="section">
+    <div class="macro-tabs">
+      <button class="macro-tab active" onclick="switchMacroSubTab('log',this)">🍗 Log</button>
+      <button class="macro-tab" onclick="switchMacroSubTab('trends',this)">📈 Trends</button>
+    </div>
+    <div class="macro-panel active" id="panel-macro-log"><div id="proteinContent"></div></div>
+    <div class="macro-panel" id="panel-macro-trends"><div id="macroTrendsContent"></div></div>
+  </div>
 
   <!-- STATS -->
   <div id="section-stats" class="section">
@@ -672,7 +685,7 @@
   <div class="tab-bar-inner">
     <button class="tab-btn active" onclick="switchTab('today',this)"><span class="tab-icon">🏠</span><span>Today</span></button>
     <button class="tab-btn" onclick="switchTab('habits',this)"><span class="tab-icon">✅</span><span>✦ Habits</span></button>
-    <button class="tab-btn" onclick="switchTab('protein',this)"><span class="tab-icon">🍗</span><span>Protein</span></button>
+    <button class="tab-btn" onclick="switchTab('protein',this)"><span class="tab-icon">🍗</span><span>Macros</span></button>
     <button class="tab-btn" onclick="switchTab('stats',this)"><span class="tab-icon">📊</span><span>Stats</span></button>
     <button class="tab-btn" onclick="switchTab('tracking',this)"><span class="tab-icon">📈</span><span>Tracking</span></button>
     <button class="tab-btn" onclick="switchTab('rewards',this)"><span class="tab-icon">🎴</span><span>Packs</span></button>
@@ -896,7 +909,7 @@ const QUOTES = [
 ];
 
 const XP_PER_LEVEL = 500;
-const SUGAR_LIMIT_G = 10; // reference line on the Added Sugar trend chart, not yet a tracked goal
+const SUGAR_LIMIT_G = 15; // daily added-sugar goal — Less Sugar auto-completes when today's total is at or under this
 
 function levelInfo(xp){
   const lv=Math.min(Math.floor(xp/XP_PER_LEVEL),20);
@@ -942,7 +955,7 @@ function blankState() {
       packsBank:0,hangersBank:0,blastersBank:0,megaBank:0,hobbyBank:0,superBank:0,mythicBank:0,
       packHistory:[],weeklyPacksAwarded:{},weeklyPackFlags:{},
       consecutivePackWeeks:0,lastPackWeek:null,milestones:{},
-      perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null,favoriteQuotes:[],lastQuotePeriod:null,lastQuoteData:null,milestonesRedeemed:{},blasterAnchorMonth:null,calorieGoal:null},
+      perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null,favoriteQuotes:[],lastQuotePeriod:null,lastQuoteData:null,milestonesRedeemed:{},blasterAnchorMonth:null,calorieGoal:null,sugarAutoCalcSince:null},
   };
 }
 
@@ -1017,6 +1030,19 @@ function migrateState(raw) {
     }
     raw.user._sugarTaperSeeded = true;
   }
+  if (raw.user.sugarAutoCalcSince===undefined) raw.user.sugarAutoCalcSince=null;
+  if (raw.habits && !raw.user._lessSugarActivated) {
+    const d = new Date();
+    const todayStr = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const sugarHabit = raw.habits.find(h=>/sugar/i.test(h.name));
+    if (sugarHabit) {
+      // Auto-completion (added sugar logged that day <= SUGAR_LIMIT_G) takes over
+      // from today forward only — past manually-recorded days/streaks are untouched.
+      if (sugarHabit.name === 'No Sugar') sugarHabit.name = 'Less Sugar';
+      raw.user.sugarAutoCalcSince = todayStr;
+    }
+    raw.user._lessSugarActivated = true;
+  }
   if (!raw.weight)                   raw.weight=blankState().weight;
   if (!raw.weight.logs)              raw.weight.logs={};
   if (!raw.weight.unit)              raw.weight.unit='lbs';
@@ -1054,19 +1080,30 @@ function monthlyTargetPct(){
 function monthCompletionStats(daysSoFar){
   const now=new Date();let done=0,possible=0;
   for(let i=1;i<=daysSoFar;i++){
-    const d=new Date(now.getFullYear(),now.getMonth(),i),dk=dateKey(d),log=S.logs[dk]||{};
+    const d=new Date(now.getFullYear(),now.getMonth(),i),dk=dateKey(d);
     const activeHabits=S.habits.filter(h=>(h.createdAt||'2000-01-01')<=dk);
     possible+=activeHabits.length;
-    for(const h of activeHabits) if(h.type==='numeric'?(typeof log[h.id]==='number'&&log[h.id]>=(h.target||100)):log[h.id]===true) done++;
+    for(const h of activeHabits) if(habitDoneOn(h,dk)) done++;
   }
   return {done,possible};
+}
+function isLessSugarHabit(h){return !!h && h.type!=='numeric' && /sugar/i.test(h.name);}
+function sugarLoggedOn(dk){const p=S.habits.find(isProteinHabit);return p?addedSugarOn(p.id,dk):0;}
+// Single source of truth for "was this habit done on this day" - numeric habits
+// compare their logged total to target; Less Sugar auto-completes from
+// S.user.sugarAutoCalcSince forward (see migrateState); everything else falls
+// back to the manually-recorded boolean flag.
+function habitDoneOn(h,dk){
+  if(h.type==='numeric'){const v=(S.logs[dk]||{})[h.id];return typeof v==='number'&&v>=(h.target||100);}
+  if(isLessSugarHabit(h)&&S.user.sugarAutoCalcSince&&dk>=S.user.sugarAutoCalcSince)return sugarLoggedOn(dk)<=SUGAR_LIMIT_G;
+  return (S.logs[dk]||{})[h.id]===true;
 }
 function weekKeyFor(d){const date=new Date(d.getTime());date.setHours(0,0,0,0);date.setDate(date.getDate()+3-(date.getDay()+6)%7);const week1=new Date(date.getFullYear(),0,4);const weekNum=1+Math.round(((date.getTime()-week1.getTime())/86400000-3+(week1.getDay()+6)%7)/7);return`${date.getFullYear()}-W${String(weekNum).padStart(2,'0')}`;}
 function isoWeek(){return weekKeyFor(new Date());}
 function thisWeekDays(){const now=new Date(),mon=new Date(now);const dow=now.getDay();const diffToMon=dow===0?-6:1-dow;mon.setDate(now.getDate()+diffToMon);mon.setHours(0,0,0,0);return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});}
-function isDayComplete(dk){if(!S.habits.length)return false;const log=S.logs[dk]||{};return S.habits.every(h=>h.type==='numeric'?(typeof log[h.id]==='number'&&log[h.id]>=(h.target||100)):log[h.id]===true);}
+function isDayComplete(dk){if(!S.habits.length)return false;return S.habits.every(h=>habitDoneOn(h,dk));}
 function weekCompleteDays(days){return days.filter(d=>isDayComplete(dateKey(d))).length;}
-function daySatisfiedWithRest(dk){if(!S.habits.length)return false;const log=S.logs[dk]||{},rest=S.restDayLogs[dk]||{};return S.habits.every(h=>{const done=h.type==='numeric'?(typeof log[h.id]==='number'&&log[h.id]>=(h.target||100)):log[h.id]===true;if(done)return true;return !!(h.restEligible&&rest[h.id]);});}
+function daySatisfiedWithRest(dk){if(!S.habits.length)return false;const rest=S.restDayLogs[dk]||{};return S.habits.every(h=>{if(habitDoneOn(h,dk))return true;return !!(h.restEligible&&rest[h.id]);});}
 function dayRestSkipCount(dk){const rest=S.restDayLogs[dk]||{};return S.habits.filter(h=>h.restEligible&&rest[h.id]).length;}
 function isHalfPerfect(days3){
   if(!days3.every(d=>daySatisfiedWithRest(dateKey(d))))return false;
@@ -1088,7 +1125,7 @@ function weekSideQuestCount(days){
   return n;
 }
 function colorOf(id){return COLORS.find(c=>c.id===id)||COLORS[0];}
-function isDoneOnDate(hid,dk){const h=S.habits.find(x=>x.id===hid);if(!h)return false;const v=(S.logs[dk]||{})[hid];return h.type==='numeric'?(typeof v==='number'&&v>=(h.target||100)):v===true;}
+function isDoneOnDate(hid,dk){const h=S.habits.find(x=>x.id===hid);if(!h)return false;return habitDoneOn(h,dk);}
 function isDoneToday(hid){return isDoneOnDate(hid,todayKey());}
 function numVal(hid){return numValOn(hid,todayKey());}
 function numEntries(hid){return numEntriesOn(hid,todayKey());}
@@ -1379,7 +1416,15 @@ function habitCardHTML(h){
       restHTML=`<button class="rest-day-mini" onclick="event.stopPropagation();markRestDay('${h.id}')" title="Mark exception day (${left} left this week)">🎟️<span class="rest-day-mini-count">${left}</span></button>`;
     }
   }
+  const isAutoSugar=isLessSugarHabit(h)&&S.user.sugarAutoCalcSince&&todayKey()>=S.user.sugarAutoCalcSince;
   let numHTML='',miniProgressHTML='';
+  if(isAutoSugar){
+    const sugarToday=sugarLoggedOn(todayKey()),pct=Math.min(sugarToday/SUGAR_LIMIT_G*100,100),over=sugarToday>SUGAR_LIMIT_G;
+    miniProgressHTML=`<div class="habit-mini-progress" title="${sugarToday}/${SUGAR_LIMIT_G}g added sugar today">
+      <div class="habit-mini-progress-num" style="color:${over?'#ff6b8a':c.hex}">${sugarToday}/${SUGAR_LIMIT_G}g</div>
+      <div class="habit-mini-progress-track"><div class="habit-mini-progress-fill" style="width:${pct}%;background:${over?'#ff6b8a':c.hex}"></div></div>
+    </div>`;
+  }
   if(h.type==='numeric'){
     const total=numVal(h.id),tgt=h.target||100,pct=Math.min(total/tgt*100,100),entries=numEntries(h.id),compact=isProteinHabit(h);
     miniProgressHTML=`<div class="habit-mini-progress" title="${total}/${tgt}${h.unit?' '+h.unit:''}">
@@ -1402,15 +1447,18 @@ function habitCardHTML(h){
       </div>`;
     }
   }
-  return `<div class="habit-card ${done?'completed':''}" id="hc-${h.id}" style="--c-hex:${c.hex};--c-rgb:${c.rgb};--c-accent:rgba(${c.rgb},.07)" onclick="toggleHabit('${h.id}')">
+  const noteText=isAutoSugar?`Auto-tracked from food log · goal ≤${SUGAR_LIMIT_G}g/day`:(taperNoteFor(h)||h.note);
+  const cardClick=isAutoSugar?`autoTrackedNotice('${h.id}')`:`toggleHabit('${h.id}')`;
+  return `<div class="habit-card ${done?'completed':''}" id="hc-${h.id}" style="--c-hex:${c.hex};--c-rgb:${c.rgb};--c-accent:rgba(${c.rgb},.07)" onclick="${cardClick}">
     <div class="habit-card-top">
       <div class="habit-icon">${renderIcon(h.icon)}</div>
-      <div class="habit-info"><div class="habit-name">${h.name}</div><div class="habit-streak">${streakStr}</div>${(taperNoteFor(h)||h.note)?`<div class="habit-note">${escapeHtml(taperNoteFor(h)||h.note)}</div>`:''}</div>
+      <div class="habit-info"><div class="habit-name">${h.name}</div><div class="habit-streak">${streakStr}</div>${noteText?`<div class="habit-note">${escapeHtml(noteText)}</div>`:''}</div>
       ${miniProgressHTML}
       ${restHTML}
       <div class="habit-check" style="${done?`background:${c.hex};border-color:${c.hex}`:''}"> ${done?'✓':''}</div>
     </div>${numHTML}</div>`;
 }
+function autoTrackedNotice(id){const h=S.habits.find(x=>x.id===id);toast(`🍬 ${h?h.name:'This habit'} is auto-tracked from your food log — log food in the Macros tab.`);}
 
 function sideQuestCardHTML(s){const dt=isSideQuestDoneToday(s.id),forever=s.cadence==='once'&&dt;const cls=forever?'s-done-forever':dt?'s-done':'';const status=forever?'✦ Completed!':dt?'✦ Done today':s.cadence==='once'?'Tap to complete':'Tap when done';return`<div class="side-quest-card ${cls}" id="sc-${s.id}" onclick="toggleSideQuest('${s.id}')"><div class="side-quest-bonus">+5 XP bonus</div><div class="side-quest-card-top"><div class="side-quest-icon">${s.icon}</div><div class="side-quest-info"><div class="side-quest-name">${s.name}</div><div class="side-quest-meta"><span class="side-quest-cadence-pill ${s.cadence==='once'?'once':''}">${s.cadence==='once'?'one & done':'daily'}</span><span>${status}</span></div></div><div class="side-quest-check">${dt?'✓':''}</div></div></div>`;}
 
@@ -1459,7 +1507,8 @@ function renderProteinTab(){
     return;
   }
   const c=colorOf(h.color),total=numVal(h.id),tgt=h.target||150,pct=Math.min(total/tgt*100,100),
-    streak=currentStreak(h.id),entries=numEntries(h.id),unit=h.unit?' '+h.unit:'',addedSugar=todaysAddedSugar(h.id),
+    entries=numEntries(h.id),unit=h.unit?' '+h.unit:'',addedSugar=todaysAddedSugar(h.id),
+    sugarPct=Math.min(addedSugar/SUGAR_LIMIT_G*100,100),sugarOver=addedSugar>SUGAR_LIMIT_G,
     calToday=todaysCalories(h.id),calGoal=S.user.calorieGoal,calPct=calGoal?Math.min(calToday/calGoal*100,100):0;
   const rows=entries.length?entries.slice().reverse().map(v=>typeof v==='object'
     ?`<div class="food-log-row"><span class="food-log-amt" style="--c-hex:${c.hex}">+${v.amt}${unit}</span><span class="food-log-label">${escapeHtml(v.label)}${typeof v.sugar==='number'&&v.sugar>0?` · 🍬${v.sugar}g added sugar`:''}${typeof v.calories==='number'&&v.calories>0?` · 🔥${v.calories}cal`:''}</span></div>`
@@ -1477,35 +1526,17 @@ function renderProteinTab(){
     </div>`:'';
   el.innerHTML=`
     <div class="weight-hero">
-      <div style="line-height:1"><span class="weight-current-num" style="background:linear-gradient(135deg,${c.hex},var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${total}</span><span class="weight-unit-lbl">${h.unit||'g'} / ${tgt}</span></div>
+      <div style="line-height:1"><span class="weight-current-num" style="background:linear-gradient(135deg,${c.hex},var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${total}</span><span class="weight-unit-lbl">${h.unit||'g'}</span></div>
       <div class="weight-delta ${pct>=100?'good':'neutral'}">${pct>=100?'🎯 Target hit today!':`${Math.round(pct)}% of today's target`}</div>
       <div class="weight-stats-row">
-        <div class="wstat"><div class="wstat-val">${tgt}${unit}</div><div class="wstat-lbl">Daily Target</div></div>
-        <div class="wstat"><div class="wstat-val">${entries.length}</div><div class="wstat-lbl">Logged Today</div></div>
-        <div class="wstat"><div class="wstat-val">${streak}</div><div class="wstat-lbl">Day Streak</div></div>
-        <div class="wstat"><div class="wstat-val">🍬${addedSugar}g</div><div class="wstat-lbl">Added Sugar</div></div>
+        <div class="wstat"><div class="wstat-val">🔥${calToday}</div><div class="wstat-lbl">Calories${calGoal!=null?` / ${calGoal}`:''}</div></div>
+        <div class="wstat"><div class="wstat-val" style="${sugarOver?'color:var(--rose)':''}">🍬${addedSugar}g</div><div class="wstat-lbl">Sugar / ${SUGAR_LIMIT_G}g</div></div>
       </div>
-      <div class="weight-goal-track"><div class="weight-goal-labels"><span>0${unit}</span><span>${Math.round(pct)}%</span><span>${tgt}${unit}</span></div><div class="weight-goal-bar"><div class="weight-goal-fill" style="width:${pct}%;background:linear-gradient(90deg,${c.hex},var(--pink))"></div></div></div>
-    </div>
-    <div class="weight-settings-card">
-      <div class="weight-settings-title">🔥 Calories</div>
-      <div class="weight-entry-row">
-        <input class="weight-input-big" id="calGoalInput" type="number" min="0" step="1" placeholder="daily goal" value="${calGoal!=null?calGoal:''}" style="font-size:18px;padding:10px" onkeydown="if(event.key==='Enter')saveCalorieGoal()">
-        <button class="weight-log-btn" onclick="saveCalorieGoal()">Set</button>
-      </div>
-      ${calGoal!=null?`<div class="weight-goal-track"><div class="weight-goal-labels"><span>0</span><span>${calToday} / ${calGoal} cal</span><span>${Math.round(calPct)}%</span></div><div class="weight-goal-bar"><div class="weight-goal-fill" style="width:${calPct}%;background:linear-gradient(90deg,var(--orange),var(--yellow))"></div></div></div>`
-        :`<div class="data-card-desc" style="margin-top:8px">${calToday} cal logged today. Set a daily goal above to track progress.</div>`}
+      <div class="weight-goal-track"><div class="weight-goal-bar"><div class="weight-goal-fill" style="width:${pct}%;background:linear-gradient(90deg,${c.hex},var(--pink))"></div></div></div>
+      ${calGoal!=null?`<div class="weight-goal-track"><div class="weight-goal-bar"><div class="weight-goal-fill" style="width:${calPct}%;background:linear-gradient(90deg,var(--orange),var(--yellow))"></div></div></div>`:''}
+      <div class="weight-goal-track"><div class="weight-goal-bar"><div class="weight-goal-fill" style="width:${sugarPct}%;background:${sugarOver?'var(--rose)':'linear-gradient(90deg,var(--rose),var(--orange))'}"></div></div></div>
     </div>
     ${quickAddHTML}
-    <div class="weight-entry-card">
-      <div class="weight-entry-label">Add Protein</div>
-      <div class="weight-entry-row">
-        <input class="weight-input-big" id="padd-${h.id}" type="number" min="0" step="any" placeholder="grams" style="font-size:20px" onkeydown="if(event.key==='Enter'){addProteinEntry('${h.id}');event.preventDefault();}">
-        <button class="weight-log-btn" style="background:${c.hex};color:#0a0a14" onclick="addProteinEntry('${h.id}')">Add</button>
-      </div>
-      <button class="num-reset-btn" style="margin-top:10px;width:auto;border-radius:var(--radius-sm);padding:6px 12px;font-size:11px;font-weight:700" onclick="resetNum('${h.id}')" title="Reset today">↺ Reset today</button>
-    </div>
-
     <div class="weight-settings-card">
       <div class="weight-settings-title">📷 Log Food With AI</div>
       <img class="ai-log-thumb" id="ailog-thumb-${h.id}">
@@ -1519,12 +1550,29 @@ function renderProteinTab(){
       <div class="ai-log-result" id="ailog-result-${h.id}" style="--c-hex:${c.hex};--c-rgb:${c.rgb}"></div>
     </div>
 
+    <div class="weight-entry-card">
+      <div class="weight-entry-label">Add Protein</div>
+      <div class="weight-entry-row">
+        <input class="weight-input-big" id="padd-${h.id}" type="number" min="0" step="any" placeholder="grams" style="font-size:20px" onkeydown="if(event.key==='Enter'){addProteinEntry('${h.id}');event.preventDefault();}">
+        <button class="weight-log-btn" style="background:${c.hex};color:#0a0a14" onclick="addProteinEntry('${h.id}')">Add</button>
+      </div>
+      <button class="num-reset-btn" style="margin-top:10px;width:auto;border-radius:var(--radius-sm);padding:6px 12px;font-size:11px;font-weight:700" onclick="resetNum('${h.id}')" title="Reset today">↺ Reset today</button>
+    </div>
+
     <div class="weight-settings-card">
       <div class="weight-settings-title">🍽️ Today's Food Log</div>
       ${rows}
     </div>
 
-    ${renderTrendsSection(h,c)}
+    <div class="weight-settings-card">
+      <div class="weight-settings-title">🔥 Calories Goal</div>
+      <div class="weight-entry-row">
+        <input class="weight-input-big" id="calGoalInput" type="number" min="0" step="1" placeholder="daily goal" value="${calGoal!=null?calGoal:''}" style="font-size:18px;padding:10px" onkeydown="if(event.key==='Enter')saveCalorieGoal()">
+        <button class="weight-log-btn" onclick="saveCalorieGoal()">Set</button>
+      </div>
+      ${calGoal!=null?`<div class="data-card-desc" style="margin-top:8px">${calToday} / ${calGoal} cal today (${Math.round(calPct)}%)</div>`
+        :`<div class="data-card-desc" style="margin-top:8px">${calToday} cal logged today. Set a daily goal above to track progress.</div>`}
+    </div>
 
     <div class="weight-settings-card">
       <div class="ai-key-header" onclick="toggleKeyPanel()">
@@ -2016,6 +2064,7 @@ function renderRewards(){
 function toggleHabit(id){ toggleHabitOnDate(id, todayKey()); }
 function toggleHabitOnDate(id,dk){
   const h=S.habits.find(x=>x.id===id);if(!h||h.type==='numeric')return;
+  if(isLessSugarHabit(h)&&S.user.sugarAutoCalcSince&&dk>=S.user.sugarAutoCalcSince)return; // auto-computed, not manually toggleable
   const isToday=dk===todayKey();
   if(!S.logs[dk])S.logs[dk]={};
   const wasDone=S.logs[dk][id]===true;S.logs[dk][id]=!wasDone;
@@ -2376,12 +2425,11 @@ function openBackdateModal(){
 function renderBackdateList(){
   const dk=document.getElementById('bdDate').value;
   const list=document.getElementById('bdHabitList');
-  const boolHabits=S.habits.filter(h=>h.type!=='numeric');
+  const boolHabits=S.habits.filter(h=>h.type!=='numeric'&&!(isLessSugarHabit(h)&&S.user.sugarAutoCalcSince&&dk>=S.user.sugarAutoCalcSince));
   if(!dk){list.innerHTML='';return;}
   if(!boolHabits.length){list.innerHTML=`<p style="font-size:13px;color:var(--text-muted)">No check-off habits to log yet — numeric habits aren't backdatable here.</p>`;return;}
-  const log=S.logs[dk]||{};
   list.innerHTML=`<label class="form-label">${fmtShortDate(dk)}</label>`+boolHabits.map(h=>{
-    const done=log[h.id]===true,c=colorOf(h.color);
+    const done=habitDoneOn(h,dk),c=colorOf(h.color);
     return `<div class="bd-row" onclick="toggleHabitOnDate('${h.id}','${dk}');renderBackdateList();">
       <div class="habit-icon" style="width:34px;height:34px;font-size:16px;--c-hex:${c.hex};--c-accent:rgba(${c.rgb},.07)">${renderIcon(h.icon)}</div>
       <div class="bd-row-name">${h.name}</div>
@@ -2626,7 +2674,7 @@ function switchTab(name,btn){
   document.body.style.overflow = name==='today' ? 'hidden' : '';
   if(name==='stats')   renderStats();
   if(name==='rewards') renderRewards();
-  if(name==='protein') renderProteinTab();
+  if(name==='protein'){renderProteinTab();renderMacroTrends();}
   if(name==='tracking'){renderWeight();renderCircuitsTab();renderFitnessTab();}
 }
 function switchTrackingSubTab(name,btn){
@@ -2637,6 +2685,20 @@ function switchTrackingSubTab(name,btn){
   if(name==='weight')   renderWeight();
   if(name==='circuits') renderCircuitsTab();
   if(name==='fitness')  renderFitnessTab();
+}
+function switchMacroSubTab(name,btn){
+  document.querySelectorAll('.macro-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.macro-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-macro-'+name).classList.add('active');
+  if(name==='log')    renderProteinTab();
+  if(name==='trends') renderMacroTrends();
+}
+function renderMacroTrends(){
+  const el=document.getElementById('macroTrendsContent');if(!el)return;
+  const h=S.habits.find(x=>isProteinHabit(x));
+  if(!h){el.innerHTML=`<div class="empty-state"><div class="empty-icon">📈</div><div class="empty-title">No Protein habit yet</div><div class="empty-desc">Add a numeric habit named "Protein" in ✦ Habits to unlock trends.</div></div>`;return;}
+  el.innerHTML=renderTrendsSection(h,colorOf(h.color));
 }
 
 let _toastTimer;
@@ -2679,7 +2741,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-09-01.1100';
+const APP_VERSION = '2026-09-02.1200';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
