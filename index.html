@@ -1101,7 +1101,13 @@ function sugarLoggedOn(dk){const p=S.habits.find(isProteinHabit);return p?addedS
 // back to the manually-recorded boolean flag.
 function habitDoneOn(h,dk){
   if(h.type==='numeric'){const v=(S.logs[dk]||{})[h.id];return typeof v==='number'&&v>=(h.target||100);}
-  if(isLessSugarHabit(h)&&S.user.sugarAutoCalcSince&&dk>=S.user.sugarAutoCalcSince)return sugarLoggedOn(dk)<=SUGAR_LIMIT_G;
+  if(isLessSugarHabit(h)&&S.user.sugarAutoCalcSince&&dk>=S.user.sugarAutoCalcSince){
+    // "Under the limit" can't be confirmed mid-day - staying at 0g first thing in
+    // the morning isn't an accomplishment yet. Hold off marking it done (and
+    // extending the streak) until after most people are done eating for the day.
+    if(dk===todayKey()&&new Date().getHours()<20)return false;
+    return sugarLoggedOn(dk)<=SUGAR_LIMIT_G;
+  }
   return (S.logs[dk]||{})[h.id]===true;
 }
 function weekKeyFor(d){const date=new Date(d.getTime());date.setHours(0,0,0,0);date.setDate(date.getDate()+3-(date.getDay()+6)%7);const week1=new Date(date.getFullYear(),0,4);const weekNum=1+Math.round(((date.getTime()-week1.getTime())/86400000-3+(week1.getDay()+6)%7)/7);return`${date.getFullYear()}-W${String(weekNum).padStart(2,'0')}`;}
@@ -1411,7 +1417,10 @@ async function analyzeFood(id){
 function habitCardHTML(h){
   const done=isDoneToday(h.id),streak=currentStreak(h.id),c=colorOf(h.color);
   const resting=h.restEligible&&isRestDayToday(h.id);
-  const atRisk=!done&&!resting&&streak>=3&&new Date().getHours()>=17;
+  const isAutoSugar=isLessSugarHabit(h)&&S.user.sugarAutoCalcSince&&todayKey()>=S.user.sugarAutoCalcSince;
+  // Less Sugar can't be "at risk" the normal way - it's just waiting on its 8pm
+  // confirmation, not neglected, so the don't-break-it nudge doesn't apply to it.
+  const atRisk=!isAutoSugar&&!done&&!resting&&streak>=3&&new Date().getHours()>=17;
   const streakStr=streak>0?`<span class="flame">${streak>=30?'🌟':streak>=7?'🔥':'✦'}</span> ${streak}-day streak${atRisk?' <span class="streak-warn">⚠️ don\'t break it!</span>':''}`:'Start your streak today!';
   let restHTML='';
   if(h.restEligible && !done){
@@ -1422,7 +1431,6 @@ function habitCardHTML(h){
       restHTML=`<button class="rest-day-mini" onclick="event.stopPropagation();markRestDay('${h.id}')" title="Mark exception day (${left} left this week)">🎟️<span class="rest-day-mini-count">${left}</span></button>`;
     }
   }
-  const isAutoSugar=isLessSugarHabit(h)&&S.user.sugarAutoCalcSince&&todayKey()>=S.user.sugarAutoCalcSince;
   let numHTML='',miniProgressHTML='';
   if(isAutoSugar){
     const sugarToday=sugarLoggedOn(todayKey()),pct=Math.min(sugarToday/SUGAR_LIMIT_G*100,100),over=sugarToday>SUGAR_LIMIT_G;
@@ -2785,7 +2793,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-09-02.1330';
+const APP_VERSION = '2026-09-02.1415';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
