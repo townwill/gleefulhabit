@@ -210,15 +210,11 @@
   .ai-key-panel { display:none; }
   .ai-key-panel.open { display:block; }
   .quickfood-wrap { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  .quickfood-chip { display:flex; align-items:center; gap:7px; padding:7px 10px; border-radius:14px; background:rgba(255,255,255,.06); border:1px solid var(--border); min-width:0; }
+  .quickfood-chip { display:flex; align-items:center; gap:5px; min-width:0; width:100%; padding:8px 10px; border-radius:14px; background:rgba(255,255,255,.06); border:1px solid var(--border); color:var(--text); font:inherit; text-align:left; cursor:pointer; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
   .quickfood-chip.starred { border-color:rgba(255,229,92,.4); background:rgba(255,229,92,.08); }
-  .quickfood-chip .qf-add { flex:1; min-width:0; text-align:left; background:none; border:none; color:var(--text); font:inherit; font-size:12px; font-weight:600; cursor:pointer; padding:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .quickfood-chip .qf-star { opacity:.5; cursor:pointer; padding:0 1px; font-size:12px; flex-shrink:0; }
-  .quickfood-chip .qf-star.active { opacity:1; }
-  .quickfood-chip .qf-edit { opacity:.45; cursor:pointer; padding:0 1px; font-size:11px; flex-shrink:0; }
-  .quickfood-chip .qf-edit:active { opacity:.9; }
-  .quickfood-chip .qf-del { opacity:.45; cursor:pointer; padding:0 1px; font-size:11px; flex-shrink:0; }
-  .quickfood-chip .qf-del:active { opacity:.9; }
+  .quickfood-chip .qf-name { flex:1; min-width:0; font-size:12px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .quickfood-chip .qf-star-badge { flex-shrink:0; font-size:11px; }
+  .quickfood-chip.pressing { background:rgba(255,255,255,.12); }
 
   .circuit-ex-wrap { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }
   .circuit-ex-chip { padding:5px 9px; border-radius:14px; background:rgba(255,255,255,.06); border:1px solid var(--border); font-size:11px; color:var(--text-muted); }
@@ -798,6 +794,16 @@
       <input class="form-input" id="bdDate" type="date" onchange="renderBackdateList()">
     </div>
     <div class="form-group" id="bdHabitList"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="qfOptionsOverlay" onclick="overlayClick(event,'qfOptionsOverlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="qfOptionsTitle">Food options</div>
+    <button class="btn-submit" id="qfOptionsStarBtn" style="margin-bottom:8px" onclick="qfOptionsAction('star')"></button>
+    <button class="btn-submit" style="margin-bottom:8px;background:rgba(255,255,255,.08)" onclick="qfOptionsAction('rename')">✏️ Rename</button>
+    <button class="btn-submit" style="background:rgba(255,107,138,.15);color:var(--rose)" onclick="qfOptionsAction('remove')">✕ Remove</button>
   </div>
 </div>
 
@@ -1519,9 +1525,9 @@ function renderProteinTab(){
   const quickAddHTML=foodHist.length?`
     <div class="weight-settings-card">
       <div class="weight-settings-title">⭐ Quick Add</div>
-      <div class="data-card-desc" style="margin-bottom:10px">Foods you've logged before — tap to add instantly, no AI call needed.</div>
+      <div class="data-card-desc" style="margin-bottom:10px">Tap to add instantly. Long-press for star / rename / remove.</div>
       <div class="quickfood-wrap">
-        ${foodHist.map((f,idx)=>`<div class="quickfood-chip ${f.favorite?'starred':''}"><button class="qf-add" onclick="quickAddFoodAt('${h.id}',${idx})">${escapeHtml(f.name)} <b style="color:${c.hex}">+${f.grams}${unit}</b></button><span class="qf-star ${f.favorite?'active':''}" onclick="event.stopPropagation();toggleFavoriteFood(${idx})" title="${f.favorite?'Unstar':'Star so it never gets evicted'}">${f.favorite?'⭐':'☆'}</span><span class="qf-edit" onclick="event.stopPropagation();renameQuickFoodAt(${idx})" title="Rename">✏️</span><span class="qf-del" onclick="event.stopPropagation();removeQuickFoodAt(${idx})" title="Remove">✕</span></div>`).join('')}
+        ${foodHist.map((f,idx)=>`<button class="quickfood-chip ${f.favorite?'starred':''}" onpointerdown="qfPressStart(${idx})" onpointerup="qfPressEnd()" onpointercancel="qfPressEnd()" onpointerleave="qfPressEnd()" onclick="qfTap('${h.id}',${idx})"><span class="qf-name">${escapeHtml(f.name)}</span><b style="color:${c.hex};flex-shrink:0">+${f.grams}${unit}</b>${f.favorite?'<span class="qf-star-badge">⭐</span>':''}</button>`).join('')}
       </div>
     </div>`:'';
   el.innerHTML=`
@@ -1536,7 +1542,6 @@ function renderProteinTab(){
       ${calGoal!=null?`<div class="weight-goal-track"><div class="weight-goal-bar"><div class="weight-goal-fill" style="width:${calPct}%;background:linear-gradient(90deg,var(--orange),var(--yellow))"></div></div></div>`:''}
       <div class="weight-goal-track"><div class="weight-goal-bar"><div class="weight-goal-fill" style="width:${sugarPct}%;background:${sugarOver?'var(--rose)':'linear-gradient(90deg,var(--rose),var(--orange))'}"></div></div></div>
     </div>
-    ${quickAddHTML}
     <div class="weight-settings-card">
       <div class="weight-settings-title">📷 Log Food With AI</div>
       <img class="ai-log-thumb" id="ailog-thumb-${h.id}">
@@ -1558,6 +1563,8 @@ function renderProteinTab(){
       </div>
       <button class="num-reset-btn" style="margin-top:10px;width:auto;border-radius:var(--radius-sm);padding:6px 12px;font-size:11px;font-weight:700" onclick="resetNum('${h.id}')" title="Reset today">↺ Reset today</button>
     </div>
+
+    ${quickAddHTML}
 
     <div class="weight-settings-card">
       <div class="weight-settings-title">🍽️ Today's Food Log</div>
@@ -1698,8 +1705,11 @@ function trendsSeries(hid,days){
 }
 function miniTrendChart(title,unit,hex,points,goal,goalLabel,goalColor){
   const vals=points.map(p=>p.v);
-  const sum=vals.reduce((a,b)=>a+b,0),loggedDays=vals.filter(v=>v>0).length;
-  const avg=points.length?sum/points.length:0;
+  // Average only from the first day with actual data onward - padding the
+  // window with zeros from before tracking started would drag it down unfairly.
+  const firstDataIdx=points.findIndex(p=>p.v>0);
+  const avgVals=firstDataIdx===-1?vals:vals.slice(firstDataIdx);
+  const avg=avgVals.length?avgVals.reduce((a,b)=>a+b,0)/avgVals.length:0;
   const avgLabel=`avg ${avg%1===0?avg:avg.toFixed(1)}${unit}/day`;
   if(points.length<2){
     return `<div class="trend-block"><div class="trend-block-header"><span class="trend-block-title">${title}</span></div><div class="data-card-desc">Not enough data yet.</div></div>`;
@@ -2171,6 +2181,32 @@ function renameQuickFoodAt(idx){
 }
 function removeQuickFoodAt(idx){
   const list=getFoodHistory();list.splice(idx,1);saveFoodHistory(list);renderProteinTab();
+}
+let _qfPressTimer=null,_qfPressFired=false;
+function qfPressStart(idx){
+  _qfPressFired=false;
+  clearTimeout(_qfPressTimer);
+  _qfPressTimer=setTimeout(()=>{_qfPressFired=true;if(navigator.vibrate)navigator.vibrate(15);openQuickFoodOptions(idx);},480);
+}
+function qfPressEnd(){clearTimeout(_qfPressTimer);}
+function qfTap(id,idx){
+  if(_qfPressFired){_qfPressFired=false;return;} // long-press already handled this tap
+  quickAddFoodAt(id,idx);
+}
+let _qfOptionsIdx=null;
+function openQuickFoodOptions(idx){
+  const list=getFoodHistory();const item=list[idx];if(!item)return;
+  _qfOptionsIdx=idx;
+  document.getElementById('qfOptionsTitle').textContent=item.name;
+  document.getElementById('qfOptionsStarBtn').textContent=item.favorite?'☆ Unstar':'⭐ Star';
+  document.getElementById('qfOptionsOverlay').classList.add('open');
+}
+function qfOptionsAction(action){
+  const idx=_qfOptionsIdx;if(idx==null)return;
+  closeModal('qfOptionsOverlay');
+  if(action==='star')toggleFavoriteFood(idx);
+  else if(action==='rename')renameQuickFoodAt(idx);
+  else if(action==='remove')removeQuickFoodAt(idx);
 }
 let _pendingFoodLabel={};
 let _pendingFoodSugar={};
@@ -2674,7 +2710,7 @@ function switchTab(name,btn){
   document.body.style.overflow = name==='today' ? 'hidden' : '';
   if(name==='stats')   renderStats();
   if(name==='rewards') renderRewards();
-  if(name==='protein'){renderProteinTab();renderMacroTrends();}
+  if(name==='protein'){renderProteinTab();renderMacroTrends();updateMacroScrollLock();}
   if(name==='tracking'){renderWeight();renderCircuitsTab();renderFitnessTab();}
 }
 function switchTrackingSubTab(name,btn){
@@ -2686,13 +2722,21 @@ function switchTrackingSubTab(name,btn){
   if(name==='circuits') renderCircuitsTab();
   if(name==='fitness')  renderFitnessTab();
 }
+let _macroSubTab='log';
 function switchMacroSubTab(name,btn){
   document.querySelectorAll('.macro-tab').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.macro-panel').forEach(p=>p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('panel-macro-'+name).classList.add('active');
+  _macroSubTab=name;
   if(name==='log')    renderProteinTab();
   if(name==='trends') renderMacroTrends();
+  updateMacroScrollLock();
+}
+// Trends fits on one screen with no scrolling needed, so lock body scroll while
+// it's the visible sub-tab (same treatment as the Today tab); Log needs to scroll.
+function updateMacroScrollLock(){
+  document.body.style.overflow = _macroSubTab==='trends' ? 'hidden' : '';
 }
 function renderMacroTrends(){
   const el=document.getElementById('macroTrendsContent');if(!el)return;
@@ -2741,7 +2785,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-09-02.1200';
+const APP_VERSION = '2026-09-02.1330';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
