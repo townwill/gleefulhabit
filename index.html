@@ -956,7 +956,7 @@ function blankState() {
     xpAwarded:{},
     weight:{logs:{},unit:'lbs',goal:null,startWeight:null,startDate:null},
     exercise:{dumbbellPress:0,dumbbellPress25:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0},
-    customWorkouts:[],customWorkoutLogs:{},customGoals:[],
+    customWorkouts:[],customWorkoutLogs:{},customGoals:[],workoutExtras:{},
     user:{xp:0,badges:[],totalDone:0,numericHits:0,sideQuestCount:0,
       packsBank:0,hangersBank:0,blastersBank:0,megaBank:0,hobbyBank:0,superBank:0,mythicBank:0,
       packHistory:[],weeklyPacksAwarded:{},weeklyPackFlags:{},
@@ -1007,6 +1007,7 @@ function migrateState(raw) {
   if (!raw.customWorkouts)           raw.customWorkouts=[];
   if (!raw.customWorkoutLogs)        raw.customWorkoutLogs={};
   if (!raw.customGoals)              raw.customGoals=[];
+  if (!raw.workoutExtras)             raw.workoutExtras={};
   if (raw.user.calorieGoal===undefined) raw.user.calorieGoal=null;
   if (!raw.exercise) raw.exercise={dumbbellPress:0,dumbbellPress25:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
   if (raw.exercise.dumbbellPress25==null) raw.exercise.dumbbellPress25=0;
@@ -1095,10 +1096,14 @@ function monthCompletionStats(daysSoFar){
 }
 function isLessSugarHabit(h){return !!h && h.type!=='numeric' && /sugar/i.test(h.name);}
 function sugarLoggedOn(dk){const p=S.habits.find(isProteinHabit);return p?addedSugarOn(p.id,dk):0;}
+function isWorkoutHabit(h){return !!h && h.type!=='numeric' && /work\s*out/i.test(h.name);}
+function hasCircuitLoggedOn(dk){const day=S.customWorkoutLogs[dk];if(!day)return false;return Object.values(day).some(v=>v&&v.rounds>0);}
+function workoutAutoSourceOn(dk){const ex=S.workoutExtras[dk]||{};return !!ex.cycle||!!ex.kids||hasCircuitLoggedOn(dk);}
 // Single source of truth for "was this habit done on this day" - numeric habits
 // compare their logged total to target; Less Sugar auto-completes from
-// S.user.sugarAutoCalcSince forward (see migrateState); everything else falls
-// back to the manually-recorded boolean flag.
+// S.user.sugarAutoCalcSince forward (see migrateState); Workout also counts as
+// done if a circuit/cycle/kids workout was logged that day; everything else
+// falls back to the manually-recorded boolean flag.
 function habitDoneOn(h,dk){
   if(h.type==='numeric'){const v=(S.logs[dk]||{})[h.id];return typeof v==='number'&&v>=(h.target||100);}
   if(isLessSugarHabit(h)&&S.user.sugarAutoCalcSince&&dk>=S.user.sugarAutoCalcSince){
@@ -1108,6 +1113,7 @@ function habitDoneOn(h,dk){
     if(dk===todayKey()){const now=new Date();if(now.getHours()<19||(now.getHours()===19&&now.getMinutes()<30))return false;}
     return sugarLoggedOn(dk)<=SUGAR_LIMIT_G;
   }
+  if(isWorkoutHabit(h)&&workoutAutoSourceOn(dk))return true;
   return (S.logs[dk]||{})[h.id]===true;
 }
 function weekKeyFor(d){const date=new Date(d.getTime());date.setHours(0,0,0,0);date.setDate(date.getDate()+3-(date.getDay()+6)%7);const week1=new Date(date.getFullYear(),0,4);const weekNum=1+Math.round(((date.getTime()-week1.getTime())/86400000-3+(week1.getDay()+6)%7)/7);return`${date.getFullYear()}-W${String(weekNum).padStart(2,'0')}`;}
@@ -1418,9 +1424,11 @@ function habitCardHTML(h){
   const done=isDoneToday(h.id),streak=currentStreak(h.id),c=colorOf(h.color);
   const resting=h.restEligible&&isRestDayToday(h.id);
   const isAutoSugar=isLessSugarHabit(h)&&S.user.sugarAutoCalcSince&&todayKey()>=S.user.sugarAutoCalcSince;
+  const isAutoWorkout=isWorkoutHabit(h)&&workoutAutoSourceOn(todayKey());
   // Less Sugar can't be "at risk" the normal way - it's just waiting on its 8pm
   // confirmation, not neglected, so the don't-break-it nudge doesn't apply to it.
-  const atRisk=!isAutoSugar&&!done&&!resting&&streak>=3&&new Date().getHours()>=17;
+  // Workout that's already covered by a circuit/cycle/kids log isn't at risk either.
+  const atRisk=!isAutoSugar&&!isAutoWorkout&&!done&&!resting&&streak>=3&&new Date().getHours()>=17;
   const streakStr=streak>0?`<span class="flame">${streak>=30?'🌟':streak>=7?'🔥':'✦'}</span> ${streak}-day streak${atRisk?' <span class="streak-warn">⚠️ don\'t break it!</span>':''}`:'Start your streak today!';
   let restHTML='';
   if(h.restEligible && !done){
@@ -1461,8 +1469,8 @@ function habitCardHTML(h){
       </div>`;
     }
   }
-  const noteText=isAutoSugar?`Auto-tracked from food log · goal ≤${SUGAR_LIMIT_G}g/day`:(taperNoteFor(h)||h.note);
-  const cardClick=isAutoSugar?`autoTrackedNotice('${h.id}')`:`toggleHabit('${h.id}')`;
+  const noteText=isAutoSugar?`Auto-tracked from food log · goal ≤${SUGAR_LIMIT_G}g/day`:isAutoWorkout?`Auto-tracked from Circuits/Cycle/Kids today`:(taperNoteFor(h)||h.note);
+  const cardClick=(isAutoSugar||isAutoWorkout)?`autoTrackedNotice('${h.id}')`:`toggleHabit('${h.id}')`;
   return `<div class="habit-card ${done?'completed':''}" id="hc-${h.id}" style="--c-hex:${c.hex};--c-rgb:${c.rgb};--c-accent:rgba(${c.rgb},.07)" onclick="${cardClick}">
     <div class="habit-card-top">
       <div class="habit-icon">${renderIcon(h.icon)}</div>
@@ -1472,7 +1480,11 @@ function habitCardHTML(h){
       <div class="habit-check" style="${done?`background:${c.hex};border-color:${c.hex}`:''}"> ${done?'✓':''}</div>
     </div>${numHTML}</div>`;
 }
-function autoTrackedNotice(id){const h=S.habits.find(x=>x.id===id);toast(`🍬 ${h?h.name:'This habit'} is auto-tracked from your food log — log food in the Macros tab.`);}
+function autoTrackedNotice(id){
+  const h=S.habits.find(x=>x.id===id);
+  if(isWorkoutHabit(h))toast(`🏋️ ${h.name} is auto-tracked from Circuits/Cycle/Kids — see the Tracking tab.`);
+  else toast(`🍬 ${h?h.name:'This habit'} is auto-tracked from your food log — log food in the Macros tab.`);
+}
 
 function sideQuestCardHTML(s){const dt=isSideQuestDoneToday(s.id),forever=s.cadence==='once'&&dt;const cls=forever?'s-done-forever':dt?'s-done':'';const status=forever?'✦ Completed!':dt?'✦ Done today':s.cadence==='once'?'Tap to complete':'Tap when done';return`<div class="side-quest-card ${cls}" id="sc-${s.id}" onclick="toggleSideQuest('${s.id}')"><div class="side-quest-bonus">+5 XP bonus</div><div class="side-quest-card-top"><div class="side-quest-icon">${s.icon}</div><div class="side-quest-info"><div class="side-quest-name">${s.name}</div><div class="side-quest-meta"><span class="side-quest-cadence-pill ${s.cadence==='once'?'once':''}">${s.cadence==='once'?'one & done':'daily'}</span><span>${status}</span></div></div><div class="side-quest-check">${dt?'✓':''}</div></div></div>`;}
 
@@ -2083,6 +2095,7 @@ function toggleHabit(id){ toggleHabitOnDate(id, todayKey()); }
 function toggleHabitOnDate(id,dk){
   const h=S.habits.find(x=>x.id===id);if(!h||h.type==='numeric')return;
   if(isLessSugarHabit(h)&&S.user.sugarAutoCalcSince&&dk>=S.user.sugarAutoCalcSince)return; // auto-computed, not manually toggleable
+  if(isWorkoutHabit(h)&&workoutAutoSourceOn(dk))return; // already covered by a circuit/cycle/kids workout that day
   const isToday=dk===todayKey();
   if(!S.logs[dk])S.logs[dk]={};
   const wasDone=S.logs[dk][id]===true;S.logs[dk][id]=!wasDone;
@@ -2119,6 +2132,38 @@ function toggleHabitOnDate(id,dk){
     if(!isToday) toast(`Removed log for ${fmtShortDate(dk)}`);
   }
   save();renderToday();renderXP();
+}
+// Awards/reverses the Workout habit's daily XP when a circuit/cycle/kids
+// checkbox flips it done, since none of those go through toggleHabitOnDate.
+// Shares the same awardKey as a direct tap, so whichever path fires first
+// wins and the other is a safe no-op.
+function checkWorkoutAutoComplete(){
+  const h=S.habits.find(isWorkoutHabit);if(!h)return;
+  const dk=todayKey(),doneNow=habitDoneOn(h,dk),awardKey=dk+'_'+h.id,wasAwarded=!!S.xpAwarded[awardKey];
+  if(doneNow&&!wasAwarded){
+    S.xpAwarded[awardKey]=true;
+    S.user.totalDone++;addXP(10);
+    const s=currentStreak(h.id);
+    if(s>0&&s%7===0){addXP(50);toast(`🔥 ${s}-day streak! +50 XP bonus!`);}
+    if(S.habits.every(x=>isDoneToday(x.id))&&S.habits.length>0){
+      setTimeout(()=>{toast('🌟 Perfect Day! All habits complete!');confetti(70);},200);
+      earnBadge('perfect_day');
+    }else confetti(14);
+    checkBadges();checkWeeklyPacksAndMilestones();
+  }else if(!doneNow&&wasAwarded){
+    delete S.xpAwarded[awardKey];
+    S.user.totalDone=Math.max(0,S.user.totalDone-1);
+    S.user.xp=Math.max(0,S.user.xp-10);
+    reevaluateBadges();
+  }
+  save();
+}
+function toggleWorkoutExtra(key){
+  const tk=todayKey();
+  if(!S.workoutExtras[tk])S.workoutExtras[tk]={};
+  S.workoutExtras[tk][key]=!S.workoutExtras[tk][key];
+  checkWorkoutAutoComplete();
+  renderToday();renderXP();renderCircuitsTab();
 }
 function reevaluateBadges(){
   // Re-checks which badges are still earned after XP/stats are reversed (unchecking a habit, resetting a numeric target)
@@ -2469,7 +2514,7 @@ function openBackdateModal(){
 function renderBackdateList(){
   const dk=document.getElementById('bdDate').value;
   const list=document.getElementById('bdHabitList');
-  const boolHabits=S.habits.filter(h=>h.type!=='numeric'&&!(isLessSugarHabit(h)&&S.user.sugarAutoCalcSince&&dk>=S.user.sugarAutoCalcSince));
+  const boolHabits=S.habits.filter(h=>h.type!=='numeric'&&!(isLessSugarHabit(h)&&S.user.sugarAutoCalcSince&&dk>=S.user.sugarAutoCalcSince)&&!(isWorkoutHabit(h)&&workoutAutoSourceOn(dk)));
   if(!dk){list.innerHTML='';return;}
   if(!boolHabits.length){list.innerHTML=`<p style="font-size:13px;color:var(--text-muted)">No check-off habits to log yet — numeric habits aren't backdatable here.</p>`;return;}
   list.innerHTML=`<label class="form-label">${fmtShortDate(dk)}</label>`+boolHabits.map(h=>{
@@ -2576,7 +2621,8 @@ function logCircuitRounds(id){
   S.customWorkoutLogs[tk][id]={rounds};
   save();
   checkCustomGoals();
-  renderCircuitsTab();
+  checkWorkoutAutoComplete();
+  renderToday();renderXP();renderCircuitsTab();
   toast(`✅ Logged ${rounds} round${rounds===1?'':'s'}!`);
 }
 function circuitHistory(id,days){
@@ -2589,14 +2635,38 @@ function circuitHistory(id,days){
   }
   return out;
 }
+function otherWorkoutsCardHTML(){
+  const wh=S.habits.find(isWorkoutHabit);if(!wh)return'';
+  const tk=todayKey(),extras=S.workoutExtras[tk]||{},resting=isRestDayToday(wh.id),restLeft=Math.max(0,2-restDaysUsedThisWeek(wh.id));
+  const rows=[
+    {key:'cycle',icon:'🚴',label:'Cycled',on:!!extras.cycle,click:`toggleWorkoutExtra('cycle')`},
+    {key:'kids',icon:'🧒',label:'Worked Out With Kids',on:!!extras.kids,click:`toggleWorkoutExtra('kids')`},
+  ];
+  const restRow=wh.restEligible?`<div class="bd-row" onclick="markRestDay('${wh.id}');renderCircuitsTab()">
+      <div class="habit-icon" style="width:34px;height:34px;font-size:16px">🎟️</div>
+      <div class="bd-row-name">Rest Day${resting?'':restLeft>0?` · ${restLeft} left this week`:' · none left this week'}</div>
+      <div class="bd-check" style="${resting?'background:var(--purple);border-color:var(--purple)':''}">${resting?'✓':''}</div>
+    </div>`:'';
+  return `<div class="weight-settings-card">
+    <div class="weight-settings-title">🏃 Other Workouts Today</div>
+    <div class="data-card-desc" style="margin-bottom:6px">Any of these (or a circuit below) counts as today's workout.</div>
+    ${rows.map(r=>`<div class="bd-row" onclick="${r.click}">
+      <div class="habit-icon" style="width:34px;height:34px;font-size:16px">${r.icon}</div>
+      <div class="bd-row-name">${r.label}</div>
+      <div class="bd-check" style="${r.on?'background:var(--cyan);border-color:var(--cyan)':''}">${r.on?'✓':''}</div>
+    </div>`).join('')}
+    ${restRow}
+  </div>`;
+}
 function renderCircuitsTab(){
   const el=document.getElementById('circuitsContent');if(!el)return;
+  const extrasCardHTML=otherWorkoutsCardHTML();
   if(!S.customWorkouts.length){
-    el.innerHTML=`<div class="empty-state"><div class="empty-icon">🏋️</div><div class="empty-title">No circuits yet</div><div class="empty-desc">Define a circuit workout (e.g. 5 kettlebell exercises, 10 reps each) and log how many rounds you complete each session.</div><button class="btn-submit" style="margin-top:14px" onclick="openCircuitModal()">+ New Circuit</button></div>`;
+    el.innerHTML=extrasCardHTML+`<div class="empty-state"><div class="empty-icon">🏋️</div><div class="empty-title">No circuits yet</div><div class="empty-desc">Define a circuit workout (e.g. 5 kettlebell exercises, 10 reps each) and log how many rounds you complete each session.</div><button class="btn-submit" style="margin-top:14px" onclick="openCircuitModal()">+ New Circuit</button></div>`;
     return;
   }
   const tk=todayKey();
-  el.innerHTML=S.customWorkouts.map(w=>{
+  el.innerHTML=extrasCardHTML+S.customWorkouts.map(w=>{
     const todayLog=(S.customWorkoutLogs[tk]||{})[w.id];
     const hist=circuitHistory(w.id,7).filter(x=>x.date!==tk);
     const exList=w.exercises.map(e=>`<span class="circuit-ex-chip">${escapeHtml(e.name)}${e.reps?` ×${e.reps}`:''}${e.weight?` @ ${escapeHtml(e.weight)}`:''}</span>`).join('');
@@ -2793,7 +2863,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-09-03.0900';
+const APP_VERSION = '2026-09-03.1030';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
