@@ -955,7 +955,7 @@ function blankState() {
     logs:{},logEntries:{},sideQuestLogs:{},sideQuestDone:{},restDayLogs:{},
     xpAwarded:{},
     weight:{logs:{},unit:'lbs',goal:null,startWeight:null,startDate:null},
-    exercise:{dumbbellPress:0,dumbbellPress25:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0},
+    exercise:{dumbbellPress:0,dumbbellPress25:0,dumbbellPress30:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0},
     customWorkouts:[],customWorkoutLogs:{},customGoals:[],workoutExtras:{},
     user:{xp:0,badges:[],totalDone:0,numericHits:0,sideQuestCount:0,
       packsBank:0,hangersBank:0,blastersBank:0,megaBank:0,hobbyBank:0,superBank:0,mythicBank:0,
@@ -1009,8 +1009,9 @@ function migrateState(raw) {
   if (!raw.customGoals)              raw.customGoals=[];
   if (!raw.workoutExtras)             raw.workoutExtras={};
   if (raw.user.calorieGoal===undefined) raw.user.calorieGoal=null;
-  if (!raw.exercise) raw.exercise={dumbbellPress:0,dumbbellPress25:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
+  if (!raw.exercise) raw.exercise={dumbbellPress:0,dumbbellPress25:0,dumbbellPress30:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
   if (raw.exercise.dumbbellPress25==null) raw.exercise.dumbbellPress25=0;
+  if (raw.exercise.dumbbellPress30==null) raw.exercise.dumbbellPress30=0;
   if (raw.habits) raw.habits.forEach(h=>{ if(h.restEligible==null) h.restEligible=false; if(h.note==null) h.note=''; if(!h.createdAt) h.createdAt='2000-01-01'; });
   if (raw.habits && !raw.user._habitNotesSeeded) {
     const noteSuggestions = [
@@ -1832,6 +1833,17 @@ function renderWeight(){
   }
   document.getElementById('weightContent').innerHTML=html;
 }
+let _fitnessLevel=1;
+function setFitnessLevel(n){_fitnessLevel=n;renderFitnessTab();}
+function fitnessLevelBodyHTML(levelNum){
+  const status=fitnessLevelStatus(levelNum),boxLabel=FITNESS_BOX_LABELS[status.boxType];
+  const earned=!!(S.user.milestones||{})[FITNESS_LEVEL_MILESTONE_KEYS[levelNum]];
+  const rows=status.goals.map(g=>`<div class="bd-row" style="cursor:default">
+      <div class="bd-row-name">${g.label}<div style="font-size:11px;color:var(--text-muted);font-weight:500;margin-top:2px">${g.target} · currently ${g.fmt(g.current)}</div></div>
+      <div class="bd-check" style="${g.done?'background:var(--lime);border-color:var(--lime)':''}">${g.done?'✓':''}</div>
+    </div>`).join('');
+  return `<div class="data-card-desc" style="margin-bottom:6px">${status.doneCount}/5 complete${earned?` · ✓ ${boxLabel} Box earned`:` — hit all 5 for a ${boxLabel} Box`}</div>${rows}`;
+}
 function renderFitnessTab(){
   const el=document.getElementById('fitnessContent');if(!el)return;
   const ex=S.exercise||{},_m=S.user.milestones||{};
@@ -1840,6 +1852,7 @@ function renderFitnessTab(){
     <div class="pr-grid">
       <div class="pr-row"><label>Dumbbell Press (reps @ 20lb)</label><input class="pr-input" id="prDumbbell" type="number" min="0" value="${ex.dumbbellPress||''}"></div>
       ${_m.secret_dumbbell20 ? `<div class="pr-row"><label>Dumbbell Press (reps @ 25lb)</label><input class="pr-input" id="prDumbbell25" type="number" min="0" value="${ex.dumbbellPress25||''}"></div>` : ''}
+      ${_m.secret_dumbbell25 ? `<div class="pr-row"><label>Dumbbell Press (reps @ 30lb)</label><input class="pr-input" id="prDumbbell30" type="number" min="0" value="${ex.dumbbellPress30||''}"></div>` : ''}
       <div class="pr-row"><label>Incline Push-ups (30°, reps)</label><input class="pr-input" id="prIncline" type="number" min="0" value="${ex.inclinePushups||''}"></div>
       ${_m.secret_incline20 ? `<div class="pr-row"><label>Ground Push-ups (reps)</label><input class="pr-input" id="prGround" type="number" min="0" value="${ex.groundPushups||''}"></div>` : ''}
       <div class="pr-row"><label>Dead Hang (seconds)</label><input class="pr-input" id="prHang" type="number" min="0" value="${ex.deadHangSec||''}"></div>
@@ -1847,6 +1860,15 @@ function renderFitnessTab(){
       <div class="pr-row"><label>Jump Rope (seconds)</label><input class="pr-input" id="prJumprope" type="number" min="0" value="${ex.jumpRopeSec||''}"></div>
     </div>
     <button class="weight-log-btn" style="width:100%;margin-top:10px" onclick="saveExercisePRs()">Update PRs</button>
+  </div>
+  <div class="weight-settings-card">
+    <div class="weight-settings-title">🎯 Fitness Goal Levels</div>
+    <div class="chart-range-toggle" style="margin-bottom:14px">
+      <button class="chart-range-btn ${_fitnessLevel===1?'sel':''}" onclick="setFitnessLevel(1)">Level 1</button>
+      <button class="chart-range-btn ${_fitnessLevel===2?'sel':''}" onclick="setFitnessLevel(2)">Level 2</button>
+      <button class="chart-range-btn ${_fitnessLevel===3?'sel':''}" onclick="setFitnessLevel(3)">Level 3</button>
+    </div>
+    ${fitnessLevelBodyHTML(_fitnessLevel)}
   </div>`;
 }
 
@@ -2005,6 +2027,7 @@ function renderRewards(){
     {key:`hanger_sidequest20_${wk}`,                      icon:'⭐', title:'20 Side Quests / Week', val:wkSct,     max:20, desc:`${wkSct}/20 side quests this week`, cadence:'Weekly'},
     {key:'hanger_level5',                               icon:'💎', title:'Level 5 (2500 XP)',   val:curLv,     max:5,  desc:`Level ${curLv}/5`, cadence:'One-Time'},
     {key:'wt_hanger_10',                                icon:'💪', title:'10 lbs Lost',         val:wLost,     max:10, desc:`${wLost.toFixed(1)}/10 lbs lost`, cadence:'One-Time'},
+    {key:FITNESS_LEVEL_MILESTONE_KEYS[1], icon:'🏋️', title:'Fitness Level 1', val:fitnessLevelStatus(1).doneCount, max:5, desc:`${fitnessLevelStatus(1).doneCount}/5 Level 1 strength PRs hit`, cadence:'One-Time'},
   ];
   html+=`<div class="rewards-section-label">🎁 Hanger Box Milestones</div><div class="milestone-grid">`;
   html+=hangers.map(h=>{const e=!!m[h.key];return`<div class="milestone-card ${e?'earned':''}"><div class="milestone-icon">${h.icon}</div><div class="milestone-title">${h.title} <span class="milestone-cadence">${h.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':h.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(h.val/h.max*100,100)}%"></div></div>${e?'<div class="milestone-earned-tag">✓ Hanger Box Earned</div>':''}</div>`;}).join('');
@@ -2014,6 +2037,7 @@ function renderRewards(){
     {key:'blaster_level10',   icon:'🌟', title:'Level 10',        val:curLv, max:10, desc:`Level ${curLv}/10`, cadence:'One-Time'},
     {key:'blaster_100quests', icon:'🎯', title:'100 Side Quests', val:S.user.sideQuestCount, max:100, desc:`${S.user.sideQuestCount}/100 total side quests`, cadence:'One-Time'},
     {key:'wt_blaster_15',     icon:'🔥', title:'15 lbs Lost',     val:wLost, max:15, desc:`${wLost.toFixed(1)}/15 lbs lost`, cadence:'One-Time'},
+    {key:FITNESS_LEVEL_MILESTONE_KEYS[2], icon:'🏋️', title:'Fitness Level 2', val:fitnessLevelStatus(2).doneCount, max:5, desc:`${fitnessLevelStatus(2).doneCount}/5 Level 2 strength PRs hit`, cadence:'One-Time'},
   ];
   html+=blasters.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title} <span class="milestone-cadence">${b.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%"></div></div>${!e&&b.paceNote?`<div class="milestone-pace ${b.paceClass}">${b.paceNote}</div>`:''}${e?'<div class="milestone-earned-tag">✓ Blaster Box Earned</div>':''}</div>`;}).join('');
   html+=`</div><div class="rewards-section-label">💎 Mega Box Milestones</div><div class="milestone-grid">`;
@@ -2026,6 +2050,7 @@ function renderRewards(){
   const supers=[
     {key:'wt_super_20',  icon:'🏆', title:'20 lbs Lost',  val:wLost, max:20, desc:`${wLost.toFixed(1)}/20 lbs lost`, cadence:'One-Time'},
     {key:'super_level15',icon:'🏆', title:'Level 15', val:curLv, max:15, desc:`Level ${curLv}/15`, cadence:'One-Time'},
+    {key:FITNESS_LEVEL_MILESTONE_KEYS[3], icon:'🏋️', title:'Fitness Level 3', val:fitnessLevelStatus(3).doneCount, max:5, desc:`${fitnessLevelStatus(3).doneCount}/5 Level 3 strength PRs hit`, cadence:'One-Time'},
   ];
   html+=supers.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title} <span class="milestone-cadence">${b.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%;background:linear-gradient(90deg,var(--lime),var(--cyan))"></div></div>${e?'<div class="milestone-earned-tag" style="background:rgba(168,255,62,.12);color:var(--lime)">✓ Super Box Earned</div>':''}</div>`;}).join('');
   html+=`</div><div class="rewards-section-label">🗃️ Hobby Box Milestones</div><div class="milestone-grid">`;
@@ -2373,6 +2398,7 @@ function saveExercisePRs(){
   const g=id=>Math.max(0,parseFloat(document.getElementById(id)?.value)||0);
   S.exercise.dumbbellPress   = g('prDumbbell');
   S.exercise.dumbbellPress25 = g('prDumbbell25');
+  S.exercise.dumbbellPress30 = g('prDumbbell30');
   S.exercise.inclinePushups  = g('prIncline');
   S.exercise.groundPushups   = g('prGround');
   S.exercise.deadHangSec     = g('prHang');
@@ -2380,6 +2406,7 @@ function saveExercisePRs(){
   S.exercise.jumpRopeSec     = g('prJumprope');
   save();
   checkExerciseMilestones();
+  checkFitnessLevelMilestones();
   renderFitnessTab();
   toast('💪 PRs updated!');
 }
@@ -2396,6 +2423,55 @@ function checkExerciseMilestones(){
   if(e.plankSec        >= 180) awPackSecret('secret_plank180',   '3-minute plank! 💪');
   if(e.jumpRopeSec     >= 120) awPackSecret('secret_jumprope120','2-minute jump rope! 💪');
   if(e.jumpRopeSec     >= 180) awPackSecret('secret_jumprope180','3-minute jump rope! 💪');
+}
+function fmtMinSec(sec){sec=Math.max(0,sec||0);const m=Math.floor(sec/60),s=Math.round(sec%60);return `${m}:${String(s).padStart(2,'0')}`;}
+// Three tiers of "hit all 5 strength PRs" goals, each awarding one box on full
+// completion. Level 1/2 mirror the existing tier1/tier2 secret-achievement
+// thresholds; Level 3 is a new, harder tier on top of those.
+const FITNESS_LEVELS=[
+  {level:1,boxType:'hanger',goals:[
+    {label:'Dumbbell Press',target:'20 reps @ 20lb',field:'dumbbellPress',need:20,fmt:v=>`${v} reps`},
+    {label:'Incline Push-ups',target:'20 reps',field:'inclinePushups',need:20,fmt:v=>`${v} reps`},
+    {label:'Dead Hang',target:'1:00',field:'deadHangSec',need:60,fmt:fmtMinSec},
+    {label:'Plank',target:'2:00',field:'plankSec',need:120,fmt:fmtMinSec},
+    {label:'Jump Rope',target:'2:00',field:'jumpRopeSec',need:120,fmt:fmtMinSec},
+  ]},
+  {level:2,boxType:'blaster',goals:[
+    {label:'Dumbbell Press',target:'20 reps @ 25lb',field:'dumbbellPress25',need:20,fmt:v=>`${v} reps`},
+    {label:'Ground Push-ups',target:'15 reps',field:'groundPushups',need:15,fmt:v=>`${v} reps`},
+    {label:'Dead Hang',target:'1:30',field:'deadHangSec',need:90,fmt:fmtMinSec},
+    {label:'Plank',target:'3:00',field:'plankSec',need:180,fmt:fmtMinSec},
+    {label:'Jump Rope',target:'3:00',field:'jumpRopeSec',need:180,fmt:fmtMinSec},
+  ]},
+  {level:3,boxType:'super',goals:[
+    {label:'Dumbbell Press',target:'20 reps @ 30lb',field:'dumbbellPress30',need:20,fmt:v=>`${v} reps`},
+    {label:'Ground Push-ups',target:'25 reps',field:'groundPushups',need:25,fmt:v=>`${v} reps`},
+    {label:'Dead Hang',target:'2:00',field:'deadHangSec',need:120,fmt:fmtMinSec},
+    {label:'Plank',target:'4:00',field:'plankSec',need:240,fmt:fmtMinSec},
+    {label:'Jump Rope',target:'4:00',field:'jumpRopeSec',need:240,fmt:fmtMinSec},
+  ]},
+];
+const FITNESS_LEVEL_MILESTONE_KEYS={1:'fitlevel1',2:'fitlevel2',3:'fitlevel3'};
+const FITNESS_BOX_LABELS={hanger:'Hanger',blaster:'Blaster',super:'Super'};
+function fitnessLevelStatus(levelNum){
+  const lvl=FITNESS_LEVELS.find(l=>l.level===levelNum),e=S.exercise||{};
+  const goals=lvl.goals.map(g=>{const current=e[g.field]||0;return{...g,current,done:current>=g.need};});
+  return {...lvl,goals,doneCount:goals.filter(g=>g.done).length};
+}
+function checkFitnessLevelMilestones(){
+  const m=S.user.milestones;
+  [1,2,3].forEach(levelNum=>{
+    const key=FITNESS_LEVEL_MILESTONE_KEYS[levelNum];
+    if(m[key])return;
+    const status=fitnessLevelStatus(levelNum);
+    if(status.doneCount<status.goals.length)return;
+    m[key]=true;
+    const bankField={hanger:'hangersBank',blaster:'blastersBank',super:'superBank'}[status.boxType];
+    S.user[bankField]=(S.user[bankField]||0)+1;
+    S.user.packHistory.unshift({date:todayKey(),count:1,type:status.boxType,reason:`All 5 Level ${levelNum} fitness goals complete! 💪`});
+    save();
+    setTimeout(()=>{toast(`🎉 ${FITNESS_BOX_LABELS[status.boxType]} Box earned — Level ${levelNum} complete!`);confetti(90);},700);
+  });
 }
 function saveWeightGoal(){const v=parseFloat(document.getElementById('wGoalInput')?.value);if(!v||v<=0)return;S.weight.goal=+v.toFixed(1);save();renderWeight();toast(`🎯 Goal set: ${v.toFixed(1)} lbs`);}
 function saveCalorieGoal(){const v=parseFloat(document.getElementById('calGoalInput')?.value);if(!v||v<=0)return;S.user.calorieGoal=Math.round(v);save();renderProteinTab();toast(`🔥 Calorie goal set: ${Math.round(v)} cal`);}
@@ -2863,7 +2939,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-09-03.1030';
+const APP_VERSION = '2026-09-04.1100';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
@@ -2878,6 +2954,7 @@ initQuoteSwipe();
 setTimeout(()=>maybeShowDailyQuote(),500);
 setTimeout(()=>checkWeeklyPacksAndMilestones(),100);
 setTimeout(()=>checkCustomGoals(),150);
+setTimeout(()=>checkFitnessLevelMilestones(),200);
 setTimeout(()=>checkForUpdate(),1500);
 
 // Re-render when app comes back into focus (date may have changed)
