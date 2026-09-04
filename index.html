@@ -1848,7 +1848,16 @@ function fitnessLevelBodyHTML(levelNum){
 function renderFitnessTab(){
   const el=document.getElementById('fitnessContent');if(!el)return;
   const ex=S.exercise||{},_m=S.user.milestones||{};
-  el.innerHTML=`<div class="weight-settings-card"><div class="weight-settings-title">💪 Strength PRs</div>
+  el.innerHTML=`<div class="weight-settings-card">
+    <div class="weight-settings-title">🎯 Fitness Goal Levels</div>
+    <div class="chart-range-toggle" style="margin-bottom:14px">
+      <button class="chart-range-btn ${_fitnessLevel===1?'sel':''}" onclick="setFitnessLevel(1)">Level 1</button>
+      <button class="chart-range-btn ${_fitnessLevel===2?'sel':''}" onclick="setFitnessLevel(2)">Level 2</button>
+      <button class="chart-range-btn ${_fitnessLevel===3?'sel':''}" onclick="setFitnessLevel(3)">Level 3</button>
+    </div>
+    ${fitnessLevelBodyHTML(_fitnessLevel)}
+  </div>
+  <div class="weight-settings-card"><div class="weight-settings-title">💪 Strength PRs</div>
     <div class="data-card-desc" style="margin-bottom:10px">Personal records — update whenever you beat one. Unlocks secret packs at key thresholds.</div>
     <div class="pr-grid">
       <div class="pr-row"><label>Dumbbell Press (reps @ 20lb)</label><input class="pr-input" id="prDumbbell" type="number" min="0" value="${ex.dumbbellPress||''}"></div>
@@ -1862,15 +1871,6 @@ function renderFitnessTab(){
       <div class="pr-row"><label>Jump Rope (seconds)</label><input class="pr-input" id="prJumprope" type="number" min="0" value="${ex.jumpRopeSec||''}"></div>
     </div>
     <button class="weight-log-btn" style="width:100%;margin-top:10px" onclick="saveExercisePRs()">Update PRs</button>
-  </div>
-  <div class="weight-settings-card">
-    <div class="weight-settings-title">🎯 Fitness Goal Levels</div>
-    <div class="chart-range-toggle" style="margin-bottom:14px">
-      <button class="chart-range-btn ${_fitnessLevel===1?'sel':''}" onclick="setFitnessLevel(1)">Level 1</button>
-      <button class="chart-range-btn ${_fitnessLevel===2?'sel':''}" onclick="setFitnessLevel(2)">Level 2</button>
-      <button class="chart-range-btn ${_fitnessLevel===3?'sel':''}" onclick="setFitnessLevel(3)">Level 3</button>
-    </div>
-    ${fitnessLevelBodyHTML(_fitnessLevel)}
   </div>`;
 }
 
@@ -2949,7 +2949,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-09-04.1400';
+const APP_VERSION = '2026-09-04.1415';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
