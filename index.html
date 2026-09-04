@@ -955,7 +955,7 @@ function blankState() {
     logs:{},logEntries:{},sideQuestLogs:{},sideQuestDone:{},restDayLogs:{},
     xpAwarded:{},
     weight:{logs:{},unit:'lbs',goal:null,startWeight:null,startDate:null},
-    exercise:{dumbbellPress:0,dumbbellPress25:0,inclinePushups60:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0},
+    exercise:{dumbbellPress:0,dumbbellPress20Sets:0,dumbbellPress25:0,inclinePushups60:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0},
     customWorkouts:[],customWorkoutLogs:{},customGoals:[],workoutExtras:{},
     user:{xp:0,badges:[],totalDone:0,numericHits:0,sideQuestCount:0,
       packsBank:0,hangersBank:0,blastersBank:0,megaBank:0,hobbyBank:0,superBank:0,mythicBank:0,
@@ -1009,8 +1009,9 @@ function migrateState(raw) {
   if (!raw.customGoals)              raw.customGoals=[];
   if (!raw.workoutExtras)             raw.workoutExtras={};
   if (raw.user.calorieGoal===undefined) raw.user.calorieGoal=null;
-  if (!raw.exercise) raw.exercise={dumbbellPress:0,dumbbellPress25:0,inclinePushups60:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
+  if (!raw.exercise) raw.exercise={dumbbellPress:0,dumbbellPress20Sets:0,dumbbellPress25:0,inclinePushups60:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
   if (raw.exercise.dumbbellPress25==null) raw.exercise.dumbbellPress25=0;
+  if (raw.exercise.dumbbellPress20Sets==null) raw.exercise.dumbbellPress20Sets=0;
   if (raw.exercise.inclinePushups60==null) raw.exercise.inclinePushups60=0;
   if (raw.habits) raw.habits.forEach(h=>{ if(h.restEligible==null) h.restEligible=false; if(h.note==null) h.note=''; if(!h.createdAt) h.createdAt='2000-01-01'; });
   if (raw.habits && !raw.user._habitNotesSeeded) {
@@ -1851,6 +1852,7 @@ function renderFitnessTab(){
     <div class="data-card-desc" style="margin-bottom:10px">Personal records — update whenever you beat one. Unlocks secret packs at key thresholds.</div>
     <div class="pr-grid">
       <div class="pr-row"><label>Dumbbell Press (reps @ 20lb)</label><input class="pr-input" id="prDumbbell" type="number" min="0" value="${ex.dumbbellPress||''}"></div>
+      <div class="pr-row"><label>Dumbbell Press (sets of 20 @ 20lb)</label><input class="pr-input" id="prDumbbell20Sets" type="number" min="0" value="${ex.dumbbellPress20Sets||''}"></div>
       ${_m.secret_dumbbell20 ? `<div class="pr-row"><label>Dumbbell Press (reps @ 25lb)</label><input class="pr-input" id="prDumbbell25" type="number" min="0" value="${ex.dumbbellPress25||''}"></div>` : ''}
       <div class="pr-row"><label>Incline Push-ups (60°, reps)</label><input class="pr-input" id="prIncline60" type="number" min="0" value="${ex.inclinePushups60||''}"></div>
       <div class="pr-row"><label>Incline Push-ups (30°, reps)</label><input class="pr-input" id="prIncline" type="number" min="0" value="${ex.inclinePushups||''}"></div>
@@ -2397,6 +2399,7 @@ function saveExercisePRs(){
   if(!S.exercise) S.exercise={dumbbellPress:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
   const g=id=>Math.max(0,parseFloat(document.getElementById(id)?.value)||0);
   S.exercise.dumbbellPress   = g('prDumbbell');
+  S.exercise.dumbbellPress20Sets = g('prDumbbell20Sets');
   S.exercise.dumbbellPress25 = g('prDumbbell25');
   S.exercise.inclinePushups60 = g('prIncline60');
   S.exercise.inclinePushups  = g('prIncline');
@@ -2437,7 +2440,7 @@ const FITNESS_LEVELS=[
     {label:'Jump Rope',target:'2:00',field:'jumpRopeSec',need:120,fmt:fmtMinSec},
   ]},
   {level:2,boxType:'blaster',goals:[
-    {label:'Dumbbell Press',target:'30 reps @ 20lb',field:'dumbbellPress',need:30,fmt:v=>`${v} reps`},
+    {label:'Dumbbell Press',target:'2 sets of 20 @ 20lb',field:'dumbbellPress20Sets',need:2,fmt:v=>`${v} set${v===1?'':'s'}`},
     {label:'Incline Push-ups (30°)',target:'20 reps',field:'inclinePushups',need:20,fmt:v=>`${v} reps`},
     {label:'Dead Hang',target:'1:30',field:'deadHangSec',need:90,fmt:fmtMinSec},
     {label:'Plank',target:'3:00',field:'plankSec',need:180,fmt:fmtMinSec},
@@ -2939,7 +2942,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-09-04.1215';
+const APP_VERSION = '2026-09-04.1300';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
