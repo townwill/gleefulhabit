@@ -2426,6 +2426,13 @@ function checkExerciseMilestones(){
   if(e.plankSec        >= 180) awPackSecret('secret_plank180',   '3-minute plank! 💪');
   if(e.jumpRopeSec     >= 120) awPackSecret('secret_jumprope120','2-minute jump rope! 💪');
   if(e.jumpRopeSec     >= 180) awPackSecret('secret_jumprope180','3-minute jump rope! 💪');
+  // Fitness Goal Level thresholds that don't already have a matching secret
+  // achievement above (new/changed fields introduced by the Level system).
+  if(e.inclinePushups60 >= 20)     awPackSecret('secret_incline60_20',   '20 push-ups @ 60° incline! 💪');
+  if(e.dumbbellPress20Sets >= 2)   awPackSecret('secret_dumbbell20sets2','2 sets of 20 reps @ 20lb dumbbell press! 💪');
+  if(e.deadHangSec     >= 120) awPackSecret('secret_hang120',     '2-minute dead hang! 💪');
+  if(e.plankSec         >= 240) awPackSecret('secret_plank240',    '4-minute plank! 💪');
+  if(e.jumpRopeSec      >= 240) awPackSecret('secret_jumprope240', '4-minute jump rope! 💪');
 }
 function fmtMinSec(sec){sec=Math.max(0,sec||0);const m=Math.floor(sec/60),s=Math.round(sec%60);return `${m}:${String(s).padStart(2,'0')}`;}
 // Three tiers of "hit all 5 strength PRs" goals, each awarding one box on full
@@ -2942,7 +2949,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-09-04.1300';
+const APP_VERSION = '2026-09-04.1345';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
