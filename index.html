@@ -1008,6 +1008,23 @@ function migrateState(raw) {
   if (!raw.customWorkoutLogs)        raw.customWorkoutLogs={};
   if (!raw.customGoals)              raw.customGoals=[];
   if (!raw.workoutExtras)             raw.workoutExtras={};
+  raw.customWorkouts.forEach(w=>{
+    if (w.bestRounds===undefined) {
+      let best=null;
+      Object.keys(raw.customWorkoutLogs||{}).forEach(dk=>{
+        const entry=(raw.customWorkoutLogs[dk]||{})[w.id];
+        if (entry && typeof entry.rounds==='number' && (best==null||entry.rounds>best)) best=entry.rounds;
+      });
+      w.bestRounds=best; // backfilled from history so an already-set record can't be "beaten" for free on first log post-upgrade
+    }
+    if (w.weightsUpAwarded==null) w.weightsUpAwarded=false;
+    (w.exercises||[]).forEach(e=>{
+      if (e.origWeight===undefined) {
+        const m=String(e.weight||'').match(/[\d.]+/);
+        e.origWeight = m?parseFloat(m[0]):null; // baseline set to current weight for pre-existing exercises
+      }
+    });
+  });
   if (raw.user.calorieGoal===undefined) raw.user.calorieGoal=null;
   if (!raw.exercise) raw.exercise={dumbbellPress:0,dumbbellPress20Sets:0,dumbbellPress25:0,inclinePushups60:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
   if (raw.exercise.dumbbellPress25==null) raw.exercise.dumbbellPress25=0;
@@ -2631,7 +2648,8 @@ function saveSideQuest(){const name=document.getElementById('sqName').value.trim
 // ── Custom Workout Circuits (AMRAP-style: define exercises once, log rounds completed each session) ──
 let _circuitEditId=null, _circuitDraftExercises=[];
 function syncCircuitDraftFromDOM(){
-  _circuitDraftExercises=_circuitDraftExercises.map((_,i)=>({
+  _circuitDraftExercises=_circuitDraftExercises.map((ex,i)=>({
+    ...ex,
     name:(document.getElementById(`cexName-${i}`)?.value||'').trim(),
     reps:document.getElementById(`cexReps-${i}`)?.value||'',
     weight:(document.getElementById(`cexWeight-${i}`)?.value||'').trim()
@@ -2676,18 +2694,46 @@ function openCircuitModal(editId){
   renderCircuitDraftRows();
   document.getElementById('circuitModalOverlay').classList.add('open');
 }
+function parseWeightNum(w){ const m=String(w||'').match(/[\d.]+/); return m?parseFloat(m[0]):null; }
+function checkCircuitWeightsUp(w){
+  if(!w||w.weightsUpAwarded)return false;
+  const comparable=(w.exercises||[]).filter(e=>e.origWeight!=null&&parseWeightNum(e.weight)!=null);
+  if(!comparable.length)return false;
+  const allUp=comparable.every(e=>parseWeightNum(e.weight)>e.origWeight);
+  if(!allUp)return false;
+  w.weightsUpAwarded=true;
+  S.user.packsBank=(S.user.packsBank||0)+1;
+  S.user.packHistory.unshift({date:todayKey(),count:1,type:'pack',reason:`💪 All weights up — ${w.name}`});
+  setTimeout(()=>{toast(`💪 Every weight in "${w.name}" is up! 📦 Pack earned`);confetti(60);},600);
+  return true;
+}
+function checkCircuitRecord(w,rounds){
+  if(!w)return false;
+  if(w.bestRounds==null){w.bestRounds=rounds;return false;}
+  if(rounds>w.bestRounds){
+    w.bestRounds=rounds;
+    S.user.packsBank=(S.user.packsBank||0)+1;
+    S.user.packHistory.unshift({date:todayKey(),count:1,type:'pack',reason:`🏆 New circuit record — ${w.name} (${rounds} rounds)`});
+    setTimeout(()=>{toast(`🏆 New record! ${rounds} rounds — 📦 Pack earned`);confetti(70);},600);
+    return true;
+  }
+  return false;
+}
 function saveCircuit(){
   syncCircuitDraftFromDOM();
   const name=document.getElementById('cName').value.trim();
   if(!name){const i=document.getElementById('cName');i.style.borderColor='#ff6464';i.focus();setTimeout(()=>i.style.borderColor='',1200);return;}
   const durationMin=parseFloat(document.getElementById('cDuration').value)||null;
-  const exercises=_circuitDraftExercises.filter(e=>e.name).map(e=>({name:e.name.slice(0,40),reps:parseFloat(e.reps)||0,weight:String(e.weight||'').slice(0,20)}));
+  const exercises=_circuitDraftExercises.filter(e=>e.name).map(e=>({name:e.name.slice(0,40),reps:parseFloat(e.reps)||0,weight:String(e.weight||'').slice(0,20),origWeight:(e.origWeight!=null)?e.origWeight:parseWeightNum(e.weight)}));
+  let saved=null;
   if(_circuitEditId){
     const idx=S.customWorkouts.findIndex(x=>x.id===_circuitEditId);
-    if(idx!==-1)S.customWorkouts[idx]={...S.customWorkouts[idx],name,durationMin,exercises};
+    if(idx!==-1){S.customWorkouts[idx]={...S.customWorkouts[idx],name,durationMin,exercises};saved=S.customWorkouts[idx];}
   }else{
-    S.customWorkouts.push({id:Date.now().toString(36),name,durationMin,exercises});
+    saved={id:Date.now().toString(36),name,durationMin,exercises,bestRounds:null,weightsUpAwarded:false};
+    S.customWorkouts.push(saved);
   }
+  if(saved)checkCircuitWeightsUp(saved);
   save();
   checkCustomGoals();
   closeModal('circuitModalOverlay');
@@ -2707,6 +2753,8 @@ function logCircuitRounds(id){
   const tk=todayKey();
   if(!S.customWorkoutLogs[tk])S.customWorkoutLogs[tk]={};
   S.customWorkoutLogs[tk][id]={rounds};
+  const w=(S.customWorkouts||[]).find(x=>x.id===id);
+  if(w)checkCircuitRecord(w,rounds);
   save();
   checkCustomGoals();
   checkWorkoutAutoComplete();
@@ -2951,7 +2999,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-09-04.1500';
+const APP_VERSION = '2026-09-07.1200';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
@@ -2963,7 +3011,8 @@ renderAll();
 checkBackupReminder();
 checkProteinReminder();
 initQuoteSwipe();
-setTimeout(()=>maybeShowDailyQuote(),500);
+// Popup quotes are retired (Will stopped reading them) — favorite quotes saved earlier still work fine, just no more new popups.
+// setTimeout(()=>maybeShowDailyQuote(),500);
 setTimeout(()=>checkWeeklyPacksAndMilestones(),100);
 setTimeout(()=>checkCustomGoals(),150);
 setTimeout(()=>checkExerciseMilestones(),180);
