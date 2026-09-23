@@ -246,7 +246,7 @@ body.has-update .toast{bottom:calc(160px + env(safe-area-inset-bottom,0px))}
 <div id="overlay"></div>
 <div id="toast" class="toast" hidden role="status"></div>
 <script>
-const APP_VERSION = '2026-09-23.0130';
+const APP_VERSION = '2026-09-23.0200';
 
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
@@ -354,7 +354,8 @@ async function askClaude({ prompt, image, model, search = true, maxSearch = 4, s
   const content = [];
   if (image) content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: image } });
   content.push({ type: 'text', text: prompt });
-  const prog = onProgress || (() => {});
+  const searches = [];
+  const prog = ev => { if (ev.type === 'query' && ev.query) searches.push({ q: ev.query, n: null }); if (ev.type === 'results' && searches.length) searches[searches.length - 1].n = ev.count; (onProgress || (() => {}))(ev); };
   const useSearch = search && settings.search && !settings.searchUnavailable;
   let useDomains = true;
   const post = async (messages, withTools) => {
@@ -388,7 +389,7 @@ async function askClaude({ prompt, image, model, search = true, maxSearch = 4, s
   }
   const text = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
   prog({ type: 'done' });
-  return { json: parseJSON(text), searched };
+  return { json: parseJSON(text), searched, searches };
 }
 
 // Reads Claude's streamed reply, rebuilding the content blocks and reporting real progress:
@@ -462,12 +463,13 @@ const REC_RULES = `Recommendation must be one of:
 Weigh the collector profile heavily: cards of their favorite players/teams lean KEEP unless the collector is profit-focused or sells quickly into spikes and the price is unusually high. Cards under $3 are usually KEEP (or bundle later).`;
 const kidNote = p => p.kid ? ' Write "reason" in simple, friendly words a kid can understand.' : '';
 const SEARCH_RULES = `PRICING RULES — follow exactly:
-a) Pin the exact version first: year, set, card number, parallel COLOR + finish (e.g. "Gold Reptilian Refractor", not just "Reptilian"), print run (/50), and grade (raw vs PSA 10 etc). Put the full parallel name in "parallel".
+a) Pin the exact version first: year, set, card number, parallel COLOR + finish (e.g. "Gold Reptilian Refractor", not just "Reptilian"), print run (/50), and grade (raw vs PSA 10 etc). Put the full parallel name in "parallel". In modern Topps/Bowman/Panini sets each print run maps to one named parallel (e.g. /50 is usually Gold) — if the card is serial numbered and you're not certain which parallel has that print run in this set, make your FIRST search find out (e.g. "2025-26 Bowman Chrome basketball Reptilian parallels print runs" or "BCV-121 /50"), and cross-check with the colors in the photo. Newer sets may be after your training, so don't rely on memory for them.
 b) If you have web search, search for SOLD/completed sales of that exact version. Put the card number and print run in your queries (e.g. "LeBron James BCV-121 Gold Reptilian /50 sold"). Good sources: eBay sold/completed listings (ebay.com/itm pages), 130point.com, sportscardspro.com, cardladder.com, psacard.com auction prices, Goldin, Fanatics Collect.
 c) A sale only counts as a comp if its title matches the player, year/set, card number, parallel COLOR and print run. Different colors, base cards, unnumbered versions, or a different /N are NOT comps — never price a numbered color parallel from base or unnumbered-parallel sales; numbered color parallels of stars usually sell for many times the base card. Raw and graded prices are different markets.
 d) Ignore active listings and asking prices; use sold prices only (an accepted Best Offer may be below the listed price — say so in the note). Prefer the last 90 days.
 e) low/mid/high come from the matching sales (mid = median). Put up to 4 matching sales in "comps" with price, date, url and the listing title in "desc".
-f) Set "match": "exact" if you found 2+ sales of the exact version, "close" if only 1 or only near matches (e.g. same card, different grade — say which in the note), "none" if you found none and are estimating. Set "matchCount" to the number of exact sales you found. Never claim "exact" without real sales.`;
+f) Set "match": "exact" if you found 2+ sales of the exact version, "close" if only 1 or only near matches (e.g. same card, different grade — say which in the note), "none" if you found none and are estimating. Set "matchCount" to the number of exact sales you found. Never claim "exact" without real sales.
+g) If no exact sales turn up, estimate from the closest real data: the same parallel/print run for this player in similar recent sets, or other players' copies of this exact parallel — never from the base card. Say what you based it on in the first comp's note.`;
 const SCHEMA = `{"identified":true,"confidence":0.0-1.0,"player":"","team":"","sport":"","year":"","brand":"","set":"","cardNumber":"","parallel":"","serial":"","rookie":false,"grader":"PSA|BGS|SGC|CGC|\\"\\"","grade":"","low":0,"mid":0,"high":0,"match":"exact|close|none","matchCount":0,"trend":"rising|steady|cooling","comps":[{"desc":"","price":0,"date":"","url":"","note":""}],"rec":"SELL|HOLD|KEEP","reason":"","query":"eBay search words for this exact card"}`;
 const OUT = s => `Finish with the JSON only, wrapped in <json></json> tags, in this shape: ${s}`;
 
@@ -593,6 +595,7 @@ function labelBlock(c) {
 }
 function recWord(r) { return r === 'SELL' ? 'Sell' : r === 'HOLD' ? 'Hold' : r === 'KEEP' ? 'Keep in PC' : 'Not priced'; }
 function matchBadge(c) {
+  if (c.match === 'you') return `<div class="mbadge ok">✓ From ${c.matchCount} sale${c.matchCount === 1 ? '' : 's'} you entered</div>`;
   if (c.match === 'exact') return `<div class="mbadge ok">✓ ${c.matchCount || 'Several'} sales of this exact card</div>`;
   if (c.match === 'close') return `<div class="mbadge warn">≈ Only close matches found — double-check eBay before selling</div>`;
   if (c.match === 'none') return `<div class="mbadge bad">No sales of this exact card found — this is an estimate. Try “Dig deeper” or check eBay.</div>`;
@@ -601,18 +604,36 @@ function matchBadge(c) {
 function valueBlock(c) {
   const lo = c.low, hi = c.high, mid = c.mid;
   let pos = 50; if (lo != null && hi != null && hi > lo && mid != null) pos = Math.max(0, Math.min(100, (mid - lo) / (hi - lo) * 100));
-  return `<div class="panel stack"><div class="valuebox"><div><div class="eyebrow">${c.match === 'exact' ? 'Based on recent sales' : 'Estimated value'}</div><div class="bignum">${money(mid)}</div></div>
+  return `<div class="panel stack"><div class="valuebox"><div><div class="eyebrow">${c.match === 'exact' || c.match === 'you' ? 'Based on recent sales' : 'Estimated value'}</div><div class="bignum">${money(mid)}</div></div>
     <span class="rec big ${c.rec || 'NONE'}">${recWord(c.rec)}</span></div>
     ${lo != null && hi != null ? `<div><div class="rangebar"><b style="left:${pos}%"></b></div><div class="row range" style="justify-content:space-between;margin-top:6px"><span>Low ${money(lo)}</span><span>High ${money(hi)}</span></div></div>` : ''}
     ${matchBadge(c)}
     ${c.reason ? `<p class="why ${c.rec}" style="margin:0">${esc(c.reason)}</p>` : ''}
     ${c.trend ? `<div class="small muted">Market trend: <b>${esc(c.trend)}</b>${c.confidence != null ? ` · ID confidence ${Math.round(c.confidence * 100)}%` : ''}</div>` : ''}</div>`;
 }
-function compsBlock(c) {
-  if (!c.comps || !c.comps.length) return '';
-  return `<div class="panel"><div class="eyebrow" style="margin-bottom:6px">Comps</div><ul class="comps">${c.comps.map(x => `<li><span>${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener" style="color:var(--navy)">${esc(x.desc || 'Sale')}</a>` : esc(x.desc)}${x.date || x.note ? `<br><span class="small muted">${esc([x.date, x.note].filter(Boolean).join(' · '))}</span>` : ''}</span><span class="p">${money(num(x.price))}</span></li>`).join('')}</ul></div>`;
+function compsBlock(c, ctx) {
+  const comps = c.comps || [], se = c.searches || [];
+  return `<div class="panel stack" style="gap:10px">
+    ${comps.length ? `<div><div class="eyebrow" style="margin-bottom:6px">Comps</div><ul class="comps">${comps.map(x => `<li><span>${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener" style="color:var(--navy)">${esc(x.desc || 'Sale')}</a>` : esc(x.desc)}${x.date || x.note ? `<br><span class="small muted">${esc([x.date, x.note].filter(Boolean).join(' · '))}</span>` : ''}</span><span class="p">${money(num(x.price))}</span></li>`).join('')}</ul></div>` : ''}
+    ${se.length ? `<details><summary class="small">What Claude searched (${se.length})</summary><ul class="small muted" style="margin:6px 0 0;padding-left:18px">${se.map(x => `<li>“${esc(x.q)}”${x.n != null ? ` — ${x.n} result${x.n === 1 ? '' : 's'}` : ''}</li>`).join('')}</ul></details>` : ''}
+    <details ${c.match === 'none' ? 'open' : ''}><summary class="small">Found sales on eBay? Enter the prices</summary>
+      <div class="stack" style="gap:8px;margin-top:8px"><span class="small muted">Tap eBay sold, then type the sold prices of the exact card, separated by commas.</span>
+      <div class="row" style="flex-wrap:nowrap"><input id="mpin_${ctx}" inputmode="decimal" placeholder="480, 282, 399" style="flex:1;min-width:0;min-height:46px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);padding:8px 12px;font-family:var(--mono)"><button class="btn sm dark" data-mp="${ctx}">Use</button></div></div></details>
+  </div>`;
 }
-function ebayLink(c) { const q = c.query || [c.year, c.brand, c.set, c.player, c.cardNumber ? '#' + c.cardNumber : '', c.parallel, c.grader && c.grade ? c.grader + ' ' + c.grade : ''].filter(Boolean).join(' '); return 'https://www.ebay.com/sch/i.html?_nkw=' + encodeURIComponent(q) + '&LH_Sold=1&LH_Complete=1'; }
+function applyManual(c, text) {
+  const ps = String(text).split(/[\s,;]+/).map(num).filter(x => x > 0).sort((a, b) => a - b);
+  if (!ps.length) return null;
+  const h = ps.length >> 1, mid = ps.length % 2 ? ps[h] : (ps[h - 1] + ps[h]) / 2;
+  return { ...c, low: ps[0], mid, high: ps[ps.length - 1], match: 'you', matchCount: ps.length, comps: ps.slice().reverse().map(p => ({ desc: 'eBay sold (you entered)', price: p, date: '', url: '', note: '' })) };
+}
+// After the collector enters real prices, refresh the sell/hold call for that price (quick, no web search).
+async function refreshRec(c, p) {
+  const r = await askClaude({ prompt: `Card: ${cardDesc(c)}. Real recent sold prices: ${c.comps.map(x => money(x.price)).join(', ')} (median ${money(c.mid)}). Today is ${today()}.\n${REC_RULES}\n${profileBlurb(p)}${kidNote(p)} Keep "reason" to 1-2 sentences.\n${OUT('{"rec":"SELL|HOLD|KEEP","reason":""}')}`, model: 'fast', search: false });
+  const rec = String(r.json.rec || '').toUpperCase();
+  return ['SELL', 'HOLD', 'KEEP'].includes(rec) ? { rec, reason: String(r.json.reason || '') } : null;
+}
+function ebayLink(c) { const run = (String(c.serial || '').match(/\/\s*\d+/) || [''])[0].replace(/\s/g, ''); const q = c.query || [c.year, c.set, c.player, c.cardNumber, c.parallel, run, c.grader && c.grade ? c.grader + ' ' + c.grade : ''].filter(Boolean).join(' '); return 'https://www.ebay.com/sch/i.html?_nkw=' + encodeURIComponent(q) + '&LH_Sold=1&LH_Complete=1'; }
 function editFields(c, pre) {
   const f = (k, l, t = 'text', ph = '') => `<div class="field"><label for="${pre}${k}">${l}</label><input id="${pre}${k}" data-k="${k}" type="${t}" ${t === 'number' ? 'inputmode="decimal" step="any"' : ''} value="${esc(c[k] ?? '')}" placeholder="${ph}"></div>`;
   return `<div class="stack">${f('player', 'Player', 'text', 'e.g. Bo Nix')}
@@ -636,7 +657,7 @@ function resultView(p, s) {
     ${s.thumb ? `<img class="photo" src="${s.thumb}" alt="Card photo">` : ''}
     ${labelBlock(c)}
     ${priced ? valueBlock(c) : ''}
-    ${compsBlock(c)}
+    ${priced ? compsBlock(c, 'r') : ''}
     ${c.notFound ? `<p class="note">Claude couldn’t confidently read this card. Fix the details below and tap Re-price, or try a clearer photo (the back or slab label works great).</p>` : ''}
     <div class="grid2"><button class="btn primary" data-act="save" data-list="pc">Add to PC</button><button class="btn dark" data-act="save" data-list="sell">Add to Sell list</button></div>
     ${priced ? `<div class="grid2"><a class="btn" href="${ebayLink(c)}" target="_blank" rel="noopener">eBay sold ↗</a><button class="btn" data-act="deeper">Dig deeper</button></div>` : ''}
@@ -737,6 +758,14 @@ $('#view').addEventListener('click', async e => {
   const ansB = e.target.closest('[data-ans]'); if (ansB) { readAns(); state.scan.ans[ansB.dataset.ans] = ansB.dataset.v; state.scan.error = ''; renderView(); if (ansB.dataset.v === 'yes') (ansB.dataset.ans === 'numbered' ? $('#a_no') : null)?.focus(); return; }
   const runB = e.target.closest('[data-run]'); if (runB) { readAns(); state.scan.ans.printRun = runB.dataset.run; renderView(); return; }
   const parB = e.target.closest('[data-par]'); if (parB) { readAns(); const a = state.scan.ans, v = parB.dataset.par; a.parWords = a.parWords.includes(v) ? a.parWords.filter(x => x !== v) : [...a.parWords, v]; renderView(); return; }
+  const mpB = e.target.closest('[data-mp="r"]');
+  if (mpB) {
+    const s0 = state.scan, p = cur(), n = applyManual(s0.result, $('#mpin_r')?.value || '');
+    if (!n) { toast('Type at least one price, like 480, 282'); return; }
+    s0.result = n; renderView(); toast('Updated from your prices — rechecking sell/hold…');
+    refreshRec(n, p).then(x => { if (x && state.scan.result === n) { Object.assign(n, x); renderView(); } }).catch(() => {});
+    return;
+  }
   const setB = e.target.closest('[data-set]'); if (setB) { settings[setB.dataset.set] = setB.dataset.v; saveSettings(); renderView(); return; }
   const row = e.target.closest('[data-card]'); if (row) { openCard(row.dataset.card); return; }
   const b = e.target.closest('[data-act]'); if (!b) return;
@@ -885,7 +914,7 @@ async function runPhotoScan() {
   const w = startWorking(thumb, 6);
   try {
     const r = await askClaude({ prompt: scanPrompt(p, answerNotes(ans)), image, model: settings.model, maxSearch: 6, signal: w.ctl.signal, onProgress: w.onProgress });
-    const res = { ...normalize(r.json || {}), searched: r.searched };
+    const res = { ...normalize(r.json || {}), searched: r.searched, searches: r.searches };
     if (ans.numbered === 'yes' && ans.printRun) res.serial = ansSerial(ans);
     if (ans.numbered === 'no') res.serial = '';
     if (ans.parallel === 'yes' && ansParallel(ans)) res.parallel = ansParallel(ans);
@@ -898,7 +927,7 @@ async function runPhotoScan() {
 async function quickPrice(text) {
   const p = cur(); if (!p) return;
   const w = startWorking(null);
-  try { const r = await askClaude({ prompt: textPrompt(p, text), model: settings.model, signal: w.ctl.signal, onProgress: w.onProgress }); state.scan = { status: 'result', thumb: null, result: { ...normalize(r.json || {}), searched: r.searched } }; }
+  try { const r = await askClaude({ prompt: textPrompt(p, text), model: settings.model, signal: w.ctl.signal, onProgress: w.onProgress }); state.scan = { status: 'result', thumb: null, result: { ...normalize(r.json || {}), searched: r.searched, searches: r.searches } }; }
   catch (e) { state.scan = e && e.name === 'AbortError' ? { status: 'idle' } : { status: 'idle', error: errCopy(e) }; }
   w.stop(); renderView();
 }
@@ -907,7 +936,7 @@ async function repriceFromForm(deeper = false) {
   const c = readFields($('#fix'), { ...s.result });
   if (!c.player) { s.error = 'Add at least the player name.'; renderView(); return; }
   const thumb = s.thumb, w = startWorking(thumb, deeper ? 8 : 4);
-  try { const r = await askClaude({ prompt: textPrompt(p, cardDesc(c)) + (deeper ? '\n' + deeperNote(c) : ''), model: deeper ? 'best' : settings.model, maxSearch: deeper ? 8 : 4, signal: w.ctl.signal, onProgress: w.onProgress }); state.scan = { status: 'result', thumb, result: { ...normalize(r.json || {}, c), searched: r.searched } }; }
+  try { const r = await askClaude({ prompt: textPrompt(p, cardDesc(c)) + (deeper ? '\n' + deeperNote(c) : ''), model: deeper ? 'best' : settings.model, maxSearch: deeper ? 8 : 4, signal: w.ctl.signal, onProgress: w.onProgress }); state.scan = { status: 'result', thumb, result: { ...normalize(r.json || {}, c), searched: r.searched, searches: r.searches } }; }
   catch (e) { state.scan = { status: 'result', thumb, result: c, error: errCopy(e) }; }
   w.stop(); renderView();
 }
@@ -998,7 +1027,7 @@ function renderSheet() {
     ${labelBlock(c)}
     ${sh.editing ? `<div class="panel" id="editbox">${editFields(c, 'e_')}<div class="grid2" style="margin-top:12px"><button class="btn" data-sact="canceledit">Cancel</button><button class="btn primary" data-sact="saveedit">Save</button></div></div>` : `
       ${c.mid != null ? valueBlock(c) : '<p class="note">Not priced yet — tap Re-price.</p>'}
-      ${compsBlock(c)}
+      ${c.mid != null ? compsBlock(c, 's') : ''}
       ${h.length > 1 ? `<div class="panel"><div class="eyebrow" style="margin-bottom:6px">Value history</div>${sparkline(h)}</div>` : ''}
       <div class="small muted">${c.checkedAt ? 'Last checked ' + new Date(c.checkedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : ''}</div>
       <div class="grid2">${c.list === 'pc' ? `<button class="btn dark" data-sact="move" data-list="sell">Move to Sell</button>` : `<button class="btn primary" data-sact="move" data-list="pc">Move to PC</button>`}
@@ -1021,6 +1050,16 @@ $('#overlay').addEventListener('click', async e => {
   if (state.quiz) return quizClick(e);
   const pick = e.target.closest('[data-pick]');
   if (pick) { const v = pick.dataset.pick; closeSheet(); if (v === 'new') openQuiz(null); else if (v !== 'close') useProfile(v); return; }
+  const mpS = e.target.closest('[data-mp="s"]');
+  if (mpS && state.sheet) {
+    const c0 = state.cards.find(x => x.id === state.sheet.id); if (!c0) return;
+    const n = applyManual(c0, $('#mpin_s')?.value || ''); if (!n) { toast('Type at least one price, like 480, 282'); return; }
+    const now = Date.now(); n.checkedAt = now; n.history = [...(c0.history || []), { t: now, mid: n.mid }].slice(-20);
+    putCard(n); renderSheet(); renderView(); toast('Updated from your prices');
+    const p = state.profiles.find(x => x.id === n.profileId) || cur();
+    refreshRec(n, p).then(x => { if (x) { const cur2 = state.cards.find(y => y.id === n.id); if (cur2) { putCard({ ...cur2, ...x }); if (state.sheet && !state.sheet.editing) renderSheet(); renderView(); } } }).catch(() => {});
+    return;
+  }
   const b = e.target.closest('[data-sact]'); if (!b) return;
   const sh = state.sheet; const c = state.cards.find(x => x.id === sh?.id); if (!c) return;
   const a = b.dataset.sact;
@@ -1039,7 +1078,7 @@ $('#overlay').addEventListener('click', async e => {
     const p = state.profiles.find(x => x.id === c.profileId) || cur();
     try {
       const r = await askClaude({ prompt: textPrompt(p, cardDesc(c)) + (deeper ? '\n' + deeperNote(c) : ''), model: deeper ? 'best' : settings.model, maxSearch: deeper ? 8 : 4 });
-      const n = { ...normalize(r.json || {}, c), searched: r.searched }; delete n.notFound;
+      const n = { ...normalize(r.json || {}, c), searched: r.searched, searches: r.searches }; delete n.notFound;
       const now = Date.now(); if (n.mid != null) { n.checkedAt = now; n.history = [...(c.history || []), { t: now, mid: n.mid }].slice(-20); }
       putCard(n); toast('Updated: ' + money(n.mid));
     } catch (err) { toast(errCopy(err), 4500); }
