@@ -196,6 +196,10 @@ html{-webkit-text-size-adjust:100%}
 .brandtxt{display:flex;flex-direction:column;gap:2px}
 .vtag{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--muted)}
 .updatebar{position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:70;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;background:#17744a;color:#fff;border:0;border-radius:14px;padding:12px 16px;box-shadow:var(--shadow);max-width:536px;margin:0 auto}
+.mbadge{font-size:14px;font-weight:600;border-radius:10px;padding:8px 12px;line-height:1.35}
+.mbadge.ok{background:var(--green-bg);color:var(--green)}
+.mbadge.warn{background:var(--gold-bg);color:var(--gold)}
+.mbadge.bad{background:rgba(200,16,46,.12);color:var(--accent)}
 .updatebar span{font-size:14px;opacity:.9}
 body.has-update .toast{bottom:calc(160px + env(safe-area-inset-bottom,0px))}
 .drop .logo{width:112px;height:112px;border-radius:26px;box-shadow:var(--shadow)}
@@ -242,7 +246,7 @@ body.has-update .toast{bottom:calc(160px + env(safe-area-inset-bottom,0px))}
 <div id="overlay"></div>
 <div id="toast" class="toast" hidden role="status"></div>
 <script>
-const APP_VERSION = '2026-09-23.0100';
+const APP_VERSION = '2026-09-23.0130';
 
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
@@ -263,6 +267,7 @@ function toast(msg, ms = 3200) { const t = $('#toast'); t.textContent = msg; t.h
 const KEY_LS = 'gh_ai_key';          // shared with GleefulHabit on the same site
 const STATE_LS = 'cc_state';
 const SET_LS = 'cc_settings';
+const COMP_DOMAINS = ['ebay.com', '130point.com', 'sportscardspro.com', 'cardladder.com', 'psacard.com', 'goldin.co', 'fanaticscollect.com', 'pwccmarketplace.com', 'beckett.com', 'tcdb.com', 'cardboardconnection.com'];
 const MODELS = { best: 'claude-sonnet-5', fast: 'claude-haiku-4-5-20251001' };
 const hasKey = () => { try { return !!localStorage.getItem(KEY_LS); } catch (e) { return false; } };
 let settings = Object.assign({ model: 'best', recheckModel: 'fast', search: true }, lsGet(SET_LS) || {});
@@ -351,9 +356,10 @@ async function askClaude({ prompt, image, model, search = true, maxSearch = 4, s
   content.push({ type: 'text', text: prompt });
   const prog = onProgress || (() => {});
   const useSearch = search && settings.search && !settings.searchUnavailable;
+  let useDomains = true;
   const post = async (messages, withTools) => {
     const body = { model: MODELS[model] || MODELS.best, max_tokens: 4000, messages, stream: true };
-    if (withTools) body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: maxSearch }];
+    if (withTools) { const t = { type: 'web_search_20250305', name: 'web_search', max_uses: maxSearch }; if (useDomains) t.allowed_domains = COMP_DOMAINS; body.tools = [t]; }
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST', signal,
       headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
@@ -368,7 +374,9 @@ async function askClaude({ prompt, image, model, search = true, maxSearch = 4, s
     try { data = await post(messages, withTools); }
     catch (e) {
       // Web search not switched on for this API account: fall back to Claude's own knowledge.
-      if (withTools && e.code === 'http' && e.status === 400 && /web.?search|tool/i.test(e.detail || '')) {
+      if (withTools && useDomains && e.code === 'http' && e.status === 400 && /domain/i.test(e.detail || '')) {
+        useDomains = false; data = await post(messages, true);   // a card site was refused — search the whole web instead
+      } else if (withTools && e.code === 'http' && e.status === 400 && /web.?search|tool/i.test(e.detail || '')) {
         settings.searchUnavailable = true; saveSettings(); withTools = false;
         toast('Live eBay search is off for your API account — using Claude’s price knowledge instead.', 5000);
         data = await post(messages, false);
@@ -453,8 +461,14 @@ const REC_RULES = `Recommendation must be one of:
 - "KEEP": belongs in their personal collection (favorite player/team, sentimental, or too low-value to be worth selling).
 Weigh the collector profile heavily: cards of their favorite players/teams lean KEEP unless the collector is profit-focused or sells quickly into spikes and the price is unusually high. Cards under $3 are usually KEEP (or bundle later).`;
 const kidNote = p => p.kid ? ' Write "reason" in simple, friendly words a kid can understand.' : '';
-const SEARCH_RULES = `If you have web search, search for recent SOLD prices of this exact card (eBay sold listings, 130point, Card Ladder, Goldin, Fanatics Collect), matching the parallel and grade. Prefer sales from the last 90 days. Base low/mid/high on real sales you found; put up to 3 of them in "comps" with the sale price, date and url. If you can't find sales of the exact card, say so in the comp note and estimate from the closest matches.`;
-const SCHEMA = `{"identified":true,"confidence":0.0-1.0,"player":"","team":"","sport":"","year":"","brand":"","set":"","cardNumber":"","parallel":"","serial":"","rookie":false,"grader":"PSA|BGS|SGC|CGC|\\"\\"","grade":"","low":0,"mid":0,"high":0,"trend":"rising|steady|cooling","comps":[{"desc":"","price":0,"date":"","url":"","note":""}],"rec":"SELL|HOLD|KEEP","reason":"","query":"eBay search words for this exact card"}`;
+const SEARCH_RULES = `PRICING RULES — follow exactly:
+a) Pin the exact version first: year, set, card number, parallel COLOR + finish (e.g. "Gold Reptilian Refractor", not just "Reptilian"), print run (/50), and grade (raw vs PSA 10 etc). Put the full parallel name in "parallel".
+b) If you have web search, search for SOLD/completed sales of that exact version. Put the card number and print run in your queries (e.g. "LeBron James BCV-121 Gold Reptilian /50 sold"). Good sources: eBay sold/completed listings (ebay.com/itm pages), 130point.com, sportscardspro.com, cardladder.com, psacard.com auction prices, Goldin, Fanatics Collect.
+c) A sale only counts as a comp if its title matches the player, year/set, card number, parallel COLOR and print run. Different colors, base cards, unnumbered versions, or a different /N are NOT comps — never price a numbered color parallel from base or unnumbered-parallel sales; numbered color parallels of stars usually sell for many times the base card. Raw and graded prices are different markets.
+d) Ignore active listings and asking prices; use sold prices only (an accepted Best Offer may be below the listed price — say so in the note). Prefer the last 90 days.
+e) low/mid/high come from the matching sales (mid = median). Put up to 4 matching sales in "comps" with price, date, url and the listing title in "desc".
+f) Set "match": "exact" if you found 2+ sales of the exact version, "close" if only 1 or only near matches (e.g. same card, different grade — say which in the note), "none" if you found none and are estimating. Set "matchCount" to the number of exact sales you found. Never claim "exact" without real sales.`;
+const SCHEMA = `{"identified":true,"confidence":0.0-1.0,"player":"","team":"","sport":"","year":"","brand":"","set":"","cardNumber":"","parallel":"","serial":"","rookie":false,"grader":"PSA|BGS|SGC|CGC|\\"\\"","grade":"","low":0,"mid":0,"high":0,"match":"exact|close|none","matchCount":0,"trend":"rising|steady|cooling","comps":[{"desc":"","price":0,"date":"","url":"","note":""}],"rec":"SELL|HOLD|KEEP","reason":"","query":"eBay search words for this exact card"}`;
 const OUT = s => `Finish with the JSON only, wrapped in <json></json> tags, in this shape: ${s}`;
 
 function scanPrompt(p, notes = '') {
@@ -477,13 +491,16 @@ ${REC_RULES}
 ${profileBlurb(p)}${kidNote(p)} Keep "reason" to 1-2 sentences.
 ${OUT(SCHEMA)}`;
 }
+function deeperNote(c) {
+  return `SECOND LOOK: a previous lookup priced this card at ${money(c.mid)}${c.match ? ` (match: ${c.match})` : ''}, and the collector thinks that's wrong. Double-check the exact parallel color and print run, then run fresh searches for sold sales of exactly that version (use the card number and /print run in the query). Report what the exact sales actually show, even if very different.`;
+}
 function recheckPrompt(p, lines) {
   return `You are an expert sports trading card pricer. Today is ${today()}. Re-price each card below and give an updated recommendation.
 ${SEARCH_RULES.replace('this exact card', 'each exact card')}
 ${REC_RULES}
 ${profileBlurb(p)}${kidNote(p)} Keep each "reason" to one sentence; say if the value moved from lastValue and why (season, injury, milestone, hype cooling).
 Cards: ${JSON.stringify(lines)}
-${OUT('[{"id":"","low":0,"mid":0,"high":0,"trend":"rising|steady|cooling","rec":"SELL|HOLD|KEEP","reason":"","comps":[{"desc":"","price":0,"date":"","url":""}]}]')} — one object per card, same ids.`;
+${OUT('[{"id":"","low":0,"mid":0,"high":0,"match":"exact|close|none","matchCount":0,"trend":"rising|steady|cooling","rec":"SELL|HOLD|KEEP","reason":"","comps":[{"desc":"","price":0,"date":"","url":""}]}]')} — one object per card, same ids.`;
 }
 function normComps(arr) {
   return Array.isArray(arr) ? arr.slice(0, 4).map(x => ({ desc: String(x.desc || ''), price: num(x.price), date: String(x.date || ''), url: /^https?:\/\//.test(x.url || '') ? String(x.url) : '', note: String(x.note || '') })) : [];
@@ -499,6 +516,7 @@ function normalize(r, base = {}) {
     grade: pick('grade'), low: num(r.low), mid: num(r.mid), high: num(r.high), trend: r.trend || '',
     comps: normComps(r.comps), rec: ['SELL', 'HOLD', 'KEEP'].includes(rec) ? rec : 'HOLD', reason: String(r.reason || ''),
     query: String(r.query || ''), confidence: num(r.confidence), notFound: r.identified === false,
+    match: ['exact', 'close', 'none'].includes(String(r.match)) ? String(r.match) : 'none', matchCount: num(r.matchCount) || 0,
   };
 }
 
@@ -574,12 +592,19 @@ function labelBlock(c) {
     <div class="grade">${graded ? esc(c.grade) : '<span style="font-size:22px">RAW</span>'}<small>${graded ? 'GRADE' : 'UNGRADED'}</small></div></div></div>`;
 }
 function recWord(r) { return r === 'SELL' ? 'Sell' : r === 'HOLD' ? 'Hold' : r === 'KEEP' ? 'Keep in PC' : 'Not priced'; }
+function matchBadge(c) {
+  if (c.match === 'exact') return `<div class="mbadge ok">✓ ${c.matchCount || 'Several'} sales of this exact card</div>`;
+  if (c.match === 'close') return `<div class="mbadge warn">≈ Only close matches found — double-check eBay before selling</div>`;
+  if (c.match === 'none') return `<div class="mbadge bad">No sales of this exact card found — this is an estimate. Try “Dig deeper” or check eBay.</div>`;
+  return '';
+}
 function valueBlock(c) {
   const lo = c.low, hi = c.high, mid = c.mid;
   let pos = 50; if (lo != null && hi != null && hi > lo && mid != null) pos = Math.max(0, Math.min(100, (mid - lo) / (hi - lo) * 100));
-  return `<div class="panel stack"><div class="valuebox"><div><div class="eyebrow">${c.searched ? 'Based on recent sales' : 'Estimated value'}</div><div class="bignum">${money(mid)}</div></div>
+  return `<div class="panel stack"><div class="valuebox"><div><div class="eyebrow">${c.match === 'exact' ? 'Based on recent sales' : 'Estimated value'}</div><div class="bignum">${money(mid)}</div></div>
     <span class="rec big ${c.rec || 'NONE'}">${recWord(c.rec)}</span></div>
     ${lo != null && hi != null ? `<div><div class="rangebar"><b style="left:${pos}%"></b></div><div class="row range" style="justify-content:space-between;margin-top:6px"><span>Low ${money(lo)}</span><span>High ${money(hi)}</span></div></div>` : ''}
+    ${matchBadge(c)}
     ${c.reason ? `<p class="why ${c.rec}" style="margin:0">${esc(c.reason)}</p>` : ''}
     ${c.trend ? `<div class="small muted">Market trend: <b>${esc(c.trend)}</b>${c.confidence != null ? ` · ID confidence ${Math.round(c.confidence * 100)}%` : ''}</div>` : ''}</div>`;
 }
@@ -614,7 +639,7 @@ function resultView(p, s) {
     ${compsBlock(c)}
     ${c.notFound ? `<p class="note">Claude couldn’t confidently read this card. Fix the details below and tap Re-price, or try a clearer photo (the back or slab label works great).</p>` : ''}
     <div class="grid2"><button class="btn primary" data-act="save" data-list="pc">Add to PC</button><button class="btn dark" data-act="save" data-list="sell">Add to Sell list</button></div>
-    ${priced ? `<a class="btn block" href="${ebayLink(c)}" target="_blank" rel="noopener">See eBay sold listings ↗</a>` : ''}
+    ${priced ? `<div class="grid2"><a class="btn" href="${ebayLink(c)}" target="_blank" rel="noopener">eBay sold ↗</a><button class="btn" data-act="deeper">Dig deeper</button></div>` : ''}
     <details class="panel" id="fix" ${!priced ? 'open' : ''}><summary>${priced ? 'Wrong card? Fix the details' : 'Card details'}</summary><div style="margin-top:10px">${editFields(c, 'r_')}
       <div class="row" style="margin-top:12px"><button class="btn block" data-act="reprice" ${hasKey() ? '' : 'disabled'}>${priced ? 'Re-price with these details' : 'Price it'}</button></div></div></details>
     ${s.error ? `<p class="note" style="color:var(--accent)">${esc(s.error)}</p>` : ''}
@@ -723,6 +748,7 @@ $('#view').addEventListener('click', async e => {
   else if (a === 'rescan') { state.scan = { status: 'idle' }; renderView(); }
   else if (a === 'stopscan') state.scan.ctl?.abort();
   else if (a === 'reprice') repriceFromForm();
+  else if (a === 'deeper') repriceFromForm(true);
   else if (a === 'save') saveScan(b.dataset.list);
   else if (a === 'findcomps') runPhotoScan();
   else if (a === 'recheck') recheckAll();
@@ -856,9 +882,9 @@ async function runPhotoScan() {
   const p = cur(), s = state.scan; if (!p || s.status !== 'ask') return;
   readAns();
   const { thumb, image, ans } = s;
-  const w = startWorking(thumb, 4);
+  const w = startWorking(thumb, 6);
   try {
-    const r = await askClaude({ prompt: scanPrompt(p, answerNotes(ans)), image, model: settings.model, maxSearch: 4, signal: w.ctl.signal, onProgress: w.onProgress });
+    const r = await askClaude({ prompt: scanPrompt(p, answerNotes(ans)), image, model: settings.model, maxSearch: 6, signal: w.ctl.signal, onProgress: w.onProgress });
     const res = { ...normalize(r.json || {}), searched: r.searched };
     if (ans.numbered === 'yes' && ans.printRun) res.serial = ansSerial(ans);
     if (ans.numbered === 'no') res.serial = '';
@@ -876,12 +902,12 @@ async function quickPrice(text) {
   catch (e) { state.scan = e && e.name === 'AbortError' ? { status: 'idle' } : { status: 'idle', error: errCopy(e) }; }
   w.stop(); renderView();
 }
-async function repriceFromForm() {
+async function repriceFromForm(deeper = false) {
   const p = cur(), s = state.scan; if (!p) return;
   const c = readFields($('#fix'), { ...s.result });
   if (!c.player) { s.error = 'Add at least the player name.'; renderView(); return; }
-  const thumb = s.thumb, w = startWorking(thumb);
-  try { const r = await askClaude({ prompt: textPrompt(p, cardDesc(c)), model: settings.model, signal: w.ctl.signal, onProgress: w.onProgress }); state.scan = { status: 'result', thumb, result: { ...normalize(r.json || {}, c), searched: r.searched } }; }
+  const thumb = s.thumb, w = startWorking(thumb, deeper ? 8 : 4);
+  try { const r = await askClaude({ prompt: textPrompt(p, cardDesc(c)) + (deeper ? '\n' + deeperNote(c) : ''), model: deeper ? 'best' : settings.model, maxSearch: deeper ? 8 : 4, signal: w.ctl.signal, onProgress: w.onProgress }); state.scan = { status: 'result', thumb, result: { ...normalize(r.json || {}, c), searched: r.searched } }; }
   catch (e) { state.scan = { status: 'result', thumb, result: c, error: errCopy(e) }; }
   w.stop(); renderView();
 }
@@ -919,7 +945,7 @@ async function recheckAll() {
           const mid = num(x.mid); if (mid == null) continue;
           const rec = String(x.rec || '').toUpperCase(), now = Date.now();
           const comps = normComps(x.comps);
-          putCard({ ...c, low: num(x.low), mid, high: num(x.high), trend: x.trend || c.trend, rec: ['SELL', 'HOLD', 'KEEP'].includes(rec) ? rec : c.rec, reason: String(x.reason || c.reason || ''), comps: comps.length ? comps : c.comps, searched: r.searched, checkedAt: now, history: [...(c.history || []), { t: now, mid }].slice(-20) });
+          putCard({ ...c, low: num(x.low), mid, high: num(x.high), trend: x.trend || c.trend, rec: ['SELL', 'HOLD', 'KEEP'].includes(rec) ? rec : c.rec, reason: String(x.reason || c.reason || ''), comps: comps.length ? comps : c.comps, searched: r.searched, match: ['exact', 'close', 'none'].includes(String(x.match)) ? String(x.match) : 'none', matchCount: num(x.matchCount) || 0, checkedAt: now, history: [...(c.history || []), { t: now, mid }].slice(-20) });
           updated++; if (rec === 'SELL') sells++;
         }
         state.recheck.done += chunk.length; renderChrome(); renderView();
@@ -977,7 +1003,7 @@ function renderSheet() {
       <div class="small muted">${c.checkedAt ? 'Last checked ' + new Date(c.checkedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : ''}</div>
       <div class="grid2">${c.list === 'pc' ? `<button class="btn dark" data-sact="move" data-list="sell">Move to Sell</button>` : `<button class="btn primary" data-sact="move" data-list="pc">Move to PC</button>`}
         <button class="btn" data-sact="reprice" ${hasKey() && !sh.busy ? '' : 'disabled'}>${sh.busy ? 'Pricing…' : 'Re-price'}</button></div>
-      <a class="btn block" href="${ebayLink(c)}" target="_blank" rel="noopener">See eBay sold listings ↗</a>
+      <div class="grid2"><a class="btn" href="${ebayLink(c)}" target="_blank" rel="noopener">eBay sold ↗</a><button class="btn" data-sact="deeper" ${hasKey() && !sh.busy ? '' : 'disabled'}>Dig deeper</button></div>
       ${state.profiles.length > 1 ? `<div class="row small"><span class="muted">Give to</span>${state.profiles.filter(p => p.id !== c.profileId).map(p => `<button class="chip" data-sact="give" data-id="${p.id}">${esc(p.name)}</button>`).join('')}</div>` : ''}
       <div class="row"><button class="linkbtn" data-sact="edit">Edit details</button><span class="spacer"></span>
         ${sh.confirm ? `<span class="small">Delete this card?</span><button class="btn sm" data-sact="nodel">No</button><button class="btn sm primary" data-sact="yesdel">Delete</button>` : `<button class="linkbtn" style="color:var(--accent)" data-sact="del">Delete</button>`}</div>`}
@@ -1007,11 +1033,12 @@ $('#overlay').addEventListener('click', async e => {
   else if (a === 'del') { sh.confirm = true; renderSheet(); }
   else if (a === 'nodel') { sh.confirm = false; renderSheet(); }
   else if (a === 'yesdel') { delCard(c.id); closeSheet(); renderChrome(); renderView(); toast('Card deleted'); }
-  else if (a === 'reprice') {
-    sh.busy = true; renderSheet();
+  else if (a === 'reprice' || a === 'deeper') {
+    const deeper = a === 'deeper';
+    sh.busy = true; renderSheet(); toast(deeper ? 'Digging deeper — this can take a minute…' : 'Re-pricing…', 6000);
     const p = state.profiles.find(x => x.id === c.profileId) || cur();
     try {
-      const r = await askClaude({ prompt: textPrompt(p, cardDesc(c)), model: settings.model });
+      const r = await askClaude({ prompt: textPrompt(p, cardDesc(c)) + (deeper ? '\n' + deeperNote(c) : ''), model: deeper ? 'best' : settings.model, maxSearch: deeper ? 8 : 4 });
       const n = { ...normalize(r.json || {}, c), searched: r.searched }; delete n.notFound;
       const now = Date.now(); if (n.mid != null) { n.checkedAt = now; n.history = [...(c.history || []), { t: now, mid: n.mid }].slice(-20); }
       putCard(n); toast('Updated: ' + money(n.mid));
