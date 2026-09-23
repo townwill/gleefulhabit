@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Cache-Control" content="no-cache">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Comp Check">
+<meta name="apple-mobile-web-app-title" content="Slab Happy">
 <meta name="theme-color" content="#0a1120">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" href="apple-touch-icon.png">
-<title>Comp Check</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<title>Slab Happy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
@@ -191,15 +191,45 @@ html{-webkit-text-size-adjust:100%}
 .prog{height:12px;border-radius:99px;background:var(--surface2);border:1px solid var(--line);overflow:hidden}
 .prog i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--accent),#ff8a5b);transition:width .25s linear}
 @media (prefers-reduced-motion:reduce){.prog i{transition:none}}
+.brand svg{width:34px;height:34px;border-radius:9px;flex:none}
+.brandtxt{display:flex;flex-direction:column;gap:2px}
+.vtag{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--muted)}
+.updatebar{position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:70;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;background:#17744a;color:#fff;border:0;border-radius:14px;padding:12px 16px;box-shadow:var(--shadow);max-width:536px;margin:0 auto}
+.updatebar span{font-size:14px;opacity:.9}
+body.has-update .toast{bottom:calc(160px + env(safe-area-inset-bottom,0px))}
+.drop .logo{width:112px;height:112px;border-radius:26px;box-shadow:var(--shadow)}
 </style>
 </head>
 <body>
 <header class="top"><div class="top-in">
-  <div class="brand"><i aria-hidden="true"></i>Comp Check</div>
+  <div class="brand"><svg aria-hidden="true" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="hbg" cx="50%" cy="22%" r="85%"><stop offset="0" stop-color="#3559c7"/><stop offset="1" stop-color="#162c6e"/></radialGradient>
+    <linearGradient id="hsheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".55"/><stop offset=".45" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#hbg)"/>
+  <g transform="rotate(-6 256 262)">
+    <rect x="132" y="58" width="248" height="400" rx="38" fill="#0b1636" opacity=".35" transform="translate(10 14)"/>
+    <rect x="132" y="58" width="248" height="400" rx="38" fill="#eef2f8" stroke="#c7d1e2" stroke-width="8"/>
+    <rect x="158" y="84" width="196" height="72" rx="12" fill="#c8102e"/>
+    <rect x="176" y="104" width="86" height="11" rx="5.5" fill="#fff" opacity=".9"/>
+    <rect x="176" y="126" width="58" height="11" rx="5.5" fill="#fff" opacity=".65"/>
+    <text x="318" y="140" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="46" fill="#fff" text-anchor="middle">10</text>
+    <rect x="166" y="180" width="180" height="250" rx="14" fill="#ffffff" stroke="#d6dce6" stroke-width="6"/>
+    <circle cx="222" cy="272" r="19" fill="#0f1b33"/><circle cx="290" cy="272" r="19" fill="#0f1b33"/>
+    <circle cx="228" cy="266" r="6" fill="#fff"/><circle cx="296" cy="266" r="6" fill="#fff"/>
+    <circle cx="198" cy="318" r="15" fill="#ff8fa0" opacity=".55"/><circle cx="314" cy="318" r="15" fill="#ff8fa0" opacity=".55"/>
+    <path d="M206 322 Q256 384 306 322" stroke="#0f1b33" stroke-width="20" fill="none" stroke-linecap="round"/>
+    <path d="M150 76 L250 76 L150 250 Z" fill="url(#hsheen)" opacity=".5"/>
+  </g>
+  <path d="M410 70 l12 30 30 12 -30 12 -12 30 -12 -30 -30 -12 30 -12z" fill="#f2c14e"/>
+  <path d="M96 380 l8 20 20 8 -20 8 -8 20 -8 -20 -20 -8 20 -8z" fill="#f2c14e"/>
+</svg>
+<span class="brandtxt">Slab Happy<span class="vtag" id="vtag"></span></span></div>
   <div id="who"></div>
 </div></header>
 
-<main class="wrap" id="view"><div class="loading"><div class="brand"><i></i>Loading your cards…</div></div></main>
+<main class="wrap" id="view"><div class="loading"><div class="brand">Loading your cards…</div></div></main>
 
 <nav class="nav" id="nav" hidden><div class="nav-in">
   <button data-tab="scan"><svg viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.5"/></svg>Scan</button>
@@ -211,7 +241,7 @@ html{-webkit-text-size-adjust:100%}
 <div id="overlay"></div>
 <div id="toast" class="toast" hidden role="status"></div>
 <script>
-const APP_VERSION = '2026-09-23.0015';
+const APP_VERSION = '2026-09-23.0045';
 
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
@@ -487,7 +517,7 @@ function setTab(t) { state.tab = t; lsSet('cc_tab', t); renderChrome(); renderVi
 /* ---------- views ---------- */
 function renderView() {
   const v = $('#view'), p = cur();
-  if (!p) { v.innerHTML = `<div class="empty stack"><h2>Welcome to Comp Check</h2><p>Take the quick quiz to set up your first collector profile.</p><button class="btn primary" data-act="newprofile">Start the quiz</button></div>`; return; }
+  if (!p) { v.innerHTML = `<div class="empty stack"><h2>Welcome to Slab Happy</h2><p>Take the quick quiz to set up your first collector profile.</p><button class="btn primary" data-act="newprofile">Start the quiz</button></div>`; return; }
   if (state.tab === 'scan') v.innerHTML = scanView(p);
   else if (state.tab === 'pc' || state.tab === 'sell') v.innerHTML = listView(p, state.tab);
   else v.innerHTML = familyView();
@@ -496,7 +526,7 @@ function renderView() {
 function keyPanel(compact) {
   return `<div class="panel stack" id="keypanel">
     <h3>${compact ? 'API key' : 'One-time setup: add your API key'}</h3>
-    <p class="small muted" style="margin:0">Comp Check sends card photos to Claude with your Anthropic API key (from console.anthropic.com). It’s stored only on this phone and shared with GleefulHabit. A scan costs a few cents, billed to your account.</p>
+    <p class="small muted" style="margin:0">Slab Happy sends card photos to Claude with your Anthropic API key (from console.anthropic.com). It’s stored only in this app on this phone (not in backups), so you’d paste it again after reinstalling. A scan costs a few cents, billed to your account.</p>
     <div class="field"><label for="keyin">Anthropic API key</label><input id="keyin" type="password" autocomplete="off" placeholder="sk-ant-…" value=""></div>
     <div class="row"><button class="btn primary sm" data-act="savekey">Save key</button>${hasKey() ? '<span class="small muted">A key is saved on this phone.</span>' : ''}</div></div>`;
 }
@@ -519,7 +549,7 @@ function scanView(p) {
   return `<div class="stack">
     <div><div class="eyebrow">Hi ${esc(p.name)} · ${esc(collectorType(p))}</div><h1>What’s it worth?</h1></div>
     <label class="drop" for="cam">
-      <span class="slab" aria-hidden="true"></span>
+      <img class="logo" src="apple-touch-icon.png" alt="">
       <h2>Snap a card</h2>
       <span class="muted">Take a photo or pick one from your camera roll. Raw or slabbed both work.</span>
       <input id="cam" type="file" accept="image/*">
@@ -626,10 +656,28 @@ function listView(p, list) {
     <div><div class="eyebrow">${esc(p.name)}’s</div><h1>${list === 'pc' ? 'Personal Collection' : 'To Sell'}</h1></div>
     <div class="summary"><div class="stat"><div class="eyebrow">Cards</div><div class="n">${cards.length}</div></div><div class="stat"><div class="eyebrow">${list === 'sell' ? 'Could bring in' : 'Est. value'}</div><div class="n">${money(total)}</div></div></div>
     ${recheckBox()}
+    ${backupNudge()}
     ${pcSells.length ? `<div class="nudge"><span>${pcSells.length} card${pcSells.length > 1 ? 's' : ''} in your PC say${pcSells.length > 1 ? '' : 's'} SELL</span><button class="btn sm" data-act="showpcsells">Review</button></div>` : ''}
     ${cards.length ? `<div class="row"><span class="small muted">Sort</span><div class="seg" role="group">${[['value', 'Value'], ['recent', 'Newest'], ['name', 'Name']].map(([k, l]) => `<button data-sort="${k}" aria-pressed="${state.sort === k}">${l}</button>`).join('')}</div></div>
       <div class="cards">${cards.map(c => cardRow(c, p)).join('')}</div>`
       : `<div class="panel empty"><p>No cards here yet.</p><button class="btn primary" data-act="gotoscan">Scan a card</button></div>`}
+  </div>`;
+}
+
+/* ---- backup ---- */
+const lastBackup = () => lsGet('cc_lastBackup') || 0;
+const unbacked = () => state.cards.filter(c => (c.addedAt || 0) > lastBackup() || (c.checkedAt || 0) > lastBackup()).length;
+function backupNudge() {
+  const n = unbacked(), lb = lastBackup();
+  if (!n || (lb && n < 3 && Date.now() - lb < 7 * 864e5)) return '';
+  return `<div class="nudge" style="background:var(--gold-bg);color:var(--gold)"><span>${n} card${n === 1 ? '' : 's'} not backed up yet</span><button class="btn sm" data-act="export">Back up</button></div>`;
+}
+function backupPanel() {
+  const n = unbacked(), lb = lastBackup();
+  return `<div class="panel stack"><h2>Backup</h2>
+    <p class="small muted" style="margin:0">Cards live on this phone. Deleting the home-screen icon erases them, so keep a backup in Files or iCloud Drive. Updates never erase anything.</p>
+    <div class="small"><b>${lb ? 'Last backup ' + new Date(lb).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Never backed up'}</b>${n ? ` · <span style="color:var(--gold)">${n} change${n === 1 ? '' : 's'} since</span>` : lb ? ' · all saved' : ''}</div>
+    <div class="grid2"><button class="btn sm ${n ? 'primary' : ''}" data-act="export">Back up now</button><label class="btn sm" for="importfile" style="position:relative;overflow:hidden">Restore backup<input id="importfile" type="file" accept="application/json,.json,text/plain" style="position:absolute;inset:0;opacity:0"></label></div>
   </div>`;
 }
 
@@ -642,19 +690,19 @@ function familyView() {
       return `<div class="panel stack"><div class="row">${avatar(p, 44)}<div style="flex:1"><h2>${esc(p.name)}</h2><div class="small muted">${esc(collectorType(p))}${p.kid ? ' · Kid collector' : ''}</div></div>${p.id === state.current ? '<span class="rec KEEP" style="font-size:12px">Active</span>' : `<button class="btn sm" data-act="use" data-id="${p.id}">Switch</button>`}</div>
         <div class="summary"><div class="stat"><div class="eyebrow">PC · ${pc.length}</div><div class="n">${money(sum(pc))}</div></div><div class="stat"><div class="eyebrow">To sell · ${sell.length}</div><div class="n">${money(sum(sell))}</div></div></div>
         ${p.teams.length || p.players.length ? `<div class="chips">${[...p.players, ...p.teams].slice(0, 10).map(x => `<span class="chip" style="font-size:13px;padding:4px 10px">${esc(x)}</span>`).join('')}</div>` : ''}
-        <button class="linkbtn" data-act="retake" data-id="${p.id}" style="align-self:flex-start">Retake quiz</button></div>`;
+        ${state.delProfile === p.id ? `<div class="note stack" style="gap:10px;color:var(--ink)"><b>Delete ${esc(p.name)} and ${pc.length + sell.length} card${pc.length + sell.length === 1 ? '' : 's'}?</b><span class="small muted">This can’t be undone${pc.length + sell.length ? ' — back up first if you might want them' : ''}.</span><div class="grid2"><button class="btn sm" data-act="canceldelprofile">Cancel</button><button class="btn sm primary" data-act="yesdelprofile" data-id="${p.id}">Delete</button></div></div>`
+          : `<div class="row"><button class="linkbtn" data-act="retake" data-id="${p.id}">Retake quiz</button><span class="spacer"></span><button class="linkbtn" style="color:var(--accent)" data-act="delprofile" data-id="${p.id}">Delete profile</button></div>`}</div>`;
     }).join('')}
     <button class="btn primary block" data-act="newprofile">+ Add a profile</button>
     ${recheckBox()}
+    ${backupPanel()}
     <div class="panel stack"><h2>Settings</h2>
       <div class="field"><span class="eyebrow">Scan accuracy</span><div class="seg" role="group">${[['best', 'Best (Sonnet)'], ['fast', 'Cheaper (Haiku)']].map(([k, l]) => `<button data-set="model" data-v="${k}" aria-pressed="${settings.model === k}">${l}</button>`).join('')}</div></div>
       <div class="field"><span class="eyebrow">Recheck all uses</span><div class="seg" role="group">${[['fast', 'Cheaper (Haiku)'], ['best', 'Best (Sonnet)']].map(([k, l]) => `<button data-set="recheckModel" data-v="${k}" aria-pressed="${settings.recheckModel === k}">${l}</button>`).join('')}</div></div>
       <label class="row"><input type="checkbox" id="searchtog" ${settings.search ? 'checked' : ''}> <span><b>Search live sold listings</b><br><span class="small muted">More accurate comps; a few extra cents per lookup.${settings.searchUnavailable ? ' Currently off for your API account — turn on web search at console.anthropic.com, then toggle this.' : ''}</span></span></label>
       ${state.showKey ? keyPanel(true) : `<button class="linkbtn" data-act="showkey" style="align-self:flex-start">${hasKey() ? 'Change API key' : 'Add API key'}</button>`}
-      <div class="grid2"><button class="btn sm" data-act="export">Export backup</button><label class="btn sm" for="importfile" style="position:relative;overflow:hidden">Import backup<input id="importfile" type="file" accept="application/json,.json" style="position:absolute;inset:0;opacity:0"></label></div>
-      <p class="hint" style="margin:0">Cards are saved on this phone. Export a backup now and then, or to move cards to another phone.</p>
     </div>
-    <p class="hint" style="text-align:center">Comp Check v${APP_VERSION}</p></div>`;
+    <p class="hint" style="text-align:center">Slab Happy · version ${APP_VERSION}</p></div>`;
 }
 
 /* ---------- view events ---------- */
@@ -687,6 +735,9 @@ $('#view').addEventListener('click', async e => {
     state.showKey = false; settings.searchUnavailable = false; saveSettings(); toast('Key saved'); renderView();
   }
   else if (a === 'export') exportData();
+  else if (a === 'delprofile') { state.delProfile = b.dataset.id; renderView(); }
+  else if (a === 'canceldelprofile') { state.delProfile = null; renderView(); }
+  else if (a === 'yesdelprofile') deleteProfile(b.dataset.id);
 });
 $('#view').addEventListener('change', e => {
   if (e.target.id === 'cam') { const f = e.target.files && e.target.files[0]; if (f) scanFile(f); }
@@ -695,6 +746,16 @@ $('#view').addEventListener('change', e => {
 });
 $('#view').addEventListener('submit', e => { if (e.target.id !== 'quickform') return; e.preventDefault(); const t = $('#quick').value.trim(); if (t) quickPrice(t); });
 
+function deleteProfile(id) {
+  const p = state.profiles.find(x => x.id === id); if (!p) return;
+  state.cards.filter(c => c.profileId === id).forEach(c => { IDB.del(c.id); delete THUMBS[c.id]; });
+  state.cards = state.cards.filter(c => c.profileId !== id);
+  state.profiles = state.profiles.filter(x => x.id !== id);
+  persist(); state.delProfile = null;
+  if (state.current === id) { state.current = state.profiles[0]?.id || null; lsSet('cc_current', state.current); }
+  renderChrome(); renderView(); toast(p.name + ' deleted');
+  if (!state.profiles.length) openQuiz(null, true);
+}
 function useProfile(id) { state.current = id; lsSet('cc_current', id); state.scan = { status: 'idle' }; renderChrome(); renderView(); toast('Switched to ' + (cur()?.name || '')); }
 function blankCard() { return { player: '', year: '', brand: '', set: '', cardNumber: '', parallel: '', serial: '', team: '', sport: '', grader: '', grade: '', rookie: false, mid: null }; }
 
@@ -869,12 +930,17 @@ async function recheckAll() {
 }
 
 /* ---------- backup ---------- */
-function exportData() {
+async function exportData() {
   const data = { app: 'compcheck', version: APP_VERSION, exportedAt: new Date().toISOString(), profiles: state.profiles, cards: state.cards, thumbs: THUMBS };
-  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `comp-check-backup-${today()}.json`;
+  const name = `slab-happy-backup-${today()}.json`, text = JSON.stringify(data);
+  const done = () => { lsSet('cc_lastBackup', Date.now()); renderView(); toast(`Backed up ${state.cards.length} card${state.cards.length === 1 ? '' : 's'}`); };
+  try {
+    const file = new File([text], name, { type: 'application/json' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Slab Happy backup' }); done(); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = name;
   document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
-  toast('Backup exported');
+  done();
 }
 async function importData(file) {
   try {
@@ -883,9 +949,11 @@ async function importData(file) {
     d.profiles.forEach(p => upsert(state.profiles, p));
     d.cards.forEach(c => { const x = { ...c }; delete x.thumb; upsert(state.cards, x); });
     Object.entries(d.thumbs || {}).forEach(([id, v]) => { THUMBS[id] = v; IDB.put(id, v); });
-    persist(); if (!cur()) state.current = state.profiles[0]?.id;
-    renderChrome(); renderView(); toast(`Imported ${d.cards.length} cards`);
-  } catch (e) { toast('That file isn’t a Comp Check backup.'); }
+    persist(); lsSet('cc_lastBackup', Date.now());
+    if (!cur()) { state.current = state.profiles[0]?.id; lsSet('cc_current', state.current); }
+    if (state.quiz && state.quiz.required && state.profiles.length) closeSheet();
+    renderChrome(); renderView(); toast(`Restored ${d.profiles.length} profile${d.profiles.length === 1 ? '' : 's'} and ${d.cards.length} card${d.cards.length === 1 ? '' : 's'}`, 4000);
+  } catch (e) { toast('That file isn’t a Slab Happy backup.'); }
 }
 
 /* ---------- card sheet ---------- */
@@ -979,7 +1047,8 @@ function renderQuiz() {
       <div class="eyebrow">This profile is for…</div>
       <button class="opt" data-q="kid" data-v="0" aria-pressed="${!kid}"><span class="dot"></span><span><b>A grown-up collector</b><span class="small muted">Straight-talk recommendations.</span></span></button>
       <button class="opt" data-q="kid" data-v="1" aria-pressed="${kid}"><span class="dot"></span><span><b>A kid collector</b><span class="small muted">Friendly explanations in simple words.</span></span></button>
-      <div class="eyebrow">Profile color</div><div class="chips">${COLORS.map(c => `<button class="av" data-q="color" data-v="${c}" aria-label="Color" style="background:${c};width:38px;height:38px;border:3px solid ${d.color === c ? 'var(--ink)' : 'transparent'}"></button>`).join('')}</div>`;
+      <div class="eyebrow">Profile color</div><div class="chips">${COLORS.map(c => `<button class="av" data-q="color" data-v="${c}" aria-label="Color" style="background:${c};width:38px;height:38px;border:3px solid ${d.color === c ? 'var(--ink)' : 'transparent'}"></button>`).join('')}</div>
+      ${q.required ? `<div class="note stack" style="gap:8px"><b style="color:var(--ink)">Set up Slab Happy before?</b><span>Restore your profiles and cards from a backup instead.</span><label class="btn sm" for="restorefile" style="position:relative;overflow:hidden;align-self:flex-start">Restore from backup<input id="restorefile" type="file" accept="application/json,.json,text/plain" style="position:absolute;inset:0;opacity:0"></label></div>` : ''}`;
   } else if (step === 'sports') {
     title = kid ? 'What sports do you love?' : 'Which sports do you collect?'; canNext = d.sports.length > 0;
     body = `<p class="muted">Pick all that apply.</p><div class="chips">${SPORTS.map(s => `<button class="chip" data-q="sport" data-v="${s.k}" aria-pressed="${d.sports.includes(s.k)}">${s.k}</button>`).join('')}</div>`;
@@ -1009,7 +1078,7 @@ function renderQuiz() {
   } else {
     title = `${esc(d.name)}, you’re a…`;
     body = `<div class="label"><div class="label-top"><span>Collector profile</span><span>${new Date().getFullYear()}</span></div><div class="label-body"><div class="l1">${esc(d.sports.join(' · '))}</div><div class="l2">${esc(collectorType(d))}</div><div class="l3">${esc(GOALS[d.goal].t)}</div><div class="grade">${avatar(d, 48)}</div></div></div>
-      <p>${esc(RISK[d.risk].t)}. Comp Check will use your ${d.teams.length} team${d.teams.length === 1 ? '' : 's'} and ${d.players.length} player${d.players.length === 1 ? '' : 's'} when it says sell, hold, or keep.</p>`;
+      <p>${esc(RISK[d.risk].t)}. Slab Happy will use your ${d.teams.length} team${d.teams.length === 1 ? '' : 's'} and ${d.players.length} player${d.players.length === 1 ? '' : 's'} when it says sell, hold, or keep.</p>`;
   }
   const last = step === 'done';
   $('#overlay').innerHTML = `<div class="overlay" data-close><div class="sheet" role="dialog" aria-modal="true" aria-label="Collector quiz">
@@ -1040,6 +1109,7 @@ function quizClick(e) {
   else if (a === 'finish') { finishQuiz(); return; }
   renderQuiz();
 }
+$('#overlay').addEventListener('change', e => { if (e.target.id === 'restorefile') { const f = e.target.files && e.target.files[0]; if (f) importData(f); } });
 $('#overlay').addEventListener('input', e => {
   if (!state.quiz) return;
   if (e.target.id === 'q_name') { state.quiz.d.name = e.target.value; const nb = document.querySelector('[data-q="next"]'); if (nb) nb.disabled = !e.target.value.trim(); }
@@ -1063,15 +1133,39 @@ function finishQuiz() {
   toast(q.editId ? 'Profile updated' : `Welcome, ${p.name}!`);
 }
 
+/* ---------- update check ----------
+   Home-screen apps can hang on to an old copy. On open (and whenever the app comes back to the
+   foreground) fetch the live file, bypassing caches, and compare its APP_VERSION with ours. */
+let updateShown = false;
+async function checkForUpdate() {
+  if (updateShown || location.protocol === 'file:') return;
+  try {
+    const resp = await fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' });
+    if (!resp.ok) return;
+    const m = (await resp.text()).match(/const APP_VERSION = '([^']+)'/);
+    if (!m || m[1] <= APP_VERSION) return;
+    updateShown = true;
+    const bar = document.createElement('button');
+    bar.className = 'updatebar'; bar.type = 'button';
+    bar.innerHTML = `<b>New version ready</b><span>Tap to update to ${esc(m[1])}</span>`;
+    bar.onclick = () => location.replace(location.pathname + '?v=' + encodeURIComponent(m[1]));
+    document.body.appendChild(bar); document.body.classList.add('has-update');
+  } catch (e) { /* offline — try again next time */ }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkForUpdate(); });
+
 /* ---------- boot ---------- */
 (async function boot() {
   await IDB.open(); await IDB.loadAll();
-  if (!cur() && state.profiles.length) state.current = state.profiles[0].id;
+  if (state.profiles.length && !state.profiles.some(p => p.id === state.current)) { state.current = state.profiles[0].id; lsSet('cc_current', state.current); }
   renderChrome(); renderView();
   if (!state.profiles.length) openQuiz(null, true);
   const lastV = lsGet('cc_lastVersion');
-  if (lastV && lastV !== APP_VERSION) toast('Updated to the latest version!');
+  if (lastV && lastV !== APP_VERSION) toast('Updated to version ' + APP_VERSION + ' 🎉', 4000);
   lsSet('cc_lastVersion', APP_VERSION);
+  const vt = document.getElementById('vtag'); if (vt) vt.textContent = 'v' + APP_VERSION;
+  if (location.search.includes('v=')) history.replaceState(null, '', location.pathname);
+  checkForUpdate();
 })();
 </script>
 </body>
