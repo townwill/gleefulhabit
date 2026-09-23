@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Slab Happy">
 <meta name="theme-color" content="#0a1120">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -191,6 +191,7 @@ html{-webkit-text-size-adjust:100%}
 .prog{height:12px;border-radius:99px;background:var(--surface2);border:1px solid var(--line);overflow:hidden}
 .prog i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--accent),#ff8a5b);transition:width .25s linear}
 @media (prefers-reduced-motion:reduce){.prog i{transition:none}}
+.top-in{padding-top:14px}
 .brand svg{width:34px;height:34px;border-radius:9px;flex:none}
 .brandtxt{display:flex;flex-direction:column;gap:2px}
 .vtag{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--muted)}
@@ -241,7 +242,7 @@ body.has-update .toast{bottom:calc(160px + env(safe-area-inset-bottom,0px))}
 <div id="overlay"></div>
 <div id="toast" class="toast" hidden role="status"></div>
 <script>
-const APP_VERSION = '2026-09-23.0045';
+const APP_VERSION = '2026-09-23.0100';
 
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
