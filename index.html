@@ -241,7 +241,7 @@ body.has-update .toast{bottom:calc(160px + env(safe-area-inset-bottom,0px))}
 <div id="overlay"></div>
 <div id="toast" class="toast" hidden role="status"></div>
 <script>
-const APP_VERSION = '2026-09-23.0030';
+const APP_VERSION = '2026-09-23.0045';
 
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
@@ -526,7 +526,7 @@ function renderView() {
 function keyPanel(compact) {
   return `<div class="panel stack" id="keypanel">
     <h3>${compact ? 'API key' : 'One-time setup: add your API key'}</h3>
-    <p class="small muted" style="margin:0">Slab Happy sends card photos to Claude with your Anthropic API key (from console.anthropic.com). It’s stored only on this phone and shared with GleefulHabit. A scan costs a few cents, billed to your account.</p>
+    <p class="small muted" style="margin:0">Slab Happy sends card photos to Claude with your Anthropic API key (from console.anthropic.com). It’s stored only in this app on this phone (not in backups), so you’d paste it again after reinstalling. A scan costs a few cents, billed to your account.</p>
     <div class="field"><label for="keyin">Anthropic API key</label><input id="keyin" type="password" autocomplete="off" placeholder="sk-ant-…" value=""></div>
     <div class="row"><button class="btn primary sm" data-act="savekey">Save key</button>${hasKey() ? '<span class="small muted">A key is saved on this phone.</span>' : ''}</div></div>`;
 }
@@ -656,10 +656,28 @@ function listView(p, list) {
     <div><div class="eyebrow">${esc(p.name)}’s</div><h1>${list === 'pc' ? 'Personal Collection' : 'To Sell'}</h1></div>
     <div class="summary"><div class="stat"><div class="eyebrow">Cards</div><div class="n">${cards.length}</div></div><div class="stat"><div class="eyebrow">${list === 'sell' ? 'Could bring in' : 'Est. value'}</div><div class="n">${money(total)}</div></div></div>
     ${recheckBox()}
+    ${backupNudge()}
     ${pcSells.length ? `<div class="nudge"><span>${pcSells.length} card${pcSells.length > 1 ? 's' : ''} in your PC say${pcSells.length > 1 ? '' : 's'} SELL</span><button class="btn sm" data-act="showpcsells">Review</button></div>` : ''}
     ${cards.length ? `<div class="row"><span class="small muted">Sort</span><div class="seg" role="group">${[['value', 'Value'], ['recent', 'Newest'], ['name', 'Name']].map(([k, l]) => `<button data-sort="${k}" aria-pressed="${state.sort === k}">${l}</button>`).join('')}</div></div>
       <div class="cards">${cards.map(c => cardRow(c, p)).join('')}</div>`
       : `<div class="panel empty"><p>No cards here yet.</p><button class="btn primary" data-act="gotoscan">Scan a card</button></div>`}
+  </div>`;
+}
+
+/* ---- backup ---- */
+const lastBackup = () => lsGet('cc_lastBackup') || 0;
+const unbacked = () => state.cards.filter(c => (c.addedAt || 0) > lastBackup() || (c.checkedAt || 0) > lastBackup()).length;
+function backupNudge() {
+  const n = unbacked(), lb = lastBackup();
+  if (!n || (lb && n < 3 && Date.now() - lb < 7 * 864e5)) return '';
+  return `<div class="nudge" style="background:var(--gold-bg);color:var(--gold)"><span>${n} card${n === 1 ? '' : 's'} not backed up yet</span><button class="btn sm" data-act="export">Back up</button></div>`;
+}
+function backupPanel() {
+  const n = unbacked(), lb = lastBackup();
+  return `<div class="panel stack"><h2>Backup</h2>
+    <p class="small muted" style="margin:0">Cards live on this phone. Deleting the home-screen icon erases them, so keep a backup in Files or iCloud Drive. Updates never erase anything.</p>
+    <div class="small"><b>${lb ? 'Last backup ' + new Date(lb).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Never backed up'}</b>${n ? ` · <span style="color:var(--gold)">${n} change${n === 1 ? '' : 's'} since</span>` : lb ? ' · all saved' : ''}</div>
+    <div class="grid2"><button class="btn sm ${n ? 'primary' : ''}" data-act="export">Back up now</button><label class="btn sm" for="importfile" style="position:relative;overflow:hidden">Restore backup<input id="importfile" type="file" accept="application/json,.json,text/plain" style="position:absolute;inset:0;opacity:0"></label></div>
   </div>`;
 }
 
@@ -672,17 +690,17 @@ function familyView() {
       return `<div class="panel stack"><div class="row">${avatar(p, 44)}<div style="flex:1"><h2>${esc(p.name)}</h2><div class="small muted">${esc(collectorType(p))}${p.kid ? ' · Kid collector' : ''}</div></div>${p.id === state.current ? '<span class="rec KEEP" style="font-size:12px">Active</span>' : `<button class="btn sm" data-act="use" data-id="${p.id}">Switch</button>`}</div>
         <div class="summary"><div class="stat"><div class="eyebrow">PC · ${pc.length}</div><div class="n">${money(sum(pc))}</div></div><div class="stat"><div class="eyebrow">To sell · ${sell.length}</div><div class="n">${money(sum(sell))}</div></div></div>
         ${p.teams.length || p.players.length ? `<div class="chips">${[...p.players, ...p.teams].slice(0, 10).map(x => `<span class="chip" style="font-size:13px;padding:4px 10px">${esc(x)}</span>`).join('')}</div>` : ''}
-        <button class="linkbtn" data-act="retake" data-id="${p.id}" style="align-self:flex-start">Retake quiz</button></div>`;
+        ${state.delProfile === p.id ? `<div class="note stack" style="gap:10px;color:var(--ink)"><b>Delete ${esc(p.name)} and ${pc.length + sell.length} card${pc.length + sell.length === 1 ? '' : 's'}?</b><span class="small muted">This can’t be undone${pc.length + sell.length ? ' — back up first if you might want them' : ''}.</span><div class="grid2"><button class="btn sm" data-act="canceldelprofile">Cancel</button><button class="btn sm primary" data-act="yesdelprofile" data-id="${p.id}">Delete</button></div></div>`
+          : `<div class="row"><button class="linkbtn" data-act="retake" data-id="${p.id}">Retake quiz</button><span class="spacer"></span><button class="linkbtn" style="color:var(--accent)" data-act="delprofile" data-id="${p.id}">Delete profile</button></div>`}</div>`;
     }).join('')}
     <button class="btn primary block" data-act="newprofile">+ Add a profile</button>
     ${recheckBox()}
+    ${backupPanel()}
     <div class="panel stack"><h2>Settings</h2>
       <div class="field"><span class="eyebrow">Scan accuracy</span><div class="seg" role="group">${[['best', 'Best (Sonnet)'], ['fast', 'Cheaper (Haiku)']].map(([k, l]) => `<button data-set="model" data-v="${k}" aria-pressed="${settings.model === k}">${l}</button>`).join('')}</div></div>
       <div class="field"><span class="eyebrow">Recheck all uses</span><div class="seg" role="group">${[['fast', 'Cheaper (Haiku)'], ['best', 'Best (Sonnet)']].map(([k, l]) => `<button data-set="recheckModel" data-v="${k}" aria-pressed="${settings.recheckModel === k}">${l}</button>`).join('')}</div></div>
       <label class="row"><input type="checkbox" id="searchtog" ${settings.search ? 'checked' : ''}> <span><b>Search live sold listings</b><br><span class="small muted">More accurate comps; a few extra cents per lookup.${settings.searchUnavailable ? ' Currently off for your API account — turn on web search at console.anthropic.com, then toggle this.' : ''}</span></span></label>
       ${state.showKey ? keyPanel(true) : `<button class="linkbtn" data-act="showkey" style="align-self:flex-start">${hasKey() ? 'Change API key' : 'Add API key'}</button>`}
-      <div class="grid2"><button class="btn sm" data-act="export">Export backup</button><label class="btn sm" for="importfile" style="position:relative;overflow:hidden">Import backup<input id="importfile" type="file" accept="application/json,.json" style="position:absolute;inset:0;opacity:0"></label></div>
-      <p class="hint" style="margin:0">Cards are saved on this phone. Export a backup now and then, or to move cards to another phone.</p>
     </div>
     <p class="hint" style="text-align:center">Slab Happy · version ${APP_VERSION}</p></div>`;
 }
@@ -717,6 +735,9 @@ $('#view').addEventListener('click', async e => {
     state.showKey = false; settings.searchUnavailable = false; saveSettings(); toast('Key saved'); renderView();
   }
   else if (a === 'export') exportData();
+  else if (a === 'delprofile') { state.delProfile = b.dataset.id; renderView(); }
+  else if (a === 'canceldelprofile') { state.delProfile = null; renderView(); }
+  else if (a === 'yesdelprofile') deleteProfile(b.dataset.id);
 });
 $('#view').addEventListener('change', e => {
   if (e.target.id === 'cam') { const f = e.target.files && e.target.files[0]; if (f) scanFile(f); }
@@ -725,6 +746,16 @@ $('#view').addEventListener('change', e => {
 });
 $('#view').addEventListener('submit', e => { if (e.target.id !== 'quickform') return; e.preventDefault(); const t = $('#quick').value.trim(); if (t) quickPrice(t); });
 
+function deleteProfile(id) {
+  const p = state.profiles.find(x => x.id === id); if (!p) return;
+  state.cards.filter(c => c.profileId === id).forEach(c => { IDB.del(c.id); delete THUMBS[c.id]; });
+  state.cards = state.cards.filter(c => c.profileId !== id);
+  state.profiles = state.profiles.filter(x => x.id !== id);
+  persist(); state.delProfile = null;
+  if (state.current === id) { state.current = state.profiles[0]?.id || null; lsSet('cc_current', state.current); }
+  renderChrome(); renderView(); toast(p.name + ' deleted');
+  if (!state.profiles.length) openQuiz(null, true);
+}
 function useProfile(id) { state.current = id; lsSet('cc_current', id); state.scan = { status: 'idle' }; renderChrome(); renderView(); toast('Switched to ' + (cur()?.name || '')); }
 function blankCard() { return { player: '', year: '', brand: '', set: '', cardNumber: '', parallel: '', serial: '', team: '', sport: '', grader: '', grade: '', rookie: false, mid: null }; }
 
@@ -899,12 +930,17 @@ async function recheckAll() {
 }
 
 /* ---------- backup ---------- */
-function exportData() {
+async function exportData() {
   const data = { app: 'compcheck', version: APP_VERSION, exportedAt: new Date().toISOString(), profiles: state.profiles, cards: state.cards, thumbs: THUMBS };
-  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `slab-happy-backup-${today()}.json`;
+  const name = `slab-happy-backup-${today()}.json`, text = JSON.stringify(data);
+  const done = () => { lsSet('cc_lastBackup', Date.now()); renderView(); toast(`Backed up ${state.cards.length} card${state.cards.length === 1 ? '' : 's'}`); };
+  try {
+    const file = new File([text], name, { type: 'application/json' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Slab Happy backup' }); done(); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = name;
   document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
-  toast('Backup exported');
+  done();
 }
 async function importData(file) {
   try {
@@ -913,8 +949,10 @@ async function importData(file) {
     d.profiles.forEach(p => upsert(state.profiles, p));
     d.cards.forEach(c => { const x = { ...c }; delete x.thumb; upsert(state.cards, x); });
     Object.entries(d.thumbs || {}).forEach(([id, v]) => { THUMBS[id] = v; IDB.put(id, v); });
-    persist(); if (!cur()) state.current = state.profiles[0]?.id;
-    renderChrome(); renderView(); toast(`Imported ${d.cards.length} cards`);
+    persist(); lsSet('cc_lastBackup', Date.now());
+    if (!cur()) { state.current = state.profiles[0]?.id; lsSet('cc_current', state.current); }
+    if (state.quiz && state.quiz.required && state.profiles.length) closeSheet();
+    renderChrome(); renderView(); toast(`Restored ${d.profiles.length} profile${d.profiles.length === 1 ? '' : 's'} and ${d.cards.length} card${d.cards.length === 1 ? '' : 's'}`, 4000);
   } catch (e) { toast('That file isn’t a Slab Happy backup.'); }
 }
 
@@ -1009,7 +1047,8 @@ function renderQuiz() {
       <div class="eyebrow">This profile is for…</div>
       <button class="opt" data-q="kid" data-v="0" aria-pressed="${!kid}"><span class="dot"></span><span><b>A grown-up collector</b><span class="small muted">Straight-talk recommendations.</span></span></button>
       <button class="opt" data-q="kid" data-v="1" aria-pressed="${kid}"><span class="dot"></span><span><b>A kid collector</b><span class="small muted">Friendly explanations in simple words.</span></span></button>
-      <div class="eyebrow">Profile color</div><div class="chips">${COLORS.map(c => `<button class="av" data-q="color" data-v="${c}" aria-label="Color" style="background:${c};width:38px;height:38px;border:3px solid ${d.color === c ? 'var(--ink)' : 'transparent'}"></button>`).join('')}</div>`;
+      <div class="eyebrow">Profile color</div><div class="chips">${COLORS.map(c => `<button class="av" data-q="color" data-v="${c}" aria-label="Color" style="background:${c};width:38px;height:38px;border:3px solid ${d.color === c ? 'var(--ink)' : 'transparent'}"></button>`).join('')}</div>
+      ${q.required ? `<div class="note stack" style="gap:8px"><b style="color:var(--ink)">Set up Slab Happy before?</b><span>Restore your profiles and cards from a backup instead.</span><label class="btn sm" for="restorefile" style="position:relative;overflow:hidden;align-self:flex-start">Restore from backup<input id="restorefile" type="file" accept="application/json,.json,text/plain" style="position:absolute;inset:0;opacity:0"></label></div>` : ''}`;
   } else if (step === 'sports') {
     title = kid ? 'What sports do you love?' : 'Which sports do you collect?'; canNext = d.sports.length > 0;
     body = `<p class="muted">Pick all that apply.</p><div class="chips">${SPORTS.map(s => `<button class="chip" data-q="sport" data-v="${s.k}" aria-pressed="${d.sports.includes(s.k)}">${s.k}</button>`).join('')}</div>`;
@@ -1070,6 +1109,7 @@ function quizClick(e) {
   else if (a === 'finish') { finishQuiz(); return; }
   renderQuiz();
 }
+$('#overlay').addEventListener('change', e => { if (e.target.id === 'restorefile') { const f = e.target.files && e.target.files[0]; if (f) importData(f); } });
 $('#overlay').addEventListener('input', e => {
   if (!state.quiz) return;
   if (e.target.id === 'q_name') { state.quiz.d.name = e.target.value; const nb = document.querySelector('[data-q="next"]'); if (nb) nb.disabled = !e.target.value.trim(); }
@@ -1117,7 +1157,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 /* ---------- boot ---------- */
 (async function boot() {
   await IDB.open(); await IDB.loadAll();
-  if (!cur() && state.profiles.length) state.current = state.profiles[0].id;
+  if (state.profiles.length && !state.profiles.some(p => p.id === state.current)) { state.current = state.profiles[0].id; lsSet('cc_current', state.current); }
   renderChrome(); renderView();
   if (!state.profiles.length) openQuiz(null, true);
   const lastV = lsGet('cc_lastVersion');
