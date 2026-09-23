@@ -188,6 +188,9 @@ html,body{margin:0}
 [hidden]{display:none!important}
 img{max-width:100%}
 html{-webkit-text-size-adjust:100%}
+.prog{height:12px;border-radius:99px;background:var(--surface2);border:1px solid var(--line);overflow:hidden}
+.prog i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--accent),#ff8a5b);transition:width .25s linear}
+@media (prefers-reduced-motion:reduce){.prog i{transition:none}}
 </style>
 </head>
 <body>
@@ -208,7 +211,7 @@ html{-webkit-text-size-adjust:100%}
 <div id="overlay"></div>
 <div id="toast" class="toast" hidden role="status"></div>
 <script>
-const APP_VERSION = '2026-09-22.2240';
+const APP_VERSION = '2026-09-23.0015';
 
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
@@ -309,15 +312,16 @@ const IDB = {
 };
 
 /* ---------- Claude API ---------- */
-async function askClaude({ prompt, image, model, search = true, maxSearch = 4, signal }) {
+async function askClaude({ prompt, image, model, search = true, maxSearch = 4, signal, onProgress }) {
   const key = localStorage.getItem(KEY_LS);
   if (!key) throw { code: 'no_key' };
   const content = [];
   if (image) content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: image } });
   content.push({ type: 'text', text: prompt });
+  const prog = onProgress || (() => {});
   const useSearch = search && settings.search && !settings.searchUnavailable;
   const post = async (messages, withTools) => {
-    const body = { model: MODELS[model] || MODELS.best, max_tokens: 4000, messages };
+    const body = { model: MODELS[model] || MODELS.best, max_tokens: 4000, messages, stream: true };
     if (withTools) body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: maxSearch }];
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST', signal,
@@ -325,9 +329,10 @@ async function askClaude({ prompt, image, model, search = true, maxSearch = 4, s
       body: JSON.stringify(body),
     });
     if (!resp.ok) { const t = await resp.text().catch(() => ''); throw { code: 'http', status: resp.status, detail: t }; }
-    return resp.json();
+    prog({ type: 'sent' });
+    return readStream(resp, prog);
   };
-  let messages = [{ role: 'user', content }], data, withTools = useSearch;
+  let messages = [{ role: 'user', content }], data, withTools = useSearch, searched = false;
   for (let i = 0; i < 4; i++) {
     try { data = await post(messages, withTools); }
     catch (e) {
@@ -338,12 +343,50 @@ async function askClaude({ prompt, image, model, search = true, maxSearch = 4, s
         data = await post(messages, false);
       } else throw e;
     }
+    if (data.content.some(b => b.type === 'web_search_tool_result')) searched = true;
     if (data.stop_reason === 'pause_turn') { messages = [...messages, { role: 'assistant', content: data.content }]; continue; }
     break;
   }
-  const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
-  const searched = (data.content || []).some(b => b.type === 'web_search_tool_result') || messages.length > 1;
+  const text = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+  prog({ type: 'done' });
   return { json: parseJSON(text), searched };
+}
+
+// Reads Claude's streamed reply, rebuilding the content blocks and reporting real progress:
+// 'start' when Claude begins, 'search' / 'query' / 'results' for each web search, 'text' as the answer is written.
+async function readStream(resp, prog) {
+  if (!resp.body || !resp.body.getReader) { const d = await resp.json(); return { content: d.content || [], stop_reason: d.stop_reason }; }
+  const reader = resp.body.getReader(), dec = new TextDecoder();
+  const blocks = []; let buf = '', stop = null, chars = 0;
+  const handle = ev => {
+    if (ev.type === 'message_start') prog({ type: 'start' });
+    else if (ev.type === 'content_block_start') {
+      const b = JSON.parse(JSON.stringify(ev.content_block)); blocks[ev.index] = b;
+      if (b.type === 'server_tool_use') { b._json = ''; prog({ type: 'search' }); }
+      if (b.type === 'web_search_tool_result') prog({ type: 'results', count: Array.isArray(b.content) ? b.content.length : 0 });
+    } else if (ev.type === 'content_block_delta') {
+      const b = blocks[ev.index]; if (!b) return;
+      if (ev.delta.type === 'text_delta') { b.text = (b.text || '') + ev.delta.text; chars += ev.delta.text.length; prog({ type: 'text', chars }); }
+      else if (ev.delta.type === 'input_json_delta') b._json += ev.delta.partial_json;
+    } else if (ev.type === 'content_block_stop') {
+      const b = blocks[ev.index];
+      if (b && b.type === 'server_tool_use') { try { b.input = JSON.parse(b._json || '{}'); } catch (e) { b.input = {}; } delete b._json; prog({ type: 'query', query: b.input.query || '' }); }
+    } else if (ev.type === 'message_delta') { if (ev.delta && ev.delta.stop_reason) stop = ev.delta.stop_reason; }
+    else if (ev.type === 'error') { const et = ev.error?.type || ''; throw { code: 'http', status: et === 'overloaded_error' ? 529 : et === 'rate_limit_error' ? 429 : 500, detail: ev.error?.message || et }; }
+  };
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let i;
+    while ((i = buf.indexOf('\n\n')) >= 0) {
+      const chunk = buf.slice(0, i); buf = buf.slice(i + 2);
+      const data = chunk.split('\n').filter(l => l.startsWith('data:')).map(l => l.slice(5).trim()).join('');
+      if (data) handle(JSON.parse(data));
+    }
+  }
+  const content = blocks.filter(Boolean).map(b => { if (b.type === 'text') { const t = { type: 'text', text: b.text || '' }; return t; } return b; });
+  return { content, stop_reason: stop };
 }
 function parseJSON(text) {
   const m = text.match(/<json>([\s\S]*?)<\/json>/i);
@@ -383,14 +426,14 @@ const SEARCH_RULES = `If you have web search, search for recent SOLD prices of t
 const SCHEMA = `{"identified":true,"confidence":0.0-1.0,"player":"","team":"","sport":"","year":"","brand":"","set":"","cardNumber":"","parallel":"","serial":"","rookie":false,"grader":"PSA|BGS|SGC|CGC|\\"\\"","grade":"","low":0,"mid":0,"high":0,"trend":"rising|steady|cooling","comps":[{"desc":"","price":0,"date":"","url":"","note":""}],"rec":"SELL|HOLD|KEEP","reason":"","query":"eBay search words for this exact card"}`;
 const OUT = s => `Finish with the JSON only, wrapped in <json></json> tags, in this shape: ${s}`;
 
-function scanPrompt(p) {
+function scanPrompt(p, notes = '') {
   return `You are an expert sports trading card identifier and pricer. Today is ${today()}.
 The image is a phone photo of a sports card (raw, in a toploader, or in a graded slab; it may show the back).
 1. Identify the exact card: player, team, sport, year, brand, set, card number, parallel/insert/refractor color, serial numbering, rookie status, and grading company + grade if slabbed. Read slab labels and card backs carefully; colored borders and patterns usually indicate the parallel.
 2. Price THIS card in THIS condition/grade in USD. ${SEARCH_RULES} If raw, price a typical raw copy and note visible condition issues.
 3. ${REC_RULES}
 ${profileBlurb(p)}${kidNote(p)} Keep "reason" to 1-2 sentences and mention the collector's connection when relevant.
-If you can't read the card, set "identified": false and fill what you can.
+${notes ? notes + '\n' : ''}If you can't read the card, set "identified": false and fill what you can.
 ${OUT(SCHEMA)}`;
 }
 function cardDesc(c) { return [c.year, c.brand, c.set, c.cardNumber ? '#' + c.cardNumber : '', c.player, c.parallel, c.serial, c.rookie ? 'RC' : '', c.grader && c.grade ? c.grader + ' ' + c.grade : 'raw', c.team, c.sport].filter(Boolean).join(' | '); }
@@ -461,11 +504,16 @@ function keyPanel(compact) {
 /* ---- scan ---- */
 function scanView(p) {
   const s = state.scan;
-  if (s.status === 'working') return `<div class="stack">
+  if (s.status === 'working') { const pr = s.pr || { pct: 0, label: '', detail: '' }; return `<div class="stack">
     <div class="eyebrow">Finding comps for ${esc(p.name)}</div>
     ${s.thumb ? `<div class="scanning"><img src="${s.thumb}" alt="Your card photo"></div>` : ''}
-    <p style="text-align:center"><b id="scanmsg">${s.thumb ? 'Reading the card…' : 'Looking up the card…'}</b><br><span class="muted small">Searching real sold listings takes 20–60 seconds.</span></p>
-    <button class="btn block" data-act="stopscan">Stop</button></div>`;
+    <div class="panel stack" style="gap:8px">
+      <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b id="proglabel">${esc(pr.label)}</b><span id="progpct" class="range" style="font-weight:700">${Math.round(pr.pct)}%</span></div>
+      <div class="prog" role="progressbar" aria-label="Lookup progress"><i id="progbar" style="width:${pr.pct}%"></i></div>
+      <div id="progdetail" class="small muted" style="min-height:1.4em;overflow-wrap:anywhere">${esc(pr.detail)}</div>
+    </div>
+    <button class="btn block" data-act="stopscan">Stop</button></div>`; }
+  if (s.status === 'ask') return askView(p, s);
   if (s.status === 'result') return resultView(p, s);
   if (!hasKey()) return `<div class="stack"><div><div class="eyebrow">Hi ${esc(p.name)} · ${esc(collectorType(p))}</div><h1>What’s it worth?</h1></div>${keyPanel(false)}</div>`;
   return `<div class="stack">
@@ -612,6 +660,9 @@ function familyView() {
 /* ---------- view events ---------- */
 $('#view').addEventListener('click', async e => {
   const sortB = e.target.closest('[data-sort]'); if (sortB) { state.sort = sortB.dataset.sort; renderView(); return; }
+  const ansB = e.target.closest('[data-ans]'); if (ansB) { readAns(); state.scan.ans[ansB.dataset.ans] = ansB.dataset.v; state.scan.error = ''; renderView(); if (ansB.dataset.v === 'yes') (ansB.dataset.ans === 'numbered' ? $('#a_no') : null)?.focus(); return; }
+  const runB = e.target.closest('[data-run]'); if (runB) { readAns(); state.scan.ans.printRun = runB.dataset.run; renderView(); return; }
+  const parB = e.target.closest('[data-par]'); if (parB) { readAns(); const a = state.scan.ans, v = parB.dataset.par; a.parWords = a.parWords.includes(v) ? a.parWords.filter(x => x !== v) : [...a.parWords, v]; renderView(); return; }
   const setB = e.target.closest('[data-set]'); if (setB) { settings[setB.dataset.set] = setB.dataset.v; saveSettings(); renderView(); return; }
   const row = e.target.closest('[data-card]'); if (row) { openCard(row.dataset.card); return; }
   const b = e.target.closest('[data-act]'); if (!b) return;
@@ -624,6 +675,7 @@ $('#view').addEventListener('click', async e => {
   else if (a === 'stopscan') state.scan.ctl?.abort();
   else if (a === 'reprice') repriceFromForm();
   else if (a === 'save') saveScan(b.dataset.list);
+  else if (a === 'findcomps') runPhotoScan();
   else if (a === 'recheck') recheckAll();
   else if (a === 'stoprecheck') state.recheck?.ctl.abort();
   else if (a === 'showpcsells') setTab('pc');
@@ -655,29 +707,110 @@ async function loadImg(file) {
 function draw(img, max) { const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight)); const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); return c; }
 
 /* ---------- lookups ---------- */
-function startWorking(thumb) {
+// Progress bar driven by real events from Claude's stream. Each stage has a floor and ceiling;
+// within a stage the bar creeps slowly toward the ceiling so it never looks frozen.
+function startWorking(thumb, maxSearch = 4) {
   const ctl = new AbortController();
-  state.scan = { status: 'working', thumb, ctl }; renderView(); window.scrollTo(0, 0);
-  const msgs = thumb ? ['Reading the card…', 'Checking the set and parallel…', 'Searching sold listings…', 'Deciding sell or hold…'] : ['Looking up the card…', 'Searching sold listings…', 'Deciding sell or hold…'];
-  let i = 0; const tick = setInterval(() => { const m = $('#scanmsg'); if (m) m.textContent = msgs[Math.min(++i, msgs.length - 1)]; }, 8000);
-  return { ctl, stop: () => clearInterval(tick) };
+  const pr = { pct: 3, floor: 3, ceil: 12, label: thumb ? 'Sending your photo…' : 'Sending to Claude…', detail: '', searches: 0 };
+  state.scan = { status: 'working', thumb, ctl, pr }; renderView(); window.scrollTo(0, 0);
+  const paint = () => {
+    const bar = $('#progbar'), lab = $('#proglabel'), det = $('#progdetail'), pc = $('#progpct');
+    if (bar) bar.style.width = pr.pct.toFixed(1) + '%';
+    if (lab) lab.textContent = pr.label;
+    if (det) det.textContent = pr.detail;
+    if (pc) pc.textContent = Math.round(pr.pct) + '%';
+  };
+  const stage = (floor, ceil, label, detail) => { pr.floor = Math.max(pr.floor, floor); pr.ceil = Math.max(pr.ceil, ceil); pr.pct = Math.max(pr.pct, pr.floor); if (label) pr.label = label; if (detail != null) pr.detail = detail; paint(); };
+  const tick = setInterval(() => { pr.pct += (pr.ceil - pr.pct) * 0.04; paint(); }, 250);
+  const searchSpan = 55 / Math.max(1, maxSearch);
+  const onProgress = ev => {
+    if (ev.type === 'sent') stage(12, 22, thumb ? 'Reading the card…' : 'Looking up the card…');
+    else if (ev.type === 'start') stage(18, 28, thumb ? 'Reading the card…' : 'Looking up the card…');
+    else if (ev.type === 'search') { pr.searches++; const f = 25 + (pr.searches - 1) * searchSpan; stage(Math.min(f, 78), Math.min(f + searchSpan * .7, 80), `Searching sold listings (${pr.searches})…`, ''); }
+    else if (ev.type === 'query') stage(pr.floor, pr.ceil, null, '“' + ev.query + '”');
+    else if (ev.type === 'results') stage(Math.min(25 + pr.searches * searchSpan, 80), Math.min(25 + pr.searches * searchSpan + 4, 82), `Found ${ev.count} results — checking prices…`);
+    else if (ev.type === 'text') { const f = 82 + Math.min(1, ev.chars / 1100) * 16; stage(f, Math.min(f + 2, 99), 'Writing up the comp…', ''); }
+    else if (ev.type === 'done') { pr.pct = 100; stage(100, 100, 'Done!', ''); }
+  };
+  return { ctl, onProgress, stop: () => clearInterval(tick) };
+}
+const PRINT_RUNS = [5, 10, 25, 49, 50, 75, 99, 149, 199, 249, 299, 499];
+const PARALLELS = ['Silver', 'Holo', 'Refractor', 'Prizm', 'Gold', 'Green', 'Blue', 'Red', 'Orange', 'Purple', 'Pink', 'Black', 'Mojo', 'Wave'];
+function askView(p, s) {
+  const a = s.ans;
+  const seg = (k, opts) => `<div class="seg" role="group">${opts.map(([v, l]) => `<button data-ans="${k}" data-v="${v}" aria-pressed="${a[k] === v}">${l}</button>`).join('')}</div>`;
+  return `<div class="stack">
+    <div class="row"><div class="eyebrow">Quick check · for ${esc(p.name)}</div><span class="spacer"></span><button class="linkbtn" data-act="rescan">Cancel</button></div>
+    <div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:14px">
+      <img src="${s.thumb}" alt="Your card photo" style="width:96px;border-radius:8px;border:3px solid var(--line);flex:none">
+      <p class="muted small" style="margin:0">Photos can miss serial numbers and parallel colors. Answer what you know — “Not sure” is fine.</p>
+    </div>
+    <div class="panel stack">
+      <h3>Is it numbered?</h3>
+      ${seg('numbered', [['unsure', 'Not sure'], ['no', 'No'], ['yes', 'Yes']])}
+      ${a.numbered === 'yes' ? `<div class="row" style="flex-wrap:nowrap;gap:8px"><span class="muted">#</span>
+          <input id="a_no" inputmode="numeric" value="${esc(a.serialNo)}" placeholder="12" aria-label="Card's number" style="width:80px;min-height:46px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);padding:8px 10px;font-family:var(--mono)">
+          <span class="muted">of</span>
+          <input id="a_run" inputmode="numeric" value="${esc(a.printRun)}" placeholder="99" aria-label="Out of" style="width:90px;min-height:46px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);padding:8px 10px;font-family:var(--mono)"></div>
+        <div class="chips">${PRINT_RUNS.map(n => `<button class="chip" data-run="${n}" aria-pressed="${a.printRun === String(n)}" style="font-family:var(--mono);font-size:14px;padding:5px 11px">/${n}</button>`).join('')}</div>` : ''}
+    </div>
+    <div class="panel stack">
+      <h3>Is it a parallel?</h3>
+      ${seg('parallel', [['unsure', 'Not sure'], ['base', 'Base card'], ['yes', 'Yes']])}
+      ${a.parallel === 'yes' ? `<p class="small muted" style="margin:0">Tap all that fit — e.g. Gold + Refractor.</p>
+        <div class="chips">${PARALLELS.map(x => `<button class="chip" data-par="${x}" aria-pressed="${a.parWords.includes(x)}">${x}</button>`).join('')}</div>
+        <input id="a_par" value="${esc(a.parOther)}" placeholder="Other (e.g. Neon Green Pulsar, Disco)" style="min-height:46px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);padding:8px 12px">` : ''}
+    </div>
+    ${s.error ? `<p class="note" style="color:var(--accent)">${esc(s.error)}</p>` : ''}
+    <button class="btn primary block" data-act="findcomps">${s.error ? 'Try again' : 'Find comps'}</button>
+  </div>`;
+}
+function readAns() {
+  const a = state.scan.ans; if (!a) return;
+  const no = $('#a_no'), run = $('#a_run'), par = $('#a_par');
+  if (no) a.serialNo = no.value.replace(/\D/g, '');
+  if (run) a.printRun = run.value.replace(/\D/g, '');
+  if (par) a.parOther = par.value.trim();
+}
+function ansParallel(a) { return a.parallel === 'yes' ? [...a.parWords, a.parOther].filter(Boolean).join(' ') : ''; }
+function ansSerial(a) { return a.numbered === 'yes' && a.printRun ? `${a.serialNo || ''}/${a.printRun}` : ''; }
+function answerNotes(a) {
+  const lines = [];
+  if (a.numbered === 'yes') lines.push(`- Serial numbered: YES${a.printRun ? `, ${a.serialNo ? '#' + a.serialNo : 'numbered'} out of ${a.printRun} (/${a.printRun})` : ' (print run unknown)'}.`);
+  if (a.numbered === 'no') lines.push('- NOT serial numbered.');
+  if (a.parallel === 'base') lines.push('- It is the BASE card (no parallel).');
+  if (a.parallel === 'yes') lines.push(`- It IS a parallel${ansParallel(a) ? ': ' + ansParallel(a) : ' (color/type not given — work it out from the photo)'}.`);
+  return lines.length ? `The collector checked the card in hand and says (trust this over the photo, and price that exact version):\n${lines.join('\n')}` : '';
 }
 async function scanFile(file) {
   const p = cur(); if (!p) return;
   let img; try { img = await loadImg(file); } catch (e) { state.scan = { status: 'idle', error: 'Couldn’t open that photo. Try another one.' }; renderView(); return; }
   const thumb = draw(img, 240).toDataURL('image/jpeg', .7);
   const image = draw(img, 1400).toDataURL('image/jpeg', .85).split(',')[1];
-  const w = startWorking(thumb);
+  state.scan = { status: 'ask', thumb, image, ans: { numbered: 'unsure', serialNo: '', printRun: '', parallel: 'unsure', parWords: [], parOther: '' } };
+  renderView(); window.scrollTo(0, 0);
+}
+async function runPhotoScan() {
+  const p = cur(), s = state.scan; if (!p || s.status !== 'ask') return;
+  readAns();
+  const { thumb, image, ans } = s;
+  const w = startWorking(thumb, 4);
   try {
-    const r = await askClaude({ prompt: scanPrompt(p), image, model: settings.model, maxSearch: 4, signal: w.ctl.signal });
-    state.scan = { status: 'result', thumb, result: { ...normalize(r.json || {}), searched: r.searched } };
-  } catch (e) { state.scan = e && e.name === 'AbortError' ? { status: 'idle' } : { status: 'idle', error: errCopy(e) }; }
+    const r = await askClaude({ prompt: scanPrompt(p, answerNotes(ans)), image, model: settings.model, maxSearch: 4, signal: w.ctl.signal, onProgress: w.onProgress });
+    const res = { ...normalize(r.json || {}), searched: r.searched };
+    if (ans.numbered === 'yes' && ans.printRun) res.serial = ansSerial(ans);
+    if (ans.numbered === 'no') res.serial = '';
+    if (ans.parallel === 'yes' && ansParallel(ans)) res.parallel = ansParallel(ans);
+    if (ans.parallel === 'base') res.parallel = '';
+    await new Promise(r => setTimeout(r, 350)); // let the bar reach 100%
+    state.scan = { status: 'result', thumb, result: res };
+  } catch (e) { state.scan = e && e.name === 'AbortError' ? { status: 'idle' } : { status: 'ask', thumb, image, ans, error: errCopy(e) }; }
   w.stop(); renderView(); window.scrollTo(0, 0);
 }
 async function quickPrice(text) {
   const p = cur(); if (!p) return;
   const w = startWorking(null);
-  try { const r = await askClaude({ prompt: textPrompt(p, text), model: settings.model, signal: w.ctl.signal }); state.scan = { status: 'result', thumb: null, result: { ...normalize(r.json || {}), searched: r.searched } }; }
+  try { const r = await askClaude({ prompt: textPrompt(p, text), model: settings.model, signal: w.ctl.signal, onProgress: w.onProgress }); state.scan = { status: 'result', thumb: null, result: { ...normalize(r.json || {}), searched: r.searched } }; }
   catch (e) { state.scan = e && e.name === 'AbortError' ? { status: 'idle' } : { status: 'idle', error: errCopy(e) }; }
   w.stop(); renderView();
 }
@@ -686,7 +819,7 @@ async function repriceFromForm() {
   const c = readFields($('#fix'), { ...s.result });
   if (!c.player) { s.error = 'Add at least the player name.'; renderView(); return; }
   const thumb = s.thumb, w = startWorking(thumb);
-  try { const r = await askClaude({ prompt: textPrompt(p, cardDesc(c)), model: settings.model, signal: w.ctl.signal }); state.scan = { status: 'result', thumb, result: { ...normalize(r.json || {}, c), searched: r.searched } }; }
+  try { const r = await askClaude({ prompt: textPrompt(p, cardDesc(c)), model: settings.model, signal: w.ctl.signal, onProgress: w.onProgress }); state.scan = { status: 'result', thumb, result: { ...normalize(r.json || {}, c), searched: r.searched } }; }
   catch (e) { state.scan = { status: 'result', thumb, result: c, error: errCopy(e) }; }
   w.stop(); renderView();
 }
