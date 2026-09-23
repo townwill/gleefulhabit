@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Comp Check">
+<meta name="theme-color" content="#0a1120">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="apple-touch-icon.png">
+<title>Comp Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  --ground:#e9edf3; --surface:#ffffff; --surface2:#f4f6fa; --ink:#0f1b33; --muted:#5a6782; --line:#d4dbe6;
+  --accent:#c8102e; --accent-ink:#ffffff; --gold:#a8740a; --gold-bg:#fbf1da; --green:#17744a; --green-bg:#e0f3e9;
+  --navy:#1e3a8a; --navy-bg:#e3e9fb; --shadow:0 1px 2px rgba(15,27,51,.06),0 6px 18px rgba(15,27,51,.08);
+  --display:"Barlow Condensed","Arial Narrow",Impact,sans-serif; --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark; --ground:#0a1120; --surface:#131c2f; --surface2:#1a2440; --ink:#e7ecf6; --muted:#94a1ba; --line:#27334d;
+    --accent:#ff4a5b; --accent-ink:#1a0508; --gold:#e8b64c; --gold-bg:#3a2c0e; --green:#4cc98a; --green-bg:#0f3324;
+    --navy:#8fb0ff; --navy-bg:#1b2a55; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark; --ground:#0a1120; --surface:#131c2f; --surface2:#1a2440; --ink:#e7ecf6; --muted:#94a1ba; --line:#27334d;
+  --accent:#ff4a5b; --accent-ink:#1a0508; --gold:#e8b64c; --gold-bg:#3a2c0e; --green:#4cc98a; --green-bg:#0f3324;
+  --navy:#8fb0ff; --navy-bg:#1b2a55; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{background:var(--ground)}
+body{color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
+.wrap{max-width:560px;margin:0 auto;padding-inline:16px;padding-block:12px 110px}
+
+/* top bar */
+.top{position:sticky;top:0;padding-top:env(safe-area-inset-top,0px);z-index:20;background:var(--ground);border-bottom:1px solid var(--line)}
+.top-in{max-width:560px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{font-family:var(--display);font-weight:800;font-size:26px;letter-spacing:.02em;text-transform:uppercase;line-height:1;display:flex;align-items:center;gap:8px}
+.brand i{display:inline-block;width:18px;height:24px;border:3px solid var(--accent);border-radius:3px;position:relative}
+.brand i::after{content:"";position:absolute;left:2px;right:2px;top:2px;height:5px;background:var(--accent)}
+.pill{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-weight:600}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:16px;color:#fff;flex:none}
+
+/* bottom nav */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.nav-in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.nav button{background:none;border:0;padding:10px 4px 12px;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.nav button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2}
+.nav button[aria-current="page"]{color:var(--accent)}
+.nav .count{font-family:var(--mono);font-size:10px;letter-spacing:0}
+
+h1,h2,h3{font-family:var(--display);text-transform:uppercase;letter-spacing:.02em;margin:0;text-wrap:balance;line-height:1.05}
+h1{font-size:34px;font-weight:800}
+h2{font-size:24px;font-weight:800}
+h3{font-size:18px;font-weight:700}
+.eyebrow{font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.spacer{flex:1}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:16px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.dark{background:var(--ink);border-color:var(--ink);color:var(--ground)}
+.btn.ghost{background:transparent}
+.btn.sm{min-height:38px;padding:0 12px;font-size:14px;border-radius:10px}
+.btn.block{width:100%}
+.btn:disabled{opacity:.5;cursor:default}
+.btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2}
+.linkbtn{background:none;border:0;color:var(--navy);font-weight:600;padding:6px 0;text-decoration:underline;text-underline-offset:3px}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
+
+/* scan */
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;min-height:250px;border:2px dashed var(--line);border-radius:18px;background:var(--surface);padding:24px 16px;cursor:pointer;position:relative}
+.drop:hover{border-color:var(--accent)}
+.drop .slab{width:92px;height:128px;border:4px solid var(--accent);border-radius:8px;position:relative;background:var(--surface2)}
+.drop .slab::before{content:"";position:absolute;left:6px;right:6px;top:6px;height:18px;background:var(--accent);border-radius:2px}
+.drop .slab::after{content:"";position:absolute;left:14px;right:14px;top:34px;bottom:12px;border:2px solid var(--line);border-radius:3px}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.scanning{position:relative;border-radius:14px;overflow:hidden;background:var(--surface2);max-width:280px;margin:0 auto}
+.scanning img{display:block;width:100%}
+.scanning::after{content:"";position:absolute;left:0;right:0;height:3px;background:var(--accent);box-shadow:0 0 18px 4px var(--accent);top:0;animation:sweep 1.8s ease-in-out infinite alternate}
+@keyframes sweep{to{top:calc(100% - 3px)}}
+@media (prefers-reduced-motion:reduce){.scanning::after{animation:none;top:50%}}
+
+/* slab label (grading label look) */
+.label{border:3px solid var(--accent);border-radius:10px;background:var(--surface);overflow:hidden}
+.label-top{background:var(--accent);color:var(--accent-ink);display:flex;justify-content:space-between;align-items:center;padding:4px 12px;font-family:var(--display);font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:13px}
+.label-body{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:10px 12px 12px}
+.label-body .l1{font-family:var(--display);font-weight:700;text-transform:uppercase;font-size:15px;letter-spacing:.04em;color:var(--muted)}
+.label-body .l2{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:26px;line-height:1;grid-column:1}
+.label-body .l3{font-family:var(--display);font-weight:600;text-transform:uppercase;font-size:15px;letter-spacing:.04em;grid-column:1}
+.label-body .grade{grid-column:2;grid-row:1 / span 3;align-self:center;text-align:center;font-family:var(--display);font-weight:800;font-size:34px;line-height:1}
+.label-body .grade small{display:block;font-size:12px;letter-spacing:.1em;color:var(--muted)}
+
+.valuebox{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+.bignum{font-family:var(--mono);font-weight:700;font-size:40px;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums}
+.range{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.rangebar{height:8px;border-radius:99px;background:var(--surface2);position:relative;margin-top:8px;border:1px solid var(--line)}
+.rangebar b{position:absolute;top:-4px;width:14px;height:14px;border-radius:50%;background:var(--ink);border:2px solid var(--surface);transform:translateX(-50%)}
+
+.rec{display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-radius:8px;padding:4px 10px;font-size:15px;white-space:nowrap}
+.rec.big{font-size:24px;padding:8px 16px;border-radius:12px}
+.rec.SELL{background:var(--green-bg);color:var(--green)}
+.rec.HOLD{background:var(--gold-bg);color:var(--gold)}
+.rec.KEEP{background:var(--navy-bg);color:var(--navy)}
+.rec.NONE{background:var(--surface2);color:var(--muted)}
+.why{border-left:4px solid var(--line);padding:2px 0 2px 12px}
+.why.SELL{border-color:var(--green)} .why.HOLD{border-color:var(--gold)} .why.KEEP{border-color:var(--navy)}
+
+.comps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.comps li{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.comps li:first-child{border-top:0}
+.comps .p{font-family:var(--mono);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 13px;font-weight:600;font-size:15px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+.chip.fav{background:var(--gold-bg);color:var(--gold);border-color:transparent;padding:2px 8px;font-size:12px;font-family:var(--display);letter-spacing:.08em;text-transform:uppercase}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:13px;font-weight:600;color:var(--muted)}
+.field input,.field select,.field textarea{min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:8px 12px;width:100%}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:380px){.grid2{grid-template-columns:1fr}}
+
+/* lists */
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.stat .n{font-family:var(--mono);font-weight:700;font-size:24px;font-variant-numeric:tabular-nums}
+.cards{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.crow{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border:0;border-top:1px solid var(--line);background:none;text-align:left;width:100%}
+.crow:first-child{border-top:0}
+.thumb{width:52px;height:72px;border-radius:6px;object-fit:cover;background:var(--surface2);border:2px solid var(--line);display:grid;place-items:center;font-family:var(--display);font-weight:800;color:var(--muted);font-size:20px}
+.crow .t{font-weight:700;line-height:1.2}
+.crow .s{font-size:13px;color:var(--muted);line-height:1.3;margin-top:2px}
+.crow .v{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.crow .v .m{font-family:var(--mono);font-weight:700;font-variant-numeric:tabular-nums}
+.delta{font-family:var(--mono);font-size:12px}
+.up{color:var(--green)} .down{color:var(--accent)}
+.recheck{display:flex;align-items:center;gap:12px;background:var(--ink);color:var(--ground);border-radius:16px;padding:14px 16px}
+.recheck .btn{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.bar{height:6px;border-radius:9px;background:rgba(127,127,127,.35);overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.nudge{background:var(--green-bg);color:var(--green);border-radius:12px;padding:10px 14px;font-weight:600;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.empty{text-align:center;padding:32px 16px;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:7px 12px;font-weight:600;font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--ground)}
+
+/* sheet */
+.overlay{position:fixed;inset:0;z-index:40;background:rgba(6,10,20,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--ground);width:100%;max-width:560px;max-height:calc(100% - env(safe-area-inset-top,0px) - 24px);overflow-y:auto;border-radius:20px 20px 0 0;padding:18px 16px calc(24px + env(safe-area-inset-bottom,0px))}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.x{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;flex:none}
+.x svg{width:18px;height:18px;stroke:currentColor;stroke-width:2.4;fill:none}
+.photo{max-width:220px;margin:0 auto;border-radius:10px;border:3px solid var(--line);display:block}
+
+/* quiz */
+.qprog{display:flex;gap:6px;margin-bottom:6px}
+.qprog i{flex:1;height:6px;border-radius:9px;background:var(--line)}
+.qprog i.on{background:var(--accent)}
+.opt{display:flex;gap:12px;align-items:flex-start;text-align:left;border:2px solid var(--line);background:var(--surface);border-radius:14px;padding:14px;width:100%}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:var(--surface2)}
+.opt b{display:block;font-size:17px}
+.opt .dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);flex:none;margin-top:2px}
+.opt[aria-pressed="true"] .dot{border:7px solid var(--accent)}
+.teamgrid{display:flex;flex-wrap:wrap;gap:8px;max-height:260px;overflow-y:auto;padding:2px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:60;background:var(--ink);color:var(--ground);padding:12px 18px;border-radius:12px;font-weight:600;max-width:calc(100% - 32px);box-shadow:var(--shadow)}
+.note{font-size:13px;color:var(--muted);background:var(--surface2);border-radius:10px;padding:10px 12px}
+.loading{display:grid;place-items:center;min-height:50vh;gap:12px;color:var(--muted)}
+.hint{font-size:13px;color:var(--muted)}
+details summary{cursor:pointer;font-weight:700;padding:6px 0}
+</style>
+<style>
+html,body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
+html{-webkit-text-size-adjust:100%}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in">
+  <div class="brand"><i aria-hidden="true"></i>Comp Check</div>
+  <div id="who"></div>
+</div></header>
+
+<main class="wrap" id="view"><div class="loading"><div class="brand"><i></i>Loading your cards…</div></div></main>
+
+<nav class="nav" id="nav" hidden><div class="nav-in">
+  <button data-tab="scan"><svg viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.5"/></svg>Scan</button>
+  <button data-tab="pc"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8"/><path d="M12 17s-3-1.8-3-3.8a1.6 1.6 0 0 1 3-.8 1.6 1.6 0 0 1 3 .8c0 2-3 3.8-3 3.8z"/></svg><span>PC <span class="count" id="c-pc"></span></span></button>
+  <button data-tab="sell"><svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="7.5" cy="8" r="1.5"/></svg><span>Sell <span class="count" id="c-sell"></span></span></button>
+  <button data-tab="family"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2c2.8.3 5 2.6 5 5.8"/></svg>Family</button>
+</div></nav>
+
+<div id="overlay"></div>
+<div id="toast" class="toast" hidden role="status"></div>
+<script>
+const APP_VERSION = '2026-09-22.2240';
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const num = x => { const n = parseFloat(String(x ?? '').replace(/[$,]/g, '')); return isFinite(n) ? n : null; };
+const money = n => n == null || !isFinite(n) ? '—' : '$' + (n >= 100 ? Math.round(n).toLocaleString() : n.toFixed(2));
+const today = () => new Date().toISOString().slice(0, 10);
+const lsGet = k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
+const clean = o => JSON.parse(JSON.stringify(o));
+const ICON_X = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const COLORS = ['#c8102e', '#1e3a8a', '#17744a', '#a8740a', '#6b2fb3', '#0f7c8c'];
+let toastT;
+function toast(msg, ms = 3200) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, ms); }
+
+/* ---------- storage keys ---------- */
+const KEY_LS = 'gh_ai_key';          // shared with GleefulHabit on the same site
+const STATE_LS = 'cc_state';
+const SET_LS = 'cc_settings';
+const MODELS = { best: 'claude-sonnet-5', fast: 'claude-haiku-4-5-20251001' };
+const hasKey = () => { try { return !!localStorage.getItem(KEY_LS); } catch (e) { return false; } };
+let settings = Object.assign({ model: 'best', recheckModel: 'fast', search: true }, lsGet(SET_LS) || {});
+const saveSettings = () => lsSet(SET_LS, settings);
+
+/* ---------- reference data ---------- */
+const SPORTS = [
+  { k: 'Football', lg: 'NFL', teams: 'Cardinals|Falcons|Ravens|Bills|Panthers|Bears|Bengals|Browns|Cowboys|Broncos|Lions|Packers|Texans|Colts|Jaguars|Chiefs|Raiders|Chargers|Rams|Dolphins|Vikings|Patriots|Saints|Giants|Jets|Eagles|Steelers|49ers|Seahawks|Buccaneers|Titans|Commanders' },
+  { k: 'Baseball', lg: 'MLB', teams: 'Diamondbacks|Braves|Orioles|Red Sox|Cubs|White Sox|Reds|Guardians|Rockies|Tigers|Astros|Royals|Angels|Dodgers|Marlins|Brewers|Twins|Mets|Yankees|Athletics|Phillies|Pirates|Padres|Giants|Mariners|Cardinals|Rays|Rangers|Blue Jays|Nationals' },
+  { k: 'Basketball', lg: 'NBA', teams: 'Hawks|Celtics|Nets|Hornets|Bulls|Cavaliers|Mavericks|Nuggets|Pistons|Warriors|Rockets|Pacers|Clippers|Lakers|Grizzlies|Heat|Bucks|Timberwolves|Pelicans|Knicks|Thunder|Magic|76ers|Suns|Trail Blazers|Kings|Spurs|Raptors|Jazz|Wizards' },
+  { k: 'Hockey', lg: 'NHL', teams: 'Ducks|Bruins|Sabres|Flames|Hurricanes|Blackhawks|Avalanche|Blue Jackets|Stars|Red Wings|Oilers|Panthers|Kings|Wild|Canadiens|Predators|Devils|Islanders|Rangers|Senators|Flyers|Penguins|Sharks|Kraken|Blues|Lightning|Maple Leafs|Utah Mammoth|Canucks|Golden Knights|Capitals|Jets' },
+  { k: 'Soccer', lg: '', teams: '' },
+  { k: 'Racing & other', lg: '', teams: '' },
+];
+const GOALS = {
+  keep: { t: 'I collect what I love', d: 'Favorites stay. I only sell extras and doubles.', p: 'collects for love; keeps favorites, sells only extras' },
+  mix: { t: 'A bit of both', d: 'I keep the special ones and sell when the price is right.', p: 'balanced; keeps special cards, sells when the price is right' },
+  flip: { t: 'Trade & profit', d: 'I buy and sell to grow the collection’s value.', p: 'profit-focused; happy to sell anything at a good price' },
+};
+const RISK = {
+  quick: { t: 'Sell while it’s hot', d: 'Lock in the money before it drops.', p: 'sells quickly into price spikes' },
+  wait: { t: 'Wait and see', d: 'Maybe it keeps going up.', p: 'patient; waits to see if a spike holds' },
+  never: { t: 'Never sell my guys', d: 'If it’s my favorite player, it’s staying.', p: 'never sells cards of favorite players or teams' },
+};
+function collectorType(p) {
+  if (p.goal === 'flip' && p.risk === 'quick') return 'Hobby Flipper';
+  if (p.goal === 'flip') return 'Market Watcher';
+  if (p.goal === 'keep' && p.risk === 'never') return 'Die-Hard Collector';
+  if (p.goal === 'keep') return 'Team Loyalist';
+  if (p.risk === 'quick') return 'Smart Seller';
+  return 'Balanced Collector';
+}
+
+/* ---------- state ---------- */
+const saved = lsGet(STATE_LS) || {};
+const state = {
+  profiles: Array.isArray(saved.profiles) ? saved.profiles : [],
+  cards: Array.isArray(saved.cards) ? saved.cards : [],
+  current: lsGet('cc_current'), tab: lsGet('cc_tab') || 'scan', sort: 'value',
+  scan: { status: 'idle' }, recheck: null, sheet: null, quiz: null, showKey: false,
+};
+const cur = () => state.profiles.find(p => p.id === state.current) || state.profiles[0] || null;
+const cardsOf = (pid, list) => state.cards.filter(c => c.profileId === pid && (!list || c.list === list));
+
+function persist() {
+  if (!lsSet(STATE_LS, { profiles: state.profiles, cards: state.cards })) toast('Phone storage is full — export a backup and delete old cards.', 5000);
+}
+function upsert(arr, obj) { const i = arr.findIndex(x => x.id === obj.id); if (i >= 0) arr[i] = obj; else arr.push(obj); }
+function putProfile(p) { upsert(state.profiles, p); persist(); }
+function putCard(c) { const copy = { ...c }; delete copy.thumb; upsert(state.cards, copy); persist(); }
+function delCard(id) { state.cards = state.cards.filter(c => c.id !== id); persist(); IDB.del(id); delete THUMBS[id]; }
+
+/* ---------- photo thumbnails live in IndexedDB (keeps localStorage small) ---------- */
+const THUMBS = {};
+const IDB = {
+  db: null,
+  open() {
+    return new Promise(res => {
+      try {
+        const r = indexedDB.open('compcheck', 1);
+        r.onupgradeneeded = () => r.result.createObjectStore('thumbs');
+        r.onsuccess = () => { this.db = r.result; res(); };
+        r.onerror = () => res();
+      } catch (e) { res(); }
+    });
+  },
+  tx(mode) { return this.db ? this.db.transaction('thumbs', mode).objectStore('thumbs') : null; },
+  loadAll() {
+    return new Promise(res => {
+      const st = this.tx('readonly'); if (!st) return res();
+      const req = st.openCursor();
+      req.onsuccess = () => { const c = req.result; if (c) { THUMBS[c.key] = c.value; c.continue(); } else res(); };
+      req.onerror = () => res();
+    });
+  },
+  put(id, v) { try { this.tx('readwrite')?.put(v, id); } catch (e) {} },
+  del(id) { try { this.tx('readwrite')?.delete(id); } catch (e) {} },
+};
+
+/* ---------- Claude API ---------- */
+async function askClaude({ prompt, image, model, search = true, maxSearch = 4, signal }) {
+  const key = localStorage.getItem(KEY_LS);
+  if (!key) throw { code: 'no_key' };
+  const content = [];
+  if (image) content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: image } });
+  content.push({ type: 'text', text: prompt });
+  const useSearch = search && settings.search && !settings.searchUnavailable;
+  const post = async (messages, withTools) => {
+    const body = { model: MODELS[model] || MODELS.best, max_tokens: 4000, messages };
+    if (withTools) body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: maxSearch }];
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', signal,
+      headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) { const t = await resp.text().catch(() => ''); throw { code: 'http', status: resp.status, detail: t }; }
+    return resp.json();
+  };
+  let messages = [{ role: 'user', content }], data, withTools = useSearch;
+  for (let i = 0; i < 4; i++) {
+    try { data = await post(messages, withTools); }
+    catch (e) {
+      // Web search not switched on for this API account: fall back to Claude's own knowledge.
+      if (withTools && e.code === 'http' && e.status === 400 && /web.?search|tool/i.test(e.detail || '')) {
+        settings.searchUnavailable = true; saveSettings(); withTools = false;
+        toast('Live eBay search is off for your API account — using Claude’s price knowledge instead.', 5000);
+        data = await post(messages, false);
+      } else throw e;
+    }
+    if (data.stop_reason === 'pause_turn') { messages = [...messages, { role: 'assistant', content: data.content }]; continue; }
+    break;
+  }
+  const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+  const searched = (data.content || []).some(b => b.type === 'web_search_tool_result') || messages.length > 1;
+  return { json: parseJSON(text), searched };
+}
+function parseJSON(text) {
+  const m = text.match(/<json>([\s\S]*?)<\/json>/i);
+  let raw = (m ? m[1] : text).replace(/```json|```/g, '').trim();
+  const s = raw.search(/[\[{]/), e = Math.max(raw.lastIndexOf('}'), raw.lastIndexOf(']'));
+  if (s < 0 || e < s) throw { code: 'bad_json', text };
+  try { return JSON.parse(raw.slice(s, e + 1)); } catch (err) { throw { code: 'bad_json', text }; }
+}
+function errCopy(e) {
+  if (!e) return 'Something went wrong. Try again.';
+  if (e.name === 'AbortError') return '';
+  if (e.code === 'no_key') return 'Add your Anthropic API key first (Family tab → Settings).';
+  if (e.code === 'bad_json') return 'The price lookup came back garbled. Try again.';
+  if (e.code === 'http') {
+    const d = (e.detail || '').toLowerCase();
+    if (e.status === 401) return 'Your API key was rejected. Check it in Family → Settings.';
+    if (/credit balance/.test(d)) return 'Your Anthropic account is out of credit. Add some at console.anthropic.com.';
+    if (e.status === 429) return 'Too many lookups at once. Wait a minute and try again.';
+    if (e.status === 529 || e.status >= 500) return 'Claude is busy right now. Try again in a minute.';
+    if (/model/.test(d) && e.status === 404) return 'That model isn’t available on your API account. Switch to “Fast” in Settings.';
+    return `Request failed (${e.status}). Try again.`;
+  }
+  return 'Couldn’t reach Claude. Check your connection and try again.';
+}
+
+/* ---------- prompts ---------- */
+function profileBlurb(p) {
+  return `Collector "${p.name}"${p.kid ? ' is a kid' : ''}. Sports: ${p.sports.join(', ') || 'any'}. Favorite teams: ${p.teams.join(', ') || 'none'}. Favorite players: ${p.players.join(', ') || 'none'}. Collecting style: ${GOALS[p.goal]?.p || 'balanced'}. When a card spikes: ${RISK[p.risk]?.p || 'waits to see'}.`;
+}
+const REC_RULES = `Recommendation must be one of:
+- "SELL": good time to cash out (price near a peak, hype likely to fade, extra copy, or collector is profit-focused and it's not a true favorite).
+- "HOLD": value likely to grow or hold (young rising player, rookie before breakout, season/playoffs upcoming) — keep for now, revisit later.
+- "KEEP": belongs in their personal collection (favorite player/team, sentimental, or too low-value to be worth selling).
+Weigh the collector profile heavily: cards of their favorite players/teams lean KEEP unless the collector is profit-focused or sells quickly into spikes and the price is unusually high. Cards under $3 are usually KEEP (or bundle later).`;
+const kidNote = p => p.kid ? ' Write "reason" in simple, friendly words a kid can understand.' : '';
+const SEARCH_RULES = `If you have web search, search for recent SOLD prices of this exact card (eBay sold listings, 130point, Card Ladder, Goldin, Fanatics Collect), matching the parallel and grade. Prefer sales from the last 90 days. Base low/mid/high on real sales you found; put up to 3 of them in "comps" with the sale price, date and url. If you can't find sales of the exact card, say so in the comp note and estimate from the closest matches.`;
+const SCHEMA = `{"identified":true,"confidence":0.0-1.0,"player":"","team":"","sport":"","year":"","brand":"","set":"","cardNumber":"","parallel":"","serial":"","rookie":false,"grader":"PSA|BGS|SGC|CGC|\\"\\"","grade":"","low":0,"mid":0,"high":0,"trend":"rising|steady|cooling","comps":[{"desc":"","price":0,"date":"","url":"","note":""}],"rec":"SELL|HOLD|KEEP","reason":"","query":"eBay search words for this exact card"}`;
+const OUT = s => `Finish with the JSON only, wrapped in <json></json> tags, in this shape: ${s}`;
+
+function scanPrompt(p) {
+  return `You are an expert sports trading card identifier and pricer. Today is ${today()}.
+The image is a phone photo of a sports card (raw, in a toploader, or in a graded slab; it may show the back).
+1. Identify the exact card: player, team, sport, year, brand, set, card number, parallel/insert/refractor color, serial numbering, rookie status, and grading company + grade if slabbed. Read slab labels and card backs carefully; colored borders and patterns usually indicate the parallel.
+2. Price THIS card in THIS condition/grade in USD. ${SEARCH_RULES} If raw, price a typical raw copy and note visible condition issues.
+3. ${REC_RULES}
+${profileBlurb(p)}${kidNote(p)} Keep "reason" to 1-2 sentences and mention the collector's connection when relevant.
+If you can't read the card, set "identified": false and fill what you can.
+${OUT(SCHEMA)}`;
+}
+function cardDesc(c) { return [c.year, c.brand, c.set, c.cardNumber ? '#' + c.cardNumber : '', c.player, c.parallel, c.serial, c.rookie ? 'RC' : '', c.grader && c.grade ? c.grader + ' ' + c.grade : 'raw', c.team, c.sport].filter(Boolean).join(' | '); }
+function textPrompt(p, cardText) {
+  return `You are an expert sports trading card pricer. Today is ${today()}.
+Card: ${cardText}
+(It may be typed quickly by the collector — abbreviated or misspelled. Identify the most likely exact card and fill in every detail field.)
+${SEARCH_RULES}
+${REC_RULES}
+${profileBlurb(p)}${kidNote(p)} Keep "reason" to 1-2 sentences.
+${OUT(SCHEMA)}`;
+}
+function recheckPrompt(p, lines) {
+  return `You are an expert sports trading card pricer. Today is ${today()}. Re-price each card below and give an updated recommendation.
+${SEARCH_RULES.replace('this exact card', 'each exact card')}
+${REC_RULES}
+${profileBlurb(p)}${kidNote(p)} Keep each "reason" to one sentence; say if the value moved from lastValue and why (season, injury, milestone, hype cooling).
+Cards: ${JSON.stringify(lines)}
+${OUT('[{"id":"","low":0,"mid":0,"high":0,"trend":"rising|steady|cooling","rec":"SELL|HOLD|KEEP","reason":"","comps":[{"desc":"","price":0,"date":"","url":""}]}]')} — one object per card, same ids.`;
+}
+function normComps(arr) {
+  return Array.isArray(arr) ? arr.slice(0, 4).map(x => ({ desc: String(x.desc || ''), price: num(x.price), date: String(x.date || ''), url: /^https?:\/\//.test(x.url || '') ? String(x.url) : '', note: String(x.note || '') })) : [];
+}
+function normalize(r, base = {}) {
+  const pick = k => (r[k] != null && r[k] !== '' ? String(r[k]) : base[k] || '');
+  const rec = String(r.rec || '').toUpperCase(), g = String(r.grader || '').toUpperCase();
+  return {
+    ...base,
+    player: pick('player'), team: pick('team'), sport: pick('sport'), year: pick('year'), brand: pick('brand'), set: pick('set'),
+    cardNumber: pick('cardNumber').replace(/^#/, ''), parallel: pick('parallel'), serial: pick('serial'),
+    rookie: r.rookie != null ? !!r.rookie : !!base.rookie, grader: ['PSA', 'BGS', 'SGC', 'CGC'].includes(g) ? g : (base.grader || ''),
+    grade: pick('grade'), low: num(r.low), mid: num(r.mid), high: num(r.high), trend: r.trend || '',
+    comps: normComps(r.comps), rec: ['SELL', 'HOLD', 'KEEP'].includes(rec) ? rec : 'HOLD', reason: String(r.reason || ''),
+    query: String(r.query || ''), confidence: num(r.confidence), notFound: r.identified === false,
+  };
+}
+
+/* ---------- chrome ---------- */
+function avatar(p, size = 30) { return `<span class="av" style="background:${p.color};width:${size}px;height:${size}px;font-size:${size * .55}px">${esc((p.name || '?')[0].toUpperCase())}</span>`; }
+function renderChrome() {
+  const p = cur();
+  $('#nav').hidden = !p;
+  $('#who').innerHTML = p ? `<button class="pill" id="switch" aria-label="Switch profile">${avatar(p)}${esc(p.name)} <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></button>` : '';
+  document.querySelectorAll('.nav button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === state.tab ? 'page' : 'false'));
+  if (p) { $('#c-pc').textContent = cardsOf(p.id, 'pc').length || ''; $('#c-sell').textContent = cardsOf(p.id, 'sell').length || ''; }
+}
+$('#nav').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) setTab(b.dataset.tab); });
+$('#who').addEventListener('click', e => { if (e.target.closest('#switch')) openSwitcher(); });
+function setTab(t) { state.tab = t; lsSet('cc_tab', t); renderChrome(); renderView(); window.scrollTo(0, 0); }
+
+/* ---------- views ---------- */
+function renderView() {
+  const v = $('#view'), p = cur();
+  if (!p) { v.innerHTML = `<div class="empty stack"><h2>Welcome to Comp Check</h2><p>Take the quick quiz to set up your first collector profile.</p><button class="btn primary" data-act="newprofile">Start the quiz</button></div>`; return; }
+  if (state.tab === 'scan') v.innerHTML = scanView(p);
+  else if (state.tab === 'pc' || state.tab === 'sell') v.innerHTML = listView(p, state.tab);
+  else v.innerHTML = familyView();
+}
+
+function keyPanel(compact) {
+  return `<div class="panel stack" id="keypanel">
+    <h3>${compact ? 'API key' : 'One-time setup: add your API key'}</h3>
+    <p class="small muted" style="margin:0">Comp Check sends card photos to Claude with your Anthropic API key (from console.anthropic.com). It’s stored only on this phone and shared with GleefulHabit. A scan costs a few cents, billed to your account.</p>
+    <div class="field"><label for="keyin">Anthropic API key</label><input id="keyin" type="password" autocomplete="off" placeholder="sk-ant-…" value=""></div>
+    <div class="row"><button class="btn primary sm" data-act="savekey">Save key</button>${hasKey() ? '<span class="small muted">A key is saved on this phone.</span>' : ''}</div></div>`;
+}
+
+/* ---- scan ---- */
+function scanView(p) {
+  const s = state.scan;
+  if (s.status === 'working') return `<div class="stack">
+    <div class="eyebrow">Finding comps for ${esc(p.name)}</div>
+    ${s.thumb ? `<div class="scanning"><img src="${s.thumb}" alt="Your card photo"></div>` : ''}
+    <p style="text-align:center"><b id="scanmsg">${s.thumb ? 'Reading the card…' : 'Looking up the card…'}</b><br><span class="muted small">Searching real sold listings takes 20–60 seconds.</span></p>
+    <button class="btn block" data-act="stopscan">Stop</button></div>`;
+  if (s.status === 'result') return resultView(p, s);
+  if (!hasKey()) return `<div class="stack"><div><div class="eyebrow">Hi ${esc(p.name)} · ${esc(collectorType(p))}</div><h1>What’s it worth?</h1></div>${keyPanel(false)}</div>`;
+  return `<div class="stack">
+    <div><div class="eyebrow">Hi ${esc(p.name)} · ${esc(collectorType(p))}</div><h1>What’s it worth?</h1></div>
+    <label class="drop" for="cam">
+      <span class="slab" aria-hidden="true"></span>
+      <h2>Snap a card</h2>
+      <span class="muted">Take a photo or pick one from your camera roll. Raw or slabbed both work.</span>
+      <input id="cam" type="file" accept="image/*">
+    </label>
+    <form class="panel stack" id="quickform" autocomplete="off">
+      <label for="quick" class="eyebrow">Or type it</label>
+      <div class="row" style="flex-wrap:nowrap"><input id="quick" style="flex:1;min-width:0;min-height:48px;border:1px solid var(--line);border-radius:12px;background:var(--surface2);padding:10px 14px" placeholder="2020 Prizm Herbert Silver PSA 10" enterkeyhint="search"><button class="btn dark" type="submit">Price</button></div>
+    </form>
+    ${s.error ? `<p class="note" style="color:var(--accent)">${esc(s.error)}</p>` : ''}
+    ${recheckBox()}
+    <p class="hint">${settings.search && !settings.searchUnavailable ? 'Prices come from recent sold listings Claude finds online.' : 'Prices are Claude’s estimate from sales it knows about.'} Tap “See eBay sold” on any card to double-check before you sell.</p>
+  </div>`;
+}
+
+function labelBlock(c) {
+  const top = [c.year, c.brand, c.set].filter(Boolean).join(' ');
+  const l3 = [c.cardNumber ? '#' + c.cardNumber : '', c.parallel, c.serial, c.rookie ? 'RC' : ''].filter(Boolean).join(' · ');
+  const graded = c.grader && c.grade;
+  return `<div class="label"><div class="label-top"><span>${esc(c.sport || 'Card')}${c.team ? ' · ' + esc(c.team) : ''}</span><span>${graded ? esc(c.grader) : 'Raw'}</span></div>
+    <div class="label-body"><div class="l1">${esc(top || 'Unknown set')}</div><div class="l2">${esc(c.player || 'Unknown player')}</div><div class="l3">${esc(l3 || '—')}</div>
+    <div class="grade">${graded ? esc(c.grade) : '<span style="font-size:22px">RAW</span>'}<small>${graded ? 'GRADE' : 'UNGRADED'}</small></div></div></div>`;
+}
+function recWord(r) { return r === 'SELL' ? 'Sell' : r === 'HOLD' ? 'Hold' : r === 'KEEP' ? 'Keep in PC' : 'Not priced'; }
+function valueBlock(c) {
+  const lo = c.low, hi = c.high, mid = c.mid;
+  let pos = 50; if (lo != null && hi != null && hi > lo && mid != null) pos = Math.max(0, Math.min(100, (mid - lo) / (hi - lo) * 100));
+  return `<div class="panel stack"><div class="valuebox"><div><div class="eyebrow">${c.searched ? 'Based on recent sales' : 'Estimated value'}</div><div class="bignum">${money(mid)}</div></div>
+    <span class="rec big ${c.rec || 'NONE'}">${recWord(c.rec)}</span></div>
+    ${lo != null && hi != null ? `<div><div class="rangebar"><b style="left:${pos}%"></b></div><div class="row range" style="justify-content:space-between;margin-top:6px"><span>Low ${money(lo)}</span><span>High ${money(hi)}</span></div></div>` : ''}
+    ${c.reason ? `<p class="why ${c.rec}" style="margin:0">${esc(c.reason)}</p>` : ''}
+    ${c.trend ? `<div class="small muted">Market trend: <b>${esc(c.trend)}</b>${c.confidence != null ? ` · ID confidence ${Math.round(c.confidence * 100)}%` : ''}</div>` : ''}</div>`;
+}
+function compsBlock(c) {
+  if (!c.comps || !c.comps.length) return '';
+  return `<div class="panel"><div class="eyebrow" style="margin-bottom:6px">Comps</div><ul class="comps">${c.comps.map(x => `<li><span>${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener" style="color:var(--navy)">${esc(x.desc || 'Sale')}</a>` : esc(x.desc)}${x.date || x.note ? `<br><span class="small muted">${esc([x.date, x.note].filter(Boolean).join(' · '))}</span>` : ''}</span><span class="p">${money(num(x.price))}</span></li>`).join('')}</ul></div>`;
+}
+function ebayLink(c) { const q = c.query || [c.year, c.brand, c.set, c.player, c.cardNumber ? '#' + c.cardNumber : '', c.parallel, c.grader && c.grade ? c.grader + ' ' + c.grade : ''].filter(Boolean).join(' '); return 'https://www.ebay.com/sch/i.html?_nkw=' + encodeURIComponent(q) + '&LH_Sold=1&LH_Complete=1'; }
+function editFields(c, pre) {
+  const f = (k, l, t = 'text', ph = '') => `<div class="field"><label for="${pre}${k}">${l}</label><input id="${pre}${k}" data-k="${k}" type="${t}" ${t === 'number' ? 'inputmode="decimal" step="any"' : ''} value="${esc(c[k] ?? '')}" placeholder="${ph}"></div>`;
+  return `<div class="stack">${f('player', 'Player', 'text', 'e.g. Bo Nix')}
+    <div class="grid2">${f('year', 'Year', 'text', '2024')}${f('brand', 'Brand', 'text', 'Panini')}</div>
+    <div class="grid2">${f('set', 'Set', 'text', 'Prizm')}${f('cardNumber', 'Card #')}</div>
+    <div class="grid2">${f('parallel', 'Parallel / insert', 'text', 'Silver')}${f('serial', 'Numbered', 'text', '/99')}</div>
+    <div class="grid2">${f('team', 'Team')}${f('sport', 'Sport', 'text', 'Football')}</div>
+    <div class="grid2"><div class="field"><label for="${pre}grader">Graded by</label><select id="${pre}grader" data-k="grader">${['', 'PSA', 'BGS', 'SGC', 'CGC', 'Other'].map(g => `<option value="${g}" ${c.grader === g ? 'selected' : ''}>${g || 'Raw (not graded)'}</option>`).join('')}</select></div>${f('grade', 'Grade', 'text', '10')}</div>
+    <label class="row small"><input type="checkbox" data-k="rookie" id="${pre}rookie" ${c.rookie ? 'checked' : ''}> Rookie card</label>
+    ${f('mid', 'My value (optional override)', 'number')}</div>`;
+}
+function readFields(root, c) {
+  if (!root) return c;
+  root.querySelectorAll('[data-k]').forEach(el => { const k = el.dataset.k; c[k] = el.type === 'checkbox' ? el.checked : k === 'mid' ? num(el.value) : el.value.trim(); });
+  return c;
+}
+function resultView(p, s) {
+  const c = s.result, priced = c.mid != null;
+  return `<div class="stack">
+    <div class="row"><div class="eyebrow">${priced ? 'Comp found' : 'New card'} · for ${esc(p.name)}</div><span class="spacer"></span><button class="linkbtn" data-act="rescan">Scan another</button></div>
+    ${s.thumb ? `<img class="photo" src="${s.thumb}" alt="Card photo">` : ''}
+    ${labelBlock(c)}
+    ${priced ? valueBlock(c) : ''}
+    ${compsBlock(c)}
+    ${c.notFound ? `<p class="note">Claude couldn’t confidently read this card. Fix the details below and tap Re-price, or try a clearer photo (the back or slab label works great).</p>` : ''}
+    <div class="grid2"><button class="btn primary" data-act="save" data-list="pc">Add to PC</button><button class="btn dark" data-act="save" data-list="sell">Add to Sell list</button></div>
+    ${priced ? `<a class="btn block" href="${ebayLink(c)}" target="_blank" rel="noopener">See eBay sold listings ↗</a>` : ''}
+    <details class="panel" id="fix" ${!priced ? 'open' : ''}><summary>${priced ? 'Wrong card? Fix the details' : 'Card details'}</summary><div style="margin-top:10px">${editFields(c, 'r_')}
+      <div class="row" style="margin-top:12px"><button class="btn block" data-act="reprice" ${hasKey() ? '' : 'disabled'}>${priced ? 'Re-price with these details' : 'Price it'}</button></div></div></details>
+    ${s.error ? `<p class="note" style="color:var(--accent)">${esc(s.error)}</p>` : ''}
+  </div>`;
+}
+
+/* ---- lists ---- */
+function sortCards(arr) {
+  const a = [...arr];
+  if (state.sort === 'value') a.sort((x, y) => (y.mid || 0) - (x.mid || 0));
+  else if (state.sort === 'recent') a.sort((x, y) => (y.addedAt || 0) - (x.addedAt || 0));
+  else a.sort((x, y) => (x.player || '').localeCompare(y.player || ''));
+  return a;
+}
+function delta(c) { const h = c.history || []; if (h.length < 2) return ''; const d = h[h.length - 1].mid - h[h.length - 2].mid; if (!d || !isFinite(d)) return '<span class="delta muted">no change</span>'; return `<span class="delta ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'} ${money(Math.abs(d))}</span>`; }
+function isFav(p, c) {
+  const hay = ((c.player || '') + ' ' + (c.team || '')).toLowerCase();
+  return p.players.some(x => x && hay.includes(x.toLowerCase())) || p.teams.some(t => { const n = t.replace(/\s*\(.*\)$/, '').toLowerCase(); return n && hay.includes(n); });
+}
+function cardRow(c, p) {
+  const sub = [c.year, c.brand, c.set, c.parallel, c.grader && c.grade ? c.grader + ' ' + c.grade : ''].filter(Boolean).join(' · ');
+  const th = THUMBS[c.id];
+  return `<button class="crow" data-card="${c.id}">
+    ${th ? `<img class="thumb" src="${th}" alt="">` : `<span class="thumb">${esc((c.player || '?')[0])}</span>`}
+    <span><span class="t">${esc(c.player || 'Unknown')}${isFav(p, c) ? ' <span class="chip fav">Fav</span>' : ''}</span><div class="s">${esc(sub)}</div></span>
+    <span class="v"><span class="m">${money(c.mid)}</span><span class="rec ${c.rec || 'NONE'}" style="font-size:12px;padding:2px 7px">${recWord(c.rec)}</span>${delta(c)}</span></button>`;
+}
+function recheckBox() {
+  const r = state.recheck, all = state.cards.length;
+  if (!all) return '';
+  if (r) return `<div class="recheck"><div style="flex:1"><b>Rechecking ${Math.min(r.done, r.total)} of ${r.total}…</b><div class="bar"><i style="width:${r.total ? r.done / r.total * 100 : 0}%"></i></div></div><button class="btn sm" data-act="stoprecheck">Stop</button></div>`;
+  const last = Math.max(0, ...state.cards.map(c => c.checkedAt || 0));
+  return `<div class="recheck"><div style="flex:1"><b>Recheck all our cards</b><div class="small" style="opacity:.8">${all} card${all > 1 ? 's' : ''} across ${state.profiles.length} profile${state.profiles.length > 1 ? 's' : ''}${last ? ' · last ' + new Date(last).toLocaleDateString() : ''}</div></div><button class="btn sm" data-act="recheck" ${hasKey() ? '' : 'disabled'}>Recheck</button></div>`;
+}
+function listView(p, list) {
+  const cards = sortCards(cardsOf(p.id, list));
+  const total = cards.reduce((s, c) => s + (c.mid || 0), 0);
+  const pcSells = list === 'sell' ? cardsOf(p.id, 'pc').filter(c => c.rec === 'SELL') : [];
+  return `<div class="stack">
+    <div><div class="eyebrow">${esc(p.name)}’s</div><h1>${list === 'pc' ? 'Personal Collection' : 'To Sell'}</h1></div>
+    <div class="summary"><div class="stat"><div class="eyebrow">Cards</div><div class="n">${cards.length}</div></div><div class="stat"><div class="eyebrow">${list === 'sell' ? 'Could bring in' : 'Est. value'}</div><div class="n">${money(total)}</div></div></div>
+    ${recheckBox()}
+    ${pcSells.length ? `<div class="nudge"><span>${pcSells.length} card${pcSells.length > 1 ? 's' : ''} in your PC say${pcSells.length > 1 ? '' : 's'} SELL</span><button class="btn sm" data-act="showpcsells">Review</button></div>` : ''}
+    ${cards.length ? `<div class="row"><span class="small muted">Sort</span><div class="seg" role="group">${[['value', 'Value'], ['recent', 'Newest'], ['name', 'Name']].map(([k, l]) => `<button data-sort="${k}" aria-pressed="${state.sort === k}">${l}</button>`).join('')}</div></div>
+      <div class="cards">${cards.map(c => cardRow(c, p)).join('')}</div>`
+      : `<div class="panel empty"><p>No cards here yet.</p><button class="btn primary" data-act="gotoscan">Scan a card</button></div>`}
+  </div>`;
+}
+
+/* ---- family + settings ---- */
+function familyView() {
+  const sum = a => a.reduce((s, c) => s + (c.mid || 0), 0);
+  return `<div class="stack"><div><div class="eyebrow">Profiles</div><h1>Family</h1></div>
+    ${state.profiles.map(p => {
+      const pc = cardsOf(p.id, 'pc'), sell = cardsOf(p.id, 'sell');
+      return `<div class="panel stack"><div class="row">${avatar(p, 44)}<div style="flex:1"><h2>${esc(p.name)}</h2><div class="small muted">${esc(collectorType(p))}${p.kid ? ' · Kid collector' : ''}</div></div>${p.id === state.current ? '<span class="rec KEEP" style="font-size:12px">Active</span>' : `<button class="btn sm" data-act="use" data-id="${p.id}">Switch</button>`}</div>
+        <div class="summary"><div class="stat"><div class="eyebrow">PC · ${pc.length}</div><div class="n">${money(sum(pc))}</div></div><div class="stat"><div class="eyebrow">To sell · ${sell.length}</div><div class="n">${money(sum(sell))}</div></div></div>
+        ${p.teams.length || p.players.length ? `<div class="chips">${[...p.players, ...p.teams].slice(0, 10).map(x => `<span class="chip" style="font-size:13px;padding:4px 10px">${esc(x)}</span>`).join('')}</div>` : ''}
+        <button class="linkbtn" data-act="retake" data-id="${p.id}" style="align-self:flex-start">Retake quiz</button></div>`;
+    }).join('')}
+    <button class="btn primary block" data-act="newprofile">+ Add a profile</button>
+    ${recheckBox()}
+    <div class="panel stack"><h2>Settings</h2>
+      <div class="field"><span class="eyebrow">Scan accuracy</span><div class="seg" role="group">${[['best', 'Best (Sonnet)'], ['fast', 'Cheaper (Haiku)']].map(([k, l]) => `<button data-set="model" data-v="${k}" aria-pressed="${settings.model === k}">${l}</button>`).join('')}</div></div>
+      <div class="field"><span class="eyebrow">Recheck all uses</span><div class="seg" role="group">${[['fast', 'Cheaper (Haiku)'], ['best', 'Best (Sonnet)']].map(([k, l]) => `<button data-set="recheckModel" data-v="${k}" aria-pressed="${settings.recheckModel === k}">${l}</button>`).join('')}</div></div>
+      <label class="row"><input type="checkbox" id="searchtog" ${settings.search ? 'checked' : ''}> <span><b>Search live sold listings</b><br><span class="small muted">More accurate comps; a few extra cents per lookup.${settings.searchUnavailable ? ' Currently off for your API account — turn on web search at console.anthropic.com, then toggle this.' : ''}</span></span></label>
+      ${state.showKey ? keyPanel(true) : `<button class="linkbtn" data-act="showkey" style="align-self:flex-start">${hasKey() ? 'Change API key' : 'Add API key'}</button>`}
+      <div class="grid2"><button class="btn sm" data-act="export">Export backup</button><label class="btn sm" for="importfile" style="position:relative;overflow:hidden">Import backup<input id="importfile" type="file" accept="application/json,.json" style="position:absolute;inset:0;opacity:0"></label></div>
+      <p class="hint" style="margin:0">Cards are saved on this phone. Export a backup now and then, or to move cards to another phone.</p>
+    </div>
+    <p class="hint" style="text-align:center">Comp Check v${APP_VERSION}</p></div>`;
+}
+
+/* ---------- view events ---------- */
+$('#view').addEventListener('click', async e => {
+  const sortB = e.target.closest('[data-sort]'); if (sortB) { state.sort = sortB.dataset.sort; renderView(); return; }
+  const setB = e.target.closest('[data-set]'); if (setB) { settings[setB.dataset.set] = setB.dataset.v; saveSettings(); renderView(); return; }
+  const row = e.target.closest('[data-card]'); if (row) { openCard(row.dataset.card); return; }
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act;
+  if (a === 'newprofile') openQuiz(null);
+  else if (a === 'retake') openQuiz(b.dataset.id);
+  else if (a === 'use') useProfile(b.dataset.id);
+  else if (a === 'gotoscan') setTab('scan');
+  else if (a === 'rescan') { state.scan = { status: 'idle' }; renderView(); }
+  else if (a === 'stopscan') state.scan.ctl?.abort();
+  else if (a === 'reprice') repriceFromForm();
+  else if (a === 'save') saveScan(b.dataset.list);
+  else if (a === 'recheck') recheckAll();
+  else if (a === 'stoprecheck') state.recheck?.ctl.abort();
+  else if (a === 'showpcsells') setTab('pc');
+  else if (a === 'showkey') { state.showKey = true; renderView(); $('#keyin')?.focus(); }
+  else if (a === 'savekey') {
+    const k = ($('#keyin')?.value || '').trim();
+    if (!/^sk-ant-/.test(k)) { toast('That doesn’t look like an Anthropic key (it starts with sk-ant-).'); return; }
+    try { localStorage.setItem(KEY_LS, k); } catch (err) { toast('Couldn’t save the key on this phone.'); return; }
+    state.showKey = false; settings.searchUnavailable = false; saveSettings(); toast('Key saved'); renderView();
+  }
+  else if (a === 'export') exportData();
+});
+$('#view').addEventListener('change', e => {
+  if (e.target.id === 'cam') { const f = e.target.files && e.target.files[0]; if (f) scanFile(f); }
+  if (e.target.id === 'searchtog') { settings.search = e.target.checked; if (e.target.checked) settings.searchUnavailable = false; saveSettings(); renderView(); }
+  if (e.target.id === 'importfile') { const f = e.target.files && e.target.files[0]; if (f) importData(f); }
+});
+$('#view').addEventListener('submit', e => { if (e.target.id !== 'quickform') return; e.preventDefault(); const t = $('#quick').value.trim(); if (t) quickPrice(t); });
+
+function useProfile(id) { state.current = id; lsSet('cc_current', id); state.scan = { status: 'idle' }; renderChrome(); renderView(); toast('Switched to ' + (cur()?.name || '')); }
+function blankCard() { return { player: '', year: '', brand: '', set: '', cardNumber: '', parallel: '', serial: '', team: '', sport: '', grader: '', grade: '', rookie: false, mid: null }; }
+
+/* ---------- images ---------- */
+async function loadImg(file) {
+  const url = URL.createObjectURL(file); const img = new Image();
+  await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
+  setTimeout(() => URL.revokeObjectURL(url), 1000); return img;
+}
+function draw(img, max) { const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight)); const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); return c; }
+
+/* ---------- lookups ---------- */
+function startWorking(thumb) {
+  const ctl = new AbortController();
+  state.scan = { status: 'working', thumb, ctl }; renderView(); window.scrollTo(0, 0);
+  const msgs = thumb ? ['Reading the card…', 'Checking the set and parallel…', 'Searching sold listings…', 'Deciding sell or hold…'] : ['Looking up the card…', 'Searching sold listings…', 'Deciding sell or hold…'];
+  let i = 0; const tick = setInterval(() => { const m = $('#scanmsg'); if (m) m.textContent = msgs[Math.min(++i, msgs.length - 1)]; }, 8000);
+  return { ctl, stop: () => clearInterval(tick) };
+}
+async function scanFile(file) {
+  const p = cur(); if (!p) return;
+  let img; try { img = await loadImg(file); } catch (e) { state.scan = { status: 'idle', error: 'Couldn’t open that photo. Try another one.' }; renderView(); return; }
+  const thumb = draw(img, 240).toDataURL('image/jpeg', .7);
+  const image = draw(img, 1400).toDataURL('image/jpeg', .85).split(',')[1];
+  const w = startWorking(thumb);
+  try {
+    const r = await askClaude({ prompt: scanPrompt(p), image, model: settings.model, maxSearch: 4, signal: w.ctl.signal });
+    state.scan = { status: 'result', thumb, result: { ...normalize(r.json || {}), searched: r.searched } };
+  } catch (e) { state.scan = e && e.name === 'AbortError' ? { status: 'idle' } : { status: 'idle', error: errCopy(e) }; }
+  w.stop(); renderView(); window.scrollTo(0, 0);
+}
+async function quickPrice(text) {
+  const p = cur(); if (!p) return;
+  const w = startWorking(null);
+  try { const r = await askClaude({ prompt: textPrompt(p, text), model: settings.model, signal: w.ctl.signal }); state.scan = { status: 'result', thumb: null, result: { ...normalize(r.json || {}), searched: r.searched } }; }
+  catch (e) { state.scan = e && e.name === 'AbortError' ? { status: 'idle' } : { status: 'idle', error: errCopy(e) }; }
+  w.stop(); renderView();
+}
+async function repriceFromForm() {
+  const p = cur(), s = state.scan; if (!p) return;
+  const c = readFields($('#fix'), { ...s.result });
+  if (!c.player) { s.error = 'Add at least the player name.'; renderView(); return; }
+  const thumb = s.thumb, w = startWorking(thumb);
+  try { const r = await askClaude({ prompt: textPrompt(p, cardDesc(c)), model: settings.model, signal: w.ctl.signal }); state.scan = { status: 'result', thumb, result: { ...normalize(r.json || {}, c), searched: r.searched } }; }
+  catch (e) { state.scan = { status: 'result', thumb, result: c, error: errCopy(e) }; }
+  w.stop(); renderView();
+}
+function saveScan(list) {
+  const p = cur(), s = state.scan; if (!p) return;
+  const edited = readFields($('#fix'), { ...s.result });
+  if (!edited.player) { s.result = edited; s.error = 'Add the player name before saving.'; renderView(); return; }
+  const now = Date.now(), id = uid();
+  const card = { ...edited, id, profileId: p.id, list, addedAt: now, checkedAt: edited.mid != null ? now : 0, history: edited.mid != null ? [{ t: now, mid: edited.mid }] : [] };
+  delete card.notFound;
+  putCard(card);
+  if (s.thumb) { THUMBS[id] = s.thumb; IDB.put(id, s.thumb); }
+  state.scan = { status: 'idle' };
+  toast(`Saved to ${p.name}’s ${list === 'pc' ? 'PC' : 'Sell list'}`);
+  renderChrome(); renderView();
+}
+
+/* ---------- recheck all ---------- */
+async function recheckAll() {
+  if (state.recheck || !hasKey()) return;
+  const groups = state.profiles.map(p => ({ p, cards: cardsOf(p.id).filter(c => c.player) })).filter(g => g.cards.length);
+  const total = groups.reduce((s, g) => s + g.cards.length, 0);
+  const ctl = new AbortController();
+  state.recheck = { done: 0, total, ctl }; renderView();
+  let updated = 0, sells = 0, err = null;
+  try {
+    for (const g of groups) {
+      for (let i = 0; i < g.cards.length; i += 4) {
+        const chunk = g.cards.slice(i, i + 4);
+        const lines = chunk.map(c => ({ id: c.id, list: c.list === 'pc' ? 'personal collection' : 'to-sell list', card: cardDesc(c), lastValue: c.mid }));
+        const r = await askClaude({ prompt: recheckPrompt(g.p, lines), model: settings.recheckModel, maxSearch: Math.min(8, chunk.length * 2), signal: ctl.signal });
+        const arr = Array.isArray(r.json) ? r.json : [];
+        for (const x of arr) {
+          const c = state.cards.find(y => y.id === x.id); if (!c) continue;
+          const mid = num(x.mid); if (mid == null) continue;
+          const rec = String(x.rec || '').toUpperCase(), now = Date.now();
+          const comps = normComps(x.comps);
+          putCard({ ...c, low: num(x.low), mid, high: num(x.high), trend: x.trend || c.trend, rec: ['SELL', 'HOLD', 'KEEP'].includes(rec) ? rec : c.rec, reason: String(x.reason || c.reason || ''), comps: comps.length ? comps : c.comps, searched: r.searched, checkedAt: now, history: [...(c.history || []), { t: now, mid }].slice(-20) });
+          updated++; if (rec === 'SELL') sells++;
+        }
+        state.recheck.done += chunk.length; renderChrome(); renderView();
+      }
+    }
+  } catch (e) { if (!(e && e.name === 'AbortError')) err = errCopy(e); }
+  state.recheck = null; renderChrome(); renderView();
+  toast(err || `Rechecked ${updated} card${updated === 1 ? '' : 's'}${sells ? ` · ${sells} now say SELL` : ''}`, 4500);
+}
+
+/* ---------- backup ---------- */
+function exportData() {
+  const data = { app: 'compcheck', version: APP_VERSION, exportedAt: new Date().toISOString(), profiles: state.profiles, cards: state.cards, thumbs: THUMBS };
+  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `comp-check-backup-${today()}.json`;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+  toast('Backup exported');
+}
+async function importData(file) {
+  try {
+    const d = JSON.parse(await file.text());
+    if (d.app !== 'compcheck' || !Array.isArray(d.cards) || !Array.isArray(d.profiles)) throw 0;
+    d.profiles.forEach(p => upsert(state.profiles, p));
+    d.cards.forEach(c => { const x = { ...c }; delete x.thumb; upsert(state.cards, x); });
+    Object.entries(d.thumbs || {}).forEach(([id, v]) => { THUMBS[id] = v; IDB.put(id, v); });
+    persist(); if (!cur()) state.current = state.profiles[0]?.id;
+    renderChrome(); renderView(); toast(`Imported ${d.cards.length} cards`);
+  } catch (e) { toast('That file isn’t a Comp Check backup.'); }
+}
+
+/* ---------- card sheet ---------- */
+function openCard(id) { state.sheet = { id, editing: false, confirm: false }; renderSheet(); }
+function closeSheet() { state.sheet = null; state.quiz = null; $('#overlay').innerHTML = ''; document.body.style.overflow = ''; }
+function renderSheet() {
+  const sh = state.sheet; const c = state.cards.find(x => x.id === sh.id);
+  if (!c) { closeSheet(); return; }
+  const owner = state.profiles.find(p => p.id === c.profileId), th = THUMBS[c.id], h = c.history || [];
+  document.body.style.overflow = 'hidden';
+  $('#overlay').innerHTML = `<div class="overlay" data-close><div class="sheet" role="dialog" aria-modal="true" aria-label="Card details">
+    <div class="sheet-head"><div class="eyebrow">${esc(owner?.name || '')} · ${c.list === 'pc' ? 'PC' : 'Sell list'}</div><button class="x" data-sact="close" aria-label="Close">${ICON_X}</button></div>
+    <div class="stack">
+    ${th ? `<img class="photo" src="${th}" alt="Card photo">` : ''}
+    ${labelBlock(c)}
+    ${sh.editing ? `<div class="panel" id="editbox">${editFields(c, 'e_')}<div class="grid2" style="margin-top:12px"><button class="btn" data-sact="canceledit">Cancel</button><button class="btn primary" data-sact="saveedit">Save</button></div></div>` : `
+      ${c.mid != null ? valueBlock(c) : '<p class="note">Not priced yet — tap Re-price.</p>'}
+      ${compsBlock(c)}
+      ${h.length > 1 ? `<div class="panel"><div class="eyebrow" style="margin-bottom:6px">Value history</div>${sparkline(h)}</div>` : ''}
+      <div class="small muted">${c.checkedAt ? 'Last checked ' + new Date(c.checkedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : ''}</div>
+      <div class="grid2">${c.list === 'pc' ? `<button class="btn dark" data-sact="move" data-list="sell">Move to Sell</button>` : `<button class="btn primary" data-sact="move" data-list="pc">Move to PC</button>`}
+        <button class="btn" data-sact="reprice" ${hasKey() && !sh.busy ? '' : 'disabled'}>${sh.busy ? 'Pricing…' : 'Re-price'}</button></div>
+      <a class="btn block" href="${ebayLink(c)}" target="_blank" rel="noopener">See eBay sold listings ↗</a>
+      ${state.profiles.length > 1 ? `<div class="row small"><span class="muted">Give to</span>${state.profiles.filter(p => p.id !== c.profileId).map(p => `<button class="chip" data-sact="give" data-id="${p.id}">${esc(p.name)}</button>`).join('')}</div>` : ''}
+      <div class="row"><button class="linkbtn" data-sact="edit">Edit details</button><span class="spacer"></span>
+        ${sh.confirm ? `<span class="small">Delete this card?</span><button class="btn sm" data-sact="nodel">No</button><button class="btn sm primary" data-sact="yesdel">Delete</button>` : `<button class="linkbtn" style="color:var(--accent)" data-sact="del">Delete</button>`}</div>`}
+    </div></div></div>`;
+}
+function sparkline(h) {
+  const w = 300, ht = 70, pad = 8, vals = h.map(x => x.mid), mn = Math.min(...vals), mx = Math.max(...vals), rng = mx - mn || 1;
+  const pts = vals.map((v, i) => [pad + i * (w - pad * 2) / Math.max(1, vals.length - 1), ht - pad - (v - mn) / rng * (ht - pad * 2)]);
+  const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' '), last = pts[pts.length - 1];
+  return `<svg viewBox="0 0 ${w} ${ht}" width="100%" height="${ht}" role="img" aria-label="Value history"><path d="${d} L${last[0]} ${ht} L${pts[0][0]} ${ht} Z" fill="var(--navy-bg)"/><path d="${d}" fill="none" stroke="var(--navy)" stroke-width="2.5"/><circle cx="${last[0]}" cy="${last[1]}" r="4.5" fill="var(--accent)"/></svg>
+    <div class="row range" style="justify-content:space-between"><span>${money(vals[0])} · ${new Date(h[0].t).toLocaleDateString()}</span><span>${money(vals[vals.length - 1])} now</span></div>`;
+}
+$('#overlay').addEventListener('click', async e => {
+  if (e.target.matches('[data-close]')) { if (!state.quiz || !state.quiz.required) closeSheet(); return; }
+  if (state.quiz) return quizClick(e);
+  const pick = e.target.closest('[data-pick]');
+  if (pick) { const v = pick.dataset.pick; closeSheet(); if (v === 'new') openQuiz(null); else if (v !== 'close') useProfile(v); return; }
+  const b = e.target.closest('[data-sact]'); if (!b) return;
+  const sh = state.sheet; const c = state.cards.find(x => x.id === sh?.id); if (!c) return;
+  const a = b.dataset.sact;
+  if (a === 'close') closeSheet();
+  else if (a === 'move') { putCard({ ...c, list: b.dataset.list }); toast(b.dataset.list === 'pc' ? 'Moved to PC' : 'Moved to Sell list'); renderChrome(); renderView(); renderSheet(); }
+  else if (a === 'give') { const to = state.profiles.find(p => p.id === b.dataset.id); putCard({ ...c, profileId: to.id }); toast('Given to ' + to.name); closeSheet(); renderChrome(); renderView(); }
+  else if (a === 'edit') { sh.editing = true; renderSheet(); }
+  else if (a === 'canceledit') { sh.editing = false; renderSheet(); }
+  else if (a === 'saveedit') { const n = readFields($('#editbox'), { ...c }); if (n.mid !== c.mid && n.mid != null) n.history = [...(c.history || []), { t: Date.now(), mid: n.mid }].slice(-20); putCard(n); sh.editing = false; renderSheet(); renderView(); }
+  else if (a === 'del') { sh.confirm = true; renderSheet(); }
+  else if (a === 'nodel') { sh.confirm = false; renderSheet(); }
+  else if (a === 'yesdel') { delCard(c.id); closeSheet(); renderChrome(); renderView(); toast('Card deleted'); }
+  else if (a === 'reprice') {
+    sh.busy = true; renderSheet();
+    const p = state.profiles.find(x => x.id === c.profileId) || cur();
+    try {
+      const r = await askClaude({ prompt: textPrompt(p, cardDesc(c)), model: settings.model });
+      const n = { ...normalize(r.json || {}, c), searched: r.searched }; delete n.notFound;
+      const now = Date.now(); if (n.mid != null) { n.checkedAt = now; n.history = [...(c.history || []), { t: now, mid: n.mid }].slice(-20); }
+      putCard(n); toast('Updated: ' + money(n.mid));
+    } catch (err) { toast(errCopy(err), 4500); }
+    if (state.sheet) { state.sheet.busy = false; renderSheet(); } renderView();
+  }
+});
+
+/* ---------- profile switcher ---------- */
+function openSwitcher() {
+  state.sheet = null; document.body.style.overflow = 'hidden';
+  $('#overlay').innerHTML = `<div class="overlay" data-close><div class="sheet" role="dialog" aria-modal="true" aria-label="Switch profile">
+    <div class="sheet-head"><h2>Who’s scanning?</h2><button class="x" data-pick="close" aria-label="Close">${ICON_X}</button></div>
+    <div class="stack">${state.profiles.map(p => `<button class="opt" data-pick="${p.id}" aria-pressed="${p.id === state.current}">${avatar(p, 40)}<span><b>${esc(p.name)}</b><span class="small muted">${esc(collectorType(p))} · ${cardsOf(p.id).length} cards</span></span></button>`).join('')}
+    <button class="btn block" data-pick="new">+ Add a profile</button></div></div></div>`;
+}
+
+/* ---------- quiz ---------- */
+const QSTEPS = ['who', 'sports', 'teams', 'players', 'goal', 'risk', 'done'];
+function openQuiz(editId, required = false) {
+  const p = editId ? state.profiles.find(x => x.id === editId) : null;
+  state.sheet = null;
+  state.quiz = { step: 0, required, editId, filter: '', d: p ? clean(p) : { name: '', kid: false, sports: [], teams: [], players: [], goal: '', risk: '', color: COLORS[state.profiles.length % COLORS.length] } };
+  renderQuiz();
+}
+function renderQuiz() {
+  const q = state.quiz, d = q.d, step = QSTEPS[q.step], kid = d.kid;
+  document.body.style.overflow = 'hidden';
+  let body = '', canNext = true, title = '';
+  const inputStyle = 'flex:1;min-width:0;min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:8px 12px';
+  if (step === 'who') {
+    title = q.editId ? 'Retake the quiz' : 'New collector'; canNext = !!d.name.trim();
+    body = `<div class="field"><label for="q_name">First name</label><input id="q_name" autocomplete="off" value="${esc(d.name)}" placeholder="First name"></div>
+      <div class="eyebrow">This profile is for…</div>
+      <button class="opt" data-q="kid" data-v="0" aria-pressed="${!kid}"><span class="dot"></span><span><b>A grown-up collector</b><span class="small muted">Straight-talk recommendations.</span></span></button>
+      <button class="opt" data-q="kid" data-v="1" aria-pressed="${kid}"><span class="dot"></span><span><b>A kid collector</b><span class="small muted">Friendly explanations in simple words.</span></span></button>
+      <div class="eyebrow">Profile color</div><div class="chips">${COLORS.map(c => `<button class="av" data-q="color" data-v="${c}" aria-label="Color" style="background:${c};width:38px;height:38px;border:3px solid ${d.color === c ? 'var(--ink)' : 'transparent'}"></button>`).join('')}</div>`;
+  } else if (step === 'sports') {
+    title = kid ? 'What sports do you love?' : 'Which sports do you collect?'; canNext = d.sports.length > 0;
+    body = `<p class="muted">Pick all that apply.</p><div class="chips">${SPORTS.map(s => `<button class="chip" data-q="sport" data-v="${s.k}" aria-pressed="${d.sports.includes(s.k)}">${s.k}</button>`).join('')}</div>`;
+  } else if (step === 'teams') {
+    title = kid ? 'Who are your teams?' : 'Favorite teams';
+    const f = q.filter.toLowerCase();
+    const lists = SPORTS.filter(s => d.sports.includes(s.k) && s.teams).map(s => {
+      const ts = s.teams.split('|').filter(t => !f || t.toLowerCase().includes(f));
+      return ts.length ? `<div class="eyebrow">${s.lg}</div><div class="chips">${ts.map(t => { const v = `${t} (${s.lg})`; return `<button class="chip" data-q="team" data-v="${esc(v)}" aria-pressed="${d.teams.includes(v)}">${esc(t)}</button>`; }).join('')}</div>` : '';
+    }).join('');
+    body = `<p class="muted">Tap your favorites, or add college and other teams below.</p>
+      ${d.teams.length ? `<div class="chips">${d.teams.map(t => `<button class="chip" aria-pressed="true" data-q="team" data-v="${esc(t)}">${esc(t)} ✕</button>`).join('')}</div>` : ''}
+      <div class="field"><label for="q_filter">Find a team</label><input id="q_filter" autocomplete="off" value="${esc(q.filter)}" placeholder="Type to filter…"></div>
+      <div class="teamgrid stack" style="gap:10px">${lists || '<span class="muted small">No matching pro teams — add it below.</span>'}</div>
+      <div class="row" style="flex-wrap:nowrap"><input id="q_team" style="${inputStyle}" placeholder="Add another team (e.g. Oregon Ducks)"><button class="btn sm" data-q="addteam">Add</button></div>`;
+  } else if (step === 'players') {
+    title = kid ? 'Who are your favorite players?' : 'Favorite players';
+    body = `<p class="muted">${kid ? 'Add as many as you want!' : 'Their cards lean toward Keep unless the price is too good.'}</p>
+      <div class="row" style="flex-wrap:nowrap"><input id="q_player" style="${inputStyle}" placeholder="Player name" autocomplete="off"><button class="btn primary" data-q="addplayer">Add</button></div>
+      <div class="chips">${d.players.map(pl => `<button class="chip" aria-pressed="true" data-q="rmplayer" data-v="${esc(pl)}">${esc(pl)} ✕</button>`).join('') || '<span class="muted small">No players yet.</span>'}</div>`;
+  } else if (step === 'goal') {
+    title = kid ? 'Why do you collect cards?' : 'Why do you collect?'; canNext = !!d.goal;
+    body = Object.entries(GOALS).map(([k, g]) => `<button class="opt" data-q="goal" data-v="${k}" aria-pressed="${d.goal === k}"><span class="dot"></span><span><b>${g.t}</b><span class="small muted">${g.d}</span></span></button>`).join('');
+  } else if (step === 'risk') {
+    title = kid ? 'Your card’s price shoots way up. What do you do?' : 'A card’s price spikes. You…'; canNext = !!d.risk;
+    body = Object.entries(RISK).map(([k, g]) => `<button class="opt" data-q="risk" data-v="${k}" aria-pressed="${d.risk === k}"><span class="dot"></span><span><b>${g.t}</b><span class="small muted">${g.d}</span></span></button>`).join('');
+  } else {
+    title = `${esc(d.name)}, you’re a…`;
+    body = `<div class="label"><div class="label-top"><span>Collector profile</span><span>${new Date().getFullYear()}</span></div><div class="label-body"><div class="l1">${esc(d.sports.join(' · '))}</div><div class="l2">${esc(collectorType(d))}</div><div class="l3">${esc(GOALS[d.goal].t)}</div><div class="grade">${avatar(d, 48)}</div></div></div>
+      <p>${esc(RISK[d.risk].t)}. Comp Check will use your ${d.teams.length} team${d.teams.length === 1 ? '' : 's'} and ${d.players.length} player${d.players.length === 1 ? '' : 's'} when it says sell, hold, or keep.</p>`;
+  }
+  const last = step === 'done';
+  $('#overlay').innerHTML = `<div class="overlay" data-close><div class="sheet" role="dialog" aria-modal="true" aria-label="Collector quiz">
+    <div class="qprog">${QSTEPS.map((_, i) => `<i class="${i <= q.step ? 'on' : ''}"></i>`).join('')}</div>
+    <div class="sheet-head"><h2>${title}</h2>${q.required ? '' : `<button class="x" data-q="close" aria-label="Close">${ICON_X}</button>`}</div>
+    <div class="stack">${body}
+      <div class="grid2" style="margin-top:6px">${q.step > 0 ? '<button class="btn" data-q="back">Back</button>' : '<span></span>'}
+        <button class="btn primary" data-q="${last ? 'finish' : 'next'}" ${canNext ? '' : 'disabled'}>${last ? 'Let’s go' : 'Next'}</button></div>
+    </div></div></div>`;
+}
+function quizClick(e) {
+  const b = e.target.closest('[data-q]'); if (!b) return;
+  const q = state.quiz, d = q.d, a = b.dataset.q, v = b.dataset.v;
+  const tog = (arr, x) => arr.includes(x) ? arr.filter(y => y !== x) : [...arr, x];
+  const nameEl = $('#q_name'); if (nameEl) d.name = nameEl.value.trim();
+  if (a === 'close') { closeSheet(); return; }
+  if (a === 'kid') d.kid = v === '1';
+  else if (a === 'color') d.color = v;
+  else if (a === 'sport') d.sports = tog(d.sports, v);
+  else if (a === 'team') d.teams = tog(d.teams, v);
+  else if (a === 'addteam') { const t = $('#q_team').value.trim(); if (t && !d.teams.includes(t)) d.teams.push(t); }
+  else if (a === 'addplayer') { const t = $('#q_player').value.trim(); if (t && !d.players.includes(t)) d.players.push(t); renderQuiz(); $('#q_player')?.focus(); return; }
+  else if (a === 'rmplayer') d.players = d.players.filter(x => x !== v);
+  else if (a === 'goal') d.goal = v;
+  else if (a === 'risk') d.risk = v;
+  else if (a === 'back') { q.step--; q.filter = ''; }
+  else if (a === 'next') { const pl = $('#q_player'); if (pl && pl.value.trim() && !d.players.includes(pl.value.trim())) d.players.push(pl.value.trim()); q.step++; q.filter = ''; }
+  else if (a === 'finish') { finishQuiz(); return; }
+  renderQuiz();
+}
+$('#overlay').addEventListener('input', e => {
+  if (!state.quiz) return;
+  if (e.target.id === 'q_name') { state.quiz.d.name = e.target.value; const nb = document.querySelector('[data-q="next"]'); if (nb) nb.disabled = !e.target.value.trim(); }
+  if (e.target.id === 'q_filter') { state.quiz.filter = e.target.value; const pos = e.target.selectionStart; renderQuiz(); const f = $('#q_filter'); f.focus(); f.setSelectionRange(pos, pos); }
+});
+$('#overlay').addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || !state.quiz) return;
+  const click = sel => { e.preventDefault(); document.querySelector(sel)?.click(); };
+  if (e.target.id === 'q_player') click('[data-q="addplayer"]');
+  if (e.target.id === 'q_team') click('[data-q="addteam"]');
+  if (e.target.id === 'q_name' && e.target.value.trim()) click('[data-q="next"]');
+});
+function finishQuiz() {
+  const q = state.quiz, d = q.d;
+  const p = { ...d, name: d.name.trim(), id: q.editId || uid(), createdAt: d.createdAt || Date.now(), updatedAt: Date.now() };
+  putProfile(p); closeSheet();
+  state.current = p.id; lsSet('cc_current', p.id);
+  if (!q.editId) { state.tab = 'scan'; lsSet('cc_tab', 'scan'); }
+  state.scan = { status: 'idle' };
+  renderChrome(); renderView();
+  toast(q.editId ? 'Profile updated' : `Welcome, ${p.name}!`);
+}
+
+/* ---------- boot ---------- */
+(async function boot() {
+  await IDB.open(); await IDB.loadAll();
+  if (!cur() && state.profiles.length) state.current = state.profiles[0].id;
+  renderChrome(); renderView();
+  if (!state.profiles.length) openQuiz(null, true);
+  const lastV = lsGet('cc_lastVersion');
+  if (lastV && lastV !== APP_VERSION) toast('Updated to the latest version!');
+  lsSet('cc_lastVersion', APP_VERSION);
+})();
+</script>
+</body>
+</html>
