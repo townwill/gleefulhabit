@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tempo">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f1417">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<title>Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f1417; --bg2:#141b1f; --card:#1a2228; --card2:#212b32; --line:#2a353d;
+    --ink:#e8eef0; --soft:#93a4ab; --faint:#5f6f76;
+    --teal:#5fc7a8; --teal-dim:rgba(95,199,168,.16);
+    --amber:#f0b46a; --amber-dim:rgba(240,180,106,.16);
+    --violet:#a99bf0; --violet-dim:rgba(169,155,240,.16);
+    --red:#e57373;
+    --r:16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;}
+  body{overscroll-behavior:none;}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;}
+  input,textarea,select{font:inherit;color:var(--ink);}
+  #app{max-width:520px;margin:0 auto;min-height:100%;padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 96px);}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .brand{font-weight:800;font-size:22px;letter-spacing:-.02em;}
+  .brand span{color:var(--teal);}
+  .sub{color:var(--soft);font-size:13px;margin-top:2px;}
+  .iconbtn{width:40px;height:40px;border-radius:12px;background:var(--card);display:grid;place-items:center;font-size:18px;}
+  .card{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:12px;}
+  .card h3{margin:0 0 10px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--soft);display:flex;justify-content:space-between;align-items:center;}
+  .card h3 small{text-transform:none;letter-spacing:0;font-weight:600;color:var(--faint);}
+  .phase{background:linear-gradient(135deg,#1b2a2b,#1a2228);}
+  .phase .big{font-size:24px;font-weight:800;letter-spacing:-.02em;}
+  .phase .weekbar{display:flex;gap:4px;margin-top:12px;}
+  .phase .weekbar i{flex:1;height:6px;border-radius:3px;background:var(--line);}
+  .phase .weekbar i.done{background:var(--teal);opacity:.55;}
+  .phase .weekbar i.now{background:var(--teal);}
+  .row{display:flex;align-items:center;gap:10px;}
+  .row + .row{margin-top:10px;}
+  .grow{flex:1;min-width:0;}
+  .lbl{font-weight:600;font-size:15px;}
+  .hint{font-size:12.5px;color:var(--soft);margin-top:2px;line-height:1.35;}
+  .chk{width:44px;height:44px;border-radius:12px;border:2px solid var(--line);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--faint);flex-shrink:0;transition:.15s;}
+  .chk.on{background:var(--teal);border-color:var(--teal);color:#0b1a16;}
+  .chk.core.on{background:var(--violet);border-color:var(--violet);}
+  .pill{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--card2);color:var(--soft);white-space:nowrap;}
+  .pill.ok{background:var(--teal-dim);color:var(--teal);}
+  .go{padding:9px 13px;border-radius:10px;background:var(--card2);font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;}
+  .dots{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+  .dot{width:26px;height:26px;border-radius:50%;border:2px dashed var(--line);}
+  .dot.opt{border-style:dotted;opacity:.6;}
+  .dot.on{border:0;background:var(--teal);}
+  .dot.on.m{background:var(--amber);}
+  .dot.extra{border:0;background:var(--teal);opacity:.5;}
+  .dot.extra.m{background:var(--amber);}
+  .focus{font-size:13.5px;line-height:1.45;color:var(--ink);}
+  .focus b{color:var(--teal);}
+  .focus .m b{color:var(--amber);}
+  .focus p{margin:0 0 10px;}
+  .focus p:last-child{margin:0;}
+  .primary{width:100%;padding:15px;border-radius:14px;background:var(--teal);color:#0b1a16;font-weight:800;font-size:16px;}
+  .secondary{width:100%;padding:13px;border-radius:14px;background:var(--card2);font-weight:700;}
+  .danger{color:var(--red);}
+  nav{position:fixed;left:0;right:0;bottom:0;background:rgba(15,20,23,.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:8px 8px calc(env(safe-area-inset-bottom) + 8px);display:flex;justify-content:center;z-index:20;}
+  nav .in{display:flex;max-width:520px;width:100%;}
+  nav button{flex:1;padding:8px 0;font-size:11px;font-weight:600;color:var(--faint);display:flex;flex-direction:column;align-items:center;gap:3px;}
+  nav button .ic{font-size:19px;line-height:1;}
+  nav button.on{color:var(--teal);}
+  section{display:none;}
+  section.on{display:block;}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .stat{background:var(--card);border-radius:14px;padding:14px;}
+  .stat .v{font-size:24px;font-weight:800;letter-spacing:-.02em;}
+  .stat .k{font-size:12px;color:var(--soft);margin-top:2px;}
+  .hist{list-style:none;margin:0;padding:0;}
+  .hist li{display:flex;gap:10px;align-items:center;padding:11px 0;border-top:1px solid var(--line);}
+  .hist li:first-child{border-top:0;}
+  .tag{font-size:11px;font-weight:800;padding:4px 8px;border-radius:7px;text-transform:uppercase;letter-spacing:.05em;flex-shrink:0;}
+  .tag.s{background:var(--teal-dim);color:var(--teal);}
+  .tag.m{background:var(--amber-dim);color:var(--amber);}
+  .del{color:var(--faint);font-size:18px;padding:4px 6px;}
+  .empty{color:var(--faint);font-size:14px;text-align:center;padding:16px 0;}
+  table.wk{width:100%;border-collapse:collapse;font-size:13px;}
+  table.wk th{text-align:left;color:var(--faint);font-weight:600;font-size:11.5px;padding:0 4px 8px;}
+  table.wk td{padding:8px 4px;border-top:1px solid var(--line);}
+  table.wk td.good{color:var(--teal);font-weight:700;}
+  details{background:var(--card);border-radius:var(--r);margin-bottom:10px;overflow:hidden;}
+  summary{list-style:none;padding:16px;font-weight:700;font-size:15.5px;display:flex;justify-content:space-between;align-items:center;}
+  summary::-webkit-details-marker{display:none;}
+  summary::after{content:'+';color:var(--soft);font-size:20px;font-weight:500;}
+  details[open] summary::after{content:'–';}
+  .gbody{padding:0 16px 16px;font-size:14px;line-height:1.55;color:#d3dde0;}
+  .gbody ol,.gbody ul{padding-left:20px;margin:6px 0;}
+  .gbody li{margin-bottom:6px;}
+  .gbody b{color:var(--ink);}
+  .scale{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin:10px 0 6px;}
+  .scale div{height:28px;border-radius:5px;display:grid;place-items:center;font-size:11px;font-weight:700;color:#0b1a16;}
+  .gbody a{color:var(--teal);}
+  /* modal */
+  .modal{position:fixed;inset:0;background:rgba(5,8,10,.7);z-index:50;display:none;align-items:flex-end;justify-content:center;}
+  .modal.on{display:flex;}
+  .sheet{background:var(--bg2);width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom) + 18px);max-height:92vh;overflow-y:auto;}
+  .sheet h2{margin:0 0 14px;font-size:19px;display:flex;justify-content:space-between;align-items:center;}
+  .seg{display:flex;background:var(--card);border-radius:12px;padding:4px;margin-bottom:14px;}
+  .seg button{flex:1;padding:10px;border-radius:9px;font-weight:700;font-size:14px;color:var(--soft);}
+  .seg button.on{background:var(--card2);color:var(--ink);}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;font-weight:700;color:var(--soft);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+  .field input,.field textarea{width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:16px;}
+  .field textarea{min-height:64px;resize:vertical;}
+  .timebox{display:flex;gap:8px;align-items:center;}
+  .timebox input{width:74px;text-align:center;font-size:22px;font-weight:700;}
+  .timebox span{font-size:22px;font-weight:700;color:var(--soft);}
+  .sw{flex:1;padding:14px 10px;border-radius:12px;background:var(--amber-dim);color:var(--amber);font-weight:800;}
+  .sw.run{background:var(--amber);color:#2a1a05;}
+  .stepper{display:flex;align-items:center;gap:12px;}
+  .stepper button{width:44px;height:44px;border-radius:12px;background:var(--card);font-size:22px;font-weight:700;}
+  .stepper .n{font-size:22px;font-weight:800;min-width:30px;text-align:center;}
+  .feel{display:flex;gap:6px;}
+  .feel button{flex:1;padding:11px 0;border-radius:10px;background:var(--card);font-weight:700;color:var(--soft);}
+  .feel button.on{background:var(--teal);color:#0b1a16;}
+  /* pacer */
+  .pacer{text-align:center;padding:8px 0 4px;}
+  .orb-wrap{height:240px;display:grid;place-items:center;}
+  .orb{width:200px;height:200px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#7fe0c3,#2f8f78);transform:scale(.55);box-shadow:0 0 60px rgba(95,199,168,.35);}
+  .orb.core{background:radial-gradient(circle at 40% 35%,#c9bdfc,#6a5bc2);box-shadow:0 0 60px rgba(169,155,240,.35);}
+  .cue{font-size:26px;font-weight:800;margin-top:6px;}
+  .count{color:var(--soft);font-size:14px;margin-top:4px;}
+  .secs{font-size:15px;color:var(--soft);margin-top:2px;font-variant-numeric:tabular-nums;}
+  /* lock */
+  #lock{position:fixed;inset:0;background:var(--bg);z-index:100;display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px;}
+  #lock.on{display:flex;}
+  .pinDots{display:flex;gap:14px;}
+  .pinDots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--soft);}
+  .pinDots i.f{background:var(--ink);border-color:var(--ink);}
+  .pad{display:grid;grid-template-columns:repeat(3,72px);gap:14px;}
+  .pad button{height:72px;border-radius:50%;background:var(--card);font-size:26px;font-weight:600;}
+  .shake{animation:sh .35s;}
+  @keyframes sh{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+  #toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 12px);transform:translateX(-50%) translateY(-20px);background:var(--card2);padding:11px 16px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;transition:.25s;z-index:120;pointer-events:none;white-space:nowrap;}
+  #toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+  .ver{text-align:center;color:var(--faint);font-size:11.5px;margin-top:18px;}
+  svg text{font-family:Inter,sans-serif;}
+  /* calendar */
+  .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
+  .cal .dow{font-size:11px;color:var(--faint);text-align:center;font-weight:700;padding-bottom:2px;}
+  .cell{background:var(--card2);border-radius:10px;min-height:60px;padding:5px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .cell.blank{background:transparent;}
+  .cell.fut,.cell.pre{opacity:.4;}
+  .cell.today{box-shadow:inset 0 0 0 2px var(--teal);}
+  .cell .n{font-size:12px;font-weight:700;color:var(--soft);line-height:1;}
+  .cell.today .n{color:var(--teal);}
+  .mk{display:flex;gap:3px;height:8px;}
+  .mk i{width:8px;height:8px;border-radius:50%;box-sizing:border-box;}
+  .mk .b{border:1.5px solid var(--teal);} .mk .b.full{background:var(--teal);}
+  .mk .c{border:1.5px solid var(--violet);} .mk .c.full{background:var(--violet);}
+  .chs{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;}
+  .ch{font-size:9.5px;font-weight:800;padding:2px 4px;border-radius:4px;line-height:1;}
+  .ch.s{background:var(--teal-dim);color:var(--teal);}
+  .ch.f{background:var(--amber-dim);color:var(--amber);}
+  .calnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .calnav .t{font-size:18px;font-weight:800;}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--soft);margin-top:12px;align-items:center;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .wkstrip{margin-bottom:14px;}
+  .wkstrip .cell{min-height:54px;}
+  .togs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+  .tog{padding:12px;border-radius:12px;background:var(--card);font-weight:700;font-size:14px;text-align:left;border:2px solid transparent;}
+  .tog.on{border-color:var(--teal);background:var(--teal-dim);color:var(--teal);}
+  .tog.core.on{border-color:var(--violet);background:var(--violet-dim);color:var(--violet);}
+  .twobtn{display:flex;gap:8px;}
+  .twobtn button{flex:1;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div>
+      <div class="brand">Tempo<span>.</span></div>
+      <div class="sub" id="todayLbl"></div>
+    </div>
+    <button class="iconbtn" id="gearBtn" aria-label="Settings">⚙︎</button>
+  </header>
+
+  <!-- TODAY -->
+  <section id="sec-today" class="on">
+    <div class="card phase" id="phaseCard"></div>
+
+    <div class="card">
+      <h3>Daily <small id="dailySub"></small></h3>
+      <div class="row">
+        <div class="grow">
+          <div class="lbl">Breathwork</div>
+          <div class="hint">10 breaths · 2×/day</div>
+        </div>
+        <button class="go" data-pacer="breath" aria-label="Guided breathwork">▶</button>
+        <button class="chk" data-daily="b1">AM</button>
+        <button class="chk" data-daily="b2">PM</button>
+      </div>
+      <div class="row">
+        <div class="grow">
+          <div class="lbl">Core holds</div>
+          <div class="hint" id="coreHint">10 reps · 2×/day</div>
+        </div>
+        <button class="go" data-pacer="core" aria-label="Guided core holds">▶</button>
+        <button class="chk core" data-daily="c1">1</button>
+        <button class="chk core" data-daily="c2">2</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>This week <small id="weekRange"></small></h3>
+      <div class="cal wkstrip" id="weekStrip"></div>
+      <div class="row">
+        <div class="grow">
+          <div class="lbl">Solo drills</div>
+          <div class="dots" id="soloDots"></div>
+        </div>
+        <span class="pill" id="soloPill"></span>
+        <button class="go" data-quick="solo">＋</button>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <div class="grow">
+          <div class="lbl">Fun times</div>
+          <div class="dots" id="matchDots"></div>
+        </div>
+        <span class="pill" id="matchPill"></span>
+        <button class="go" data-quick="match">＋</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>This phase's focus</h3>
+      <div class="focus" id="focusBox"></div>
+    </div>
+
+    <button class="primary" id="logBtn">Log a session</button>
+  </section>
+
+  <!-- CALENDAR -->
+  <section id="sec-calendar">
+    <div class="card">
+      <div class="calnav">
+        <button class="iconbtn" id="calPrev" aria-label="Previous month">‹</button>
+        <div class="t" id="calTitle"></div>
+        <button class="iconbtn" id="calNext" aria-label="Next month">›</button>
+      </div>
+      <div class="cal" id="calGrid"></div>
+      <div class="legend">
+        <span><span class="mk"><i class="b full"></i></span>Breathwork</span>
+        <span><span class="mk"><i class="c full"></i></span>Core holds</span>
+        <span><span class="ch s">S</span>Solo drill</span>
+        <span><span class="ch f">F</span>Fun time</span>
+      </div>
+      <div class="hint" style="margin-top:8px">Hollow dot = 1 of 2 done. Tap any day to view or fill it in.</div>
+    </div>
+    <div class="card">
+      <h3>This month</h3>
+      <div class="stats" id="calStats" style="margin:0"></div>
+    </div>
+  </section>
+
+  <!-- PROGRESS -->
+  <section id="sec-progress">
+    <div class="stats" id="statGrid"></div>
+    <div class="card">
+      <h3>Fun time time <small>minutes</small></h3>
+      <div id="chart"></div>
+    </div>
+    <div class="card">
+      <h3>Weekly scorecard</h3>
+      <div id="weekTable"></div>
+    </div>
+    <div class="card">
+      <h3>History</h3>
+      <ul class="hist" id="histList"></ul>
+    </div>
+  </section>
+
+  <!-- GUIDE -->
+  <section id="sec-guide">
+    <details open>
+      <summary>Breathwork</summary>
+      <div class="gbody">
+        <ol>
+          <li><b>Set up.</b> Lie on your back, knees bent, pillow under head and knees. Once it's easy, practice sitting, then standing.</li>
+          <li><b>Hands.</b> One on your upper chest, one just below your ribcage.</li>
+          <li><b>In through the nose, ~4 sec.</b> The lower hand rises; belly and lower ribs widen in every direction, including sides and back. The top hand stays nearly still.</li>
+          <li><b>Let the floor drop.</b> On the inhale, let the muscles between your legs soften and lower, like they're filling too. This is the link that matters.</li>
+          <li><b>Out through the nose, ~6 sec.</b> Belly falls. Don't force it. The long exhale is what calms things down.</li>
+          <li><b>Repeat for 10 breaths.</b></li>
+        </ol>
+        <p><b>Can't feel the belly move?</b> Lace your fingers behind your head. That locks the chest and makes you use the diaphragm.</p>
+        <p><b>Avoid:</b> pushing the belly out with your abs, lifting your shoulders or chest, and gulping air. If you get lightheaded, go smaller and slower.</p>
+        <p>Video walkthrough: <a href="https://www.youtube.com/watch?v=9jpchJcKivk" target="_blank" rel="noopener">beginner breathing (physio)</a></p>
+      </div>
+    </details>
+    <details>
+      <summary>Core holds</summary>
+      <div class="gbody">
+        <p>These are the floor muscles, the ones you'd use to stop mid-stream. Don't practice by actually stopping mid-stream; that's just for finding them.</p>
+        <ol>
+          <li><b>Squeeze</b> and lift for 3–5 seconds. Keep glutes, thighs and abs relaxed, and keep breathing.</li>
+          <li><b>Fully release</b> for the same count. The release matters as much as the squeeze: a floor that stays tight tends to make you finish sooner.</li>
+          <li>10 reps per session · 2 sessions a day · 3 days a week.</li>
+        </ol>
+        <p>In the moment, you'll mostly use the <b>release</b>, letting go of tension on an exhale.</p>
+      </div>
+    </details>
+    <details>
+      <summary>The intensity scale</summary>
+      <div class="gbody">
+        <div class="scale" id="scaleBar"></div>
+        <ul>
+          <li><b>1–4:</b> warming up.</li>
+          <li><b>5–6: cruising.</b> This is where you want to spend time.</li>
+          <li><b>7: yellow zone.</b> Hit the brake here.</li>
+          <li><b>8:</b> close. Brake hard.</li>
+          <li><b>9: redline.</b> The point of no return. Too late to brake.</li>
+          <li><b>10:</b> finish.</li>
+        </ul>
+        <p>The main skill is learning what a 6, 7 and 8 feel like for you, so you can come down from 7–8 before you hit 9.</p>
+      </div>
+    </details>
+    <details>
+      <summary>The brake</summary>
+      <div class="gbody">
+        <ol>
+          <li><b>Stop</b>, or slow way down in later phases.</li>
+          <li><b>3–4 belly breaths</b>, with a long exhale.</li>
+          <li><b>Release the floor.</b> Let it drop and soften.</li>
+          <li><b>Wait</b> until you're back around a 4, then resume.</li>
+        </ol>
+        <p>Each brake counts as one "pause" in your log.</p>
+      </div>
+    </details>
+    <details>
+      <summary>The 8-week plan</summary>
+      <div class="gbody" id="planBody"></div>
+    </details>
+    <details>
+      <summary>Ground rules</summary>
+      <div class="gbody">
+        <ul>
+          <li>Practice, not a test. Pressure makes it worse, and bad nights are normal.</li>
+          <li>Watch the trend over weeks, not single results.</li>
+          <li>Keep using protection as usual; timing results don't depend on skipping it.</li>
+          <li>Any pain or lingering ache means back off. A pelvic floor physical therapist is a great resource if progress stalls.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="sec-settings">
+    <div class="card">
+      <h3>Program</h3>
+      <div class="field">
+        <label>Week 1 started on</label>
+        <input type="date" id="startDate">
+      </div>
+      <div class="hint">Weeks run in 7-day blocks from this date. Change it to restart or line up the plan.</div>
+    </div>
+    <div class="card">
+      <h3>Privacy</h3>
+      <div class="row">
+        <div class="grow">
+          <div class="lbl">Passcode lock</div>
+          <div class="hint" id="pinStatus"></div>
+        </div>
+        <button class="go" id="pinBtn"></button>
+      </div>
+      <div class="hint" style="margin-top:10px">Locks when the app opens and whenever you switch away. Data never leaves this phone.</div>
+    </div>
+    <div class="card">
+      <h3>Backup</h3>
+      <button class="secondary" id="exportBtn">Export backup</button>
+      <div style="height:8px"></div>
+      <button class="secondary" id="importBtn">Import backup</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+    <div class="card">
+      <button class="secondary danger" id="resetBtn">Erase everything</button>
+    </div>
+    <button class="secondary" id="backBtn">← Back</button>
+    <div class="ver" id="versionTag"></div>
+  </section>
+</div>
+
+<nav><div class="in">
+  <button data-tab="today" class="on"><span class="ic">◉</span>Today</button>
+  <button data-tab="calendar"><span class="ic">▦</span>Calendar</button>
+  <button data-tab="progress"><span class="ic">↗</span>Progress</button>
+  <button data-tab="guide"><span class="ic">≡</span>Guide</button>
+</div></nav>
+
+<!-- DAY SHEET -->
+<div class="modal" id="dayModal">
+  <div class="sheet">
+    <h2><span id="dayTitle"></span><button class="iconbtn" data-close>✕</button></h2>
+    <div class="togs" id="dayTogs"></div>
+    <ul class="hist" id="dayList" style="margin-bottom:14px"></ul>
+    <div class="twobtn">
+      <button class="secondary" data-daylog="solo">＋ Solo drill</button>
+      <button class="secondary" data-daylog="match">＋ Fun time</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOG SHEET -->
+<div class="modal" id="logModal">
+  <div class="sheet">
+    <h2><span id="logTitle">Log a session</span><button class="iconbtn" data-close>✕</button></h2>
+    <div class="seg" id="typeSeg">
+      <button data-type="solo">Solo drill</button>
+      <button data-type="match">Fun time</button>
+    </div>
+    <div class="field">
+      <label>Date</label>
+      <input type="date" id="fDate">
+    </div>
+    <div class="field">
+      <label id="timeLbl">Time</label>
+      <div class="timebox">
+        <input type="number" inputmode="numeric" id="fMin" min="0" placeholder="0"><span>:</span>
+        <input type="number" inputmode="numeric" id="fSec" min="0" max="59" placeholder="00">
+        <button class="sw" id="swBtn">Start stopwatch</button>
+      </div>
+      <div class="hint" id="timeHint"></div>
+    </div>
+    <div class="field">
+      <label>Pauses (brakes used)</label>
+      <div class="stepper">
+        <button data-step="-1">−</button><div class="n" id="fPauses">0</div><button data-step="1">＋</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>How did control feel?</label>
+      <div class="feel" id="feelRow"></div>
+    </div>
+    <div class="field">
+      <label>Note (optional)</label>
+      <textarea id="fNote" placeholder="What worked, what didn't…"></textarea>
+    </div>
+    <button class="primary" id="saveLog">Save</button>
+  </div>
+</div>
+
+<!-- PACER SHEET -->
+<div class="modal" id="pacerModal">
+  <div class="sheet">
+    <h2><span id="pacerTitle">Breathwork</span><button class="iconbtn" data-close>✕</button></h2>
+    <div class="pacer">
+      <div class="orb-wrap"><div class="orb" id="orb"></div></div>
+      <div class="cue" id="cue">Ready</div>
+      <div class="secs" id="secs">&nbsp;</div>
+      <div class="count" id="pcount"></div>
+    </div>
+    <div style="height:14px"></div>
+    <button class="primary" id="pacerGo">Start</button>
+  </div>
+</div>
+
+<!-- PIN LOCK -->
+<div id="lock">
+  <div class="brand">Tempo<span>.</span></div>
+  <div class="sub" id="lockMsg">Enter passcode</div>
+  <div class="pinDots" id="pinDots"><i></i><i></i><i></i><i></i></div>
+  <div class="pad" id="pad"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ============================================================
+// Tempo — personal routine tracker. Single file, localStorage only.
+// Bump APP_VERSION (YYYY-MM-DD.HHMM) on every deploy.
+// ============================================================
+const APP_VERSION = '2026-09-23.2045';
+const STORE_KEY = 'tempo_v1';
+const PIN_KEY = 'tempo_pin';        // raw key, deliberately outside S / backups
+const SEEN_VER_KEY = 'tempo_seen_ver';
+
+// ---------- safe storage (works even where localStorage is blocked) ----------
+const _mem={};
+const LS={
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return k in _mem?_mem[k]:null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){ _mem[k]=String(v); } },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){ delete _mem[k]; } },
+};
+
+// ---------- phases ----------
+// solo/match: [min, max] target per week
+const PHASES = [
+  { from:1, to:2, name:'Foundation', tag:'Learn your signals',
+    solo:[3,3], match:[0,0],
+    soloFocus:'Dry hand, moderate pace, about 15 min. At <b>7</b>, come to a full stop: 3–4 belly breaths, release the floor, and wait until you\'re back near 4. Aim for <b>3 pauses</b> before finishing.',
+    matchFocus:'Not scheduled yet. If one happens, just enjoy it; it doesn\'t count as practice.' },
+  { from:3, to:4, name:'Realism', tag:'Make it closer to the real thing',
+    solo:[2,3], match:[1,2],
+    soloFocus:'Add lube. At <b>7</b>, try <b>slowing down</b> with breath and floor release instead of a full stop. Only stop completely if slowing isn\'t enough.',
+    matchFocus:'Tell your partner the plan and agree on a <b>pause signal</b>. Same routine at 7: pause, breathe, release.' },
+  { from:5, to:6, name:'Endurance', tag:'Build time together',
+    solo:[1,2], match:[2,3],
+    soloFocus:'Keep the skill sharp. Practice <b>cruising at 5–6</b> for long stretches.',
+    matchFocus:'Start with them leading while you stay less active. Near <b>7</b>, hold still and let the breath bring you down. Use position changes as natural pauses, and stay at 5–6 instead of spiking to 8.' },
+  { from:7, to:8, name:'Flow', tag:'Fewer pauses',
+    solo:[1,1], match:[2,3],
+    soloFocus:'One session at a <b>faster pace</b> to challenge your control.',
+    matchFocus:'Manage intensity with <b>breath and floor release alone</b>, keeping full pauses to a minimum.' },
+  { from:9, to:9999, name:'Maintain', tag:'Keep what you built',
+    solo:[1,1], match:[1,3],
+    soloFocus:'One challenge session a week keeps the skill sharp.',
+    matchFocus:'Keep using the breath and release. Look back at Progress if things slip, and repeat a phase if you want.' },
+];
+
+// ---------- date helpers (local time) ----------
+function pad2(n){ return String(n).padStart(2,'0'); }
+function dkey(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function parseKey(k){ const [y,m,d]=k.split('-').map(Number); return new Date(y,m-1,d); }
+function addDays(k,n){ const d=parseKey(k); d.setDate(d.getDate()+n); return dkey(d); }
+function daysBetween(a,b){ return Math.round((parseKey(b)-parseKey(a))/86400000); }
+function todayKey(){ return dkey(new Date()); }
+function fmtShort(k){ return parseKey(k).toLocaleDateString(undefined,{month:'short',day:'numeric'}); }
+function fmtLong(k){ return parseKey(k).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'}); }
+function fmtTime(s){ if(s==null) return '—'; return Math.floor(s/60)+':'+pad2(Math.round(s%60)); }
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ---------- state ----------
+let S;
+function defaultState(){ return { v:1, startDate: todayKey(), daily:{}, sessions:[] }; }
+function migrateState(s){
+  if(!s || typeof s!=='object') s = {};
+  if(typeof s.v!=='number') s.v = 1;
+  if(typeof s.startDate!=='string' || !/^\d{4}-\d{2}-\d{2}$/.test(s.startDate)) s.startDate = todayKey();
+  if(!s.daily || typeof s.daily!=='object') s.daily = {};
+  if(!Array.isArray(s.sessions)) s.sessions = [];
+  s.sessions = s.sessions.filter(x=>x && (x.type==='solo'||x.type==='match') && typeof x.date==='string').map(x=>({
+    id: x.id || ('s'+Math.random().toString(36).slice(2,10)),
+    date: x.date, type: x.type,
+    time: (typeof x.time==='number' && x.time>=0) ? x.time : null,
+    pauses: Number.isFinite(x.pauses) ? x.pauses : 0,
+    feel: Number.isFinite(x.feel) ? x.feel : null,
+    note: typeof x.note==='string' ? x.note : ''
+  }));
+  return s;
+}
+function load(){
+  try { S = migrateState(JSON.parse(LS.get(STORE_KEY))); }
+  catch(e){ S = defaultState(); }
+  if(!LS.get(STORE_KEY)) save();
+}
+function save(){ try{ LS.set(STORE_KEY, JSON.stringify(S)); }catch(e){} }
+function dayRec(k){ return S.daily[k] || {}; }
+
+// ---------- program math ----------
+function weekOf(k){ return Math.floor(daysBetween(S.startDate,k)/7)+1; }  // can be <=0 before start
+function weekStart(w){ return addDays(S.startDate,(w-1)*7); }
+function phaseFor(w){ const ww=Math.max(1,w); return PHASES.find(p=>ww>=p.from && ww<=p.to); }
+function sessionsInWeek(w,type){
+  const a=weekStart(w), b=addDays(a,6);
+  return S.sessions.filter(x=>x.date>=a && x.date<=b && (!type || x.type===type));
+}
+function coreDaysInWeek(w){
+  const a=weekStart(w); let full=0, part=0;
+  for(let i=0;i<7;i++){ const r=dayRec(addDays(a,i)); if(r.c1&&r.c2) full++; else if(r.c1||r.c2) part++; }
+  return {full,part};
+}
+function breathDaysInWeek(w){
+  const a=weekStart(w); let n=0;
+  for(let i=0;i<7;i++){ const r=dayRec(addDays(a,i)); if(r.b1&&r.b2) n++; }
+  return n;
+}
+function breathStreak(){
+  let k=todayKey(); const r=dayRec(k);
+  if(!(r.b1&&r.b2)) k=addDays(k,-1);
+  let n=0;
+  while(true){ const x=dayRec(k); if(x.b1&&x.b2){ n++; k=addDays(k,-1); } else break; if(n>3650) break; }
+  return n;
+}
+
+// ---------- rendering ----------
+const $ = id => document.getElementById(id);
+function renderToday(){
+  const t=todayKey(), w=weekOf(t), p=phaseFor(w);
+  $('todayLbl').textContent = fmtLong(t);
+  const before = w<1;
+  let bar='';
+  for(let i=1;i<=8;i++) bar += `<i class="${i<w?'done':(i===w?'now':'')}"></i>`;
+  $('phaseCard').innerHTML = before
+    ? `<div class="sub">Starts ${fmtShort(S.startDate)}</div><div class="big">Getting ready</div><div class="hint">Change the start date in settings.</div>`
+    : `<div class="sub">Week ${w}${w<=8?' of 8':''} · ${esc(p.tag)}</div><div class="big">${esc(p.name)}</div><div class="weekbar">${bar}</div>`;
+
+  const r=dayRec(t);
+  document.querySelectorAll('[data-daily]').forEach(b=>b.classList.toggle('on',!!r[b.dataset.daily]));
+  const done = ['b1','b2'].filter(x=>r[x]).length;
+  $('dailySub').textContent = done===2 ? 'breathwork done ✓' : '';
+  const ww=Math.max(1,w), cd=coreDaysInWeek(ww);
+  const coreToday = r.c1&&r.c2;
+  $('coreHint').textContent = `${cd.full}/3 days this week` + (cd.full>=3 && !coreToday ? ' ✓ optional today' : '');
+
+  const a=weekStart(ww);
+  $('weekRange').textContent = fmtShort(a)+' – '+fmtShort(addDays(a,6));
+  renderDots('solo', p.solo, sessionsInWeek(ww,'solo').length);
+  renderDots('match', p.match, sessionsInWeek(ww,'match').length);
+
+  $('focusBox').innerHTML = `<p><b>Solo:</b> ${p.soloFocus}</p><p class="m"><b>Fun time:</b> ${p.matchFocus}</p>`;
+}
+function renderDots(type,[mn,mx],n){
+  const cls = type==='match'?' m':'';
+  let h='';
+  const total=Math.max(mx,n);
+  for(let i=0;i<total;i++){
+    if(i<n) h += `<span class="dot on${i>=mx?' extra':''}${cls}"></span>`;
+    else h += `<span class="dot${i>=mn?' opt':''}"></span>`;
+  }
+  if(!h) h = `<span class="hint">None planned this phase</span>`;
+  $(type+'Dots').innerHTML = h;
+  const target = mn===mx ? String(mx) : mn+'–'+mx;
+  const pill=$(type+'Pill');
+  pill.textContent = mx===0 ? (n?n+' logged':'rest') : `${n} / ${target}`;
+  pill.classList.toggle('ok', mx>0 && n>=Math.max(1,mn));
+}
+
+function renderProgress(){
+  const matches=S.sessions.filter(x=>x.type==='match'&&x.time!=null).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+  const best = matches.length ? Math.max(...matches.map(x=>x.time)) : null;
+  const last5 = matches.slice(-5);
+  const avg5 = last5.length ? last5.reduce((s,x)=>s+x.time,0)/last5.length : null;
+  const first3 = matches.slice(0,3);
+  const base = first3.length ? first3.reduce((s,x)=>s+x.time,0)/first3.length : null;
+  const delta = (avg5!=null && base!=null && matches.length>=4) ? avg5-base : null;
+  $('statGrid').innerHTML = [
+    ['Best fun time', fmtTime(best)],
+    ['Avg last 5', avg5==null?'—':fmtTime(avg5)],
+    ['Change vs start', delta==null?'—':(delta>=0?'+':'−')+fmtTime(Math.abs(delta))],
+    ['Breathwork streak', (n=>n+(n===1?' day':' days'))(breathStreak())],
+  ].map(([k,v])=>`<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
+
+  // chart
+  if(matches.length<2){
+    $('chart').innerHTML = `<div class="empty">Log at least 2 timed fun times to see a trend.</div>`;
+  } else {
+    const W=480,H=180,L=30,R=10,T=12,B=26;
+    const vals=matches.map(x=>x.time/60);
+    const maxV=Math.max(1,Math.ceil(Math.max(...vals)));
+    const n=vals.length;
+    const x=i=>L+(n===1?0:(i*(W-L-R)/(n-1)));
+    const y=v=>T+(H-T-B)*(1-v/maxV);
+    const step = maxV<=5?1:maxV<=12?2:maxV<=25?5:10;
+    let grid='';
+    for(let v=0; v<=maxV; v+=step) grid+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="#2a353d" stroke-width="1"/><text x="${L-6}" y="${y(v)+4}" fill="#5f6f76" font-size="11" text-anchor="end">${v}</text>`;
+    const pts=vals.map((v,i)=>`${x(i)},${y(v)}`).join(' ');
+    // rolling avg of 3
+    const ra=vals.map((v,i)=>{const s=vals.slice(Math.max(0,i-2),i+1);return s.reduce((a,b)=>a+b,0)/s.length;});
+    const raPts=ra.map((v,i)=>`${x(i)},${y(v)}`).join(' ');
+    const dots=vals.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="3.5" fill="#f0b46a"/>`).join('');
+    const xl=`<text x="${L}" y="${H-6}" fill="#5f6f76" font-size="11">${fmtShort(matches[0].date)}</text><text x="${W-R}" y="${H-6}" fill="#5f6f76" font-size="11" text-anchor="end">${fmtShort(matches[n-1].date)}</text>`;
+    $('chart').innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Fun time time trend">${grid}<polyline points="${raPts}" fill="none" stroke="#5fc7a8" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" opacity=".85"/><polyline points="${pts}" fill="none" stroke="#f0b46a" stroke-width="1.2" opacity=".45"/>${dots}${xl}</svg><div class="hint" style="margin-top:6px"><span style="color:var(--amber)">●</span> each fun time &nbsp; <span style="color:var(--teal)">━</span> 3-session average</div>`;
+  }
+
+  // weekly table
+  const cw=Math.max(1,weekOf(todayKey()));
+  let rows='';
+  for(let w=cw; w>=1 && w>cw-12; w--){
+    const p=phaseFor(w), so=sessionsInWeek(w,'solo').length, ma=sessionsInWeek(w,'match').length;
+    const bd=breathDaysInWeek(w), cd=coreDaysInWeek(w).full;
+    const g=(n,t)=>n>=t&&t>0?' class="good"':'';
+    const tgt=(n,[a,b])=>b===0?String(n):n+'/'+(a===b?b:a+'–'+b);
+    rows+=`<tr><td>Wk ${w}</td><td${g(bd,7)}>${bd}/7</td><td${g(cd,3)}>${cd}/3</td><td${g(so,p.solo[0])}>${tgt(so,p.solo)}</td><td${g(ma,p.match[0])}>${tgt(ma,p.match)}</td></tr>`;
+  }
+  $('weekTable').innerHTML = weekOf(todayKey())<1 ? `<div class="empty">Program hasn't started yet.</div>` :
+    `<table class="wk"><tr><th>Week</th><th>Breath</th><th>Core</th><th>Solo</th><th>Fun</th></tr>${rows}</table>`;
+
+  // history
+  const hs=[...S.sessions].sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
+  $('histList').innerHTML = hs.length ? hs.map(histItem).join('')
+    : `<li class="empty" style="display:block">Nothing logged yet.</li>`;
+}
+
+function renderGuide(){
+  const cols=['#3d7a6a','#46897a','#509a88','#5fc7a8','#7fd3a0','#b9d88a','#f0b46a','#f0956a','#e57373','#c65b8a'];
+  $('scaleBar').innerHTML = cols.map((c,i)=>`<div style="background:${c}">${i+1}</div>`).join('');
+  $('planBody').innerHTML = PHASES.slice(0,4).map(p=>`<p><b>Weeks ${p.from}–${p.to}: ${p.name}</b><br>Solo: ${p.solo[0]===p.solo[1]?p.solo[0]:p.solo.join('–')}/wk · Fun time: ${p.match[1]===0?'none planned':(p.match[0]===p.match[1]?p.match[0]:p.match.join('–'))+'/wk'}<br><span style="color:var(--soft)">${p.soloFocus}</span></p>`).join('')
+    + `<p style="color:var(--soft)">Every day, all 8 weeks: breathwork ×2. Core holds ×2 on 3 days a week.</p>`;
+}
+function renderSettings(){
+  $('startDate').value = S.startDate;
+  const has=!!LS.get(PIN_KEY);
+  $('pinStatus').textContent = has ? 'On' : 'Off';
+  $('pinBtn').textContent = has ? 'Turn off' : 'Set passcode';
+  $('versionTag').textContent = 'Tempo ' + APP_VERSION;
+}
+// ---------- calendar ----------
+let calMonth = null;   // 'YYYY-MM-01'
+let dayOpen = null;    // date key shown in day sheet
+function sessionsOn(k){ return S.sessions.filter(x=>x.date===k); }
+function dayCell(k, opts={}){
+  const t=todayKey(), r=dayRec(k), ss=sessionsOn(k);
+  const b=(r.b1?1:0)+(r.b2?1:0), c=(r.c1?1:0)+(r.c2?1:0);
+  const so=ss.filter(x=>x.type==='solo').length, fu=ss.filter(x=>x.type==='match').length;
+  const cls=['cell'];
+  if(k===t) cls.push('today');
+  if(k>t) cls.push('fut'); else if(k<S.startDate) cls.push('pre');
+  let mk='';
+  if(b) mk+=`<i class="b${b===2?' full':''}"></i>`;
+  if(c) mk+=`<i class="c${c===2?' full':''}"></i>`;
+  let ch='';
+  if(so) ch+=`<span class="ch s">S${so>1?so:''}</span>`;
+  if(fu) ch+=`<span class="ch f">F${fu>1?fu:''}</span>`;
+  const label = opts.label!=null ? opts.label : parseKey(k).getDate();
+  return `<button class="${cls.join(' ')}" data-day="${k}" aria-label="${fmtLong(k)}"><span class="n">${label}</span><span class="mk">${mk}</span><span class="chs">${ch}</span></button>`;
+}
+const DOW=['S','M','T','W','T','F','S'];
+function renderWeekStrip(){
+  const w=Math.max(1,weekOf(todayKey())), a=weekStart(w);
+  let h='';
+  for(let i=0;i<7;i++){ const k=addDays(a,i); h+=`<div class="dow">${DOW[parseKey(k).getDay()]}</div>`; }
+  for(let i=0;i<7;i++) h+=dayCell(addDays(a,i));
+  $('weekStrip').innerHTML=h;
+}
+function renderCalendar(){
+  if(!calMonth) calMonth = todayKey().slice(0,8)+'01';
+  const first=parseKey(calMonth), y=first.getFullYear(), m=first.getMonth();
+  $('calTitle').textContent = first.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  const days=new Date(y,m+1,0).getDate();
+  let h=DOW.map(d=>`<div class="dow">${d}</div>`).join('');
+  for(let i=0;i<first.getDay();i++) h+=`<div class="cell blank"></div>`;
+  let bd=0, cd=0, so=0, fu=0;
+  for(let d=1; d<=days; d++){
+    const k=y+'-'+pad2(m+1)+'-'+pad2(d);
+    h+=dayCell(k);
+    const r=dayRec(k); if(r.b1&&r.b2) bd++; if(r.c1&&r.c2) cd++;
+    sessionsOn(k).forEach(x=>{ if(x.type==='solo') so++; else fu++; });
+  }
+  $('calGrid').innerHTML=h;
+  $('calStats').innerHTML=[['Breathwork days',bd],['Core days',cd],['Solo drills',so],['Fun times',fu]]
+    .map(([k,v])=>`<div class="stat" style="background:var(--card2)"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
+}
+function openDay(k){
+  if(k>todayKey()){ toast("That day hasn't happened yet"); return; }
+  dayOpen=k; renderDay(); $('dayModal').classList.add('on');
+}
+function renderDay(){
+  if(!dayOpen) return;
+  const k=dayOpen, r=dayRec(k);
+  $('dayTitle').textContent = k===todayKey() ? 'Today' : fmtLong(k);
+  $('dayTogs').innerHTML = [['b1','Breathwork AM',''],['b2','Breathwork PM',''],['c1','Core holds 1','core'],['c2','Core holds 2','core']]
+    .map(([key,l,c])=>`<button class="tog ${c}${r[key]?' on':''}" data-dtog="${key}">${r[key]?'✓ ':''}${l}</button>`).join('');
+  const ss=sessionsOn(k);
+  $('dayList').innerHTML = ss.length ? ss.map(histItem).join('') : `<li class="empty" style="display:block">No sessions logged this day.</li>`;
+}
+function histItem(x){
+  return `<li>
+      <span class="tag ${x.type==='match'?'m':'s'}">${x.type==='match'?'Fun time':'Solo'}</span>
+      <div class="grow"><div class="lbl" style="font-size:14px">${fmtShort(x.date)} · ${fmtTime(x.time)}${x.pauses?` · ${x.pauses} pause${x.pauses>1?'s':''}`:''}${x.feel?` · ${'●'.repeat(x.feel)}`:''}</div>${x.note?`<div class="hint">${esc(x.note)}</div>`:''}</div>
+      <button class="del" data-del="${esc(x.id)}" aria-label="Delete">✕</button></li>`;
+}
+function deleteSession(id){
+  if(!confirm('Delete this entry?')) return;
+  S.sessions=S.sessions.filter(x=>x.id!==id); save(); renderAll();
+}
+
+function renderAll(){ renderToday(); renderWeekStrip(); renderCalendar(); renderProgress(); renderGuide(); renderSettings(); renderDay(); }
+
+// ---------- nav ----------
+let curTab='today';
+function showTab(t){
+  curTab=t;
+  document.querySelectorAll('section').forEach(s=>s.classList.toggle('on', s.id==='sec-'+t));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on', b.dataset.tab===t));
+  window.scrollTo(0,0);
+}
+
+// ---------- toast ----------
+let toastT;
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2200); }
+
+// ---------- daily toggles ----------
+function toggleDaily(key, force, day){
+  const t=day||todayKey();
+  const r=S.daily[t] || (S.daily[t]={});
+  r[key] = force===undefined ? !r[key] : force;
+  if(!r.b1&&!r.b2&&!r.c1&&!r.c2) delete S.daily[t];
+  save(); renderAll();
+}
+function autoCheck(kind){
+  const t=todayKey(), r=dayRec(t);
+  const slots = kind==='breath' ? ['b1','b2'] : ['c1','c2'];
+  const k = slots.find(s=>!r[s]);
+  if(k){ toggleDaily(k,true); toast(kind==='breath'?'Breathwork checked ✓':'Core holds checked ✓'); }
+  else toast('Both done today ✓');
+}
+
+// ---------- log sheet ----------
+let F = null, swStart=null, swTimer=null;
+function openLog(type, day){
+  F = { type: type || 'solo', pauses:0, feel:null };
+  $('fDate').value = day || todayKey();
+  $('fDate').max = todayKey();
+  $('fMin').value=''; $('fSec').value=''; $('fNote').value='';
+  stopSW(true);
+  syncLog();
+  $('logModal').classList.add('on');
+}
+function syncLog(){
+  document.querySelectorAll('#typeSeg button').forEach(b=>b.classList.toggle('on', b.dataset.type===F.type));
+  $('logTitle').textContent = F.type==='match' ? 'Log a fun time' : 'Log a solo drill';
+  $('timeLbl').textContent = F.type==='match' ? 'Fun time time (start → finish)' : 'Duration (optional)';
+  $('timeHint').textContent = F.type==='match' ? 'Use the stopwatch, or enter a best estimate afterward.' : '';
+  $('fPauses').textContent = F.pauses;
+  $('feelRow').innerHTML = [1,2,3,4,5].map(n=>`<button data-feel="${n}" class="${F.feel===n?'on':''}">${n}</button>`).join('');
+}
+function startSW(){
+  swStart = Date.now();
+  $('swBtn').classList.add('run');
+  swTimer = setInterval(tickSW, 250); tickSW();
+}
+function tickSW(){
+  const s=Math.floor((Date.now()-swStart)/1000);
+  $('fMin').value=Math.floor(s/60); $('fSec').value=pad2(s%60);
+  $('swBtn').textContent='Stop · '+fmtTime(s);
+}
+function stopSW(reset){
+  clearInterval(swTimer); swTimer=null; swStart=null;
+  $('swBtn').classList.remove('run'); $('swBtn').textContent='Start stopwatch';
+}
+function saveLog(){
+  if(swTimer){ tickSW(); stopSW(); }
+  const m=parseInt($('fMin').value,10), s=parseInt($('fSec').value,10);
+  let time=null;
+  if(!isNaN(m)||!isNaN(s)) time=(isNaN(m)?0:m)*60+(isNaN(s)?0:Math.min(59,s));
+  if(time===0) time=null;
+  let date=$('fDate').value || todayKey();
+  if(date>todayKey()) date=todayKey();
+  S.sessions.push({ id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), date, type:F.type, time, pauses:F.pauses, feel:F.feel, note:$('fNote').value.trim() });
+  save();
+  $('logModal').classList.remove('on');
+  renderAll();
+  const on = date===todayKey() ? '' : ' · '+fmtShort(date);
+  toast((F.type==='match' ? (time?'Fun time saved · '+fmtTime(time):'Fun time saved') : 'Solo drill saved')+on);
+}
+
+// ---------- pacer ----------
+let P=null;
+const PACE = {
+  breath:{ title:'Breathwork', reps:10, steps:[{cue:'Breathe in',sub:'belly & ribs widen · floor drops',s:4,scale:1},{cue:'Breathe out',sub:'slow · let it fall',s:6,scale:.55}], orb:'' },
+  core:{ title:'Core holds', reps:10, steps:[{cue:'Squeeze',sub:'lift · keep breathing',s:5,scale:.7},{cue:'Release',sub:'fully let go',s:5,scale:1}], orb:'core' },
+};
+function openPacer(kind){
+  stopPacer();
+  P={kind, cfg:PACE[kind], running:false};
+  $('pacerTitle').textContent=P.cfg.title;
+  $('orb').className='orb '+P.cfg.orb;
+  $('orb').style.transition='none'; $('orb').style.transform='scale(.55)';
+  $('cue').textContent='Ready'; $('secs').innerHTML='&nbsp;';
+  $('pcount').textContent=`${P.cfg.reps} reps · ${P.cfg.steps.map(x=>x.s+'s '+x.cue.toLowerCase()).join(' / ')}`;
+  $('pacerGo').textContent='Start';
+  $('pacerModal').classList.add('on');
+}
+function runPacer(){
+  if(!P) return;
+  if(P.running){ stopPacer(); $('cue').textContent='Paused'; $('pacerGo').textContent='Restart'; return; }
+  P.running=true; P.rep=1; P.step=0;
+  $('pacerGo').textContent='Stop';
+  doStep();
+}
+function doStep(){
+  if(!P||!P.running) return;
+  const st=P.cfg.steps[P.step];
+  const orb=$('orb');
+  orb.style.transition=`transform ${st.s}s ease-in-out`;
+  requestAnimationFrame(()=>{ orb.style.transform=`scale(${st.scale})`; });
+  $('cue').textContent=st.cue;
+  $('pcount').textContent=`Rep ${P.rep} of ${P.cfg.reps} · ${st.sub}`;
+  let left=st.s; $('secs').textContent=left;
+  clearInterval(P.iv);
+  P.iv=setInterval(()=>{ left--; if(left>0) $('secs').textContent=left; },1000);
+  P.to=setTimeout(()=>{
+    clearInterval(P.iv);
+    P.step++;
+    if(P.step>=P.cfg.steps.length){ P.step=0; P.rep++; }
+    if(P.rep>P.cfg.reps){ finishPacer(); return; }
+    doStep();
+  }, st.s*1000);
+}
+function finishPacer(){
+  const kind=P.kind;
+  stopPacer();
+  $('cue').textContent='Done'; $('secs').innerHTML='&nbsp;'; $('pcount').textContent='Nice work.';
+  $('pacerGo').textContent='Again';
+  try{ navigator.vibrate && navigator.vibrate(200); }catch(e){}
+  autoCheck(kind);
+}
+function stopPacer(){ if(P){ clearTimeout(P.to); clearInterval(P.iv); P.running=false; } }
+
+// ---------- PIN lock ----------
+let pinBuf='', pinMode='unlock', pinFirst='';
+function hashPin(p){ let h=5381; const s='tempo:'+p; for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))>>>0; return h.toString(36); }
+function showLock(mode){
+  pinMode=mode; pinBuf=''; pinFirst='';
+  $('lockMsg').textContent = mode==='unlock'?'Enter passcode':'Choose a 4-digit passcode';
+  drawPin(); $('lock').classList.add('on');
+}
+function drawPin(){ [...$('pinDots').children].forEach((d,i)=>d.classList.toggle('f',i<pinBuf.length)); }
+function pinPress(k){
+  if(k==='del'){ pinBuf=pinBuf.slice(0,-1); drawPin(); return; }
+  if(k==='x'){ if(pinMode!=='unlock'){ $('lock').classList.remove('on'); renderSettings(); } return; }
+  if(pinBuf.length>=4) return;
+  pinBuf+=k; drawPin();
+  if(pinBuf.length<4) return;
+  setTimeout(()=>{
+    if(pinMode==='unlock'){
+      if(hashPin(pinBuf)===LS.get(PIN_KEY)){ $('lock').classList.remove('on'); }
+      else { wrongPin(); }
+    } else if(pinMode==='set1'){
+      pinFirst=pinBuf; pinBuf=''; pinMode='set2'; $('lockMsg').textContent='Enter it again'; drawPin();
+    } else if(pinMode==='set2'){
+      if(pinBuf===pinFirst){ LS.set(PIN_KEY, hashPin(pinBuf)); $('lock').classList.remove('on'); renderSettings(); toast('Passcode set'); }
+      else { pinMode='set1'; pinFirst=''; wrongPin(); $('lockMsg').textContent="Didn't match. Choose a passcode"; }
+    }
+  },120);
+}
+function wrongPin(){ pinBuf=''; const d=$('pinDots'); d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake'); drawPin(); }
+function buildPad(){
+  const keys=['1','2','3','4','5','6','7','8','9','x','0','del'];
+  $('pad').innerHTML=keys.map(k=>`<button data-k="${k}" ${k==='x'?'id="padX"':''}>${k==='del'?'⌫':k==='x'?'':k}</button>`).join('');
+}
+
+// ---------- backup ----------
+function exportData(){
+  const blob=new Blob([JSON.stringify({app:'tempo',exported:new Date().toISOString(),state:S},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`tempo-backup-${todayKey()}.json`;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500);
+}
+function importData(text){
+  try{
+    const obj=JSON.parse(text);
+    const st = obj && obj.state ? obj.state : obj;
+    if(!st || !Array.isArray(st.sessions)) throw new Error('bad');
+    S=migrateState(st); save(); renderAll(); toast('Backup restored');
+    return true;
+  }catch(e){ toast("That file didn't look like a Tempo backup"); return false; }
+}
+
+// ---------- wire up ----------
+function wire(){
+  document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+  $('gearBtn').onclick=()=>showTab(curTab==='settings'?'today':'settings');
+  $('backBtn').onclick=()=>showTab('today');
+  document.querySelectorAll('[data-daily]').forEach(b=>b.onclick=()=>toggleDaily(b.dataset.daily));
+  document.querySelectorAll('[data-pacer]').forEach(b=>b.onclick=()=>openPacer(b.dataset.pacer));
+  document.querySelectorAll('[data-quick]').forEach(b=>b.onclick=()=>openLog(b.dataset.quick));
+  $('logBtn').onclick=()=>{
+    const w=Math.max(1,weekOf(todayKey())), p=phaseFor(w);
+    const soloMet = sessionsInWeek(w,'solo').length >= p.solo[1];
+    openLog(p.match[1]>0 && soloMet ? 'match' : 'solo');
+  };
+  document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{ b.closest('.modal').classList.remove('on'); if(b.closest('#dayModal')) dayOpen=null; stopPacer(); stopSW(); });
+  document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m){ m.classList.remove('on'); if(m.id==='dayModal') dayOpen=null; stopPacer(); stopSW(); } }));
+  document.querySelectorAll('#typeSeg button').forEach(b=>b.onclick=()=>{ F.type=b.dataset.type; syncLog(); });
+  document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{ F.pauses=Math.max(0,Math.min(20,F.pauses+Number(b.dataset.step))); syncLog(); });
+  $('feelRow').addEventListener('click',e=>{ const b=e.target.closest('[data-feel]'); if(!b) return; const n=Number(b.dataset.feel); F.feel = F.feel===n?null:n; syncLog(); });
+  $('swBtn').onclick=()=>{ if(swTimer){ tickSW(); stopSW(); } else startSW(); };
+  $('saveLog').onclick=saveLog;
+  $('pacerGo').onclick=runPacer;
+  $('histList').addEventListener('click',e=>{ const b=e.target.closest('[data-del]'); if(b) deleteSession(b.dataset.del); });
+  $('dayList').addEventListener('click',e=>{ const b=e.target.closest('[data-del]'); if(b) deleteSession(b.dataset.del); });
+  document.addEventListener('click',e=>{ const c=e.target.closest('[data-day]'); if(c) openDay(c.dataset.day); });
+  $('dayTogs').addEventListener('click',e=>{ const b=e.target.closest('[data-dtog]'); if(b) toggleDaily(b.dataset.dtog, undefined, dayOpen); });
+  document.querySelectorAll('[data-daylog]').forEach(b=>b.onclick=()=>{ const k=dayOpen; $('dayModal').classList.remove('on'); dayOpen=null; openLog(b.dataset.daylog, k); });
+  $('calPrev').onclick=()=>{ const d=parseKey(calMonth); d.setMonth(d.getMonth()-1); calMonth=dkey(d); renderCalendar(); };
+  $('calNext').onclick=()=>{ const d=parseKey(calMonth); d.setMonth(d.getMonth()+1); calMonth=dkey(d); renderCalendar(); };
+  $('startDate').onchange=e=>{ if(e.target.value){ S.startDate=e.target.value; save(); renderAll(); toast('Start date updated'); } };
+  $('pinBtn').onclick=()=>{
+    if(LS.get(PIN_KEY)){ if(confirm('Turn off the passcode?')){ LS.del(PIN_KEY); renderSettings(); toast('Passcode off'); } }
+    else showLock('set1');
+  };
+  $('pad').addEventListener('click',e=>{ const b=e.target.closest('[data-k]'); if(b) pinPress(b.dataset.k); });
+  $('exportBtn').onclick=exportData;
+  $('importBtn').onclick=()=>$('importFile').click();
+  $('importFile').onchange=e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>importData(r.result); r.readAsText(f); e.target.value=''; };
+  $('resetBtn').onclick=()=>{ if(confirm('Erase all Tempo data on this phone? This cannot be undone.')){ S=defaultState(); save(); renderAll(); toast('Erased'); } };
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden){ if(LS.get(PIN_KEY)) showLock('unlock'); stopPacer(); }
+    else renderAll(); // date may have rolled over
+  });
+}
+
+// ---------- boot ----------
+load();
+buildPad();
+wire();
+renderAll();
+if(LS.get(PIN_KEY)) showLock('unlock');
+try{
+  const seen=LS.get(SEEN_VER_KEY);
+  if(seen && seen!==APP_VERSION) toast('Updated to latest version!');
+  LS.set(SEEN_VER_KEY, APP_VERSION);
+}catch(e){}
+</script>
+</body>
+</html>
