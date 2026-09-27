@@ -586,6 +586,7 @@
 
     <div class="today-scroll">
       <div class="sub-panel active" id="panel-habits">
+        <div id="checkinCard"></div>
         <div class="section-header" style="margin-bottom:10px">
           <div class="section-title" style="font-size:17px">Today's Habits</div>
         </div>
@@ -665,10 +666,12 @@
   <div id="section-tracking" class="section">
     <div class="track-tabs">
       <button class="track-tab active" onclick="switchTrackingSubTab('weight',this)">⚖️ Weight</button>
+      <button class="track-tab" onclick="switchTrackingSubTab('measurements',this)">📏 Measurements</button>
       <button class="track-tab" onclick="switchTrackingSubTab('circuits',this)">🏋️ Circuits</button>
       <button class="track-tab" onclick="switchTrackingSubTab('fitness',this)">🏆 Fitness Goals</button>
     </div>
     <div class="track-panel active" id="panel-track-weight"><div id="weightContent"></div></div>
+    <div class="track-panel" id="panel-track-measurements"><div id="measurementsContent"></div></div>
     <div class="track-panel" id="panel-track-circuits"><div id="circuitsContent"></div></div>
     <div class="track-panel" id="panel-track-fitness"><div id="fitnessContent"></div></div>
   </div>
@@ -804,6 +807,24 @@
     <button class="btn-submit" id="qfOptionsStarBtn" style="margin-bottom:8px" onclick="qfOptionsAction('star')"></button>
     <button class="btn-submit" style="margin-bottom:8px;background:rgba(255,255,255,.08)" onclick="qfOptionsAction('rename')">✏️ Rename</button>
     <button class="btn-submit" style="background:rgba(255,107,138,.15);color:var(--rose)" onclick="qfOptionsAction('remove')">✕ Remove</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="checkinOverlay" onclick="overlayClick(event,'checkinOverlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">How was today?</div>
+    <div class="chart-range-toggle" id="checkinMoodRow" style="margin-bottom:16px">
+      <button class="chart-range-btn" onclick="pickCheckinMood('rough',this)">😣 Rough</button>
+      <button class="chart-range-btn" onclick="pickCheckinMood('okay',this)">😐 Okay</button>
+      <button class="chart-range-btn" onclick="pickCheckinMood('good',this)">😊 Good</button>
+    </div>
+    <div class="modal-title" style="font-size:13px;margin-top:0">Anything stressful?</div>
+    <div class="chart-range-toggle" id="checkinStressRow" style="margin-bottom:16px">
+      <button class="chart-range-btn" onclick="pickCheckinStress(true,this)">Yes</button>
+      <button class="chart-range-btn" onclick="pickCheckinStress(false,this)">No</button>
+    </div>
+    <button class="btn-submit" onclick="saveCheckin()">Save Check-In</button>
   </div>
 </div>
 
@@ -957,11 +978,14 @@ function blankState() {
     weight:{logs:{},unit:'lbs',goal:null,startWeight:null,startDate:null},
     exercise:{dumbbellPress:0,dumbbellPress20Sets:0,dumbbellPress25:0,inclinePushups60:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0},
     customWorkouts:[],customWorkoutLogs:{},customGoals:[],workoutExtras:{},
+    measurements:{logs:{}},
+    checkins:{},
     user:{xp:0,badges:[],totalDone:0,numericHits:0,sideQuestCount:0,
       packsBank:0,hangersBank:0,blastersBank:0,megaBank:0,hobbyBank:0,superBank:0,mythicBank:0,
       packHistory:[],weeklyPacksAwarded:{},weeklyPackFlags:{},
       consecutivePackWeeks:0,lastPackWeek:null,milestones:{},
-      perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null,favoriteQuotes:[],lastQuotePeriod:null,lastQuoteData:null,milestonesRedeemed:{},blasterAnchorMonth:null,calorieGoal:null,sugarAutoCalcSince:null},
+      perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null,favoriteQuotes:[],lastQuotePeriod:null,lastQuoteData:null,milestonesRedeemed:{},blasterAnchorMonth:null,calorieGoal:null,sugarAutoCalcSince:null,
+      wishlistPoints:0,wishlistItems:[],wishlistHistory:[],measurementWeekFlags:{},measurementStreakWeeks:0,trainingScoreWeekFlags:{}},
   };
 }
 
@@ -1026,6 +1050,24 @@ function migrateState(raw) {
     });
   });
   if (raw.user.calorieGoal===undefined) raw.user.calorieGoal=null;
+  if (!raw.measurements)              raw.measurements={logs:{}};
+  if (!raw.measurements.logs)         raw.measurements.logs={};
+  if (!raw.checkins)                  raw.checkins={};
+  if (raw.user.wishlistPoints==null)  raw.user.wishlistPoints=0;
+  if (!raw.user.wishlistItems)        raw.user.wishlistItems=[];
+  if (!raw.user.wishlistHistory)      raw.user.wishlistHistory=[];
+  if (!raw.user._wishlistSeeded) {
+    raw.user._wishlistSeeded=true;
+    raw.user.wishlistItems.push(
+      {id:Date.now().toString(36)+'1',name:'Book',cost:50,redeemedCount:0},
+      {id:Date.now().toString(36)+'2',name:'Coffee Table Book',cost:80,redeemedCount:0},
+      {id:Date.now().toString(36)+'3',name:'Lego Set',cost:150,redeemedCount:0},
+      {id:Date.now().toString(36)+'4',name:'Exercise Equipment',cost:300,redeemedCount:0},
+    );
+  }
+  if (!raw.user.measurementWeekFlags) raw.user.measurementWeekFlags={};
+  if (raw.user.measurementStreakWeeks==null) raw.user.measurementStreakWeeks=0;
+  if (!raw.user.trainingScoreWeekFlags) raw.user.trainingScoreWeekFlags={};
   if (!raw.exercise) raw.exercise={dumbbellPress:0,dumbbellPress20Sets:0,dumbbellPress25:0,inclinePushups60:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0};
   if (raw.exercise.dumbbellPress25==null) raw.exercise.dumbbellPress25=0;
   if (raw.exercise.dumbbellPress20Sets==null) raw.exercise.dumbbellPress20Sets=0;
@@ -1115,6 +1157,8 @@ function monthCompletionStats(daysSoFar){
 }
 function isLessSugarHabit(h){return !!h && h.type!=='numeric' && /sugar/i.test(h.name);}
 function sugarLoggedOn(dk){const p=S.habits.find(isProteinHabit);return p?addedSugarOn(p.id,dk):0;}
+function isCaloriesHabit(h){return !!h && h.type!=='numeric' && /calor/i.test(h.name);}
+function caloriesLoggedOn(dk){const p=S.habits.find(isProteinHabit);return p?caloriesOn(p.id,dk):0;}
 function isWorkoutHabit(h){return !!h && h.type!=='numeric' && /work\s*out/i.test(h.name);}
 function hasCircuitLoggedOn(dk){const day=S.customWorkoutLogs[dk];if(!day)return false;return Object.values(day).some(v=>v&&v.rounds>0);}
 function workoutAutoSourceOn(dk){const ex=S.workoutExtras[dk]||{};return !!ex.cycle||!!ex.kids||hasCircuitLoggedOn(dk);}
@@ -1131,6 +1175,14 @@ function habitDoneOn(h,dk){
     // extending the streak) until after most people are done eating for the day.
     if(dk===todayKey()){const now=new Date();if(now.getHours()<19||(now.getHours()===19&&now.getMinutes()<30))return false;}
     return sugarLoggedOn(dk)<=SUGAR_LIMIT_G;
+  }
+  if(isCaloriesHabit(h)&&S.user.calorieGoal&&dk>=h.createdAt){
+    // Same "can't confirm a ceiling mid-day" logic as Less Sugar above. Gated
+    // by h.createdAt so a day before the habit existed (0 calories logged
+    // because nothing was tracked yet, not because the day went well) can't
+    // be mistaken for a real "stayed under budget" day.
+    if(dk===todayKey()){const now=new Date();if(now.getHours()<19||(now.getHours()===19&&now.getMinutes()<30))return false;}
+    return caloriesLoggedOn(dk)<=S.user.calorieGoal;
   }
   if(isWorkoutHabit(h)&&workoutAutoSourceOn(dk))return true;
   return (S.logs[dk]||{})[h.id]===true;
@@ -1324,6 +1376,7 @@ function switchSubTab(name, btn) {
 }
 
 function renderToday(){
+  renderCheckinCard();
   const total=S.habits.length,done=S.habits.filter(h=>isDoneToday(h.id)).length,pct=total?Math.round(done/total*100):0;
   document.getElementById('progressPct').textContent=pct+'%';
   requestAnimationFrame(()=>{document.getElementById('progressRing').style.strokeDashoffset=276-(pct/100*276);});
@@ -1401,7 +1454,7 @@ async function analyzeFood(id){
       body:JSON.stringify({
         model:'claude-haiku-4-5-20251001',
         max_tokens:300,
-        system:'You are a nutrition estimator inside a habit tracking app. Given a text description and/or photo of a food or meal, estimate its protein content in grams, its ADDED sugar content in grams (the FDA nutrition-label "Added Sugars" line — sugar/syrup added during processing — NOT total sugars. Naturally-occurring sugar like lactose in milk/whey/yogurt or fructose in whole fruit counts as 0 added sugar unless the product is also sweetened), and its total calories. Respond ONLY with a JSON object, no markdown fences, no other text: {"food":"short name","grams_protein":number,"added_sugar_g":number,"calories":number,"confidence":"low"|"medium"|"high"}. If multiple items are shown, sum the protein, added sugar, and calories, and name the food generically (e.g. "chicken & rice bowl").',
+        system:'You are a nutrition estimator inside a habit tracking app. Given a text description and/or photo of a food or meal, estimate its protein content in grams, its ADDED sugar content in grams (the FDA nutrition-label "Added Sugars" line — sugar/syrup added during processing — NOT total sugars. Naturally-occurring sugar like lactose in milk/whey/yogurt or fructose in whole fruit counts as 0 added sugar unless the product is also sweetened), its total calories, its total carbohydrates in grams, its total fat in grams, and its dietary fiber in grams. Respond ONLY with a JSON object, no markdown fences, no other text: {"food":"short name","grams_protein":number,"added_sugar_g":number,"calories":number,"carbs_g":number,"fat_g":number,"fiber_g":number,"confidence":"low"|"medium"|"high"}. If multiple items are shown, sum every field, and name the food generically (e.g. "chicken & rice bowl").',
         messages:[{role:'user',content}]
       })
     });
@@ -1420,17 +1473,27 @@ async function analyzeFood(id){
     try{parsed=JSON.parse(cleaned);}catch(e){statusEl.textContent='Could not parse estimate — try rephrasing.';btn.disabled=false;return;}
     const grams=Math.round((+parsed.grams_protein||0)*10)/10;
     if(!grams||grams<=0){statusEl.textContent="Couldn't estimate protein for that — try adding more detail.";btn.disabled=false;return;}
-    const addedSugar=Math.max(0,Math.round((+parsed.added_sugar_g||0)*10)/10);
-    const calories=Math.max(0,Math.round(+parsed.calories||0));
+    const macros={
+      sugar:Math.max(0,Math.round((+parsed.added_sugar_g||0)*10)/10),
+      calories:Math.max(0,Math.round(+parsed.calories||0)),
+      carbs:Math.max(0,Math.round((+parsed.carbs_g||0)*10)/10),
+      fat:Math.max(0,Math.round((+parsed.fat_g||0)*10)/10),
+      fiber:Math.max(0,Math.round((+parsed.fiber_g||0)*10)/10),
+    };
     const h=S.habits.find(x=>x.id===id);
     const amtInp=document.getElementById(`padd-${id}`);
     if(amtInp)amtInp.value=grams;
     _pendingFoodLabel[id]=String(parsed.food||desc||'food').slice(0,40);
-    _pendingFoodSugar[id]=addedSugar;
-    _pendingFoodCalories[id]=calories;
+    _pendingFoodMacros[id]=macros;
     const confEmoji=parsed.confidence==='high'?'🟢':parsed.confidence==='low'?'🟡':'🟠';
     const foodLabel=escapeHtml(parsed.food||'Food');
-    resultEl.innerHTML=`${confEmoji} ${foodLabel} — ~${grams}g protein, ~${addedSugar}g added sugar, ~${calories} cal${h&&h.unit&&h.unit!=='g'?` (target unit is ${h.unit})`:''}.<button class="ai-log-add-btn" onclick="addProteinEntry('${id}')">✅ Add ${grams}${(h&&h.unit)||'g'}${addedSugar>0?` · 🍬${addedSugar}g sugar`:''}${calories>0?` · 🔥${calories}cal`:''}</button>`;
+    const macroSummary=`~${grams}g protein, ~${macros.carbs}g carbs, ~${macros.fat}g fat, ~${macros.sugar}g added sugar, ~${macros.calories} cal`;
+    const macroBtnBits=[`Add ${grams}${(h&&h.unit)||'g'}`];
+    if(macros.carbs>0)macroBtnBits.push(`🌾${macros.carbs}g`);
+    if(macros.fat>0)macroBtnBits.push(`🧈${macros.fat}g`);
+    if(macros.sugar>0)macroBtnBits.push(`🍬${macros.sugar}g`);
+    if(macros.calories>0)macroBtnBits.push(`🔥${macros.calories}cal`);
+    resultEl.innerHTML=`${confEmoji} ${foodLabel} — ${macroSummary}${h&&h.unit&&h.unit!=='g'?` (target unit is ${h.unit})`:''}.<button class="ai-log-add-btn" onclick="addProteinEntry('${id}')">✅ ${macroBtnBits.join(' · ')}</button>`;
     resultEl.classList.add('show');
     statusEl.textContent='';
   }catch(e){
@@ -1443,6 +1506,7 @@ function habitCardHTML(h){
   const done=isDoneToday(h.id),streak=currentStreak(h.id),c=colorOf(h.color);
   const resting=h.restEligible&&isRestDayToday(h.id);
   const isAutoSugar=isLessSugarHabit(h)&&S.user.sugarAutoCalcSince&&todayKey()>=S.user.sugarAutoCalcSince;
+  const isAutoCalories=isCaloriesHabit(h)&&!!S.user.calorieGoal;
   const isAutoWorkout=isWorkoutHabit(h)&&workoutAutoSourceOn(todayKey());
   const streakStr=streak>0?`<span class="flame">${streak>=30?'🌟':streak>=7?'🔥':'✦'}</span> ${streak}-day streak`:'Start your streak today!';
   let restHTML='';
@@ -1459,6 +1523,13 @@ function habitCardHTML(h){
     const sugarToday=sugarLoggedOn(todayKey()),pct=Math.min(sugarToday/SUGAR_LIMIT_G*100,100),over=sugarToday>SUGAR_LIMIT_G;
     miniProgressHTML=`<div class="habit-mini-progress" title="${sugarToday}/${SUGAR_LIMIT_G}g added sugar today">
       <div class="habit-mini-progress-num" style="color:${over?'#ff6b8a':c.hex}">${sugarToday}/${SUGAR_LIMIT_G}g</div>
+      <div class="habit-mini-progress-track"><div class="habit-mini-progress-fill" style="width:${pct}%;background:${over?'#ff6b8a':c.hex}"></div></div>
+    </div>`;
+  }
+  if(isAutoCalories){
+    const calToday=caloriesLoggedOn(todayKey()),goal=S.user.calorieGoal,pct=Math.min(calToday/goal*100,100),over=calToday>goal;
+    miniProgressHTML=`<div class="habit-mini-progress" title="${calToday}/${goal} calories today">
+      <div class="habit-mini-progress-num" style="color:${over?'#ff6b8a':c.hex}">${calToday}/${goal}cal</div>
       <div class="habit-mini-progress-track"><div class="habit-mini-progress-fill" style="width:${pct}%;background:${over?'#ff6b8a':c.hex}"></div></div>
     </div>`;
   }
@@ -1486,8 +1557,8 @@ function habitCardHTML(h){
       </div>`;
     }
   }
-  const noteText=isAutoSugar?`Auto-tracked from food log · goal ≤${SUGAR_LIMIT_G}g/day`:isAutoWorkout?`Auto-tracked from Circuits/Cycle/Kids today`:(taperNoteFor(h)||h.note);
-  const cardClick=(isAutoSugar||isAutoWorkout)?`autoTrackedNotice('${h.id}')`:`toggleHabit('${h.id}')`;
+  const noteText=isAutoSugar?`Auto-tracked from food log · goal ≤${SUGAR_LIMIT_G}g/day`:isAutoCalories?`Auto-tracked from food log · goal ≤${S.user.calorieGoal}cal/day`:isAutoWorkout?`Auto-tracked from Circuits/Cycle/Kids today`:(taperNoteFor(h)||h.note);
+  const cardClick=(isAutoSugar||isAutoCalories||isAutoWorkout)?`autoTrackedNotice('${h.id}')`:`toggleHabit('${h.id}')`;
   return `<div class="habit-card ${done?'completed':''}" id="hc-${h.id}" style="--c-hex:${c.hex};--c-rgb:${c.rgb};--c-accent:rgba(${c.rgb},.07)" onclick="${cardClick}">
     <div class="habit-card-top">
       <div class="habit-icon">${renderIcon(h.icon)}</div>
@@ -1554,7 +1625,7 @@ function renderProteinTab(){
     sugarPct=Math.min(addedSugar/SUGAR_LIMIT_G*100,100),sugarOver=addedSugar>SUGAR_LIMIT_G,
     calToday=todaysCalories(h.id),calGoal=S.user.calorieGoal,calPct=calGoal?Math.min(calToday/calGoal*100,100):0;
   const rows=entries.length?entries.slice().reverse().map(v=>typeof v==='object'
-    ?`<div class="food-log-row"><span class="food-log-amt" style="--c-hex:${c.hex}">+${v.amt}${unit}</span><span class="food-log-label">${escapeHtml(v.label)}${typeof v.sugar==='number'&&v.sugar>0?` · 🍬${v.sugar}g added sugar`:''}${typeof v.calories==='number'&&v.calories>0?` · 🔥${v.calories}cal`:''}</span></div>`
+    ?`<div class="food-log-row"><span class="food-log-amt" style="--c-hex:${c.hex}">+${v.amt}${unit}</span><span class="food-log-label">${escapeHtml(v.label)}${typeof v.carbs==='number'&&v.carbs>0?` · 🌾${v.carbs}g carbs`:''}${typeof v.fat==='number'&&v.fat>0?` · 🧈${v.fat}g fat`:''}${typeof v.fiber==='number'&&v.fiber>0?` · 🌿${v.fiber}g fiber`:''}${typeof v.sugar==='number'&&v.sugar>0?` · 🍬${v.sugar}g added sugar`:''}${typeof v.calories==='number'&&v.calories>0?` · 🔥${v.calories}cal`:''}</span></div>`
     :`<div class="food-log-row"><span class="food-log-amt" style="--c-hex:${c.hex}">+${v}${unit}</span><span class="food-log-label food-log-manual">Manual entry</span></div>`
   ).join(''):`<div class="food-log-empty">No entries logged yet today.</div>`;
   const hasKey=!!localStorage.getItem('gh_ai_key');
@@ -1736,7 +1807,7 @@ function trendsSeries(hid,days){
     const d=new Date(now);d.setDate(d.getDate()-i);
     if(floorDate&&d<floorDate)continue;
     const dk=dateKey(d);
-    out.push({date:dk,protein:numValOn(hid,dk),sugar:addedSugarOn(hid,dk),calories:caloriesOn(hid,dk)});
+    out.push({date:dk,protein:numValOn(hid,dk),sugar:addedSugarOn(hid,dk),calories:caloriesOn(hid,dk),carbs:carbsOn(hid,dk),fat:fatOn(hid,dk),fiber:fiberOn(hid,dk)});
   }
   return out;
 }
@@ -1776,7 +1847,8 @@ function miniTrendChart(title,unit,hex,points,goal,goalLabel,goalColor){
 }
 function renderTrendsSection(h,c){
   const data=trendsSeries(h.id,_trendsRange);
-  const proteinPts=data.map(d=>({date:d.date,v:d.protein})),sugarPts=data.map(d=>({date:d.date,v:d.sugar})),calPts=data.map(d=>({date:d.date,v:d.calories}));
+  const proteinPts=data.map(d=>({date:d.date,v:d.protein})),sugarPts=data.map(d=>({date:d.date,v:d.sugar})),calPts=data.map(d=>({date:d.date,v:d.calories})),
+    carbPts=data.map(d=>({date:d.date,v:d.carbs})),fatPts=data.map(d=>({date:d.date,v:d.fat})),fiberPts=data.map(d=>({date:d.date,v:d.fiber}));
   return `<div class="weight-chart-card">
     <div class="weight-chart-header"><div class="weight-chart-title">📈 Weekly Trends</div><div class="chart-range-toggle">
       <button class="chart-range-btn ${_trendsRange===14?'sel':''}" onclick="setTrendsRange(14)">2W</button>
@@ -1785,6 +1857,9 @@ function renderTrendsSection(h,c){
       <button class="chart-range-btn ${_trendsRange===9999?'sel':''}" onclick="setTrendsRange(9999)">All</button>
     </div></div>
     ${miniTrendChart('Protein','g',c.hex,proteinPts,h.target||150,'target')}
+    ${miniTrendChart('Carbs','g','#5ec8ff',carbPts)}
+    ${miniTrendChart('Fat','g','#ffcf5e',fatPts)}
+    ${miniTrendChart('Fiber','g','#8affc1',fiberPts)}
     ${miniTrendChart('Added Sugar','g','#ff6b8a',sugarPts,SUGAR_LIMIT_G,'limit','255,107,138')}
     ${miniTrendChart('Calories','cal','#ff9544',calPts,S.user.calorieGoal,'goal')}
   </div>`;
@@ -1848,6 +1923,63 @@ function renderWeight(){
     html+=`</div>`;
   }
   document.getElementById('weightContent').innerHTML=html;
+}
+function measurementEntries(field){
+  return Object.entries(S.measurements.logs).filter(([d,v])=>v&&v[field]!=null).map(([d,v])=>({date:d,val:v[field]})).sort((a,b)=>a.date.localeCompare(b.date));
+}
+function checkMeasurementConsistency(){
+  const wk=isoWeek();
+  const hasLogThisWeek=thisWeekDays().some(d=>{
+    const day=S.measurements.logs[dateKey(d)];
+    return day&&(day.waist!=null||day.arms!=null);
+  });
+  if(!hasLogThisWeek||S.user.measurementWeekFlags[wk])return;
+  S.user.measurementWeekFlags[wk]=true;
+  // Self-correcting streak walk, same pattern as the perfect-week streak above.
+  let streak=0,cursor=new Date();
+  for(let i=0;i<104;i++){
+    if(!S.user.measurementWeekFlags[weekKeyFor(cursor)])break;
+    streak++;
+    cursor.setDate(cursor.getDate()-7);
+  }
+  S.user.measurementStreakWeeks=streak;
+  awardWishlistPoints(10,`Measurement logged — week ${streak} in a row 📏`);
+}
+function logMeasurement(field){
+  const inp=document.getElementById(`meas-${field}-input`);
+  const v=parseFloat(inp?.value);
+  if(!v||v<=0){if(inp){inp.style.borderColor='#ff6464';setTimeout(()=>inp.style.borderColor='',900);}return;}
+  const tk=todayKey();
+  if(!S.measurements.logs[tk])S.measurements.logs[tk]={};
+  S.measurements.logs[tk][field]=+v.toFixed(1);
+  save();
+  checkMeasurementConsistency();
+  renderMeasurementsTab();
+  toast(`📏 ${field==='waist'?'Waist':'Arms'} logged: ${v.toFixed(1)}"`);
+}
+function renderMeasurementsTab(){
+  const el=document.getElementById('measurementsContent');if(!el)return;
+  const tk=todayKey(),today=S.measurements.logs[tk]||{};
+  const waistPts=measurementEntries('waist').map(e=>({date:e.date,v:e.val}));
+  const armsPts=measurementEntries('arms').map(e=>({date:e.date,v:e.val}));
+  const streak=S.user.measurementStreakWeeks||0;
+  el.innerHTML=`<div class="weight-settings-card">
+    <div class="weight-settings-title">📏 Body Measurements</div>
+    <div class="data-card-desc" style="margin-bottom:10px">${streak>0?`🔥 ${streak} week${streak===1?'':'s'} in a row logging — keep it up for Wishlist Points`:'Log at least once a week to start earning Wishlist Points.'}</div>
+    <div class="weight-entry-row" style="margin-bottom:8px">
+      <input class="weight-input-big" id="meas-waist-input" type="number" step="0.1" min="0" placeholder="Waist (in)" value="${today.waist!=null?today.waist:''}" style="font-size:16px" onkeydown="if(event.key==='Enter')logMeasurement('waist')">
+      <button class="weight-log-btn" onclick="logMeasurement('waist')">${today.waist!=null?'Update':'Log'}</button>
+    </div>
+    <div class="weight-entry-row">
+      <input class="weight-input-big" id="meas-arms-input" type="number" step="0.1" min="0" placeholder="Arms (in)" value="${today.arms!=null?today.arms:''}" style="font-size:16px" onkeydown="if(event.key==='Enter')logMeasurement('arms')">
+      <button class="weight-log-btn" onclick="logMeasurement('arms')">${today.arms!=null?'Update':'Log'}</button>
+    </div>
+  </div>
+  <div class="weight-chart-card">
+    <div class="weight-chart-header"><div class="weight-chart-title">📈 Measurement Trends</div></div>
+    ${miniTrendChart('Waist','in','#5ec8ff',waistPts)}
+    ${miniTrendChart('Arms','in','#ffcf5e',armsPts)}
+  </div>`;
 }
 let _fitnessLevel=1;
 function setFitnessLevel(n){_fitnessLevel=n;renderFitnessTab();}
@@ -2035,6 +2167,18 @@ function renderRewards(){
     ${totalBanked === 0 ? `<button class="vault-redeem-btn" disabled>Nothing to redeem yet</button>` : ''}
   </div>
   <div class="vault-footer">Banked rewards never expire · Redeem when ready</div></div>`;
+  const wItems=S.user.wishlistItems||[],wPoints=S.user.wishlistPoints||0;
+  html+=`<div class="pack-vault" style="margin-top:14px"><div class="vault-header">🎁 Wishlist Points</div><div class="vault-counts">
+    <div class="vault-item" style="flex:1"><div class="vault-num" style="color:var(--lime)">${wPoints}</div><div class="vault-lbl">Points</div></div>
+  </div></div>`;
+  html+=`<div class="rewards-section-label">🎁 Wishlist</div>`;
+  if(wItems.length){
+    html+=`<div class="milestone-grid">`+wItems.map(item=>{
+      const afford=wPoints>=item.cost;
+      return `<div class="milestone-card ${afford?'earned':''}"><div class="milestone-icon">🎁</div><div class="milestone-title">${escapeHtml(item.name)}</div><div class="milestone-desc">${item.cost} pts${item.redeemedCount?` · redeemed ${item.redeemedCount}x`:''}</div><button class="btn-submit" style="margin-top:8px;padding:8px;font-size:12px" ${afford?'':'disabled'} onclick="event.stopPropagation();redeemWishlistItem('${item.id}')">${afford?'Redeem 🎉':`Need ${item.cost-wPoints} more`}</button><button class="circuit-icon-btn" style="margin-top:6px" onclick="event.stopPropagation();deleteWishlistItem('${item.id}')" title="Delete">🗑️</button></div>`;
+    }).join('')+`</div>`;
+  }
+  html+=`<button class="btn-submit" style="margin-bottom:20px" onclick="addWishlistItem()">+ New Wishlist Item</button>`;
   const daysDoneCount=(wkFlags.halfA?3:halfADays.filter(d=>daySatisfiedWithRest(dateKey(d))).length)+(wkFlags.halfB?3:halfBDays.filter(d=>daySatisfiedWithRest(dateKey(d))).length);
   html+=`<div class="week-card"><div class="week-card-title">📅 This Week <span>${daysDoneCount}/6 days${isSundayNow?' + bonus day':''}</span></div><div class="week-days-row">${days.map((d,i)=>{const k=dateKey(d),flagged=(i<3&&wkFlags.halfA)||(i>=3&&i<6&&wkFlags.halfB),c=flagged||isDayComplete(k),rest=dayRestSkipCount(k)>0,t=k===todayKey(),bonus=i===6;return`<div class="week-day-dot ${c?'done':''} ${rest&&!c?'rest':''} ${t?'today':''}" title="${bonus?'Sunday — bonus':''}"></div>`;}).join('')}</div><div class="week-progress-label"><span>Side quests this week</span><span>${sct} / 10</span></div><div class="week-mini-bar"><div class="week-mini-bar-fill" style="width:${Math.min(sct/10*100,100)}%"></div></div><div class="week-rewards-list"><div class="week-reward-row ${halfAPerfect?'earned':''}">${inHalfA?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — Perfect Mon–Wed (1 skip ok) <span class="milestone-cadence">Weekly</span></div><div class="week-reward-status">${halfAPerfect?'✓ Earned':'In progress'}</div></div><div class="week-reward-row ${halfBPerfect?'earned':''}">${inHalfB?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — Perfect Thu–Sat (1 skip ok) <span class="milestone-cadence">Weekly</span></div><div class="week-reward-status">${halfBPerfect?'✓ Earned':'In progress'}</div></div><div class="week-reward-row ${sct>=10?'earned':''}">${isSundayNow?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — 10 side quests (awarded Sunday) <span class="milestone-cadence">Weekly</span></div><div class="week-reward-status">${sct>=10?'✓ Earned':sct+'/10'}</div></div></div></div>`;
 
@@ -2046,8 +2190,8 @@ function renderRewards(){
     {key:'wt_hanger_10',                                icon:'💪', title:'10 lbs Lost',         val:wLost,     max:10, desc:`${wLost.toFixed(1)}/10 lbs lost`, cadence:'One-Time'},
     {key:FITNESS_LEVEL_MILESTONE_KEYS[1], icon:'🏋️', title:'Fitness Level 1', val:fitnessLevelStatus(1).doneCount, max:5, desc:`${fitnessLevelStatus(1).doneCount}/5 Level 1 strength PRs hit`, cadence:'One-Time'},
   ];
-  html+=`<div class="rewards-section-label">🎁 Hanger Box Milestones</div><div class="milestone-grid">`;
-  html+=hangers.map(h=>{const e=!!m[h.key];return`<div class="milestone-card ${e?'earned':''}"><div class="milestone-icon">${h.icon}</div><div class="milestone-title">${h.title} <span class="milestone-cadence">${h.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':h.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(h.val/h.max*100,100)}%"></div></div>${e?'<div class="milestone-earned-tag">✓ Hanger Box Earned</div>':''}</div>`;}).join('');
+  html+=`<div class="rewards-section-label">📦 Pack Milestones</div><div class="milestone-grid">`;
+  html+=hangers.map(h=>{const e=!!m[h.key];return`<div class="milestone-card ${e?'earned':''}"><div class="milestone-icon">${h.icon}</div><div class="milestone-title">${h.title} <span class="milestone-cadence">${h.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':h.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(h.val/h.max*100,100)}%"></div></div>${e?'<div class="milestone-earned-tag">✓ Pack Earned</div>':''}</div>`;}).join('');
   html+=`</div><div class="rewards-section-label">🏆 Blaster Box Milestones</div><div class="milestone-grid">`;
   const blasters=[
     {key:'blaster_month_'+mk, icon:'📅', title:`${targetPctDisplay}% Habit Completion`,  val:monthPct,   max:targetPctDisplay, desc:`${monthPct}%/${targetPctDisplay}% completion this month`, paceNote, paceClass, cadence:'Monthly'},
@@ -2137,6 +2281,7 @@ function toggleHabit(id){ toggleHabitOnDate(id, todayKey()); }
 function toggleHabitOnDate(id,dk){
   const h=S.habits.find(x=>x.id===id);if(!h||h.type==='numeric')return;
   if(isLessSugarHabit(h)&&S.user.sugarAutoCalcSince&&dk>=S.user.sugarAutoCalcSince)return; // auto-computed, not manually toggleable
+  if(isCaloriesHabit(h)&&S.user.calorieGoal&&dk>=h.createdAt)return; // auto-computed, not manually toggleable
   if(isWorkoutHabit(h)&&workoutAutoSourceOn(dk))return; // already covered by a circuit/cycle/kids workout that day
   const isToday=dk===todayKey();
   if(!S.logs[dk])S.logs[dk]={};
@@ -2205,7 +2350,32 @@ function toggleWorkoutExtra(key){
   if(!S.workoutExtras[tk])S.workoutExtras[tk]={};
   S.workoutExtras[tk][key]=!S.workoutExtras[tk][key];
   checkWorkoutAutoComplete();
+  checkTrainingScoreMilestone();
   renderToday();renderXP();renderCircuitsTab();
+}
+// ── Weekly training-quality score: kettlebell circuits are worth more than
+// cycling, which is worth more than a kids workout, to nudge toward circuits
+// without blocking the easier options from still counting as a workout. ──
+function dayTrainingScore(dk){
+  if(hasCircuitLoggedOn(dk))return 3;
+  const ex=S.workoutExtras[dk]||{};
+  if(ex.cycle)return 2;
+  if(ex.kids)return 1;
+  return 0;
+}
+const TRAINING_SCORE_WEEKLY_THRESHOLD=15;
+function weekTrainingScore(days){
+  return days.reduce((sum,d)=>sum+dayTrainingScore(dateKey(d)),0);
+}
+function checkTrainingScoreMilestone(){
+  const wk=isoWeek();
+  if(S.user.trainingScoreWeekFlags[wk])return;
+  const score=weekTrainingScore(thisWeekDays());
+  if(score>=TRAINING_SCORE_WEEKLY_THRESHOLD){
+    S.user.trainingScoreWeekFlags[wk]=true;
+    save();
+    awardWishlistPoints(20,`Weekly training score hit ${score} pts 🏋️`);
+  }
 }
 function reevaluateBadges(){
   // Re-checks which badges are still earned after XP/stats are reversed (unchecking a habit, resetting a numeric target)
@@ -2237,15 +2407,18 @@ function saveFoodHistory(list){
   const favs=list.filter(f=>f.favorite).slice(0,30), rest=list.filter(f=>!f.favorite).slice(0,12);
   localStorage.setItem('gh_food_history',JSON.stringify(favs.concat(rest)));
 }
-function rememberFood(name,grams,sugar,calories){
+function rememberFood(name,grams,macros){
   if(!name||!grams||grams<=0)return;
   const key=String(name).trim().toLowerCase();if(!key)return;
   const list=getFoodHistory();
   const old=list.find(f=>String(f.name).trim().toLowerCase()===key);
   const filtered=list.filter(f=>String(f.name).trim().toLowerCase()!==key);
   const entry={name:String(name).trim().slice(0,40),grams:Math.round(grams*10)/10};
-  if(typeof sugar==='number'&&sugar>0)entry.sugar=Math.round(sugar*10)/10;
-  if(typeof calories==='number'&&calories>0)entry.calories=Math.round(calories);
+  if(macros&&typeof macros.sugar==='number'&&macros.sugar>0)entry.sugar=Math.round(macros.sugar*10)/10;
+  if(macros&&typeof macros.calories==='number'&&macros.calories>0)entry.calories=Math.round(macros.calories);
+  if(macros&&typeof macros.carbs==='number'&&macros.carbs>0)entry.carbs=Math.round(macros.carbs*10)/10;
+  if(macros&&typeof macros.fat==='number'&&macros.fat>0)entry.fat=Math.round(macros.fat*10)/10;
+  if(macros&&typeof macros.fiber==='number'&&macros.fiber>0)entry.fiber=Math.round(macros.fiber*10)/10;
   if(old&&old.favorite)entry.favorite=true; // re-logging a favorite shouldn't un-star it
   filtered.unshift(entry);
   saveFoodHistory(filtered);
@@ -2258,7 +2431,7 @@ function toggleFavoriteFood(idx){
 }
 function quickAddFoodAt(id,idx){
   const list=getFoodHistory();const item=list[idx];if(!item)return;
-  if(!addNumCore(id,item.grams,item.name,item.sugar,item.calories))return;
+  if(!addNumCore(id,item.grams,item.name,{sugar:item.sugar,calories:item.calories,carbs:item.carbs,fat:item.fat,fiber:item.fiber}))return;
   renderToday();renderXP();renderProteinTab();
   const h=S.habits.find(x=>x.id===id);
   toast(`✅ +${item.grams}${(h&&h.unit)||'g'} · ${item.name}`);
@@ -2304,17 +2477,19 @@ function qfOptionsAction(action){
   else if(action==='remove')removeQuickFoodAt(idx);
 }
 let _pendingFoodLabel={};
-let _pendingFoodSugar={};
-let _pendingFoodCalories={};
+let _pendingFoodMacros={};
 function isProteinHabit(h){return !!h && h.type==='numeric' && /protein/i.test(h.name);}
-function addNumCore(id,amt,label,sugar,calories){
+function addNumCore(id,amt,label,macros){
   const h=S.habits.find(x=>x.id===id);if(!h||!amt||amt<=0)return false;
   const tk=todayKey();if(!S.logs[tk])S.logs[tk]={};if(!S.logEntries[tk])S.logEntries[tk]={};if(!S.logEntries[tk][id])S.logEntries[tk][id]=[];
   const prev=numVal(id),next=prev+amt;S.logs[tk][id]=next;
   if(label){
     const entry={amt:+amt.toFixed(2),label};
-    if(typeof sugar==='number'&&sugar>0)entry.sugar=Math.round(sugar*10)/10;
-    if(typeof calories==='number'&&calories>0)entry.calories=Math.round(calories);
+    if(macros&&typeof macros.sugar==='number'&&macros.sugar>0)entry.sugar=Math.round(macros.sugar*10)/10;
+    if(macros&&typeof macros.calories==='number'&&macros.calories>0)entry.calories=Math.round(macros.calories);
+    if(macros&&typeof macros.carbs==='number'&&macros.carbs>0)entry.carbs=Math.round(macros.carbs*10)/10;
+    if(macros&&typeof macros.fat==='number'&&macros.fat>0)entry.fat=Math.round(macros.fat*10)/10;
+    if(macros&&typeof macros.fiber==='number'&&macros.fiber>0)entry.fiber=Math.round(macros.fiber*10)/10;
     S.logEntries[tk][id].push(entry);
   }else S.logEntries[tk][id].push(+amt.toFixed(2));
   checkNumTarget(id,prev,next);save();return true;
@@ -2325,8 +2500,20 @@ function addedSugarOn(hid,dk){
 function caloriesOn(hid,dk){
   return numEntriesOn(hid,dk).reduce((sum,v)=>sum+(typeof v==='object'&&typeof v.calories==='number'?v.calories:0),0);
 }
+function carbsOn(hid,dk){
+  return numEntriesOn(hid,dk).reduce((sum,v)=>sum+(typeof v==='object'&&typeof v.carbs==='number'?v.carbs:0),0);
+}
+function fatOn(hid,dk){
+  return numEntriesOn(hid,dk).reduce((sum,v)=>sum+(typeof v==='object'&&typeof v.fat==='number'?v.fat:0),0);
+}
+function fiberOn(hid,dk){
+  return numEntriesOn(hid,dk).reduce((sum,v)=>sum+(typeof v==='object'&&typeof v.fiber==='number'?v.fiber:0),0);
+}
 function todaysAddedSugar(hid){ return addedSugarOn(hid,todayKey()); }
 function todaysCalories(hid){ return caloriesOn(hid,todayKey()); }
+function todaysCarbs(hid){ return carbsOn(hid,todayKey()); }
+function todaysFat(hid){ return fatOn(hid,todayKey()); }
+function todaysFiber(hid){ return fiberOn(hid,todayKey()); }
 function addNum(id){
   const inp=document.getElementById(`nadd-${id}`);const amt=parseFloat(inp?.value||0);
   if(!addNumCore(id,amt,null)){if(inp){inp.style.borderColor='#ff6464';setTimeout(()=>inp.style.borderColor='',900);}return;}
@@ -2334,19 +2521,17 @@ function addNum(id){
   const h=S.habits.find(x=>x.id===id);if(isProteinHabit(h))renderProteinTab();
 }
 function addProteinEntry(id){
-  const inp=document.getElementById(`padd-${id}`);const amt=parseFloat(inp?.value||0);const label=_pendingFoodLabel[id],sugar=_pendingFoodSugar[id],calories=_pendingFoodCalories[id];
-  if(!addNumCore(id,amt,label,sugar,calories)){if(inp){inp.style.borderColor='#ff6464';setTimeout(()=>inp.style.borderColor='',900);}return;}
-  if(label){delete _pendingFoodLabel[id];rememberFood(label,amt,sugar,calories);}
-  delete _pendingFoodSugar[id];
-  delete _pendingFoodCalories[id];
+  const inp=document.getElementById(`padd-${id}`);const amt=parseFloat(inp?.value||0);const label=_pendingFoodLabel[id],macros=_pendingFoodMacros[id];
+  if(!addNumCore(id,amt,label,macros)){if(inp){inp.style.borderColor='#ff6464';setTimeout(()=>inp.style.borderColor='',900);}return;}
+  if(label){delete _pendingFoodLabel[id];rememberFood(label,amt,macros);}
+  delete _pendingFoodMacros[id];
   if(inp)inp.value='';
   clearAiPanel(id);
   renderToday();renderXP();renderProteinTab();
 }
 function resetNum(id){
   delete _pendingFoodLabel[id];
-  delete _pendingFoodSugar[id];
-  delete _pendingFoodCalories[id];
+  delete _pendingFoodMacros[id];
   const tk=todayKey();if(!S.logs[tk])return;
   const awardKey=tk+'_num_'+id;
   if(S.xpAwarded[awardKey]){
@@ -2616,7 +2801,7 @@ function openBackdateModal(){
 function renderBackdateList(){
   const dk=document.getElementById('bdDate').value;
   const list=document.getElementById('bdHabitList');
-  const boolHabits=S.habits.filter(h=>h.type!=='numeric'&&!(isLessSugarHabit(h)&&S.user.sugarAutoCalcSince&&dk>=S.user.sugarAutoCalcSince)&&!(isWorkoutHabit(h)&&workoutAutoSourceOn(dk)));
+  const boolHabits=S.habits.filter(h=>h.type!=='numeric'&&!(isLessSugarHabit(h)&&S.user.sugarAutoCalcSince&&dk>=S.user.sugarAutoCalcSince)&&!(isCaloriesHabit(h)&&S.user.calorieGoal&&dk>=h.createdAt)&&!(isWorkoutHabit(h)&&workoutAutoSourceOn(dk)));
   if(!dk){list.innerHTML='';return;}
   if(!boolHabits.length){list.innerHTML=`<p style="font-size:13px;color:var(--text-muted)">No check-off habits to log yet — numeric habits aren't backdatable here.</p>`;return;}
   list.innerHTML=`<label class="form-label">${fmtShortDate(dk)}</label>`+boolHabits.map(h=>{
@@ -2755,6 +2940,7 @@ function logCircuitRounds(id){
   save();
   checkCustomGoals();
   checkWorkoutAutoComplete();
+  checkTrainingScoreMilestone();
   renderToday();renderXP();renderCircuitsTab();
   toast(`✅ Logged ${rounds} round${rounds===1?'':'s'}!`);
 }
@@ -2780,6 +2966,7 @@ function otherWorkoutsCardHTML(){
       <div class="bd-row-name">Rest Day${resting?'':restLeft>0?` · ${restLeft} left this week`:' · none left this week'}</div>
       <div class="bd-check" style="${resting?'background:var(--purple);border-color:var(--purple)':''}">${resting?'✓':''}</div>
     </div>`:'';
+  const trainScore=weekTrainingScore(thisWeekDays()),trainPct=Math.min(trainScore/TRAINING_SCORE_WEEKLY_THRESHOLD*100,100);
   return `<div class="weight-settings-card">
     <div class="weight-settings-title">🏃 Other Workouts Today</div>
     <div class="data-card-desc" style="margin-bottom:6px">Any of these (or a circuit below) counts as today's workout.</div>
@@ -2789,6 +2976,8 @@ function otherWorkoutsCardHTML(){
       <div class="bd-check" style="${r.on?'background:var(--cyan);border-color:var(--cyan)':''}">${r.on?'✓':''}</div>
     </div>`).join('')}
     ${restRow}
+    <div class="data-card-desc" style="margin-top:10px">🏋️ Training score this week: ${trainScore}/${TRAINING_SCORE_WEEKLY_THRESHOLD} pts (circuits worth more than cycling, cycling worth more than kids workouts)</div>
+    <div class="habit-mini-progress-track" style="width:100%;margin-top:4px"><div class="habit-mini-progress-fill" style="width:${trainPct}%;background:var(--lime)"></div></div>
   </div>`;
 }
 function renderCircuitsTab(){
@@ -2881,6 +3070,100 @@ function deleteCustomGoal(id){
   save();
   renderRewards();
 }
+// ── Wishlist Points: a separate "real rewards" currency alongside the
+// pack/box economy, redeemable against items Will defines himself. ──
+function awardWishlistPoints(points,reason){
+  if(!points)return;
+  S.user.wishlistPoints=(S.user.wishlistPoints||0)+points;
+  S.user.wishlistHistory=S.user.wishlistHistory||[];
+  S.user.wishlistHistory.unshift({date:todayKey(),points,reason});
+  save();
+  setTimeout(()=>{toast(`🎁 +${points} Wishlist Point${points===1?'':'s'} — ${reason}`);confetti(50);},500);
+}
+function addWishlistItem(){
+  const name=prompt('Wishlist item name:');
+  if(name==null)return;
+  const trimmed=name.trim();if(!trimmed)return;
+  const costStr=prompt(`Point cost for "${trimmed}":`,'100');
+  if(costStr==null)return;
+  const cost=Math.round(parseFloat(costStr));
+  if(!cost||cost<=0)return;
+  S.user.wishlistItems=S.user.wishlistItems||[];
+  S.user.wishlistItems.push({id:Date.now().toString(36),name:trimmed.slice(0,40),cost,redeemedCount:0});
+  save();
+  renderRewards();
+}
+function deleteWishlistItem(id){
+  if(!confirm('Delete this wishlist item?'))return;
+  S.user.wishlistItems=(S.user.wishlistItems||[]).filter(x=>x.id!==id);
+  save();
+  renderRewards();
+}
+function redeemWishlistItem(id){
+  const item=(S.user.wishlistItems||[]).find(x=>x.id===id);if(!item)return;
+  const points=S.user.wishlistPoints||0;
+  if(points<item.cost){toast(`Need ${item.cost-points} more points for "${item.name}"`);return;}
+  S.user.wishlistPoints=points-item.cost;
+  item.redeemedCount=(item.redeemedCount||0)+1;
+  S.user.wishlistHistory=S.user.wishlistHistory||[];
+  S.user.wishlistHistory.unshift({date:todayKey(),points:-item.cost,reason:`Redeemed: ${item.name}`});
+  save();
+  renderRewards();
+  toast(`🎉 Redeemed "${item.name}"! Treat yourself.`);
+  confetti(90);
+}
+// ── Daily check-in: a tap-to-open (never auto-popped) mood/stress check-in
+// that rewards the act of checking in, with a bonus for an honest rough day. ──
+function renderCheckinCard(){
+  const el=document.getElementById('checkinCard');if(!el)return;
+  const c=S.checkins[todayKey()];
+  const moodLabel={rough:'😣 Rough',okay:'😐 Okay',good:'😊 Good'};
+  if(c){
+    el.innerHTML=`<div class="data-card" style="padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <span style="font-size:12px;color:var(--text-muted)">✅ Checked in — ${moodLabel[c.mood]||c.mood}${c.stressful?' · stressful day':''}</span>
+      <button class="circuit-icon-btn" onclick="openCheckinPicker()" title="Change">✏️</button>
+    </div>`;
+  }else{
+    el.innerHTML=`<div class="data-card" style="padding:12px 14px;margin-bottom:10px;cursor:pointer" onclick="openCheckinPicker()">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:13px;font-weight:600">📝 How was today?</span>
+        <span style="font-size:11px;color:var(--text-muted)">Tap to check in</span>
+      </div>
+    </div>`;
+  }
+}
+let _checkinMood=null,_checkinStressful=null;
+function openCheckinPicker(){
+  const c=S.checkins[todayKey()];
+  _checkinMood=c?c.mood:null;_checkinStressful=c?c.stressful:null;
+  document.querySelectorAll('#checkinMoodRow .chart-range-btn').forEach(b=>b.classList.remove('sel'));
+  document.querySelectorAll('#checkinStressRow .chart-range-btn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('checkinOverlay').classList.add('open');
+}
+function pickCheckinMood(mood,btn){
+  _checkinMood=mood;
+  document.querySelectorAll('#checkinMoodRow .chart-range-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+function pickCheckinStress(val,btn){
+  _checkinStressful=val;
+  document.querySelectorAll('#checkinStressRow .chart-range-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+function saveCheckin(){
+  if(_checkinMood==null||_checkinStressful==null){toast('Answer both questions first.');return;}
+  const tk=todayKey(),alreadyCheckedIn=!!S.checkins[tk];
+  S.checkins[tk]={mood:_checkinMood,stressful:_checkinStressful};
+  save();
+  closeModal('checkinOverlay');
+  renderCheckinCard();
+  if(!alreadyCheckedIn){
+    const points=_checkinStressful?8:3;
+    awardWishlistPoints(points,_checkinStressful?'Checked in on a tough day 💛':'Daily check-in');
+  }else{
+    toast('✅ Check-in updated');
+  }
+}
 function checkCustomGoals(){
   let anyNew=false;
   (S.customGoals||[]).forEach(g=>{
@@ -2923,7 +3206,7 @@ function switchTab(name,btn){
   if(name==='stats')   renderStats();
   if(name==='rewards') renderRewards();
   if(name==='protein'){renderProteinTab();renderMacroTrends();updateMacroScrollLock();}
-  if(name==='tracking'){renderWeight();renderCircuitsTab();renderFitnessTab();}
+  if(name==='tracking'){renderWeight();renderMeasurementsTab();renderCircuitsTab();renderFitnessTab();}
 }
 function switchTrackingSubTab(name,btn){
   document.querySelectorAll('.track-tab').forEach(b=>b.classList.remove('active'));
@@ -2931,6 +3214,7 @@ function switchTrackingSubTab(name,btn){
   btn.classList.add('active');
   document.getElementById('panel-track-'+name).classList.add('active');
   if(name==='weight')   renderWeight();
+  if(name==='measurements') renderMeasurementsTab();
   if(name==='circuits') renderCircuitsTab();
   if(name==='fitness')  renderFitnessTab();
 }
@@ -2997,7 +3281,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-09-27.1500';
+const APP_VERSION = '2026-09-27.1830';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
