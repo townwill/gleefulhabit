@@ -825,7 +825,9 @@
       <button class="chart-range-btn" onclick="pickCheckinStress(true,this)">Yes</button>
       <button class="chart-range-btn" onclick="pickCheckinStress(false,this)">No</button>
     </div>
-    <button class="btn-submit" onclick="saveCheckin()">Save Check-In</button>
+    <textarea id="checkinNoteInput" class="form-input" placeholder="Anything on your mind? (optional)" style="width:100%;min-height:70px;resize:vertical;margin-bottom:10px;font-family:inherit"></textarea>
+    <div id="checkinReflection"></div>
+    <button class="btn-submit" id="checkinSubmitBtn" onclick="saveCheckin()">Save Check-In</button>
   </div>
 </div>
 
@@ -3127,8 +3129,14 @@ let _checkinMood=null,_checkinStressful=null;
 function openCheckinPicker(){
   const c=S.checkins[todayKey()];
   _checkinMood=c?c.mood:null;_checkinStressful=c?c.stressful:null;
-  document.querySelectorAll('#checkinMoodRow .chart-range-btn').forEach(b=>b.classList.remove('sel'));
-  document.querySelectorAll('#checkinStressRow .chart-range-btn').forEach(b=>b.classList.remove('sel'));
+  document.querySelectorAll('#checkinMoodRow .chart-range-btn').forEach(b=>{b.classList.remove('sel');if(c&&b.textContent.includes({rough:'Rough',okay:'Okay',good:'Good'}[c.mood]))b.classList.add('sel');});
+  document.querySelectorAll('#checkinStressRow .chart-range-btn').forEach(b=>{b.classList.remove('sel');if(c&&c.stressful===true&&b.textContent.trim()==='Yes')b.classList.add('sel');if(c&&c.stressful===false&&b.textContent.trim()==='No')b.classList.add('sel');});
+  const noteInp=document.getElementById('checkinNoteInput');
+  if(noteInp)noteInp.value=(c&&c.note)||'';
+  const reflEl=document.getElementById('checkinReflection');
+  if(reflEl)reflEl.innerHTML=c&&c.aiReflection?`<div class="data-card-desc" style="margin-bottom:10px;font-style:italic">💬 ${escapeHtml(c.aiReflection)}</div>`:'';
+  const btn=document.getElementById('checkinSubmitBtn');
+  if(btn){btn.textContent='Save Check-In';btn.disabled=false;btn.onclick=saveCheckin;}
   document.getElementById('checkinOverlay').classList.add('open');
 }
 function pickCheckinMood(mood,btn){
@@ -3144,15 +3152,66 @@ function pickCheckinStress(val,btn){
 function saveCheckin(){
   if(_checkinMood==null||_checkinStressful==null){toast('Answer both questions first.');return;}
   const tk=todayKey(),alreadyCheckedIn=!!S.checkins[tk];
-  S.checkins[tk]={mood:_checkinMood,stressful:_checkinStressful};
+  const noteInp=document.getElementById('checkinNoteInput');
+  const note=(noteInp?.value||'').trim().slice(0,500);
+  S.checkins[tk]={mood:_checkinMood,stressful:_checkinStressful,note};
   save();
-  closeModal('checkinOverlay');
   renderCheckinCard();
   if(!alreadyCheckedIn){
     const points=_checkinStressful?8:3;
     awardWishlistPoints(points,_checkinStressful?'Checked in on a tough day 💛':'Daily check-in');
+  }
+  const hasKey=!!localStorage.getItem('gh_ai_key');
+  if(note&&hasKey){
+    requestCheckinReflection(tk,note,_checkinMood,_checkinStressful);
   }else{
-    toast('✅ Check-in updated');
+    closeModal('checkinOverlay');
+    if(alreadyCheckedIn)toast('✅ Check-in updated');
+    else if(note&&!hasKey)toast('✅ Checked in — add an API key in Macros for a reflection on what you write');
+  }
+}
+async function requestCheckinReflection(tk,note,mood,stressful){
+  const btn=document.getElementById('checkinSubmitBtn'),reflEl=document.getElementById('checkinReflection');
+  if(btn){btn.disabled=true;btn.textContent='Thinking…';}
+  if(reflEl)reflEl.innerHTML=`<div class="data-card-desc" style="margin-bottom:10px">🤔 Reading what you wrote…</div>`;
+  try{
+    const key=localStorage.getItem('gh_ai_key');
+    const moodWord={rough:'rough',okay:'okay',good:'good'}[mood]||mood;
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'content-type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:120,
+        system:'You are a brief, warm daily check-in companion inside a habit tracking app. The user just rated their day and wrote a short note. Respond with 1-2 genuine, attentive sentences reacting to what they specifically wrote - no clinical advice, no toxic positivity, no generic platitudes, no restating their words back at them. Plain text only, no markdown, under 40 words.',
+        messages:[{role:'user',content:`Mood: ${moodWord}. Stressful day: ${stressful?'yes':'no'}. Note: ${note}`}]
+      })
+    });
+    if(!resp.ok){
+      const errBody=await resp.text().catch(()=>'');
+      console.error('Checkin reflection error',resp.status,errBody);
+      if(reflEl)reflEl.innerHTML=`<div class="data-card-desc" style="margin-bottom:10px;color:var(--rose)">${resp.status===401?'API key rejected — check it in Macros.':`Couldn't get a reflection (${resp.status}).`} Your check-in is saved either way.</div>`;
+      if(btn){btn.disabled=false;btn.textContent='Close';btn.onclick=()=>closeModal('checkinOverlay');}
+      return;
+    }
+    const data=await resp.json();
+    const textBlock=(data.content||[]).find(b=>b.type==='text');
+    const reflection=textBlock?textBlock.text.trim().slice(0,400):'';
+    if(reflection){
+      S.checkins[tk].aiReflection=reflection;
+      save();
+      if(reflEl)reflEl.innerHTML=`<div class="data-card-desc" style="margin-bottom:10px;font-style:italic">💬 ${escapeHtml(reflection)}</div>`;
+    }else if(reflEl)reflEl.innerHTML='';
+    if(btn){btn.disabled=false;btn.textContent='Close';btn.onclick=()=>closeModal('checkinOverlay');}
+  }catch(e){
+    console.error('Checkin reflection error',e);
+    if(reflEl)reflEl.innerHTML=`<div class="data-card-desc" style="margin-bottom:10px;color:var(--rose)">Something went wrong — check your connection. Your check-in is saved either way.</div>`;
+    if(btn){btn.disabled=false;btn.textContent='Close';btn.onclick=()=>closeModal('checkinOverlay');}
   }
 }
 function checkCustomGoals(){
@@ -3272,7 +3331,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-09-27.1930';
+const APP_VERSION = '2026-09-27.2000';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
