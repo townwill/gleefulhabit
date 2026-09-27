@@ -155,7 +155,6 @@
   .habit-mini-progress-num { font-size:19px; font-weight:800; white-space:nowrap; line-height:1; }
   .habit-mini-progress-track { width:92px; height:10px; background:rgba(255,255,255,.09); border-radius:5px; overflow:hidden; }
   .habit-mini-progress-fill { height:100%; border-radius:3px; transition:width .5s cubic-bezier(.34,1.56,.64,1); min-width:2px; }
-  .habit-mini-progress-cal { font-size:10px; font-weight:600; color:var(--text-muted); white-space:nowrap; line-height:1; }
   .habit-card.completed .habit-check { background:var(--c-hex,var(--cyan)); border-color:var(--c-hex,var(--cyan)); transform:scale(1.12); }
 
   .habit-numeric { margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
@@ -1537,11 +1536,9 @@ function habitCardHTML(h){
   }
   if(h.type==='numeric'){
     const total=numVal(h.id),tgt=h.target||100,pct=Math.min(total/tgt*100,100),entries=numEntries(h.id),compact=isProteinHabit(h);
-    const calGoal=compact?S.user.calorieGoal:null,calToday=calGoal?todaysCalories(h.id):0;
     miniProgressHTML=`<div class="habit-mini-progress" title="${total}/${tgt}${h.unit?' '+h.unit:''}">
       <div class="habit-mini-progress-num" style="color:${c.hex}">${total}/${tgt}${h.unit||''}</div>
       <div class="habit-mini-progress-track"><div class="habit-mini-progress-fill" style="width:${pct}%;background:${c.hex}"></div></div>
-      ${calGoal?`<div class="habit-mini-progress-cal">🔥${calToday}/${calGoal}</div>`:''}
     </div>`;
     if(!compact){
       const chips=entries.length?entries.map(v=>typeof v==='object'
@@ -3275,7 +3272,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-09-27.1900';
+const APP_VERSION = '2026-09-27.1930';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
