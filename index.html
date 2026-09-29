@@ -1063,7 +1063,7 @@ function migrateState(raw) {
     raw.user._wishlistSeeded=true;
     raw.user.wishlistItems.push(
       {id:Date.now().toString(36)+'1',name:'Book',cost:50,redeemedCount:0},
-      {id:Date.now().toString(36)+'2',name:'Coffee Table Book',cost:80,redeemedCount:0},
+      {id:Date.now().toString(36)+'2',name:'Coffee Table Book',cost:100,redeemedCount:0},
       {id:Date.now().toString(36)+'3',name:'Lego Set',cost:150,redeemedCount:0},
       {id:Date.now().toString(36)+'4',name:'Exercise Equipment',cost:300,redeemedCount:0},
     );
@@ -2176,7 +2176,7 @@ function renderRewards(){
   if(wItems.length){
     html+=`<div class="milestone-grid">`+wItems.map(item=>{
       const afford=wPoints>=item.cost;
-      return `<div class="milestone-card ${afford?'earned':''}"><div class="milestone-icon">🎁</div><div class="milestone-title">${escapeHtml(item.name)}</div><div class="milestone-desc">${item.cost} pts${item.redeemedCount?` · redeemed ${item.redeemedCount}x`:''}</div><button class="btn-submit" style="margin-top:8px;padding:8px;font-size:12px" ${afford?'':'disabled'} onclick="event.stopPropagation();redeemWishlistItem('${item.id}')">${afford?'Redeem 🎉':`Need ${item.cost-wPoints} more`}</button><button class="circuit-icon-btn" style="margin-top:6px" onclick="event.stopPropagation();deleteWishlistItem('${item.id}')" title="Delete">🗑️</button></div>`;
+      return `<div class="milestone-card ${afford?'earned':''}"><div class="milestone-icon">🎁</div><div class="milestone-title">${escapeHtml(item.name)}</div><div class="milestone-desc">${item.cost} pts${item.redeemedCount?` · redeemed ${item.redeemedCount}x`:''}</div><button class="btn-submit" style="margin-top:8px;padding:8px;font-size:12px" ${afford?'':'disabled'} onclick="event.stopPropagation();redeemWishlistItem('${item.id}')">${afford?'Redeem 🎉':`Need ${item.cost-wPoints} more`}</button><span style="display:flex;gap:6px;margin-top:6px"><button class="circuit-icon-btn" onclick="event.stopPropagation();editWishlistItemCost('${item.id}')" title="Edit cost">✏️</button><button class="circuit-icon-btn" onclick="event.stopPropagation();deleteWishlistItem('${item.id}')" title="Delete">🗑️</button></span></div>`;
     }).join('')+`</div>`;
   }
   html+=`<button class="btn-submit" style="margin-bottom:20px" onclick="addWishlistItem()">+ New Wishlist Item</button>`;
@@ -3100,6 +3100,16 @@ function deleteWishlistItem(id){
   save();
   renderRewards();
 }
+function editWishlistItemCost(id){
+  const item=(S.user.wishlistItems||[]).find(x=>x.id===id);if(!item)return;
+  const costStr=prompt(`New point cost for "${item.name}":`,String(item.cost));
+  if(costStr==null)return;
+  const cost=Math.round(parseFloat(costStr));
+  if(!cost||cost<=0)return;
+  item.cost=cost;
+  save();
+  renderRewards();
+}
 function redeemWishlistItem(id){
   const item=(S.user.wishlistItems||[]).find(x=>x.id===id);if(!item)return;
   const points=S.user.wishlistPoints||0;
@@ -3331,7 +3341,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-09-27.2000';
+const APP_VERSION = '2026-09-29.1200';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
