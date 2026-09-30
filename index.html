@@ -91,6 +91,8 @@
   .progress-ring { position:relative; width:110px; height:110px; }
   .today-checkin-btn { position:absolute; left:20px; top:50%; transform:translateY(-50%); width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,.06); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer; padding:0; }
   .today-checkin-btn.done { background:rgba(168,255,62,.12); border-color:rgba(168,255,62,.35); }
+  .survival-mode-btn { position:absolute; right:20px; top:50%; transform:translateY(-50%); width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,.06); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer; padding:0; }
+  .survival-mode-btn.active { background:rgba(0,212,255,.15); border-color:rgba(0,212,255,.4); }
   .progress-ring svg { transform:rotate(-90deg); }
   .progress-ring-bg { fill:none; stroke:rgba(255,255,255,.07); stroke-width:8; }
   .progress-ring-fill { fill:none; stroke:url(#progressGrad); stroke-width:8; stroke-linecap:round; transition:stroke-dashoffset 1.1s cubic-bezier(.34,1.56,.64,1); }
@@ -181,6 +183,10 @@
   .rest-day-mini:hover { background:rgba(255,255,255,.09); }
   .rest-day-mini.active { background:rgba(255,193,7,.18); border-color:rgba(255,193,7,.5); }
   .rest-day-mini-count { position:absolute; bottom:-3px; right:-3px; width:13px; height:13px; border-radius:50%; background:var(--bg); border:1px solid var(--border); font-size:8px; font-weight:800; color:var(--text-muted); display:flex; align-items:center; justify-content:center; }
+  .pause-mini { width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:rgba(255,255,255,.04); color:var(--text-muted); font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; position:relative; transition:all .2s; }
+  .pause-mini:hover { background:rgba(255,255,255,.09); }
+  .pause-mini.active { background:rgba(155,109,255,.18); border-color:rgba(155,109,255,.5); }
+  .habit-card.paused { opacity:.55; filter:grayscale(70%); }
   .num-reset-btn:hover { background:rgba(255,80,80,.12); color:#ff6464; border-color:rgba(255,80,80,.25); }
   .numeric-bar { height:5px; background:rgba(255,255,255,.07); border-radius:3px; overflow:hidden; }
   .numeric-bar-fill { height:100%; background:linear-gradient(90deg,var(--c-hex,var(--cyan)),var(--pink)); border-radius:3px; transition:width .6s cubic-bezier(.34,1.56,.64,1); min-width:4px; }
@@ -262,6 +268,11 @@
   .side-quest-card.s-done .side-quest-check { background:var(--yellow); border-color:var(--yellow); color:#111; transform:scale(1.1); }
   .side-quest-card.s-done-forever .side-quest-check { background:var(--lime); border-color:var(--lime); color:#111; transform:scale(1.1); }
   .side-quest-bonus { position:absolute; top:10px; right:10px; font-size:10px; font-weight:700; color:var(--yellow); opacity:.6; letter-spacing:.04em; }
+
+  .win-item { display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px; margin-top:8px; }
+  .win-item-icon { font-size:16px; flex-shrink:0; }
+  .win-item-text { flex:1; min-width:0; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .win-item-xp { font-size:10px; font-weight:700; color:var(--yellow); flex-shrink:0; }
 
   /* Weight */
   .weight-hero { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:22px 20px; margin-bottom:14px; backdrop-filter:blur(20px); text-align:center; }
@@ -573,6 +584,7 @@
             <div class="progress-label">Today</div>
           </div>
         </div>
+        <div id="survivalModeBtn"></div>
       </div>
       <div class="sub-tabs">
         <button class="sub-tab sub-tab-habits active" onclick="switchSubTab('habits',this)">
@@ -599,6 +611,8 @@
           <div class="section-title" style="font-size:17px;color:var(--yellow)">Side Quests</div>
         </div>
         <div id="todaySideQuests"></div>
+        <button class="backdate-link" onclick="openWinModal()">🌱 Log a Win</button>
+        <div id="todayWins"></div>
       </div>
     </div>
 
@@ -744,6 +758,26 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="winModalOverlay" onclick="overlayClick(event,'winModalOverlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Log a Win</div>
+    <div class="form-group"><label class="form-label">What happened?</label><input class="form-input" id="winText" placeholder="e.g. Went for a walk when I really didn't want to" maxlength="80"></div>
+    <div class="form-group">
+      <label class="form-label">How big was it?</label>
+      <div class="type-toggle" id="winTierPicker">
+        <button class="type-btn" onclick="pickWinTier('small',this)">🌱 Small <span style="opacity:.6">+3</span></button>
+        <button class="type-btn sel" onclick="pickWinTier('decent',this)">⭐ Decent <span style="opacity:.6">+8</span></button>
+        <button class="type-btn" onclick="pickWinTier('big',this)">🏆 Big <span style="opacity:.6">+15</span></button>
+      </div>
+    </div>
+    <div class="form-group" style="background:rgba(255,229,92,.04);border:1px solid rgba(255,229,92,.12);border-radius:var(--radius-sm);padding:11px 13px;">
+      <p style="font-size:12px;color:var(--text-muted);line-height:1.5;">No streak, no habit needed — just something today that counted. Log it whenever you notice it.</p>
+    </div>
+    <button class="btn-submit" style="background:linear-gradient(135deg,#b8940a,var(--yellow));color:#0a0a14" onclick="saveWin()">Log Win ✦</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="circuitModalOverlay" onclick="overlayClick(event,'circuitModalOverlay')">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -874,6 +908,7 @@ const EMOJIS = [
   '⚡','🔥','🌊','🏆','🎁','🌟','✨','❤️','🦋','🧩'
 ];
 const SIDE_QUEST_EMOJIS = ['⭐','🌟','✨','💫','🎯','🏅','🥇','🎪','🚀','💎','📖','🎸','🎨','🧩','🌱','🦋','🧘','🌈','🎭','🏔️','💡','🔭','🎬','🏄','🧪','🌺','🦅','🌊','🎻','🏆'];
+const WIN_TIERS = {small:{label:'Small win',icon:'🌱',xp:3},decent:{label:'Decent win',icon:'⭐',xp:8},big:{label:'Big win',icon:'🏆',xp:15}};
 const COLORS = [
   {id:'cyan',  hex:'#00d4ff',rgb:'0,212,255'  },{id:'purple',hex:'#9b6dff',rgb:'155,109,255'},
   {id:'pink',  hex:'#ff6bff',rgb:'255,107,255'},{id:'lime',  hex:'#a8ff3e',rgb:'168,255,62' },
@@ -975,8 +1010,8 @@ const BADGES = [
 
 function blankState() {
   return {
-    habits:[],sideQuests:[],
-    logs:{},logEntries:{},sideQuestLogs:{},sideQuestDone:{},restDayLogs:{},
+    habits:[],sideQuests:[],littleWins:[],
+    logs:{},logEntries:{},sideQuestLogs:{},sideQuestDone:{},restDayLogs:{},habitPauses:{},
     xpAwarded:{},
     weight:{logs:{},unit:'lbs',goal:null,startWeight:null,startDate:null},
     exercise:{dumbbellPress:0,dumbbellPress20Sets:0,dumbbellPress25:0,inclinePushups60:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0},
@@ -988,7 +1023,7 @@ function blankState() {
       packHistory:[],weeklyPacksAwarded:{},weeklyPackFlags:{},
       consecutivePackWeeks:0,lastPackWeek:null,milestones:{},
       perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null,favoriteQuotes:[],lastQuotePeriod:null,lastQuoteData:null,milestonesRedeemed:{},blasterAnchorMonth:null,calorieGoal:null,sugarAutoCalcSince:null,
-      wishlistPoints:0,wishlistItems:[],wishlistHistory:[],measurementWeekFlags:{},measurementStreakWeeks:0,trainingScoreWeekFlags:{},wishlistPointsPerDollar:4},
+      wishlistPoints:0,wishlistItems:[],wishlistHistory:[],measurementWeekFlags:{},measurementStreakWeeks:0,trainingScoreWeekFlags:{},wishlistPointsPerDollar:4,survivalMode:false,winCount:0},
   };
 }
 
@@ -1002,6 +1037,7 @@ function migrateState(raw) {
   if (!raw.sideQuests)                raw.sideQuests=[];
   if (!raw.sideQuestLogs)              raw.sideQuestLogs={};
   if (!raw.sideQuestDone)              raw.sideQuestDone={};
+  if (!raw.littleWins)                raw.littleWins=[];
   if (!raw.logEntries)               raw.logEntries={};
   if (!raw.xpAwarded)                raw.xpAwarded={};
   if (!raw.user)                     raw.user=blankState().user;
@@ -1031,6 +1067,7 @@ function migrateState(raw) {
     raw.user.blasterAnchorMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
   }
   if (!raw.restDayLogs)              raw.restDayLogs={};
+  if (!raw.habitPauses)              raw.habitPauses={};
   if (!raw.customWorkouts)           raw.customWorkouts=[];
   if (!raw.customWorkoutLogs)        raw.customWorkoutLogs={};
   if (!raw.customGoals)              raw.customGoals=[];
@@ -1060,6 +1097,8 @@ function migrateState(raw) {
   if (!raw.user.wishlistItems)        raw.user.wishlistItems=[];
   if (!raw.user.wishlistHistory)      raw.user.wishlistHistory=[];
   if (raw.user.wishlistPointsPerDollar==null) raw.user.wishlistPointsPerDollar=4;
+  if (raw.user.survivalMode==null) raw.user.survivalMode=false;
+  if (raw.user.winCount==null) raw.user.winCount=0;
   if (!raw.user._wishlistSeeded) {
     raw.user._wishlistSeeded=true;
     raw.user.wishlistItems.push(
@@ -1241,7 +1280,37 @@ function numEntries(hid){return numEntriesOn(hid,todayKey());}
 function numValOn(hid,dk){const v=(S.logs[dk]||{})[hid];return typeof v==='number'?v:0;}
 function numEntriesOn(hid,dk){return(S.logEntries[dk]||{})[hid]||[];}
 function isSideQuestDoneToday(sid){const s=S.sideQuests.find(x=>x.id===sid);if(!s)return false;if(s.cadence==='once')return!!S.sideQuestDone[sid];return!!((S.sideQuestLogs[todayKey()]||{})[sid]);}
-function currentStreak(hid){let streak=0;const now=new Date();for(let i=0;i<400;i++){const d=new Date(now);d.setDate(d.getDate()-i);if(isDoneOnDate(hid,dateKey(d)))streak++;}return streak;}
+function isPausable(h){return !isProteinHabit(h)&&!isCaloriesHabit(h);}
+function isHabitPausedOn(hid,dk){const p=S.habitPauses&&S.habitPauses[hid];return !!(p&&p.since&&dk>=p.since);}
+function isHabitPausedToday(hid){return isHabitPausedOn(hid,todayKey());}
+function habitPausedDays(hid){const p=S.habitPauses&&S.habitPauses[hid];if(!p||!p.since)return 0;return Math.floor((new Date(todayKey()+'T00:00:00')-new Date(p.since+'T00:00:00'))/86400000)+1;}
+function togglePauseHabit(hid){
+  const h=S.habits.find(x=>x.id===hid);if(!h||!isPausable(h))return;
+  if(!S.habitPauses)S.habitPauses={};
+  if(isHabitPausedToday(hid)){
+    delete S.habitPauses[hid];
+    save();renderToday();
+    toast(`▶️ "${h.name}" resumed — streak picks back up`);
+  }else{
+    S.habitPauses[hid]={since:todayKey()};
+    save();renderToday();
+    toast(`⏸️ "${h.name}" paused — streak held until you resume`);
+  }
+}
+// Real breaking restored: a genuine miss ends the streak. A paused day or an
+// active rest-day exception holds it instead (doesn't count, doesn't break) -
+// the deliberate, visible alternative to the old blanket "never breaks" rule.
+function currentStreak(hid){
+  let streak=0;const now=new Date(),start=isDoneToday(hid)?0:1;
+  for(let i=start;i<400;i++){
+    const d=new Date(now);d.setDate(d.getDate()-i);const dk=dateKey(d);
+    if(isDoneOnDate(hid,dk)){streak++;continue;}
+    if(isHabitPausedOn(hid,dk))continue;
+    if((S.restDayLogs[dk]||{})[hid])continue;
+    break;
+  }
+  return streak;
+}
 function restDaysUsedThisWeek(hid){const days=thisWeekDays();return days.filter(d=>(S.restDayLogs[dateKey(d)]||{})[hid]).length;}
 function isRestDayToday(hid){return !!(S.restDayLogs[todayKey()]||{})[hid];}
 function markRestDay(hid){const h=S.habits.find(x=>x.id===hid);if(!h||!h.restEligible)return;const tk=todayKey();if(isDoneToday(hid))return;if(isRestDayToday(hid)){if(!S.restDayLogs[tk])return;delete S.restDayLogs[tk][hid];save();renderToday();return;}if(restDaysUsedThisWeek(hid)>=2){toast('🎟️ Both exception passes used this week');return;}if(!S.restDayLogs[tk])S.restDayLogs[tk]={};S.restDayLogs[tk][hid]=true;save();renderToday();toast(`🎟️ Exception marked for ${h.name} — streak protected`);}
@@ -1397,6 +1466,7 @@ function switchSubTab(name, btn) {
 
 function renderToday(){
   renderCheckinCard();
+  renderSurvivalModeBtn();
   const total=S.habits.length,done=S.habits.filter(h=>isDoneToday(h.id)).length,pct=total?Math.round(done/total*100):0;
   document.getElementById('progressPct').textContent=pct+'%';
   requestAnimationFrame(()=>{document.getElementById('progressRing').style.strokeDashoffset=276-(pct/100*276);});
@@ -1416,6 +1486,9 @@ function renderToday(){
   const sel=document.getElementById('todaySideQuests');
   sel.innerHTML=visibleSideQuests.length?visibleSideQuests.map(s=>sideQuestCardHTML(s)).join('')
     :`<div class="empty-state" style="padding:24px 20px"><div class="empty-icon" style="font-size:32px">⭐</div><div class="empty-title" style="font-size:15px">No side quests yet</div><div class="empty-desc">Tap <strong>+</strong> to add a side quest.</div></div>`;
+
+  const todayWins=S.littleWins.filter(w=>w.dateKey===tk);
+  document.getElementById('todayWins').innerHTML=todayWins.map(w=>winCardHTML(w)).join('');
 }
 
 function taperNoteFor(h){
@@ -1525,12 +1598,17 @@ async function analyzeFood(id){
 function habitCardHTML(h){
   const done=isDoneToday(h.id),streak=currentStreak(h.id),c=colorOf(h.color);
   const resting=h.restEligible&&isRestDayToday(h.id);
+  const pausable=isPausable(h),paused=pausable&&isHabitPausedToday(h.id);
   const isAutoSugar=isLessSugarHabit(h)&&S.user.sugarAutoCalcSince&&todayKey()>=S.user.sugarAutoCalcSince;
   const isAutoCalories=isCaloriesHabit(h)&&!!S.user.calorieGoal;
   const isAutoWorkout=isWorkoutHabit(h)&&workoutAutoSourceOn(todayKey());
-  const streakStr=streak>0?`<span class="flame">${streak>=30?'🌟':streak>=7?'🔥':'✦'}</span> ${streak}-day streak`:'Start your streak today!';
+  const streakStr=paused?`⏸️ Paused — ${habitPausedDays(h.id)}d`:(streak>0?`<span class="flame">${streak>=30?'🌟':streak>=7?'🔥':'✦'}</span> ${streak}-day streak`:'Start your streak today!');
+  let pauseHTML='';
+  if(pausable){
+    pauseHTML=`<button class="pause-mini ${paused?'active':''}" onclick="event.stopPropagation();togglePauseHabit('${h.id}')" title="${paused?'Resume — streak picks back up':'Pause — streak held, not broken'}">${paused?'▶️':'⏸️'}</button>`;
+  }
   let restHTML='';
-  if(h.restEligible && !done){
+  if(h.restEligible && !done && !paused){
     const used=restDaysUsedThisWeek(h.id), left=Math.max(0,2-used);
     if(resting){
       restHTML=`<button class="rest-day-mini active" onclick="event.stopPropagation();markRestDay('${h.id}')" title="Exception used today — tap to undo">🎟️</button>`;
@@ -1575,13 +1653,14 @@ function habitCardHTML(h){
       </div>`;
     }
   }
-  const noteText=isAutoSugar?`Auto-tracked from food log · goal ≤${SUGAR_LIMIT_G}g/day`:isAutoCalories?`Auto-tracked from food log · goal ≤${S.user.calorieGoal}cal/day`:isAutoWorkout?`Auto-tracked from Circuits/Cycle/Kids today`:(taperNoteFor(h)||h.note);
-  const cardClick=(isAutoSugar||isAutoCalories||isAutoWorkout)?`autoTrackedNotice('${h.id}')`:`toggleHabit('${h.id}')`;
-  return `<div class="habit-card ${done?'completed':''}" id="hc-${h.id}" style="--c-hex:${c.hex};--c-rgb:${c.rgb};--c-accent:rgba(${c.rgb},.07)" onclick="${cardClick}">
+  const noteText=paused?null:isAutoSugar?`Auto-tracked from food log · goal ≤${SUGAR_LIMIT_G}g/day`:isAutoCalories?`Auto-tracked from food log · goal ≤${S.user.calorieGoal}cal/day`:isAutoWorkout?`Auto-tracked from Circuits/Cycle/Kids today`:(taperNoteFor(h)||h.note);
+  const cardClick=paused?`pausedHabitNotice('${h.id}')`:(isAutoSugar||isAutoCalories||isAutoWorkout)?`autoTrackedNotice('${h.id}')`:`toggleHabit('${h.id}')`;
+  return `<div class="habit-card ${done?'completed':''} ${paused?'paused':''}" id="hc-${h.id}" style="--c-hex:${c.hex};--c-rgb:${c.rgb};--c-accent:rgba(${c.rgb},.07)" onclick="${cardClick}">
     <div class="habit-card-top">
       <div class="habit-icon">${renderIcon(h.icon)}</div>
       <div class="habit-info"><div class="habit-name">${h.name}</div><div class="habit-streak">${streakStr}</div>${noteText?`<div class="habit-note">${escapeHtml(noteText)}</div>`:''}</div>
       ${miniProgressHTML}
+      ${pauseHTML}
       ${restHTML}
       <div class="habit-check" style="${done?`background:${c.hex};border-color:${c.hex}`:''}"> ${done?'✓':''}</div>
     </div>${numHTML}</div>`;
@@ -1590,6 +1669,10 @@ function autoTrackedNotice(id){
   const h=S.habits.find(x=>x.id===id);
   if(isWorkoutHabit(h))toast(`🏋️ ${h.name} is auto-tracked from Circuits/Cycle/Kids — see the Tracking tab.`);
   else toast(`🍬 ${h?h.name:'This habit'} is auto-tracked from your food log — log food in the Macros tab.`);
+}
+function pausedHabitNotice(id){
+  const h=S.habits.find(x=>x.id===id);if(!h)return;
+  toast(`⏸️ "${h.name}" is paused (${habitPausedDays(id)}d) — tap ▶️ to resume`);
 }
 
 function sideQuestCardHTML(s){const dt=isSideQuestDoneToday(s.id),forever=s.cadence==='once'&&dt;const cls=forever?'s-done-forever':dt?'s-done':'';const status=forever?'✦ Completed!':dt?'✦ Done today':s.cadence==='once'?'Tap to complete':'Tap when done';return`<div class="side-quest-card ${cls}" id="sc-${s.id}" onclick="toggleSideQuest('${s.id}')"><div class="side-quest-bonus">+5 XP bonus</div><div class="side-quest-card-top"><div class="side-quest-icon">${s.icon}</div><div class="side-quest-info"><div class="side-quest-name">${s.name}</div><div class="side-quest-meta"><span class="side-quest-cadence-pill ${s.cadence==='once'?'once':''}">${s.cadence==='once'?'one & done':'daily'}</span><span>${status}</span></div></div><div class="side-quest-check">${dt?'✓':''}</div></div></div>`;}
@@ -2085,6 +2168,7 @@ function renderRanks(){
     <div class="xp-source-item"><div class="xp-source-val">+15</div><div class="xp-source-lbl">Numeric Target</div><div class="xp-source-rate">per day</div></div>
     <div class="xp-source-item"><div class="xp-source-val">+50</div><div class="xp-source-lbl">7-Day Streak</div><div class="xp-source-rate">every 7 days</div></div>
     <div class="xp-source-item"><div class="xp-source-val">+5</div><div class="xp-source-lbl">Side Quest</div><div class="xp-source-rate">per completion</div></div>
+    <div class="xp-source-item"><div class="xp-source-val">3-15</div><div class="xp-source-lbl">Little Win</div><div class="xp-source-rate">small/decent/big</div></div>
   </div>`;
 
   document.getElementById('ranksSection').innerHTML = `
@@ -2846,6 +2930,14 @@ function pickSQEmoji(e,el){_sqEmoji=e;document.querySelectorAll('#sideQuestEmoji
 function pickSideQuestCadence(c,el){_sqCadence=c;document.querySelectorAll('#sideQuestModalOverlay .type-btn').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');}
 function saveSideQuest(){const name=document.getElementById('sqName').value.trim();if(!name){const i=document.getElementById('sqName');i.style.borderColor='#ff6464';i.focus();setTimeout(()=>i.style.borderColor='',1200);return;}const s={id:Date.now().toString(36),name,icon:_sqEmoji,cadence:_sqCadence};S.sideQuests.push(s);save();closeModal('sideQuestModalOverlay');renderAll();toast(`${s.icon} "${s.name}" added!`);}
 
+// ── Log a Win Modal ── free-text, tiered XP, same-day only (no date picker) - a lower-ritual
+// alternative to side quests for a one-off thing that doesn't repeat and isn't worth defining.
+let _winTier='decent';
+function openWinModal(){_winTier='decent';document.getElementById('winText').value='';document.querySelectorAll('#winTierPicker .type-btn').forEach((b,i)=>b.classList.toggle('sel',i===1));document.getElementById('winModalOverlay').classList.add('open');setTimeout(()=>document.getElementById('winText').focus(),450);}
+function pickWinTier(t,el){_winTier=t;document.querySelectorAll('#winTierPicker .type-btn').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');}
+function saveWin(){const i=document.getElementById('winText');const text=i.value.trim();if(!text){i.style.borderColor='#ff6464';i.focus();setTimeout(()=>i.style.borderColor='',1200);return;}const tier=WIN_TIERS[_winTier];const w={id:Date.now().toString(36),dateKey:todayKey(),tier:_winTier,text,xp:tier.xp};S.littleWins.unshift(w);S.user.winCount++;addXP(tier.xp);save();closeModal('winModalOverlay');renderToday();renderXP();confetti(14);toast(`${tier.icon} Logged: "${text}" +${tier.xp} XP`);}
+function winCardHTML(w){const tier=WIN_TIERS[w.tier]||WIN_TIERS.decent;return `<div class="win-item"><div class="win-item-icon">${tier.icon}</div><div class="win-item-text">${w.text}</div><div class="win-item-xp">+${w.xp} XP</div></div>`;}
+
 // ── Custom Workout Circuits (AMRAP-style: define exercises once, log rounds completed each session) ──
 let _circuitEditId=null, _circuitDraftExercises=[];
 function syncCircuitDraftFromDOM(){
@@ -3157,6 +3249,39 @@ function redeemWishlistItem(id){
   toast(`🎉 Redeemed "${item.name}"! Treat yourself.`);
   confetti(90);
 }
+// ── Survival Mode: a manual, toggleable "reduced bar" mode for heavy weeks -
+// framing only, no completion-criteria enforcement. Small versions of habits
+// (a 10-minute walk counting as a workout) are a judgment call the user
+// makes when tapping the habit, not something the app checks. ──
+function renderSurvivalModeBtn(){
+  const el=document.getElementById('survivalModeBtn');if(!el)return;
+  const on=!!S.user.survivalMode;
+  el.innerHTML=`<button class="survival-mode-btn ${on?'active':''}" onclick="toggleSurvivalMode()" title="${on?'Survival Mode is ON — tap to turn off':'Turn on Survival Mode for a heavy week'}">🛟</button>`;
+}
+function toggleSurvivalMode(){
+  S.user.survivalMode=!S.user.survivalMode;
+  save();
+  renderSurvivalModeBtn();
+  toast(S.user.survivalMode?'🛟 Survival Mode on — small versions of habits count in full':'🛟 Survival Mode off — back to normal');
+}
+// Single evening check-in, forward-looking only - a rough/stressful day offers
+// turning Survival Mode on; a good, non-stressful day while it's already on
+// offers turning it back off. Deliberately confirm()-based, not another modal.
+function maybeOfferSurvivalModeToggle(){
+  const rough=_checkinMood==='rough'||_checkinStressful===true;
+  const good=_checkinMood==='good'&&_checkinStressful===false;
+  if(rough&&!S.user.survivalMode){
+    if(confirm('Rough day — turn on Survival Mode? Small versions of habits count in full until you turn it back off.')){
+      S.user.survivalMode=true;save();renderSurvivalModeBtn();
+      toast('🛟 Survival Mode on');
+    }
+  }else if(good&&S.user.survivalMode){
+    if(confirm('Good day — turn Survival Mode back off?')){
+      S.user.survivalMode=false;save();renderSurvivalModeBtn();
+      toast('🛟 Survival Mode off — back to normal');
+    }
+  }
+}
 // ── Daily check-in: a tap-to-open (never auto-popped) mood/stress check-in
 // that rewards the act of checking in, with a bonus for an honest rough day. ──
 function renderCheckinCard(){
@@ -3205,6 +3330,7 @@ function saveCheckin(){
     const points=_checkinStressful?8:3;
     awardWishlistPoints(points,_checkinStressful?'Checked in on a tough day 💛':'Daily check-in');
   }
+  maybeOfferSurvivalModeToggle();
   const hasKey=!!localStorage.getItem('gh_ai_key');
   if(note&&hasKey){
     requestCheckinReflection(tk,note,_checkinMood,_checkinStressful);
@@ -3375,7 +3501,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-09-30.1030';
+const APP_VERSION = '2026-09-30.1530';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
