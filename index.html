@@ -988,7 +988,7 @@ function blankState() {
       packHistory:[],weeklyPacksAwarded:{},weeklyPackFlags:{},
       consecutivePackWeeks:0,lastPackWeek:null,milestones:{},
       perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null,favoriteQuotes:[],lastQuotePeriod:null,lastQuoteData:null,milestonesRedeemed:{},blasterAnchorMonth:null,calorieGoal:null,sugarAutoCalcSince:null,
-      wishlistPoints:0,wishlistItems:[],wishlistHistory:[],measurementWeekFlags:{},measurementStreakWeeks:0,trainingScoreWeekFlags:{}},
+      wishlistPoints:0,wishlistItems:[],wishlistHistory:[],measurementWeekFlags:{},measurementStreakWeeks:0,trainingScoreWeekFlags:{},wishlistPointsPerDollar:4},
   };
 }
 
@@ -1059,15 +1059,33 @@ function migrateState(raw) {
   if (raw.user.wishlistPoints==null)  raw.user.wishlistPoints=0;
   if (!raw.user.wishlistItems)        raw.user.wishlistItems=[];
   if (!raw.user.wishlistHistory)      raw.user.wishlistHistory=[];
+  if (raw.user.wishlistPointsPerDollar==null) raw.user.wishlistPointsPerDollar=4;
   if (!raw.user._wishlistSeeded) {
     raw.user._wishlistSeeded=true;
     raw.user.wishlistItems.push(
-      {id:Date.now().toString(36)+'1',name:'Book',cost:50,repeatCost:75,redeemedCount:0},
-      {id:Date.now().toString(36)+'2',name:'Coffee Table Book',cost:100,repeatCost:150,redeemedCount:0},
-      {id:Date.now().toString(36)+'3',name:'Lego Set',cost:150,redeemedCount:0},
-      {id:Date.now().toString(36)+'4',name:'Exercise Equipment',cost:300,redeemedCount:0},
+      {id:Date.now().toString(36)+'1',name:'Book',priceUsd:25,repeatPriceUsd:37.5,redeemedCount:0},
+      {id:Date.now().toString(36)+'2',name:'Coffee Table Book',priceUsd:50,repeatPriceUsd:75,redeemedCount:0},
+      {id:Date.now().toString(36)+'3',name:'Lego Set',priceUsd:37.5,redeemedCount:0},
+      {id:Date.now().toString(36)+'4',name:'Exercise Equipment',priceUsd:75,redeemedCount:0},
     );
   }
+  // One-time conversion from the old flat point-cost model to a shared
+  // points-per-dollar rate, so a rate change (e.g. redoing the "max points
+  // in a perfect month" math) updates every item's price consistently
+  // instead of needing each one hand-edited. Known real prices for the
+  // originally-seeded Book/Coffee Table Book are used directly rather than
+  // back-deriving from their old, somewhat-arbitrary point costs.
+  const rate=raw.user.wishlistPointsPerDollar;
+  raw.user.wishlistItems.forEach(item=>{
+    if (item.priceUsd!=null) return;
+    const nameLower=String(item.name||'').trim().toLowerCase();
+    if (nameLower==='book') { item.priceUsd=25; item.repeatPriceUsd=37.5; }
+    else if (nameLower==='coffee table book') { item.priceUsd=50; item.repeatPriceUsd=75; }
+    else {
+      item.priceUsd=Math.round((item.cost||0)/rate*100)/100;
+      if (item.repeatCost!=null) item.repeatPriceUsd=Math.round(item.repeatCost/rate*100)/100;
+    }
+  });
   if (!raw.user.measurementWeekFlags) raw.user.measurementWeekFlags={};
   if (raw.user.measurementStreakWeeks==null) raw.user.measurementStreakWeeks=0;
   if (!raw.user.trainingScoreWeekFlags) raw.user.trainingScoreWeekFlags={};
@@ -2168,16 +2186,17 @@ function renderRewards(){
     ${totalBanked === 0 ? `<button class="vault-redeem-btn" disabled>Nothing to redeem yet</button>` : ''}
   </div>
   <div class="vault-footer">Banked rewards never expire · Redeem when ready</div></div>`;
-  const wItems=S.user.wishlistItems||[],wPoints=S.user.wishlistPoints||0;
+  const wItems=S.user.wishlistItems||[],wPoints=S.user.wishlistPoints||0,wRate=S.user.wishlistPointsPerDollar||4;
   html+=`<div class="pack-vault" style="margin-top:14px"><div class="vault-header">🎁 Wishlist Points</div><div class="vault-counts">
     <div class="vault-item" style="flex:1"><div class="vault-num" style="color:var(--lime)">${wPoints}</div><div class="vault-lbl">Points</div></div>
-  </div></div>`;
+  </div><div class="vault-footer" style="cursor:pointer" onclick="setWishlistRate()">${wRate} points = $1 · tap to change ✏️</div></div>`;
   html+=`<div class="rewards-section-label">🎁 Wishlist</div>`;
   if(wItems.length){
     html+=`<div class="milestone-grid">`+wItems.map(item=>{
       const cost=wishlistItemCurrentCost(item),afford=wPoints>=cost;
-      const costLabel=(item.repeatCost!=null&&item.repeatCost!==item.cost)?`${item.cost} pts (${item.repeatCost} after first)`:`${item.cost} pts`;
-      return `<div class="milestone-card ${afford?'earned':''}"><div class="milestone-icon">🎁</div><div class="milestone-title">${escapeHtml(item.name)}</div><div class="milestone-desc">${costLabel}${item.redeemedCount?` · redeemed ${item.redeemedCount}x`:''}</div><button class="btn-submit" style="margin-top:8px;padding:8px;font-size:12px" ${afford?'':'disabled'} onclick="event.stopPropagation();redeemWishlistItem('${item.id}')">${afford?`Redeem (${cost}) 🎉`:`Need ${cost-wPoints} more`}</button><span style="display:flex;gap:6px;margin-top:6px"><button class="circuit-icon-btn" onclick="event.stopPropagation();editWishlistItemCost('${item.id}')" title="Edit cost">✏️</button><button class="circuit-icon-btn" onclick="event.stopPropagation();deleteWishlistItem('${item.id}')" title="Delete">🗑️</button></span></div>`;
+      const repeatCost=item.repeatPriceUsd!=null?Math.round(item.repeatPriceUsd*wRate):null;
+      const costLabel=(repeatCost!=null&&repeatCost!==Math.round(item.priceUsd*wRate))?`$${item.priceUsd} (${Math.round(item.priceUsd*wRate)} pts) · $${item.repeatPriceUsd} after first (${repeatCost} pts)`:`$${item.priceUsd} (${cost} pts)`;
+      return `<div class="milestone-card ${afford?'earned':''}"><div class="milestone-icon">🎁</div><div class="milestone-title">${escapeHtml(item.name)}</div><div class="milestone-desc">${costLabel}${item.redeemedCount?` · redeemed ${item.redeemedCount}x`:''}</div><button class="btn-submit" style="margin-top:8px;padding:8px;font-size:12px" ${afford?'':'disabled'} onclick="event.stopPropagation();redeemWishlistItem('${item.id}')">${afford?`Redeem (${cost}) 🎉`:`Need ${cost-wPoints} more`}</button><span style="display:flex;gap:6px;margin-top:6px"><button class="circuit-icon-btn" onclick="event.stopPropagation();editWishlistItemCost('${item.id}')" title="Edit price">✏️</button><button class="circuit-icon-btn" onclick="event.stopPropagation();deleteWishlistItem('${item.id}')" title="Delete">🗑️</button></span></div>`;
     }).join('')+`</div>`;
   }
   html+=`<button class="btn-submit" style="margin-bottom:20px" onclick="addWishlistItem()">+ New Wishlist Item</button>`;
@@ -3083,21 +3102,23 @@ function awardWishlistPoints(points,reason){
   setTimeout(()=>{toast(`🎁 +${points} Wishlist Point${points===1?'':'s'} — ${reason}`);confetti(50);},500);
 }
 function wishlistItemCurrentCost(item){
-  return (item.redeemedCount>0&&item.repeatCost!=null)?item.repeatCost:item.cost;
+  const rate=S.user.wishlistPointsPerDollar||4;
+  const price=(item.redeemedCount>0&&item.repeatPriceUsd!=null)?item.repeatPriceUsd:item.priceUsd;
+  return Math.round(price*rate);
 }
 function addWishlistItem(){
   const name=prompt('Wishlist item name:');
   if(name==null)return;
   const trimmed=name.trim();if(!trimmed)return;
-  const costStr=prompt(`Point cost for "${trimmed}" (first time):`,'100');
-  if(costStr==null)return;
-  const cost=Math.round(parseFloat(costStr));
-  if(!cost||cost<=0)return;
-  const repeatStr=prompt(`Cost after the first redemption? (leave blank to keep it at ${cost} every time)`,'');
-  const repeatCost=repeatStr&&repeatStr.trim()?Math.round(parseFloat(repeatStr)):null;
+  const priceStr=prompt(`Real-world price for "${trimmed}" (in dollars):`,'25');
+  if(priceStr==null)return;
+  const priceUsd=parseFloat(priceStr);
+  if(!priceUsd||priceUsd<=0)return;
+  const repeatStr=prompt(`Price after the first redemption? (leave blank to keep it at $${priceUsd} every time)`,'');
+  const repeatPriceUsd=repeatStr&&repeatStr.trim()?parseFloat(repeatStr):null;
   S.user.wishlistItems=S.user.wishlistItems||[];
-  const item={id:Date.now().toString(36),name:trimmed.slice(0,40),cost,redeemedCount:0};
-  if(repeatCost&&repeatCost>0)item.repeatCost=repeatCost;
+  const item={id:Date.now().toString(36),name:trimmed.slice(0,40),priceUsd,redeemedCount:0};
+  if(repeatPriceUsd&&repeatPriceUsd>0)item.repeatPriceUsd=repeatPriceUsd;
   S.user.wishlistItems.push(item);
   save();
   renderRewards();
@@ -3110,17 +3131,28 @@ function deleteWishlistItem(id){
 }
 function editWishlistItemCost(id){
   const item=(S.user.wishlistItems||[]).find(x=>x.id===id);if(!item)return;
-  const costStr=prompt(`New point cost for "${item.name}" (first time):`,String(item.cost));
-  if(costStr==null)return;
-  const cost=Math.round(parseFloat(costStr));
-  if(!cost||cost<=0)return;
-  const repeatStr=prompt(`Cost after the first redemption? (leave blank to keep it at ${cost} every time)`,item.repeatCost!=null?String(item.repeatCost):'');
-  const repeatCost=repeatStr&&repeatStr.trim()?Math.round(parseFloat(repeatStr)):null;
-  item.cost=cost;
-  if(repeatCost&&repeatCost>0)item.repeatCost=repeatCost;
-  else delete item.repeatCost;
+  const priceStr=prompt(`New real-world price for "${item.name}" (in dollars, first time):`,String(item.priceUsd));
+  if(priceStr==null)return;
+  const priceUsd=parseFloat(priceStr);
+  if(!priceUsd||priceUsd<=0)return;
+  const repeatStr=prompt(`Price after the first redemption? (leave blank to keep it at $${priceUsd} every time)`,item.repeatPriceUsd!=null?String(item.repeatPriceUsd):'');
+  const repeatPriceUsd=repeatStr&&repeatStr.trim()?parseFloat(repeatStr):null;
+  item.priceUsd=priceUsd;
+  if(repeatPriceUsd&&repeatPriceUsd>0)item.repeatPriceUsd=repeatPriceUsd;
+  else delete item.repeatPriceUsd;
   save();
   renderRewards();
+}
+function setWishlistRate(){
+  const rate=S.user.wishlistPointsPerDollar||4;
+  const rateStr=prompt('Points per dollar (used to price every wishlist item):',String(rate));
+  if(rateStr==null)return;
+  const newRate=parseFloat(rateStr);
+  if(!newRate||newRate<=0)return;
+  S.user.wishlistPointsPerDollar=newRate;
+  save();
+  renderRewards();
+  toast(`🎁 Conversion rate set: ${newRate} points per $1`);
 }
 function redeemWishlistItem(id){
   const item=(S.user.wishlistItems||[]).find(x=>x.id===id);if(!item)return;
@@ -3354,7 +3386,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-09-29.1300';
+const APP_VERSION = '2026-09-30.1000';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
