@@ -6,6 +6,7 @@ A personal habit-tracking single-file web app (`index.html`), no build step, no 
 Two apps live in this repo, both single-file:
 - **GleefulHabit** (`index.html`) — habit tracking with XP/leveling, streaks, rewards, weight tracking, protein/food logging.
 - **UNO Deck Collection** (`uno/index.html`) — a separate family card-game catalog app. Same conventions apply, but it's not covered in detail below.
+- **Marquee** (`movies/index.html`) — Will's iTunes movie library (~1,257 titles embedded as the `LIB` array). Pulls posters/genres/franchises/directors from the TMDB API in the browser using Will's own free TMDB key (`mq_tmdb_key`, raw localStorage, never in backups). `mq_state` holds marks (seen/favorite/watchlist), lists & moods, wish list, bought-later movies and TMDB matches (this is the backup, run through `migrateState()`); `mq_meta` and `mq_coll` are rebuildable TMDB caches. Same version-bump and update-check conventions.
 
 ## Hard constraints — do not violate these
 1. **Single-file only.** Everything — HTML, CSS, JS — stays in one self-contained `index.html`. No external dependencies except Google Fonts. No build step, no bundler, no npm packages shipped to the browser.
