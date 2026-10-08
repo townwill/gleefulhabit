@@ -365,16 +365,16 @@ const AU = {
     return dur;
   },
   /* muffled landlord: a wah-wah mumble through a wall */
-  mumble(dur) {
+  mumble(dur, kind) {
     if (!this.ctx) return dur;
     const c = this.ctx, t = this.now(), o = c.createOscillator(), g = c.createGain(), fl = c.createBiquadFilter();
-    o.type = 'sawtooth'; fl.type = 'lowpass'; fl.Q.value = 6; fl.frequency.value = 420;
+    const ph = kind === 'phone'; o.type = 'sawtooth'; fl.type = ph ? 'bandpass' : 'lowpass'; fl.Q.value = ph ? 2 : 6; fl.frequency.value = 420;
     o.connect(fl); fl.connect(g); g.connect(this.sfxBus);
     g.gain.setValueAtTime(0.0001, t);
     let tt = t;
     while (tt < t + dur) {
       const sy = rnd(0.13, 0.26);
-      o.frequency.setValueAtTime(rnd(80, 125), tt); fl.frequency.setValueAtTime(rnd(260, 700), tt);
+      o.frequency.setValueAtTime(ph ? rnd(170, 260) : rnd(80, 125), tt); fl.frequency.setValueAtTime(ph ? rnd(1100, 1800) : rnd(260, 700), tt);
       g.gain.setValueAtTime(0.0001, tt); g.gain.linearRampToValueAtTime(0.35, tt + 0.03); g.gain.setValueAtTime(0.35, tt + sy * 0.6); g.gain.linearRampToValueAtTime(0.0001, tt + sy);
       tt += sy + (Math.random() < 0.18 ? rnd(0.08, 0.2) : 0.02);
     }
@@ -403,6 +403,11 @@ const SFX = {
   rimshot(b, t) { this.snare(b, t, 0.5); this.kick(b, t + 0.12); this.noise(b, { t: t + 0.26, dur: 0.6, vol: 0.3, type: 'highpass', f: 6000 }); return 0.9; },
   crash(b, t) { this.noise(b, { t, dur: 0.9, vol: 0.5, type: 'highpass', f: 3500 }); this.tone(b, { t, type: 'sine', f: 90, f2: 40, dur: 0.3, vol: 0.6 }); return 1.0; },
   thud(b, t) { this.tone(b, { t, type: 'sine', f: 100, f2: 50, dur: 0.15, vol: 0.8 }); this.noise(b, { t, dur: 0.12, vol: 0.5, type: 'lowpass', f: 300 }); return 0.2; },
+  creak(b, t) { this.tone(b, { t, type: 'sawtooth', f: 140, f2: 90, dur: 0.5, vol: 0.2, lp: 900, q: 6 }); this.tone(b, { t: t + 0.1, type: 'square', f: 420, f2: 260, dur: 0.3, vol: 0.06, lp: 1200 }); return 0.55; },
+  ladder(b, t) { [0, 0.22, 0.44, 0.66].forEach(o => { this.tone(b, { t: t + o, type: 'square', f: rnd(480, 560), dur: 0.05, vol: 0.12, lp: 3000 }); this.noise(b, { t: t + o, dur: 0.06, vol: 0.35, type: 'bandpass', f: 2400, q: 3 }); }); return 0.8; },
+  coo(b, t) { [0, 0.32].forEach(o => this.tone(b, { t: t + o, type: 'sine', f: 420, f2: 320, dur: 0.22, vol: 0.3, a: 0.03 })); return 0.6; },
+  mic(b, t) { this.tone(b, { t, type: 'sine', f: 1200, dur: 0.04, vol: 0.15 }); this.tone(b, { t: t + 0.05, type: 'sine', f: 1600, dur: 0.04, vol: 0.15 }); return 0.1; },
+  snore(b, t) { this.noise(b, { t, dur: 0.9, vol: 0.35, type: 'bandpass', f: 250, f2: 500, q: 2, a: 0.4 }); this.tone(b, { t, type: 'sawtooth', f: 70, dur: 0.9, vol: 0.1, lp: 300, a: 0.4 }); return 1.2; },
   whoosh(b, t) { this.noise(b, { t, dur: 0.4, vol: 0.4, type: 'bandpass', f: 400, f2: 3000, q: 0.8, a: 0.1 }); return 0.4; }
 };
 const SFX_NAMES = Object.keys(SFX);
@@ -500,6 +505,8 @@ function drawPerson(c, T) {
   else { R(-4, 7, 8, 8, L.top); R(-4, 14, 8, 1, shade(L.top, .8)); }
   ctx.fillStyle = 'rgba(0,0,0,.16)'; R(3, 8, 1, 7, 'rgba(0,0,0,.16)');
   if (L.extra === 'pager') { R(-4, 13.5, 8, .5, '#222'); R(2, 12.5, 3, 2, '#2a2a2a'); R(2.5, 13, 2, 1, (c.pagerFlash > 0 && Math.floor(T * 8) % 2) ? '#b8ff9a' : '#3d4d38'); }
+  if (L.extra === 'badge') { R(-3, 8.5, 1.5, 1.5, '#e8c040'); R(1.5, 8.2, 1.6, .6, shade(L.top, 1.3)); }
+  if (L.extra === 'nametag') R(1, 8.5, 2.5, 1, '#f8f6ee');
   if (L.extra === 'brickphone') { R(-7, 11, 2, 5, '#2b2b2b'); R(-7, 9, .6, 2, '#2b2b2b'); R(-6.5, 12, 1, 1, '#7aa07a'); }
   // arms
   const aY = sit ? 10 : 8;
@@ -511,6 +518,7 @@ function drawPerson(c, T) {
     // viewer-left arm
     if (prop === 'phone') { R(-6, 4, 2, 5, sleeve); R(-6, 2.5, 2, 2, skin); R(-7.5, 1, 2, 5, '#222'); }
     else if (prop === 'papers') { R(-6, aY, 2, 4, sleeve); R(-6, aY + 4, 2, 2, skin); R(-6, 11, 7, 4, '#f8f6ee'); R(-5, 12, 4, .5, '#99a'); R(-5, 13, 5, .5, '#99a'); }
+    else if (prop === 'sandwich') { R(-6, aY, 2, 4, sleeve); R(-6, aY + 4, 2, 2, skin); R(-7.5, aY + 2.5, 4, 1, '#e8c58a'); R(-7.5, aY + 3.5, 4, .7, '#5aa040'); R(-7.5, aY + 4.2, 4, 1, '#e8c58a'); }
     else if (prop === 'envelope') { R(-6, aY, 2, 4, sleeve); R(-6, aY + 4, 2, 2, skin); R(-7, 11, 5, 3.5, '#f1e9d2'); R(-5, 11, 1, 1, '#c0262d'); }
     else { R(-6, aY, 2, 5, sleeve); R(-6, aY + 5, 2, 2, skin); }
     // viewer-right arm
@@ -531,6 +539,7 @@ function drawPerson(c, T) {
   else if (hs === 'long') { R(-4, -1.5, 8, 3.5, hc); R(-4.5, 1, 2, 10, hc); R(2.5, 1, 2, 10, hc); R(-3, 0, 6, 1, hc); }
   else if (hs === 'bald') { R(-3.5, -.5, 7, 1, shade(skin, 1.05)); R(-4, 2, 1, 2, hc); R(3, 2, 1, 2, hc); }
   else if (hs === 'bun') { R(-3.5, -1, 7, 3, hc); R(-1.5, -3.5, 3, 2.5, hc); R(-4, 1, 1, 4, hc); R(3, 1, 1, 4, hc); }
+  else if (hs === 'messy') { R(-3.5, -1.5, 7, 3.5, hc); R(-3, -2.5, 1.5, 1, hc); R(0, -2.8, 1.5, 1.3, hc); R(2, -2, 1.5, 1, hc); R(-3.5, 1, 1, 2, hc); R(2.5, 1, 1, 2, hc); R(-1, .5, 2, 1, hc); }
   else { R(-3.5, -1, 7, 3, hc); R(-3.5, 1, 1, 2, hc); R(2.5, 1, 1, 2, hc); }
   // face
   const blink = ((T + (c.seed || 0) * 1.7) % 3.7) < .12, em = c.emote || L.emote || 'normal', ink = '#1a1410', brow = shade(hc, .8);
@@ -546,6 +555,7 @@ function drawPerson(c, T) {
   else if (em === 'happy') { R(-1.5, 5.4, 3, .5, mc); R(-2, 5, .5, .5, mc); R(1.5, 5, .5, .5, mc); }
   else if (em === 'sad') { R(-1, 5.3, 2, .5, mc); R(-1.5, 5.8, .5, .5, mc); R(1, 5.8, .5, .5, mc); }
   else R(-1, 5.4, 2, .5, mc);
+  if (L.extra === 'headset') { R(-3.8, -1.9, 7.6, .7, '#2a2a2a'); R(-4.7, 2, 1.4, 2.6, '#2a2a2a'); R(3.3, 2, 1.4, 2.6, '#2a2a2a'); R(-4.3, 4.6, .6, 1.2, '#2a2a2a'); R(-4.1, 5.6, 2.4, .6, '#2a2a2a'); R(-2, 5.3, 1, 1, c.mic === 'on' ? '#5dff6a' : '#ff3b3b'); }
   if (L.glasses) { R(-2.5, 3, 2, 2, 'rgba(255,255,255,.18)'); R(.5, 3, 2, 2, 'rgba(255,255,255,.18)'); R(-2.7, 2.9, 2.4, .4, '#222'); R(.3, 2.9, 2.4, .4, '#222'); R(-.3, 3.3, .6, .4, '#222'); }
 }
 
@@ -574,12 +584,17 @@ const SETS = {
       // kitchen
       F(262, 66, 30, 110, '#e8e8e4'); F(262, 112, 30, 2, '#b8b8b2'); F(285, 80, 2, 20, '#999'); F(285, 120, 2, 24, '#999'); F(293, 58, 27, 44, '#8b6b43'); F(296, 62, 21, 36, '#9d7a4e'); F(293, 118, 27, 58, '#a3a09a'); F(293, 112, 27, 7, '#d4d0c6');
       F(300, 100, 10, 12, '#d9d4c4'); F(302, 96, 6, 4, '#d9d4c4');
-      // keyboard on stand
-      F(124, 160, 2, 32, '#555'); F(154, 160, 2, 32, '#555'); F(118, 150, 44, 8, '#1c1c20'); F(120, 154, 40, 4, '#f4f4f4'); for (let x = 123; x < 158; x += 5) F(x, 154, 2, 2.5, '#111');
+      // fire escape seen through the window
+      F(56, 96, 56, 2, '#222'); for (let x = 58; x < 112; x += 7) F(x, 96, 1, 16, '#222'); F(56, 106, 56, 2, '#333');
+      // Maya's desk chair
+      F(140, 158, 20, 6, '#3a3a44'); F(141, 164, 3, 30, '#3a3a44'); F(156, 164, 3, 30, '#3a3a44');
       // couch back
       F(166, 158, 80, 34, '#3e6b5a'); F(172, 164, 26, 12, '#4d8068'); F(212, 164, 26, 12, '#4d8068'); F(212, 160, 14, 10, '#d9a05a');
     },
-    front(env, T) { F(166, 188, 80, 12, '#4d8068'); F(166, 196, 80, 4, '#2f5546'); F(158, 160, 12, 40, '#356050'); F(242, 160, 12, 40, '#356050'); }
+    win: { clip: [56, 46, 56, 66], x: 84, y: 108 },
+    front(env, T) {
+      F(124, 184, 58, 4, '#8a6a44'); F(126, 188, 54, 14, '#6a4a2e'); F(130, 191, 46, 1, '#5a3e26'); F(162, 170, 18, 13, '#9aa0a8'); F(164, 172, 14, 9, '#b8c8d8'); F(158, 183, 26, 2, '#5a5f66'); F(132, 177, 6, 7, '#f4f0e6'); F(138, 179, 2, 3, '#f4f0e6');
+      F(166, 188, 80, 12, '#4d8068'); F(166, 196, 80, 4, '#2f5546'); F(158, 160, 12, 40, '#356050'); F(242, 160, 12, 40, '#356050'); }
   },
   hall: {
     back(env, T) {
@@ -630,7 +645,45 @@ const SETS = {
       F(200, 164, 26, 22, '#d8d2bc'); F(203, 167, 20, 10, '#2a3a2e'); F(206, 170, 6, 3, '#7dffa0'); F(290, 174, 14, 12, 'rgba(200,230,240,.5)'); F(292, 178, 4, 4, '#a0522d'); F(298, 178, 4, 4, '#a0522d');
     }
   },
+  fire: {
+    floor: 182,
+    win: { clip: [62, 82, 66, 76], x: 95, y: 142 },
+    back(env, T) {
+      sky(0, 0, W, 64, env.time, T);
+      [[0, 40, 30], [28, 24, 26], [54, 46, 22], [76, 30, 30], [106, 52, 20], [126, 36, 28], [154, 20, 24], [178, 44, 30], [208, 28, 22], [230, 50, 26], [256, 34, 30], [286, 42, 34]].forEach(([x, y, w], i) => {
+        F(x, y, w, 64 - y, '#6d7a8f'); for (let wy = y + 4; wy < 60; wy += 6) for (let wx = x + 3; wx < x + w - 3; wx += 6) if (hash(i + ':' + wx + ':' + wy) % 3 === 0) F(wx, wy, 2, 3, '#a9b6c6');
+      });
+      F(250, 6, 22, 18, '#7a5236'); F(248, 3, 26, 4, '#5a3a26'); F(252, 24, 2, 14, '#5a3a26'); F(268, 24, 2, 14, '#5a3a26');
+      brick(0, 58, W, 126, '#9a5340', '#783c2c'); F(0, 58, W, 4, '#c9bfa8');
+      // the apartment window (lower sash open)
+      F(56, 76, 78, 82, '#efe9dc'); F(62, 82, 66, 76, '#d9b98a'); for (let x = 62; x < 128; x += 10) F(x, 82, 4, 76, '#d1ae7b');
+      F(66, 124, 16, 12, '#f1e4c2'); F(68, 126, 12, 8, '#e0613d'); F(112, 104, 6, 20, '#e8c040'); F(108, 100, 14, 6, '#f6ead0');
+      F(62, 82, 66, 30, 'rgba(170,215,235,.45)'); F(62, 110, 66, 4, '#efe9dc'); F(60, 80, 6, 78, 'rgba(168,69,58,.9)'); F(124, 80, 6, 78, 'rgba(168,69,58,.9)');
+      F(52, 158, 86, 4, '#cfc7b4');
+      // other windows
+      [[176, 72], [222, 72]].forEach(([x, y]) => { F(x - 3, y - 3, 40, 52, '#efe9dc'); F(x, y, 34, 46, '#3a3040'); F(x + 16, y, 2, 46, '#efe9dc'); F(x, y + 22, 34, 2, '#efe9dc'); });
+      // potted plant + milk crates
+      F(14, 166, 16, 14, '#a0522d'); F(12, 164, 20, 3, '#b8653a'); F(16, 152, 4, 12, '#3f7a3a'); F(22, 148, 4, 16, '#57a04c'); F(10, 156, 6, 4, '#3f7a3a'); F(26, 154, 6, 4, '#3f7a3a');
+      const crate = (x, c) => { F(x - 12, 168, 24, 14, c); for (let i = 0; i < 3; i++) F(x - 9 + i * 7, 171, 4, 3, shade(c, .6)); F(x - 12, 180, 24, 2, shade(c, .7)); };
+      crate(160, '#2f6fb0'); crate(196, '#d9a020');
+      // landing (grating) and the drop below
+      F(0, 180, W, 6, '#2b2b30'); for (let x = 0; x < W; x += 6) F(x, 180, 2, 6, '#3c3c46');
+      F(0, 186, W, 54, '#1c1820'); for (let x = 8; x < W; x += 46) F(x, 198, 16, 10, '#2c2630');
+      // ladder down to the street
+      F(256, 134, 2, 106, '#2b2b30'); F(276, 134, 2, 106, '#2b2b30'); for (let y = 140; y < 240; y += 9) F(256, y, 22, 2, '#2b2b30');
+    },
+    front(env, T) {
+      // railing (gap at the ladder)
+      F(0, 152, 252, 2, '#1f1f24'); F(282, 152, 38, 2, '#1f1f24'); F(0, 166, 252, 1, '#1f1f24'); F(282, 166, 38, 1, '#1f1f24');
+      for (let x = 0; x < 252; x += 24) F(x, 152, 2, 30, '#1f1f24'); F(250, 134, 2, 48, '#1f1f24'); F(282, 134, 2, 48, '#1f1f24'); F(318, 152, 2, 30, '#1f1f24');
+      // pigeon on the railing
+      const peck = Math.floor(T * 1.3) % 3 === 0 ? 2 : 0;
+      F(230, 145, 11, 7, '#8a8f9a'); F(231, 150, 9, 2, '#6f7480'); F(228, 146, 4, 3, '#6f7480'); F(239, 141 + peck, 5, 5, '#7a7f8a'); F(238, 146, 3, 2, '#5f9a8a');
+      F(242, 142 + peck, 1, 1, '#ff9a3a'); F(244, 143 + peck, 2, 1, '#e8c040'); F(233, 152, 1, 1, '#e8a040'); F(237, 152, 1, 1, '#e8a040');
+    }
+  },
   stoop: {
+    win: { clip: [40, 20, 52, 52], x: 66, y: 76 },
     back(env, T) {
       sky(0, 0, W, 20, env.time, T);
       brick(0, 6, W, 144, '#8e4a3a', '#6e3628'); F(0, 6, W, 6, '#d0c6b0');
@@ -666,15 +719,17 @@ function drawCard(card, T) {
     F(0, 232, W, 8, '#000');
     const jig = pulse ? -2 : 0;
     ctx.save(); ctx.translate(0, jig);
-    txt("RENT'S", 160, 28, 26, '#ff3d7f', 'center', '#25d0e8'); txt('DUE', 160, 62, 26, '#ffd23d', 'center', '#25d0e8');
+    const nm = SHOW_NAME; let sp = -1; if (nm.length > 10) { let best = 1e9; for (let i = 0; i < nm.length; i++) if (nm[i] === ' ' && Math.abs(i - nm.length / 2) < best) { best = Math.abs(i - nm.length / 2); sp = i; } }
+    if (sp > 0) { txt(nm.slice(0, sp), 160, 28, nm.length > 18 ? 22 : 26, '#ff3d7f', 'center', '#25d0e8'); txt(nm.slice(sp + 1), 160, 62, nm.length > 18 ? 22 : 26, '#ffd23d', 'center', '#25d0e8'); }
+    else txt(nm, 160, 44, 26, '#ffd23d', 'center', '#ff3d7f');
     ctx.restore();
-    F(0, 103, W, 16, 'rgba(0,0,0,.6)'); txt(card.sub || 'A SITCOM IN APARTMENT 4C', 160, 108, 7, '#e8e0ff', 'center', '#000');
+    F(0, 103, W, 16, 'rgba(0,0,0,.6)'); txt(card.sub || SHOW_SUB, 160, 108, 7, '#e8e0ff', 'center', '#000');
     for (let i = 0; i < 14; i++) { const sx = (hash('c' + i) % 300) + 10, sy = ((hash('d' + i) % 90) + T * (14 + i)) % 150; F(sx, sy, 2, 2, ['#ff3d7f', '#25d0e8', '#ffd23d'][i % 3]); }
     return;
   }
   if (card.style === 'end') {
     F(0, 0, W, H, '#0a0612'); for (let y = 0; y < H; y += 3) F(0, y, W, 3, y < 120 ? '#150a2a' : '#26103a');
-    txt("RENT'S DUE", 160, 70, 14, '#ff3d7f', 'center', '#25d0e8');
+    txt(SHOW_NAME, 160, 70, SHOW_NAME.length > 16 ? 10 : 14, '#ff3d7f', 'center', '#25d0e8');
     txt('"' + (card.text || '').toUpperCase() + '"', 160, 108, 8, '#ffd23d', 'center', '#000');
     txt('EP. ' + (card.ep || 1), 160, 128, 7, '#e8e0ff', 'center', '#000');
     if (card.sub) txt(card.sub, 160, 160, 6, '#a898d8', 'center');
@@ -694,16 +749,15 @@ function drawCard(card, T) {
 
 /* ---------- 6. show data (bible, looks, prompts, pilot) ---------- */
 const LOOKS = {
-  DANA: { skin: '#f1c8a0', hair: '#a8431f', hairStyle: 'curly', top: '#3f6fb5', under: '#f0e0c0', style: 'jacket', bottom: '#44506b', shoes: '#c0262d', g: 'f', pitch: 1.2, rate: 1.05, color: '#ffb86b' },
-  GARY: { skin: '#e8b890', hair: '#4a3020', hairStyle: 'side', top: '#8a3b3b', style: 'vest', sleeve: '#f2efe6', bottom: '#a58a5a', shoes: '#4a3020', extra: 'pager', g: 'm', pitch: 0.9, rate: 0.95, color: '#9fd4ff' },
-  MITCH: { skin: '#d9a37c', hair: '#151515', hairStyle: 'slick', top: '#1fa89a', style: 'suit', bottom: '#1fa89a', shoes: '#111111', extra: 'brickphone', g: 'm', pitch: 1.0, rate: 1.2, color: '#7dffb0' },
-  BEV: { skin: '#7a4a2d', hair: '#1a1008', hairStyle: 'natural', top: '#2f7a4a', under: '#efe4cc', sleeve: '#efe4cc', style: 'apron', bottom: '#3a3340', shoes: '#222222', emote: 'deadpan', g: 'f', pitch: 0.85, rate: 0.9, color: '#ff9ec0' },
-  SAL: { voice: 'mumble', color: '#cfcfcf', label: 'SAL (O.S.)', rate: 1.0 }
+  NINA: { skin: '#eab48c', hair: '#5a3420', hairStyle: 'long', top: '#8fd0c0', style: 'tee', bottom: '#3a4a6a', shoes: '#e8e8e8', extra: 'nametag', g: 'f', pitch: 1.2, rate: 1.05, color: '#ffb3c7' },
+  THEO: { skin: '#c98d62', hair: '#2b1d12', hairStyle: 'messy', top: '#2a3f6a', style: 'tee', bottom: '#1d2433', shoes: '#111111', extra: 'badge', g: 'm', pitch: 0.92, rate: 0.94, color: '#9fd4ff' },
+  MAYA: { skin: '#7a4a2d', hair: '#140c06', hairStyle: 'bun', top: '#c05a3a', style: 'tee', bottom: '#2e2a38', shoes: '#222222', extra: 'headset', glasses: true, g: 'f', pitch: 1.0, rate: 1.08, color: '#ffd27a' },
+  CUSTOMER: { voice: 'phone', color: '#bdbdbd', label: 'CUSTOMER (HEADSET)', rate: 1.1 }
 };
 const G_HAIR = ['#2b1d12', '#6b4423', '#c9a24a', '#8a8a8a', '#a8431f', '#111111'], G_SKIN = ['#f1c8a0', '#e8b890', '#d9a37c', '#a56b46', '#7a4a2d'],
   G_TOP = ['#b04a7a', '#4a7ab0', '#c9a24a', '#6a4ab0', '#d0583a', '#3a9a7a'], G_STYLE = ['short', 'long', 'bun', 'side', 'curly', 'natural'];
 function guestLook(name, o = {}) {
-  const h = hash(name), fem = o.g ? o.g === 'f' : /WOMAN|GIRL|LADY|MS\b|MRS|MOM|MARY|LORRAINE|NANCY|WAITRESS|SISTER|AUNT|GRANDMA/i.test(name);
+  const h = hash(name), fem = o.g ? o.g === 'f' : /WOMAN|GIRL|LADY|MS\b|MRS|MOM|MARY|NANCY|WAITRESS|SISTER|AUNT|GRANDMA/i.test(name);
   const ok = (v, list) => (typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v)) ? v : list[h % list.length];
   return {
     skin: ok(o.skin, G_SKIN), hair: ok(o.hair, G_HAIR), hairStyle: G_STYLE.includes(o.hairStyle) || o.hairStyle === 'bald' ? o.hairStyle : G_STYLE[(h >> 3) % G_STYLE.length],
@@ -711,172 +765,202 @@ function guestLook(name, o = {}) {
     g: fem ? 'f' : 'm', pitch: fem ? 1.15 : 0.9, rate: 1.0, color: '#d8d8d8'
   };
 }
-const BIBLE = `SHOW: RENT'S DUE — a 90s multi-cam sitcom, Philadelphia, 1996. Apartment 4C and the coffee shop downstairs.
-TONE: warm, quick, observational. Small problems treated as huge ones. Each episode ends where it started, a little worse off. Family friendly (PG): no swearing, no sex jokes.
+
+/* The show's on-screen name lives here — change it in one place. */
+const SHOW_ID = 'fire_escape', SHOW_NAME = 'LUNCH BREAK FIRE ESCAPE', SHOW_SUB = 'BEST FRIENDS SINCE KINDERGARTEN';
+
+const BIBLE = `SHOW: ${SHOW_NAME} — a warm 90s-style sitcom about three best friends on their lunch break. Every episode happens between 12:00 and 2:00 PM.
+PREMISE: NINA, THEO and MAYA have been best friends since kindergarten. Nina and Theo have both been secretly in love with each other for years. Neither will say it, because losing the friendship would be worse, and each is sure the other only sees a friend. THE AUDIENCE KNOWS BOTH SIDES. Maya knows both sides too and quietly plays matchmaker. The comedy is the near-miss: almost-confessions, interruptions, each one misreading the other, Maya's schemes falling apart at the last second.
+TONE: light and silly with a little ache underneath. Family friendly (PG). Every joke must make sense to someone watching for the very first time.
 CAST:
-- DANA PRUITT (29): aspiring jingle writer stuck at a copy-shop counter. Convinced one great jingle will change her life; writes bad jingles about everything. Wants the Slumber Barn mattress jingle. Fears being "a copy shop lifer."
-- GARY KOWALSKI (31): Dana's roommate, a substitute teacher who treats every life event like a lesson plan ("Okay, let's break into groups"). Sincere, rule-following, secretly sweet on Bev. His pager only ever gets wrong numbers from someone looking for "Lorraine."
-- MITCH ALBERS (30): lives across the hall, sells extended warranties and upsells his friends on everything. Total confidence, zero self-awareness. Catchphrase: "Have you considered coverage?"
-- BEV OKAFOR (34): owns the coffee shop Bean There. Deadpan, unimpressed, the only adult in the room. Keeps a chalkboard tally of each regular's complaints. Secretly likes Gary but would rather die than say so.
-- SAL PETROCELLI: the landlord. Never seen; only heard (banging on the ceiling/floor, yelling through the vent). Speaks as SAL, off-screen.
-RUNNING GAGS: (1) the buzzer never works; visitors shout up from the street. (2) Lorraine: Gary's pager, nobody knows who she is. (3) Mitch: "Have you considered coverage?" (4) Bev's complaint tally board; Dana's column is winning. (5) Dana's bad jingles, then a beat of silence. (6) Sal bangs when anyone gets loud; nobody knows how he hears it.
-SEASON ARCS: (a) Dana chases the Slumber Barn jingle job (callbacks, rewrites, a rival jingle writer). (b) The building was sold and rent may go up; the gang schemes to stop it. (c) Gary & Bev slow burn; almost-moments get interrupted, usually by the pager. (d) Mitch is one warranty from winning a sales-contest trip to Branson, Missouri.
-SETS: apt (Apt 4C living room: couch, window, kitchenette, front door, Dana's keyboard) · hall (hallway, doors 4C and 4D facing each other, flickering light) · cafe (Bean There: counter, complaint chalkboard, tables) · stoop (front steps and street; broken buzzer panel; the 4C window is above).`;
+- NINA (28): front desk at a dentist's office that closes 12 to 2. Organized, over-prepares, rehearses what she'll say to Theo, then panics and blurts something about teeth or toothbrushes instead. Must be back at work by 2:00.
+- THEO (29): overnight security guard at a mattress warehouse, so noon is his "morning" (he says good morning at lunch, eats cereal at 12:30, yawns a lot). Sweet, sleepy, misses every hint. In love with Nina and sure she sees him as a buddy. Arrives by climbing the fire escape because the buzzer is broken.
+- MAYA (30): Nina's roommate. Works from home in customer support, always wearing a headset, usually on mute. Dry and sly. Her default is quiet, patient frustration with these two. She hides her matchmaking behind "I'm on a call."
+- CUSTOMER: whoever is on Maya's call. Heard only as a tinny voice in her headset. May speak a few short lines as CUSTOMER.
+MAYA'S HEADSET (the signature gag): (1) lines that work two ways: she says something to her customer that is obviously about Nina and Theo ("Have you tried turning it off and on again?"); (2) quick switches between her bright customer-service voice and her flat real voice; (3) the mute as a weapon: she unmutes to be professional, mutes to stage-whisper a scheme, and sometimes gets it backwards, so the customer hears the plotting or Nina and Theo hear the customer voice. You are never quite sure she is actually working.
+RUNNING GAGS: the stuck apartment window (Theo has to fight it to climb in); the broken buzzer; Maya on mute; Theo's upside-down sleep schedule; the clock (Nina must be back at 2:00); childhood history: their kindergarten pact "best friends forever, no matter what"; Theo's childhood nickname "Teddy" (only Nina still uses it); the third-grade dare (on a class trip, Nina dared Theo to hold her hand; he did; neither has mentioned it since).
+SEASON ARC: in the pilot Maya finally snapped and nearly told them they both like each other. From here she keeps almost telling, then deciding they have to say it themselves. Nina and Theo get a little braver each episode but something always interrupts. They must NOT confess or get together before episode 12.
+SETS (only two): apt (Nina and Maya's apartment: front door, the stuck window that opens onto the fire escape, Maya's work desk and laptop, couch, kitchen) · fire (the fire escape outside that window: iron landing, milk crates they sit on to eat lunch, ladder down to the street, a pigeon on the railing, the city behind).`;
 
 const WRITER_SYS = `You are the head writer of the sitcom described below. Write ONE new episode that continues the story so far.
 
 ${BIBLE}
 
 RULES
-- Performed length is 2-3 minutes: about 280-340 words of dialogue. Structure: COLD OPEN (one very short scene) -> SCENE 1 -> SCENE 2 -> SCENE 3 -> TAG (very short, ends on a hook or button). The theme song plays after the cold open; do not write it.
-- One simple A-story, escalated scene by scene; the status quo returns at the end, slightly worse.
-- Use at least three running gags and one specific callback to an earlier episode. Move exactly one season arc forward a small step; never resolve an arc before episode 10.
-- Jokes are short, character-based, setup then punchline. Keep every line under 20 words. No speeches.
-- Use only the four sets. Regular cast plus at most two guest characters (give each a name in CAPS such as WOMAN or PIZZA GUY).
-- When someone complains in the cafe, Bev adds a chalk mark: write it as [BEV adds a mark under NAME].
+- Performed length is 2-3 minutes: about 280-340 words of dialogue. Structure: COLD OPEN (one very short scene) -> SCENE 1 -> SCENE 2 -> SCENE 3 -> TAG (very short, ends on a button or a small cliffhanger). The theme song plays after the cold open; do not write it.
+- Give each scene heading a clock time; the episode moves forward through one lunch break and ends by 2:00.
+- Build the episode around one near-miss: one simple situation where Nina and Theo almost say it, escalating each scene, interrupted or dodged at the end. Status quo returns, slightly more painful.
+- Include at least two of Maya's headset bits (a two-way line, a voice switch, or a mute mix-up) and at least one visual gag (the window, the ladder, the pigeon, food, someone falling asleep).
+- Every joke must land inside its own scene. No puns, no wordplay, no references a new viewer would not get; if you call back to an earlier episode, explain it in the same line.
+- Keep every line under 18 words. Short exchanges, quick replies, no speeches. Give Theo and Nina at least one moment each where the audience can see they care.
+- Only the two sets. Only NINA, THEO, MAYA and the off-screen CUSTOMER (at most 3 short CUSTOMER lines). No other characters.
+- Mark Maya's headset clearly: [MAYA unmutes] / [MAYA mutes], and put (customer voice) before lines she says in her work voice.
 - Never reuse a premise from an earlier episode.
 
 OUTPUT FORMAT (exactly this, nothing else):
 TITLE: <2-4 words>
 SCRIPT:
-[COLD OPEN - stoop - day]
+[COLD OPEN - fire - 12:10]
 NAME: spoken line
-NAME (emotion): spoken line        <- emotions allowed: shout, deadpan, happy, sad, angry, shock
-[stage direction. SFX: click. LAUGH]   <- audience cues inside brackets: LAUGH, BIG LAUGH, OOH, APPLAUSE
-[SCENE 1 - apt - night]            <- heading format: [NAME - set - day|dusk|night] with set one of apt, hall, cafe, stoop
+NAME (emotion): spoken line        <- emotions allowed: shout, deadpan, happy, sad, angry, shock, customer voice
+[stage direction. SFX: creak. LAUGH]   <- audience cues inside brackets: LAUGH, BIG LAUGH, OOH, APPLAUSE
+[SCENE 1 - apt - 12:30]            <- heading format: [NAME - set - clock time], set is apt or fire
 ...
 CONTINUITY:
-- 3 to 6 short bullets: new facts established, gags used, which arc moved, any change to the complaint tally`;
+- 3 to 6 short bullets: new facts established, gags used, how close Nina and Theo came, anything Maya now knows or did`;
 
 const DIRECTOR_SYS = `You are the director of a pixel-art sitcom. You turn a script into a JSON shot list that a playback engine performs on a 320x240 canvas. Return ONLY one JSON object: no markdown fences, no commentary.
 
 SHAPE
-{"title":"...","guests":{"WOMAN":{"g":"f","hair":"#6b4423","hairStyle":"long","skin":"#f1c8a0","top":"#b04a7a","bottom":"#333344"}},
+{"title":"...",
  "scenes":[
-  {"type":"scene","set":"stoop","time":"day","caption":"FRONT STOOP","cast":{"MITCH":{"x":198}},"beats":[ ... ]},
+  {"type":"scene","set":"fire","time":"day","caption":"FIRE ESCAPE · 12:10","cast":{"NINA":{"x":160,"pose":"sit","prop":"sandwich"},"MAYA":{"x":"window"}},"beats":[ ... ]},
   {"type":"card","style":"title","music":"theme"},
   {"type":"scene", ...},
   {"type":"card","style":"end","text":"<episode title>","music":"outro"}]}
 
-BEATS (each beat is an object; all keys optional; processed in this order): enter, pose, prop, react, exit, move, act, sfx, fx, sting, say+line (+emote, sing, hold), laugh, wait
-- "enter":{"MITCH":"CL"} walks on from the nearest edge (or {"MITCH":{"to":"CL","from":"R"}}). In the stoop set {"DANA":"window"} makes a character lean out of the 4C window.
-- "pose":{"GARY":"sit"|"stand"}   "prop":{"DANA":"phone"|"papers"|"envelope"|"mug"|"none"}   "react":{"GARY":"shock"} (emotes: normal, happy, sad, angry, shock, deadpan, shout)
-- "exit":{"MITCH":"L"|"R"|"window"}   "move":{"GARY":"CR"} (walk there)
-- "act":{"who":"MITCH","do":"poke"} (jab at the buzzer)  or  {"who":"BEV","do":"tally","target":"DANA"} (Bev chalks a mark under that name)
+BEATS (each beat is an object; all keys optional; processed in this order): enter, pose, prop, react, mic, exit, move, act, sfx, fx, sting, say+line (+emote, service, hold), laugh, wait
+- "enter":{"NINA":"CL"} walks on from the nearest edge, or {"NINA":{"to":"CL","from":"R"}}. Special entrances are listed under SET LAYOUTS.
+- "pose":{"THEO":"sit"|"stand"}   "prop":{"NINA":"sandwich"|"mug"|"phone"|"papers"|"envelope"|"none"}   "react":{"THEO":"shock"} (emotes: normal, happy, sad, angry, shock, deadpan, shout)
+- "mic":{"MAYA":"on"|"off"} her headset microphone (on = the customer can hear). Add one whenever the script says she unmutes or mutes.
+- "exit":{"THEO":"L"|"R"|"window"|"down"}   "move":{"THEO":"CR"} (walk there)
 - "sfx": one of ${SFX_NAMES.join(', ')}
 - "fx":"shake"|"flash"|"freeze"     "sting":"bump" (end of a scene) | "dramatic"
-- "say":"NAME","line":"spoken words only","emote":"deadpan"; "sing":true for Dana's jingles; "hold":seconds of silence after the line before the laugh
-- "laugh":"small"|"big"|"ooh"|"applause" (audience; goes in the same beat as the line that earns it)   "wait":seconds
+- "say":"NAME","line":"spoken words only","emote":"deadpan"; "service":true when Maya talks in her bright customer-service voice; "hold":seconds of silence after the line before the laugh
+- "laugh":"small"|"big"|"ooh"|"applause" (audience; in the same beat as the line that earns it)   "wait":seconds
 POSITIONS: L=40, CL=100, C=160, CR=220, R=280, or a number 0-320.
 SET LAYOUTS
-- apt: front door at x 22 (enter/exit there), window x 84, Dana's keyboard x 140 (stand at 150 to play it), couch seats x 190 and 220 (pose sit), fridge x 276.
-- hall: door 4C x 60, door 4D x 260, stairwell x 160.
-- cafe: BEV stands behind the counter at x 250. Customers sit at the table seats x 62, 92, 122 (pose sit). Stand at x 172 to lean on the counter. Enter through the door with sfx ding.
-- stoop: buzzer panel at x 216 (stand at x 198 to poke it). Visitors arrive from the right edge.
+- apt: front door x 22. The window onto the fire escape is at x 84: someone outside looking in = enter {"THEO":"window"}; climbing in through it = enter {"THEO":{"to":124,"from":"window"}} (also works straight after the looking-in beat). Maya's desk x 150 (pose sit). Couch seats x 200 and 228 (pose sit). Kitchen x 276.
+- fire: the apartment window is at x 95; someone inside leaning out = enter {"MAYA":"window"}, going back in = exit {"MAYA":"window"}. Milk crates at x 160 and 196 (pose sit). The ladder is at x 266: arriving from the street = enter {"THEO":{"to":266,"from":"below"}} with sfx ladder; leaving = exit {"THEO":"down"}. A pigeon sits on the railing at x 236 (sfx coo).
 RULES
-- One beat per spoken line. Keep every line verbatim from the script minus stage directions, parentheses and brackets. Speaker names in CAPS exactly as in the script. SAL is off-screen: never put him in a cast.
-- Each script heading becomes one scene. The COLD OPEN is followed by {"type":"card","style":"title","music":"theme"}. The TAG ends with a freeze or applause beat and then the end card.
-- Cast of a scene: only people on screen at its first moment (others use enter). At most four characters at once; keep them at least 28 pixels apart.
-- Start every scene with {"wait":0.6}. End every scene except the last with a beat {"sting":"bump"}. Put SFX cues from the script in a beat just before the line they precede.
-- Use "react" for reaction shots and "emote" on shouted lines. Pager beeps: {"sfx":"pager","wait":0.7}. Bev's tally: a separate act beat followed by her line.
-- Add "caption" (2-3 words, caps) to every scene.
+- One beat per spoken line. Keep every line verbatim from the script minus stage directions, parentheses and brackets. Speaker names in CAPS exactly as in the script. CUSTOMER is never in a cast: just give CUSTOMER "say" beats.
+- Each script heading becomes one scene. "caption" is the place plus the clock time, like "FIRE ESCAPE · 12:10" or "APARTMENT · 1:40". "time" is "day".
+- The COLD OPEN is followed by {"type":"card","style":"title","music":"theme"}. The TAG ends with a freeze or applause beat, then the end card.
+- Cast of a scene: only people on screen at its first moment (others use enter). Keep people at least 28 pixels apart.
+- Start every scene with {"wait":0.6}. End every scene except the cold open and the tag with {"sting":"bump"}. Put SFX cues in a beat just before the line they precede.
+- Use "react" for reaction shots and "emote" on shouted or shocked lines. Use "service":true on every line marked (customer voice).
 EXAMPLE SCENE
-{"type":"scene","set":"cafe","time":"day","caption":"BEAN THERE","cast":{"BEV":{"x":250},"DANA":{"x":62,"pose":"sit"}},"beats":[{"wait":0.6},{"say":"DANA","line":"This coffee is lukewarm.","emote":"deadpan"},{"act":{"who":"BEV","do":"tally","target":"DANA"},"laugh":"small"},{"say":"BEV","line":"That's forty-one.","emote":"deadpan","laugh":"small"},{"sting":"bump"}]}`;
+{"type":"scene","set":"apt","time":"day","caption":"APARTMENT · 12:40","cast":{"MAYA":{"x":150,"pose":"sit"},"NINA":{"x":100}},"beats":[{"wait":0.6},{"say":"NINA","line":"I'm telling him today.","emote":"happy"},{"mic":{"MAYA":"on"},"say":"MAYA","line":"Thank you for your patience. We hear that a lot.","service":true,"laugh":"small"},{"mic":{"MAYA":"off"},"react":{"NINA":"angry"},"wait":0.4},{"sting":"bump"}]}`;
 
 const SHOWS = {
-  rents_due: { id: 'rents_due', ch: 1, name: "RENT'S DUE", genre: 'SITCOM', cast: LOOKS, writer: WRITER_SYS, director: DIRECTOR_SYS, theme: 'theme' }
+  [SHOW_ID]: { id: SHOW_ID, ch: 1, name: SHOW_NAME, sub: SHOW_SUB, genre: 'SITCOM', cast: LOOKS, writer: WRITER_SYS, director: DIRECTOR_SYS, theme: 'theme' }
 };
 const CHANNELS = [
-  { ch: 1, show: 'rents_due', label: "RENT'S DUE" },
+  { ch: 1, show: SHOW_ID, label: SHOW_NAME },
   { ch: 2, label: 'NATURE' }, { ch: 3, label: 'SCI-FI' }, { ch: 4, label: 'TRAILERS' }
 ];
 const STATE_SEED = {
-  rents_due: {
-    next: 2, tally: { DANA: 41, MITCH: 13, GARY: 5 },
-    log: [{ ep: 1, title: 'The Buzzer', bullets: ['Dana has a Slumber Barn jingle deadline of Friday.', 'The building was sold; a notice says "rent adjustments to follow."', 'Gary tried to ask Bev out and was interrupted by the pager (Lorraine).', 'A woman showed up at the broken buzzer asking if a Gary lives there; she keeps getting his pages. Is she Lorraine?', "Bev's tally: Dana at 41."] }]
+  [SHOW_ID]: {
+    next: 2, tally: {},
+    log: [{ ep: 1, title: 'Twenty-Three Years', bullets: [
+      'Maya finally snapped after years of quietly watching Nina and Theo dodge their feelings for each other.',
+      'Nina almost confessed to Theo, panicked, and told him she got a free toothbrush from work instead.',
+      'Theo told Maya on the fire escape that telling Nina could cost him his best friend.',
+      'Maya stage-whispered "she feels the same way" with her mic ON: the customer heard it, Theo did not understand it.',
+      'Cliffhanger: Maya was about to tell them they both like each other. Unresolved. Nina had to be back at work at 2:00.'] }]
   }
 };
 
 /* ---- pilot episode, as a director's shot list ---- */
 const PILOT = {
-  show: 'rents_due', ep: 1, title: 'The Buzzer', tally: { DANA: 40, MITCH: 13, GARY: 5 },
-  guests: { WOMAN: { g: 'f', hair: '#6b4423', hairStyle: 'bun', skin: '#f1c8a0', top: '#b04a7a', bottom: '#333344' } },
+  show: SHOW_ID, ep: 1, title: 'Twenty-Three Years', tally: {},
   scenes: [
     {
-      type: 'scene', set: 'stoop', time: 'day', caption: 'FRONT STOOP', cast: { MITCH: { x: 198 } }, beats: [
+      type: 'scene', set: 'fire', time: 'day', caption: 'FIRE ESCAPE · 12:15', cast: { NINA: { x: 160, pose: 'sit', prop: 'sandwich' }, MAYA: { x: 'window' } }, beats: [
         { wait: 0.8 },
-        { act: { who: 'MITCH', do: 'poke' }, sfx: 'click' }, { act: { who: 'MITCH', do: 'poke' }, sfx: 'click' }, { act: { who: 'MITCH', do: 'poke' }, sfx: 'click', wait: 0.2 },
-        { say: 'MITCH', line: "Dana! Your buzzer's broken!", emote: 'shout' },
-        { enter: { DANA: 'window' }, sfx: 'door', wait: 0.3 },
-        { say: 'DANA', line: "We know! It's been broken since March!", emote: 'shout' },
-        { say: 'MITCH', line: 'Have you considered coverage?' },
-        { exit: { DANA: 'window' }, sfx: 'slam', fx: 'shake', laugh: 'small' }
+        { sfx: 'ladder', enter: { THEO: { to: 266, from: 'below' } } },
+        { say: 'THEO', line: 'Good morning!', emote: 'happy' },
+        { say: 'NINA', line: "Theo, it's twelve-fifteen.", emote: 'deadpan' },
+        { say: 'THEO', line: 'Exactly. I just woke up.', laugh: 'small' },
+        { move: { THEO: 196 } }, { pose: { THEO: 'sit' } },
+        { say: 'NINA', line: 'Want half my sandwich?' },
+        { say: 'THEO', line: 'You always save me half.', emote: 'happy' },
+        { say: 'NINA', line: 'Since kindergarten.', emote: 'happy' },
+        { react: { NINA: 'happy', THEO: 'happy' }, wait: 1.4 },
+        { mic: { MAYA: 'on' }, say: 'MAYA', line: "Ma'am, I'm going to need you to just say what you're feeling.", emote: 'deadpan' },
+        { react: { NINA: 'shock', THEO: 'shock' }, say: 'NINA', line: 'What?', emote: 'shock' },
+        { say: 'MAYA', line: 'Sorry. Customer.', emote: 'deadpan', laugh: 'big' },
+        { mic: { MAYA: 'off' }, exit: { MAYA: 'window' }, sfx: 'creak', wait: 0.5 }
       ]
     },
     { type: 'card', style: 'title', music: 'theme' },
     {
-      type: 'scene', set: 'apt', time: 'day', caption: 'APT 4C', cast: { DANA: { x: 150, prop: 'phone' }, GARY: { x: 204, pose: 'sit', prop: 'papers' } }, beats: [
+      type: 'scene', set: 'apt', time: 'day', caption: 'APARTMENT · 12:30', cast: { MAYA: { x: 150, pose: 'sit' }, NINA: { x: 104 } }, beats: [
         { wait: 0.6 },
-        { prop: { DANA: 'none' }, say: 'DANA', line: 'That was Slumber Barn. They want a jingle by Friday. A real jingle! For money!', emote: 'shout' },
-        { say: 'GARY', line: "Dana, that's wonderful. Let's take a moment to set some goals.", emote: 'happy' },
-        { say: 'DANA', line: 'I already have one.' },
-        { say: 'DANA', line: "Slumber Barn, it's a barn... for slumber...", sing: true, hold: 0.7, laugh: 'small' },
-        { say: 'GARY', line: "Okay. So that's a rough draft." },
-        { sfx: 'pager', wait: 0.7 },
-        { say: 'GARY', line: 'Lorraine again.', emote: 'sad' },
-        { say: 'DANA', line: 'Who is Lorraine?' },
-        { say: 'GARY', line: "I don't know! Somebody really needs her!", emote: 'shout', laugh: 'small' },
-        { sfx: 'knock', wait: 0.7 },
-        { sfx: 'door', enter: { MITCH: 90 } },
-        { say: 'MITCH', line: "Heard the news through the wall. Big jingle money. You're gonna want coverage on that keyboard." },
-        { say: 'DANA', line: "It's from a garage sale.", emote: 'deadpan' },
-        { say: 'MITCH', line: 'Then you definitely want coverage.', laugh: 'small' },
+        { say: 'NINA', line: "Maya. Today's the day. I'm telling Theo how I feel.", emote: 'happy' },
+        { say: 'MAYA', line: 'You said that in fifth grade.', emote: 'deadpan' },
+        { say: 'NINA', line: 'And I almost did!' },
+        { say: 'MAYA', line: 'You told him you loved his lunchbox.', emote: 'deadpan', laugh: 'small' },
+        { say: 'NINA', line: 'It was a really good lunchbox!', emote: 'shout', laugh: 'small' },
+        { enter: { THEO: 'window' }, sfx: 'creak', wait: 0.4 },
+        { sfx: 'thud', fx: 'shake', wait: 0.3 },
+        { say: 'THEO', line: 'The window is stuck again!', emote: 'shout' },
+        { mic: { MAYA: 'on' }, say: 'MAYA', line: 'Have you tried turning it off and on again?', service: true, laugh: 'small' },
+        { mic: { MAYA: 'off' }, sfx: 'crash', fx: 'shake', enter: { THEO: { to: 200, from: 'window' } } },
+        { say: 'THEO', line: "I'm in!", emote: 'happy' },
+        { say: 'NINA', line: 'Theo. Can I tell you something? Something big?' },
+        { say: 'THEO', line: 'Actually, I have something big to tell you, too.', emote: 'shock' },
+        { react: { MAYA: 'shock' }, wait: 0.8 },
+        { say: 'NINA', line: 'You go first.' },
+        { say: 'THEO', line: 'No, you go first.' },
+        { wait: 0.8 },
+        { say: 'NINA', line: 'I got a free toothbrush. From work.', hold: 0.5, laugh: 'big' },
+        { say: 'THEO', line: 'Wow. Me too. I mean, I want one.', laugh: 'small' },
+        { sfx: 'womp', react: { MAYA: 'sad' }, wait: 0.5 },
         { sting: 'bump' }
       ]
     },
     {
-      type: 'scene', set: 'cafe', time: 'day', caption: 'BEAN THERE', cast: { BEV: { x: 250 }, DANA: { x: 62, pose: 'sit' }, GARY: { x: 92, pose: 'sit' }, MITCH: { x: 122, pose: 'sit' } }, beats: [
-        { sfx: 'ding', wait: 0.7 },
-        { say: 'DANA', line: 'Bev, this coffee is lukewarm.' },
-        { act: { who: 'BEV', do: 'tally', target: 'DANA' }, laugh: 'small' },
-        { say: 'BEV', line: "That's forty-one.", emote: 'deadpan' },
-        { say: 'GARY', line: "Dana's leading the season." },
-        { say: 'BEV', line: "Dana's leading the decade.", laugh: 'small' },
-        { pose: { GARY: 'stand' }, move: { GARY: 172 } },
-        { say: 'GARY', line: 'So, Bev... I was thinking, maybe this weekend you and I could...', emote: 'happy' },
-        { sfx: 'pager', wait: 0.7 },
-        { say: 'GARY', line: 'Lorraine.', emote: 'sad' },
-        { say: 'BEV', line: 'Tell her I said hi.', emote: 'deadpan', laugh: 'ooh' },
+      type: 'scene', set: 'fire', time: 'day', caption: 'FIRE ESCAPE · 1:05', cast: { THEO: { x: 196, pose: 'sit', prop: 'mug' }, MAYA: { x: 140 } }, beats: [
+        { wait: 0.6 },
+        { say: 'THEO', line: 'Maya, remember our kindergarten pact? Best friends forever, no matter what.' },
+        { say: 'MAYA', line: 'You also promised to marry a dinosaur.', emote: 'deadpan', laugh: 'small' },
+        { say: 'THEO', line: "If I tell Nina how I feel, and she doesn't feel the same, I lose my best friend.", emote: 'sad' },
+        { mic: { MAYA: 'on' }, wait: 0.5 },
+        { say: 'MAYA', line: 'She feels the same way, you big dummy.', emote: 'angry' },
+        { say: 'CUSTOMER', line: 'Excuse me?!' },
+        { react: { MAYA: 'shock' }, say: 'MAYA', line: 'Not you, sir! Your package is on its way!', service: true, laugh: 'big' },
+        { say: 'THEO', line: 'Who feels the same way?' },
+        { mic: { MAYA: 'off' }, say: 'MAYA', line: 'My customer. About his package.', emote: 'deadpan', laugh: 'small' },
+        { sfx: 'coo', wait: 0.6 },
         { sting: 'bump' }
       ]
     },
     {
-      type: 'scene', set: 'apt', time: 'dusk', caption: 'APT 4C', cast: {}, beats: [
-        { wait: 0.4 },
-        { sfx: 'door', enter: { DANA: 150 }, prop: { DANA: 'envelope' } },
-        { enter: { GARY: 100, MITCH: 68 } },
-        { say: 'DANA', line: 'This was taped to our door. It says, the building has been sold. New management. Rent adjustments to follow.', emote: 'shock' },
-        { say: 'MITCH', line: "Adjustments. That's a word for... up." },
-        { say: 'GARY', line: "Okay. Nobody panic. Let's break into groups.", emote: 'happy' },
-        { say: 'DANA', line: 'There are three of us!', emote: 'shout' },
-        { say: 'GARY', line: "Then it'll be a very efficient group!", laugh: 'small' },
-        { prop: { DANA: 'none' }, sfx: 'keys', say: 'DANA', line: "Rent is due, rent is due, what's a girl supposed to do...", sing: true },
-        { sfx: 'bang', fx: 'shake', wait: 0.9 },
-        { say: 'SAL', line: 'KEEP IT DOWN UP THERE!' },
-        { say: 'DANA', line: "He's a critic now.", emote: 'deadpan', laugh: 'big' },
+      type: 'scene', set: 'apt', time: 'day', caption: 'APARTMENT · 1:52', cast: { MAYA: { x: 150, pose: 'sit' }, NINA: { x: 60 }, THEO: { x: 244 } }, beats: [
+        { wait: 0.6 },
+        { say: 'NINA', line: 'Maya, can I ask you something? Privately?' },
+        { say: 'THEO', line: 'Maya, can I ask you something? Privately?' },
+        { react: { NINA: 'shock', THEO: 'shock' }, wait: 0.5, laugh: 'small' },
+        { move: { NINA: 120, THEO: 180 } },
+        { say: 'NINA', line: 'What if he only sees me as a friend?', emote: 'sad' },
+        { say: 'THEO', line: 'What if she only sees me as a friend?', emote: 'sad' },
+        { say: 'NINA', line: "I can't lose him." },
+        { say: 'THEO', line: "I can't lose her.", laugh: 'ooh' },
+        { react: { MAYA: 'angry' }, wait: 0.8 },
+        { mic: { MAYA: 'on' }, say: 'MAYA', line: "Sir, I'm going to have to put you on hold.", service: true },
+        { mic: { MAYA: 'off' }, pose: { MAYA: 'stand' }, sfx: 'thud', wait: 0.3 },
+        { say: 'MAYA', line: "Twenty-three years! I can't do this anymore!", emote: 'shout', fx: 'shake' },
+        { react: { NINA: 'shock', THEO: 'shock' }, laugh: 'ooh' },
+        { say: 'NINA', line: "Maya, what's going on?", emote: 'shock' },
+        { say: 'THEO', line: 'Is it the customer? Do you want me to fight the customer?', laugh: 'small' },
+        { say: 'MAYA', line: "It's not the customer!", emote: 'shout' },
         { sting: 'bump' }
       ]
     },
     {
-      type: 'scene', set: 'stoop', time: 'dusk', caption: 'FRONT STOOP', cast: {}, beats: [
-        { wait: 0.5 },
-        { enter: { WOMAN: 196 } },
-        { act: { who: 'WOMAN', do: 'poke' }, sfx: 'click', wait: 0.4 },
-        { say: 'WOMAN', line: 'Hello? Does a Gary live here? He keeps getting my pages!', emote: 'shout' },
-        { fx: 'freeze', sting: 'dramatic', laugh: 'applause' }
+      type: 'scene', set: 'fire', time: 'day', caption: 'FIRE ESCAPE · 1:58', cast: { NINA: { x: 130 }, MAYA: { x: 170 }, THEO: { x: 210 } }, beats: [
+        { wait: 0.6 },
+        { say: 'NINA', line: 'Maya. Talk to us. You never yell.' },
+        { say: 'THEO', line: 'We tell each other everything. That was the pact.' },
+        { sfx: 'coo', react: { MAYA: 'sad' }, wait: 0.7 },
+        { say: 'CUSTOMER', line: 'Hello? Are you still there?', laugh: 'small' },
+        { say: 'MAYA', line: 'Okay. The truth is, you two, you both...', hold: 0.6 },
+        { react: { NINA: 'shock', THEO: 'shock' }, fx: 'freeze', sting: 'dramatic', laugh: 'ooh' },
+        { laugh: 'applause' }
       ]
     },
-    { type: 'card', style: 'end', text: 'The Buzzer', ep: 1, music: 'outro' }
+    { type: 'card', style: 'end', text: 'Twenty-Three Years', sub: 'TO BE CONTINUED...', ep: 1, music: 'outro' }
   ]
 };
 
@@ -906,15 +990,16 @@ function newChar(name, o = {}) {
 }
 function addCast(name, o = {}) {
   if (name === 'SAL' || lookFor(name).voice) return;
-  if (o.x === 'window' || o === 'window') { S.chars[name] = newChar(name, { x: 66, y: 76, tx: 66, bust: true }); return; }
-  const x = posX(o.x != null ? o.x : 160);
-  S.chars[name] = newChar(name, { x, tx: x, face: o.face === -1 ? -1 : 1, pose: o.pose === 'sit' ? 'sit' : 'stand', prop: o.prop && o.prop !== 'none' ? o.prop : null });
+  if (o.x === 'window' || o === 'window') { const w = (SETS[S.set] && SETS[S.set].win) || SETS.stoop.win; S.chars[name] = newChar(name, { x: w.x, y: w.y, tx: w.x, ty: w.y, bust: true }); return; }
+  const x = posX(o.x != null ? o.x : 160), fl = (SETS[S.set] && SETS[S.set].floor) || FLOOR;
+  S.chars[name] = newChar(name, { x, tx: x, y: fl, face: o.face === -1 ? -1 : 1, pose: o.pose === 'sit' ? 'sit' : 'stand', prop: o.prop && o.prop !== 'none' ? o.prop : null });
 }
 function stepWorld(dt) {
   for (const n of Object.keys(S.chars)) {
     const c = S.chars[n], d = c.tx - c.x;
     if (Math.abs(d) > 1) { c.x += Math.sign(d) * Math.min(Math.abs(d), c.speed * dt); c.moving = true; c.face = Math.sign(d); } else { c.x = c.tx; c.moving = false; }
-    if (c.exiting && (c.x < -20 || c.x > W + 20)) delete S.chars[n];
+    if (c.ty != null) { const dy = c.ty - c.y; if (Math.abs(dy) > 1) { c.y += Math.sign(dy) * Math.min(Math.abs(dy), 55 * dt); c.moving = true; } else c.y = c.ty; }
+    if (c.exiting && (c.x < -20 || c.x > W + 20 || c.y > H + 40)) delete S.chars[n];
     if (c.actT > 0) { c.actT -= dt; if (c.actT <= 0) c.act = null; }
     if (c.pagerFlash > 0) c.pagerFlash -= dt;
   }
@@ -935,7 +1020,7 @@ function render() {
     const set = SETS[S.set] || SETS.apt;
     set.back(env, AT);
     Object.values(S.chars).sort((a, b) => a.y - b.y || a.x - b.x).forEach(c => {
-      if (c.bust) { ctx.save(); ctx.beginPath(); ctx.rect(40, 20, 52, 52); ctx.clip(); drawPerson(c, AT); ctx.restore(); } else drawPerson(c, AT);
+      if (c.bust) { const wc = ((SETS[S.set] && SETS[S.set].win) || SETS.stoop.win).clip; ctx.save(); ctx.beginPath(); ctx.rect(wc[0], wc[1], wc[2], wc[3]); ctx.clip(); drawPerson(c, AT); ctx.restore(); } else drawPerson(c, AT);
     });
     set.front(env, AT);
     if (S.time === 'dusk') { ctx.fillStyle = 'rgba(255,110,50,.16)'; ctx.fillRect(0, 0, W, H); }
@@ -976,7 +1061,7 @@ function clearSub() { $('sub').innerHTML = ''; }
 const cleanSpeech = s => String(s).replace(/\b4C\b/g, 'four C').replace(/\b4D\b/g, 'four D').replace(/[*_#\[\]<>]/g, '').replace(/\.{2,}/g, ',').replace(/\s+/g, ' ').trim();
 async function arrive(names, A, cap = 4) {
   for (let i = 0; i < cap / 0.05 && A(); i++) {
-    if (!names.some(n => S.chars[n] && (Math.abs(S.chars[n].tx - S.chars[n].x) > 1))) return;
+    if (!names.some(n => { const c = S.chars[n]; return c && (Math.abs(c.tx - c.x) > 1 || (c.ty != null && Math.abs(c.ty - c.y) > 1)); })) return;
     await sleep(0.05);
   }
 }
@@ -987,12 +1072,12 @@ async function sayLine(b, A) {
     let near = null, best = 1e9; for (const o of Object.values(S.chars)) if (o !== ch && !o.bust && Math.abs(o.x - ch.x) < best) { best = Math.abs(o.x - ch.x); near = o; }
     if (near && !ch.moving && !ch.bust) ch.face = Math.sign(near.x - ch.x) || ch.face;
   }
-  showSub(look.label || name, line, look.color);
-  const rate = b.sing ? 0.85 : (look.rate || 1), dur = estDur(line, rate) / spd();
-  if (look.voice === 'mumble') { AU.mumble(estDur(line, 1) * 0.92); await sleep(estDur(line, 1)); }
+  showSub((look.label || name) + (b.service ? ' (CUSTOMER VOICE)' : ch && ch.mic === 'on' ? ' (MIC ON)' : ''), line, look.color);
+  const rate = b.sing ? 0.85 : (look.rate || 1) * (b.service ? 1.08 : 1), dur = estDur(line, rate) / spd();
+  if (look.voice) { AU.mumble(estDur(line, 1) * 0.92, look.voice); await sleep(estDur(line, 1)); }
   else {
     if (b.sing) AU.jingle(line, estDur(line, rate) * 0.9);
-    const spoken = await SP.speak(cleanSpeech(line), { key: name, g: look.g, pitch: b.sing ? 1.55 : look.pitch, rate });
+    const spoken = await SP.speak(cleanSpeech(line), { key: name, g: look.g, pitch: b.sing ? 1.55 : (look.pitch || 1) * (b.service ? 1.28 : 1), rate });
     if (A() && !spoken) await sleep(estDur(line, rate));
   }
   if (!A()) return;
@@ -1003,16 +1088,20 @@ async function sayLine(b, A) {
 async function runBeat(b, A) {
   const t0 = S.T; let actWait = 0;
   if (b.enter) for (const [n, v] of Object.entries(b.enter)) {
-    if (S.chars[n]) { S.chars[n].tx = posX(typeof v === 'object' ? v.to : v); continue; }
-    const to = typeof v === 'object' ? v.to : v;
+    const to = v && typeof v === 'object' ? v.to : v, from = v && typeof v === 'object' ? String(v.from || '') : '';
+    if (S.chars[n] && !(S.chars[n].bust && to !== 'window')) { if (to !== 'window') S.chars[n].tx = posX(to); continue; }
+    if (S.chars[n]) delete S.chars[n];                      // was peeking through the window; now climbs through it
     if (to === 'window') { addCast(n, { x: 'window' }); continue; }
-    const x = posX(to), fromL = (typeof v === 'object' && v.from) ? /^l/i.test(v.from) : x < 160;
-    addCast(n, { x }); const c = S.chars[n]; if (c) { c.x = fromL ? -24 : W + 24; c.tx = x; }
+    const x = posX(to); addCast(n, { x }); const c = S.chars[n]; if (!c) continue;
+    if (/^below|^down|^ladder/i.test(from)) { c.x = c.tx = x; c.ty = c.y; c.y = H + 50; }
+    else if (/^window/i.test(from)) { const w = (SETS[S.set] && SETS[S.set].win) || SETS.stoop.win; c.x = w.x; c.tx = x; }
+    else { const fromL = from ? /^l/i.test(from) : x < 160; c.x = fromL ? -24 : W + 24; c.tx = x; }
   }
   if (b.pose) for (const [n, v] of Object.entries(b.pose)) if (S.chars[n]) S.chars[n].pose = v === 'sit' ? 'sit' : 'stand';
   if (b.prop) for (const [n, v] of Object.entries(b.prop)) if (S.chars[n]) S.chars[n].prop = v === 'none' ? null : v;
   if (b.react) for (const [n, v] of Object.entries(b.react)) if (S.chars[n]) S.chars[n].emote = v;
-  if (b.exit) for (const [n, v] of Object.entries(b.exit)) { const c = S.chars[n]; if (!c) continue; if (v === 'window' || c.bust) delete S.chars[n]; else { c.tx = /^l/i.test(String(v)) ? -30 : W + 30; c.exiting = true; } }
+  if (b.mic) { for (const [n, v] of Object.entries(b.mic)) if (S.chars[n]) S.chars[n].mic = v === 'on' ? 'on' : 'off'; AU.sfx('mic'); }
+  if (b.exit) for (const [n, v] of Object.entries(b.exit)) { const c = S.chars[n]; if (!c) continue; if (v === 'window' || c.bust) delete S.chars[n]; else if (v === 'down') { c.ty = H + 60; c.exiting = true; } else { c.tx = /^l/i.test(String(v)) ? -30 : W + 30; c.exiting = true; } }
   if (b.move) for (const [n, v] of Object.entries(b.move)) if (S.chars[n]) S.chars[n].tx = posX(v);
   if (b.act && b.act.who && S.chars[b.act.who]) {
     const c = S.chars[b.act.who];
@@ -1082,7 +1171,7 @@ const getKey = () => { try { return localStorage.getItem(KEY_LS) || ''; } catch 
 const cfg = () => Object.assign({ writer: 'claude-sonnet-5-5', director: 'claude-haiku-5-5', muted: false }, lsGet('tv_cfg', {}) || {});
 const getState = id => { const all = lsGet('tv_state', {}) || {}; return all[id] || JSON.parse(JSON.stringify(STATE_SEED[id])); };
 const setState = (id, st) => { const all = lsGet('tv_state', {}) || {}; all[id] = st; lsSet('tv_state', all); };
-const allEpisodes = () => [PILOT].concat(lsGet('tv_eps', []) || []).sort((a, b) => a.ep - b.ep);
+const allEpisodes = () => [PILOT].concat((lsGet('tv_eps', []) || []).filter(e => e && e.show === SHOW_ID)).sort((a, b) => a.ep - b.ep);
 
 async function callClaude(model, system, user, max_tokens) {
   const key = getKey(); if (!key) throw { code: 'no_key' };
@@ -1107,7 +1196,7 @@ function apiError(e) {
   if (e.status === 429) return 'Rate limited. Wait a minute and try again.';
   return e.message || ('Something went wrong' + (e.status ? ' (' + e.status + ')' : '') + (e.detail ? ': ' + e.detail.slice(0, 120) : '.'));
 }
-const EMOTES = ['normal', 'happy', 'sad', 'angry', 'shock', 'deadpan', 'shout'], PROPS = ['phone', 'papers', 'envelope', 'mug', 'none'];
+const EMOTES = ['normal', 'happy', 'sad', 'angry', 'shock', 'deadpan', 'shout'], PROPS = ['phone', 'papers', 'envelope', 'mug', 'sandwich', 'none'];
 function sanitizeEpisode(raw, show) {
   if (!raw || !Array.isArray(raw.scenes) || !raw.scenes.length) throw new Error('The director returned no scenes.');
   const strip = s => String(s || '').replace(/\([^)]*\)|\[[^\]]*\]|[*_#]/g, '').replace(/\s+/g, ' ').trim().slice(0, 230);
@@ -1123,9 +1212,10 @@ function sanitizeEpisode(raw, show) {
     (Array.isArray(sc.beats) ? sc.beats : []).slice(0, 70).forEach(b => {
       if (!b || typeof b !== 'object') return;
       const nb = {};
-      if (b.say && b.line && strip(b.line)) { nb.say = String(b.say).toUpperCase().slice(0, 20); nb.line = strip(b.line); if (EMOTES.includes(b.emote)) nb.emote = b.emote; if (b.sing) nb.sing = true; if (b.hold != null) nb.hold = clamp(+b.hold || 0, 0, 3); }
-      if (b.enter && typeof b.enter === 'object') nb.enter = mapOf(b.enter, v => { const to = typeof v === 'object' && v ? v.to : v; if (!posOk(to)) return undefined; return typeof v === 'object' ? { to, from: v.from } : v; });
-      if (b.exit && typeof b.exit === 'object') nb.exit = mapOf(b.exit, v => ['L', 'R', 'window'].includes(String(v)) ? String(v) : 'R');
+      if (b.say && b.line && strip(b.line)) { nb.say = String(b.say).toUpperCase().slice(0, 20); nb.line = strip(b.line); if (EMOTES.includes(b.emote)) nb.emote = b.emote; if (b.sing) nb.sing = true; if (b.service) nb.service = true; if (b.hold != null) nb.hold = clamp(+b.hold || 0, 0, 3); }
+      if (b.enter && typeof b.enter === 'object') nb.enter = mapOf(b.enter, v => { const to = typeof v === 'object' && v ? v.to : v; if (!posOk(to)) return undefined; return typeof v === 'object' ? { to, from: String(v.from || '').slice(0, 8) } : v; });
+      if (b.exit && typeof b.exit === 'object') nb.exit = mapOf(b.exit, v => ['L', 'R', 'window', 'down'].includes(String(v)) ? String(v) : 'R');
+      if (b.mic && typeof b.mic === 'object') nb.mic = mapOf(b.mic, v => v === 'on' ? 'on' : 'off');
       if (b.move && typeof b.move === 'object') nb.move = mapOf(b.move, v => posOk(v) ? v : undefined);
       if (b.pose && typeof b.pose === 'object') nb.pose = mapOf(b.pose, v => v === 'sit' ? 'sit' : 'stand');
       if (b.prop && typeof b.prop === 'object') nb.prop = mapOf(b.prop, v => PROPS.includes(v) ? v : 'none');
@@ -1188,7 +1278,7 @@ function pickEpisode() { const eps = allEpisodes(), seen = lsGet('tv_seen', {}) 
 async function tune(ch, ep) {
   S.ch = ch; newRun(); S.card = null; S.chars = {}; S.now = null; S.paused = false; S.fx.fade = 0; S.fx.fadeTo = 0; syncButtons(); blip();
   const def = CHANNELS.find(c => c.ch === ch);
-  showOSD('CH ' + pad2(ch) + '  ' + def.label);
+  showOSD('CH ' + pad2(ch) + (def.label.length <= 12 ? '  ' + def.label : ''));
   if (def.show) await playEpisode(ep || pickEpisode());
   else { S.card = { style: 'bars', text: 'CH ' + pad2(ch) + ' ' + def.label, sub: 'COMING SOON' }; S.cardT = 0; }
 }
@@ -1227,13 +1317,13 @@ function openGuide() {
 }
 function closeGuide() { $('guide').hidden = true; if (guidePaused) { guidePaused = false; setPaused(false); } }
 function renderGuide(msg) {
-  const eps = allEpisodes(), seen = lsGet('tv_seen', {}) || {}, st = getState('rents_due'), c = cfg(), hasKey = !!getKey();
+  const eps = allEpisodes(), seen = lsGet('tv_seen', {}) || {}, st = getState(SHOW_ID), c = cfg(), hasKey = !!getKey();
   $('gin').innerHTML = `<h1>TV GUIDE</h1><p class="dim">Tap a show to tune in.</p>
   <h2>CHANNELS</h2>` + CHANNELS.map(ch => `<div class="row ${ch.show ? '' : 'soon'}" ${ch.show ? 'data-act="ch" data-ch="' + ch.ch + '"' : ''}><span class="n">${pad2(ch.ch)}</span><span class="t">${esc(ch.label)}</span><span class="s">${ch.show ? 'SITCOM' : 'COMING SOON'}</span></div>`).join('') +
-    `<h2>RENT'S DUE · EPISODES</h2>` + eps.slice().reverse().map(e => `<div class="row" data-act="ep" data-ep="${e.ep}"><span class="n">${e.ep}</span><span class="t">${esc(e.title)}</span><span class="s">${seen['rents_due:' + e.ep] ? '✓ SEEN' : 'NEW'}</span></div>`).join('') +
+    `<h2>${esc(SHOW_NAME)} · EPISODES</h2>` + eps.slice().reverse().map(e => `<div class="row" data-act="ep" data-ep="${e.ep}"><span class="n">${e.ep}</span><span class="t">${esc(e.title)}</span><span class="s">${seen[SHOW_ID + ':' + e.ep] ? '✓ SEEN' : 'NEW'}</span></div>`).join('') +
     `<h2>WRITE A NEW EPISODE</h2>
   <p>The writer reads the story so far, then the director stages it. Takes about a minute.</p>
-  <label for="prem">Optional idea</label><textarea id="prem" maxlength="200" placeholder="e.g. Mitch gets a rival warranty salesman"></textarea>
+  <label for="prem">Optional idea</label><textarea id="prem" maxlength="200" placeholder="e.g. Theo tries to fix the stuck window to impress Nina"></textarea>
   <button class="gbtn" id="genBtn" data-act="gen">✍ WRITE EPISODE ${st.next}</button><p class="status" id="gstat">${msg || ''}</p>
   <details id="gset"><summary>⚙ SETTINGS · API key ${hasKey ? '✓ set' : '✗ not set'}</summary>
     <label for="keyin">Anthropic API key</label><input id="keyin" type="password" autocomplete="off" placeholder="sk-ant-…">
@@ -1251,7 +1341,7 @@ async function onGenerate() {
   let label = 'Starting…'; const tick = setInterval(() => { stat.textContent = label + ' ' + Math.round((Date.now() - t0) / 1000) + 's'; }, 500);
   stat.textContent = label;
   try {
-    const { ep, used } = await generateEpisode('rents_due', ($('prem').value || '').trim().slice(0, 200), t => { label = t; stat.textContent = t; });
+    const { ep, used } = await generateEpisode(SHOW_ID, ($('prem').value || '').trim().slice(0, 200), t => { label = t; stat.textContent = t; });
     clearInterval(tick);
     renderGuide(`Episode ${ep.ep} “${esc(ep.title)}” is ready · ${used.in.toLocaleString()} tokens in, ${used.out.toLocaleString()} out. Tap it above to watch.`);
   } catch (e) { clearInterval(tick); stat.className = 'status err'; stat.textContent = apiError(e); btn.disabled = false; }
@@ -1290,7 +1380,7 @@ document.addEventListener('keydown', e => {
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') setPaused(true); else checkForUpdate(); });
 
 /* ---------- update check (same pattern as the other apps in this repo) ---------- */
-const APP_VERSION = '2026-10-08.1200';
+const APP_VERSION = '2026-10-08.2030';
 let updateShown = false;
 async function checkForUpdate() {
   if (updateShown || location.protocol === 'file:') return;
