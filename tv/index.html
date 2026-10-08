@@ -771,7 +771,7 @@ const SHOW_ID = 'fire_escape', SHOW_NAME = 'LUNCH BREAK FIRE ESCAPE', SHOW_SUB =
 
 const BIBLE = `SHOW: ${SHOW_NAME} — a warm 90s-style sitcom about three best friends on their lunch break. Every episode happens between 12:00 and 2:00 PM.
 PREMISE: NINA, THEO and MAYA have been best friends since kindergarten. Nina and Theo have both been secretly in love with each other for years. Neither will say it, because losing the friendship would be worse, and each is sure the other only sees a friend. THE AUDIENCE KNOWS BOTH SIDES. Maya knows both sides too and quietly plays matchmaker. The comedy is the near-miss: almost-confessions, interruptions, each one misreading the other, Maya's schemes falling apart at the last second.
-TONE: light and silly with a little ache underneath. Family friendly (PG). Every joke must make sense to someone watching for the very first time.
+TONE: light and silly with a little ache underneath, and a little risqué: PG-13 innuendo that reads innocent on the surface and winks underneath (tasteful, never crude or explicit). Every joke must make sense to someone watching for the very first time.
 CAST:
 - NINA (28): front desk at a dentist's office that closes 12 to 2. Organized, over-prepares, rehearses what she'll say to Theo, then panics and blurts something about teeth or toothbrushes instead. Must be back at work by 2:00.
 - THEO (29): overnight security guard at a mattress warehouse, so noon is his "morning" (he says good morning at lunch, eats cereal at 12:30, yawns a lot). Sweet, sleepy, misses every hint. In love with Nina and sure she sees him as a buddy. Arrives by climbing the fire escape because the buzzer is broken.
@@ -792,6 +792,7 @@ RULES
 - Build the episode around one near-miss: one simple situation where Nina and Theo almost say it, escalating each scene, interrupted or dodged at the end. Status quo returns, slightly more painful.
 - Include at least two of Maya's headset bits (a two-way line, a voice switch, or a mute mix-up) and at least one visual gag (the window, the ladder, the pigeon, food, someone falling asleep).
 - Every joke must land inside its own scene. No puns, no wordplay, no references a new viewer would not get; if you call back to an earlier episode, explain it in the same line.
+- Innuendo is welcome: one or two double meanings per episode that work both ways (the pilot's "your package is on its way" is the model). They live mostly in Maya's headset lines, where a customer-support phrase lands as something cheeky about Nina and Theo. Suggestive, never vulgar: no explicit sexual content, no crude words, and the innocent reading must always be a complete joke on its own.
 - Keep every line under 18 words. Short exchanges, quick replies, no speeches. Give Theo and Nina at least one moment each where the audience can see they care.
 - Only the two sets. Only NINA, THEO, MAYA and the off-screen CUSTOMER (at most 3 short CUSTOMER lines). No other characters.
 - Mark Maya's headset clearly: [MAYA unmutes] / [MAYA mutes], and put (customer voice) before lines she says in her work voice.
@@ -1380,7 +1381,7 @@ document.addEventListener('keydown', e => {
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') setPaused(true); else checkForUpdate(); });
 
 /* ---------- update check (same pattern as the other apps in this repo) ---------- */
-const APP_VERSION = '2026-10-08.2030';
+const APP_VERSION = '2026-10-08.2100';
 let updateShown = false;
 async function checkForUpdate() {
   if (updateShown || location.protocol === 'file:') return;
