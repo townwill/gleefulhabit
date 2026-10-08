@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Pixel TV">
+<meta name="theme-color" content="#0b0a0f">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png">
+<title>Pixel TV</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
+<style>
+:root{
+  --room:#0b0a0f; --plastic:#cdc4ae; --plastic2:#a39a85; --plastic3:#6f685a;
+  --phosphor:#7dffa0; --amber:#ffc15e; --ink:#e8e2d0; --btn:#2b2934; --btn-edge:#121117;
+  --mono:"VT323",ui-monospace,Menlo,monospace; --px:"Press Start 2P","VT323",monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--room);color:var(--ink);font-family:var(--mono);overscroll-behavior:none}
+body{min-height:100dvh;display:flex;flex-direction:column;align-items:center;padding:max(10px,env(safe-area-inset-top)) 10px max(14px,env(safe-area-inset-bottom));
+  background:radial-gradient(ellipse at 50% 30%,#1b1826 0%,#0b0a0f 70%)}
+.tv{width:min(100%,calc((100dvh - 190px) * 1.3333 + 40px),720px);margin:0 auto}
+.cab{background:linear-gradient(160deg,var(--plastic) 0%,var(--plastic2) 60%,var(--plastic3) 100%);border-radius:26px;padding:16px 16px 10px;
+  box-shadow:0 18px 40px rgba(0,0,0,.65),inset 0 2px 0 rgba(255,255,255,.35),inset 0 -6px 12px rgba(0,0,0,.35)}
+.screen{position:relative;width:100%;aspect-ratio:4/3;background:#000;border-radius:9% / 11%;overflow:hidden;
+  box-shadow:inset 0 0 0 3px #000,inset 0 0 50px 8px #000,0 0 0 4px #22201a,0 0 0 6px rgba(255,255,255,.18);isolation:isolate}
+#cv{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;
+  filter:contrast(1.1) saturate(1.2) brightness(1.04) blur(.35px);animation:flick 5s steps(1) infinite}
+#noise{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;opacity:0;pointer-events:none;mix-blend-mode:screen}
+.fx{position:absolute;inset:0;pointer-events:none}
+.scan{background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.30) 3px,rgba(0,0,0,0) 4px);mix-blend-mode:multiply}
+.mask{background:repeating-linear-gradient(to right,rgba(255,0,0,.05) 0,rgba(255,0,0,.05) 1px,rgba(0,255,0,.05) 1px,rgba(0,255,0,.05) 2px,rgba(0,0,255,.05) 2px,rgba(0,0,255,.05) 3px)}
+.vig{background:radial-gradient(ellipse at center,rgba(0,0,0,0) 52%,rgba(0,0,0,.62) 100%)}
+.glare{background:linear-gradient(128deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,0) 28%),radial-gradient(ellipse at 22% 10%,rgba(255,255,255,.10),rgba(255,255,255,0) 40%)}
+.roll{background:linear-gradient(to bottom,rgba(255,255,255,0),rgba(255,255,255,.045) 50%,rgba(255,255,255,0));height:22%;top:-25%;bottom:auto;animation:roll 7.5s linear infinite}
+@keyframes roll{to{top:110%}}
+@keyframes flick{0%{opacity:1}7%{opacity:.965}8%{opacity:1}42%{opacity:.975}43%{opacity:1}77%{opacity:.97}78%{opacity:1}}
+.screen.pwr-on{animation:crtOn .55s cubic-bezier(.2,.8,.2,1) both}
+.screen.pwr-off{animation:crtOff .4s ease-in both}
+@keyframes crtOn{0%{transform:scale(1,.004);filter:brightness(5)}45%{transform:scale(1,.01);filter:brightness(4)}100%{transform:scale(1,1);filter:brightness(1)}}
+@keyframes crtOff{0%{transform:scale(1,1);filter:brightness(1)}60%{transform:scale(1,.006);filter:brightness(4)}100%{transform:scale(0,.004);filter:brightness(6)}}
+.osd{position:absolute;top:5.5%;right:7%;font:clamp(22px,6.6vw,44px)/1 var(--mono);color:var(--phosphor);text-shadow:0 0 8px rgba(125,255,160,.8),2px 2px 0 #012;letter-spacing:.06em;opacity:0;transition:opacity .25s;text-align:right}
+.osd.show{opacity:1}
+.cap{position:absolute;top:5.5%;left:7%;font:clamp(15px,4.2vw,26px)/1.1 var(--mono);color:#fff;text-shadow:0 0 6px rgba(255,255,255,.5),2px 2px 0 #000;letter-spacing:.08em;opacity:0;transition:opacity .35s}
+.cap.show{opacity:.95}
+.sub{position:absolute;left:3%;right:3%;bottom:3.5%;text-align:center;font:clamp(15px,4.5vw,29px)/1.02 var(--mono);color:#fff;pointer-events:none}
+.sub span.line{display:inline-block;background:rgba(0,0,0,.55);padding:1px 8px 2px;border-radius:2px;text-shadow:0 0 6px rgba(160,255,210,.55),2px 2px 0 #000}
+.sub b{font-weight:400;letter-spacing:.05em;margin-right:.35em}
+.offmsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:10%;font:clamp(18px,5vw,30px)/1.3 var(--mono);color:#4b5b4f;letter-spacing:.1em;background:#050606;z-index:3}
+.offmsg.hide{display:none}
+.brandbar{display:flex;align-items:center;justify-content:space-between;padding:10px 6px 2px;font:clamp(13px,3.4vw,18px) var(--mono);color:#40392c;letter-spacing:.18em}
+.led{width:9px;height:9px;border-radius:50%;background:#401010;box-shadow:inset 0 0 2px #000;display:inline-block;margin-right:8px;vertical-align:middle}
+.led.on{background:#ff4a2a;box-shadow:0 0 8px #ff4a2a}
+.knobs{display:flex;gap:8px}.knobs i{width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#8a8372,#35302a);box-shadow:0 2px 3px rgba(0,0,0,.5)}
+.remote{margin-top:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.remote button,.gbtn{font:inherit;font-size:clamp(19px,5vw,26px);letter-spacing:.06em;color:var(--ink);background:var(--btn);border:0;border-bottom:5px solid var(--btn-edge);border-radius:13px;min-height:54px;padding:6px 4px;cursor:pointer;touch-action:manipulation;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+.remote button:active,.gbtn:active{transform:translateY(3px);border-bottom-width:2px}
+.remote .pwr{background:#8e2323;grid-column:span 1}
+.remote .wide{grid-column:span 2}
+.remote button.lit{color:var(--phosphor);text-shadow:0 0 8px rgba(125,255,160,.7)}
+.ver{margin:14px 0 0;text-align:center;font-size:17px;color:#5d5870;letter-spacing:.08em}
+
+/* ---------- TV guide ---------- */
+.guide{position:fixed;inset:0;z-index:20;background:#030804;color:var(--phosphor);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:max(16px,env(safe-area-inset-top)) 16px 40px}
+.guide[hidden]{display:none}
+.gin{max-width:640px;margin:0 auto}
+.guide h1{font:400 clamp(26px,7vw,40px)/1 var(--px);margin:6px 0 4px;color:var(--amber);text-shadow:0 0 10px rgba(255,193,94,.5);letter-spacing:.02em}
+.guide h2{font:400 clamp(24px,6vw,32px)/1 var(--mono);margin:22px 0 8px;color:var(--amber);letter-spacing:.1em;border-bottom:2px dashed rgba(125,255,160,.3);padding-bottom:4px}
+.guide p,.guide label{font-size:clamp(19px,4.8vw,23px);line-height:1.15;margin:6px 0;color:#a8d8b4}
+.guide .dim{color:#5f8a6b}
+.row{display:flex;gap:10px;align-items:center;padding:10px 12px;margin:8px 0;border:2px solid rgba(125,255,160,.35);border-radius:6px;background:rgba(125,255,160,.05);cursor:pointer;font-size:clamp(20px,5.2vw,26px)}
+.row:active{background:rgba(125,255,160,.18)}
+.row .n{color:var(--amber);min-width:3.2ch}.row .t{flex:1}.row .s{color:#5f8a6b;font-size:.8em}
+.row.soon{opacity:.55;cursor:default}
+.guide input,.guide textarea,.guide select{width:100%;font:inherit;font-size:22px;color:var(--phosphor);background:#02080a;border:2px solid rgba(125,255,160,.4);border-radius:6px;padding:8px 10px;margin:4px 0}
+.guide textarea{min-height:70px;resize:vertical}
+.guide .gbtn{width:100%;margin:8px 0;color:#04140a;background:var(--phosphor);border-bottom-color:#2b8f4b}
+.guide .gbtn.alt{background:var(--btn);color:var(--ink);border-bottom-color:var(--btn-edge)}
+.guide details{margin-top:18px;border:2px dashed rgba(125,255,160,.3);border-radius:6px;padding:6px 12px}
+.guide summary{font-size:24px;cursor:pointer;color:var(--amber);padding:6px 0}
+.status{min-height:1.2em;color:var(--amber)!important}
+.status.err{color:#ff8a7a!important}
+.updatebar{position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:40;display:flex;flex-direction:column;align-items:center;gap:2px;font:inherit;background:var(--amber);color:#2a1a00;border:0;border-radius:12px;padding:10px;font-size:22px;box-shadow:0 6px 20px rgba(0,0,0,.6)}
+.updatebar b{font-weight:400;font-size:26px}
+</style>
+</head>
+<body>
+<div class="tv">
+  <div class="cab">
+    <div class="screen" id="screen">
+      <canvas id="cv" width="320" height="240"></canvas>
+      <canvas id="noise" width="107" height="80"></canvas>
+      <div class="fx mask"></div><div class="fx scan"></div><div class="fx roll"></div><div class="fx vig"></div><div class="fx glare"></div>
+      <div class="osd" id="osd"></div>
+      <div class="cap" id="cap"></div>
+      <div class="sub" id="sub"></div>
+      <div class="offmsg" id="offmsg">TAP ⏻ TO POWER ON</div>
+    </div>
+    <div class="brandbar"><span><i class="led" id="led"></i>TELEVISTA&nbsp;13</span><span class="knobs"><i></i><i></i></span></div>
+  </div>
+  <div class="remote">
+    <button class="pwr" id="bPwr" aria-label="Power">⏻</button>
+    <button id="bChDn" aria-label="Channel down">CH ▼</button>
+    <button id="bChUp" aria-label="Channel up">CH ▲</button>
+    <button id="bMute" aria-label="Sound">SND ON</button>
+    <button id="bPlay" class="wide" aria-label="Pause or play">❚❚ PAUSE</button>
+    <button id="bSkip" aria-label="Replay or next">⟲ RESTART</button>
+    <button id="bGuide" aria-label="TV guide">GUIDE</button>
+  </div>
+  <p class="ver" id="ver"></p>
+</div>
+<div class="guide" id="guide" hidden><div class="gin" id="gin"></div></div>
+<script>
+'use strict';
+/* =====================================================================
+   PIXEL TV — a CRT that plays original, AI-written episodic shows.
+   Single file, no build step. Sections:
+     1. helpers   2. audio engine   3. speech   4. pixel renderer
+     5. sets      6. show data      7. playback engine   8. writer/director (API)
+     9. UI / guide   10. boot
+   ===================================================================== */
+
+/* ---------- 1. helpers ---------- */
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const rnd = (a, b) => a + Math.random() * (b - a);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const lsGet = (k, d = null) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
+const hash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+const mf = m => 440 * Math.pow(2, (m - 69) / 12);
+const estDur = (text, rate = 1) => 0.35 + (String(text).trim().split(/\s+/).length * 0.36) / clamp(rate, 0.5, 1.6);
+
+/* ---------- 2. audio engine (everything is synthesized — no audio files) ---------- */
+const AU = {
+  ctx: null, muted: false, vol: 0.9, curMus: null,
+  init() {
+    if (this.ctx) return true;
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* iOS 16.4+: ignore the silent switch */ }
+    const C = window.AudioContext || window.webkitAudioContext;
+    if (!C) return false;
+    try { this.setup(new C()); } catch (e) { return false; }
+    return true;
+  },
+  setup(ctx) {
+    this.ctx = ctx;
+    this.comp = ctx.createDynamicsCompressor();
+    this.comp.threshold.value = -16; this.comp.ratio.value = 5; this.comp.attack.value = 0.004; this.comp.release.value = 0.2;
+    this.master = ctx.createGain(); this.master.gain.value = this.muted ? 0 : this.vol;
+    this.comp.connect(this.master); this.master.connect(ctx.destination);
+    const bus = v => { const g = ctx.createGain(); g.gain.value = v; g.connect(this.comp); return g; };
+    this.musBus = bus(0.5); this.sfxBus = bus(0.85); this.lafBus = bus(1.6);
+    const len = ctx.sampleRate * 2, b = ctx.createBuffer(1, len, ctx.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    this.noiseBuf = b;
+  },
+  resume() { try { if (this.ctx && this.ctx.state !== 'running' && this.ctx.resume) this.ctx.resume(); } catch (e) { } },
+  suspend() { try { if (this.ctx && this.ctx.suspend && !this.offline) this.ctx.suspend(); } catch (e) { } },
+  setMuted(m) {
+    this.muted = m;
+    if (this.master) this.master.gain.setTargetAtTime(m ? 0 : this.vol, this.ctx.currentTime, 0.02);
+    if (m && window.speechSynthesis) try { speechSynthesis.cancel(); } catch (e) { }
+  },
+  now() { return this.ctx.currentTime + 0.03; },
+
+  /* --- primitives --- */
+  tone(bus, o) {
+    const c = this.ctx, t = o.t, dur = o.dur, a = o.a == null ? 0.005 : o.a, r = o.r == null ? 0.05 : o.r, vol = o.vol == null ? 0.2 : o.vol;
+    const osc = c.createOscillator(), g = c.createGain();
+    osc.type = o.type || 'square';
+    osc.frequency.setValueAtTime(o.f, t);
+    if (o.f2) osc.frequency.exponentialRampToValueAtTime(Math.max(1, o.f2), t + dur);
+    let node = osc;
+    if (o.lp) {
+      const fl = c.createBiquadFilter(); fl.type = 'lowpass'; fl.Q.value = o.q || 1;
+      fl.frequency.setValueAtTime(o.lp, t);
+      if (o.lp2) fl.frequency.exponentialRampToValueAtTime(o.lp2, t + dur);
+      osc.connect(fl); node = fl;
+    }
+    node.connect(g); g.connect(bus);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t + a);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur + r);
+    osc.start(t); osc.stop(t + dur + r + 0.03);
+  },
+  noise(bus, o) {
+    const c = this.ctx, t = o.t, dur = o.dur, a = o.a == null ? 0.003 : o.a;
+    const s = c.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true;
+    const fl = c.createBiquadFilter(); fl.type = o.type || 'lowpass'; fl.Q.value = o.q || 1;
+    fl.frequency.setValueAtTime(o.f || 1000, t);
+    if (o.f2) fl.frequency.exponentialRampToValueAtTime(o.f2, t + dur);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(o.vol == null ? 0.2 : o.vol, t + a);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(fl); fl.connect(g); g.connect(bus);
+    s.start(t, Math.random() * 1.5); s.stop(t + dur + 0.05);
+  },
+
+  /* --- instruments --- */
+  slap(bus, t, m, dur, vol = 0.55) {
+    const f = mf(m);
+    this.tone(bus, { t, type: 'sawtooth', f, dur, vol, a: 0.004, r: 0.04, lp: 1900, lp2: 240, q: 3 });
+    this.tone(bus, { t, type: 'triangle', f, dur: dur * 0.9, vol: vol * 0.8 });
+    this.tone(bus, { t, type: 'square', f: f * 2, dur: 0.05, vol: vol * 0.3, a: 0.001, r: 0.02 });
+    this.noise(bus, { t, dur: 0.025, vol: vol * 0.45, type: 'highpass', f: 3200 });
+  },
+  lead(bus, t, m, dur, vol = 0.14) {
+    const f = mf(m);
+    this.tone(bus, { t, type: 'square', f, dur, vol, a: 0.01, r: 0.06, lp: 3600 });
+    this.tone(bus, { t, type: 'square', f: f * 1.005, dur, vol: vol * 0.5, a: 0.01, r: 0.06 });
+  },
+  stab(bus, t, ms, dur, vol = 0.07) { ms.forEach(m => this.tone(bus, { t, type: 'sawtooth', f: mf(m), dur, vol, a: 0.005, r: 0.05, lp: 2800, lp2: 800 })); },
+  kick(bus, t, v = 0.7) { this.tone(bus, { t, type: 'sine', f: 150, f2: 45, dur: 0.14, vol: v, a: 0.002, r: 0.03 }); this.noise(bus, { t, dur: 0.02, vol: v * 0.3, type: 'lowpass', f: 900 }); },
+  snare(bus, t, v = 0.4) { this.noise(bus, { t, dur: 0.13, vol: v, type: 'bandpass', f: 1900, q: 0.7 }); this.tone(bus, { t, type: 'triangle', f: 200, f2: 120, dur: 0.08, vol: v * 0.6, a: 0.002 }); },
+  hat(bus, t, v = 0.12, open) { this.noise(bus, { t, dur: open ? 0.12 : 0.035, vol: v, type: 'highpass', f: 7500 }); },
+
+  /* --- music --- */
+  stopMusic() {
+    const b = this.curMus; if (!b) return; this.curMus = null;
+    try { b.gain.cancelScheduledValues(this.ctx.currentTime); b.gain.setTargetAtTime(0, this.ctx.currentTime, 0.06); } catch (e) { }
+    setTimeout(() => { try { b.disconnect(); } catch (e) { } }, 700);
+  },
+  playMusic(name) {
+    this.stopMusic();
+    if (!this.ctx) return 9.2;
+    const bus = this.ctx.createGain(); bus.connect(this.musBus); this.curMus = bus;
+    const t0 = this.now() + 0.04;
+    if (name === 'theme') return this.theme(bus, t0);
+    if (name === 'outro') return this.outro(bus, t0);
+    return 0;
+  },
+  theme(bus, t0) {
+    const E = 60 / 126 / 2;                           // one eighth note
+    const roots = [48, 45, 41, 43];                   // C  Am  F  G
+    const chords = [[60, 64, 67], [57, 60, 64], [60, 65, 69], [59, 62, 67]];
+    const bassPat = [[0, 0, 0.9], [1, 0, 0.45], [2, 12, 0.9], [3, 0, 0.45], [4, 7, 0.9], [5, 0, 0.45], [6, 10, 0.9], [7, 12, 0.45]];
+    const mel = [
+      [76, 0, 79, 0, 81, 79, 76, 0],
+      [72, 0, 76, 0, 79, 76, 74, 0],
+      [81, 0, 77, 0, 76, 77, 79, 0],
+      [79, 0, 83, 0, 86, 83, 79, 0]];
+    for (let bar = 0; bar < 4; bar++) {
+      const b0 = t0 + bar * 8 * E;
+      bassPat.forEach(([i, off, len]) => this.slap(bus, b0 + i * E, roots[bar] + off, len * E, 0.5));
+      mel[bar].forEach((m, i) => { if (m) this.lead(bus, b0 + i * E, m, E * 1.7, 0.13); });
+      [3, 7].forEach(i => this.stab(bus, b0 + i * E, chords[bar], E * 0.7, 0.06));
+      for (let i = 0; i < 8; i++) {
+        this.hat(bus, b0 + i * E, i % 2 ? 0.07 : 0.12);
+        if (i === 0 || i === 4 || (i === 3 && bar % 2)) this.kick(bus, b0 + i * E);
+        if (i === 2 || i === 6) this.snare(bus, b0 + i * E);
+      }
+    }
+    const f0 = t0 + 32 * E;                           // final button
+    this.slap(bus, f0, 48, 1.3, 0.6); this.lead(bus, f0, 84, 1.4, 0.15); this.lead(bus, f0, 76, 1.4, 0.1);
+    this.stab(bus, f0, [60, 64, 67, 72], 1.1, 0.08); this.kick(bus, f0, 0.8); this.snare(bus, f0, 0.5);
+    this.noise(bus, { t: f0, dur: 1.2, vol: 0.18, type: 'highpass', f: 5000 });
+    return 32 * E + 1.6;
+  },
+  outro(bus, t0) {
+    const E = 0.2;
+    [[0, 48], [1, 48], [2, 55], [3, 53], [4, 52], [5, 50]].forEach(([i, m]) => this.slap(bus, t0 + i * E, m, 0.16));
+    [[0, 76], [2, 79], [4, 81], [5, 79]].forEach(([i, m]) => this.lead(bus, t0 + i * E, m, 0.3));
+    const f = t0 + 6 * E; this.slap(bus, f, 48, 1.0, 0.6); this.lead(bus, f, 84, 1.1); this.stab(bus, f, [60, 64, 67, 72], 0.9); this.kick(bus, f); this.snare(bus, f, 0.5);
+    return 6 * E + 1.4;
+  },
+  /* one-shot stingers play on the sfx bus (don't interrupt the music bus) */
+  sting(kind) {
+    if (!this.ctx) return 1.2;
+    const t = this.now(), b = this.sfxBus;
+    if (kind === 'dramatic') {
+      [[0, 48], [0.42, 47], [0.84, 43]].forEach(([o, m], i) => {
+        this.tone(b, { t: t + o, type: 'sawtooth', f: mf(m - 12), dur: i === 2 ? 1.6 : 0.3, vol: 0.36, a: 0.004, r: 0.2, lp: 1400, lp2: 200 });
+        this.tone(b, { t: t + o, type: 'square', f: mf(m), dur: i === 2 ? 1.2 : 0.25, vol: 0.14, lp: 2200 });
+        this.tone(b, { t: t + o, type: 'sine', f: 110, f2: 40, dur: 0.3, vol: 0.45 });
+        this.noise(b, { t: t + o, dur: 0.4, vol: 0.22, type: 'lowpass', f: 2500, f2: 300 });
+      });
+      return 2.4;
+    }
+    const riffs = [
+      [[0, 48], [0.14, 48], [0.28, 55], [0.42, 53], [0.56, 48]],
+      [[0, 45], [0.14, 45], [0.28, 52], [0.42, 50], [0.56, 48]],
+      [[0, 41], [0.14, 48], [0.28, 45], [0.42, 43], [0.56, 48]]];
+    const riff = riffs[(Math.random() * riffs.length) | 0];
+    riff.forEach(([o, m], i) => this.slap(b, t + o, m, i === 4 ? 0.4 : 0.11, 0.6));
+    this.stab(b, t + 0.56, [60, 64, 67], 0.35, 0.08); this.snare(b, t + 0.56, 0.35);
+    return 1.1;
+  },
+  jingle(text, dur) {                                  // a few cheesy chiptune notes under a sung line
+    if (!this.ctx) return;
+    const t = this.now(), scale = [72, 74, 76, 79, 81, 84], n = Math.max(3, Math.min(9, text.split(/\s+/).length));
+    let h = hash(text), prev = 2;
+    for (let i = 0; i < n; i++) { h = Math.imul(h, 1103515245) + 12345 >>> 0; prev = clamp(prev + ((h >> 8) % 3) - 1, 0, 5); this.lead(this.sfxBus, t + (i * dur) / n, scale[prev], (dur / n) * 0.9, 0.09); }
+  },
+
+  /* --- sound effects (return seconds) --- */
+  sfx(name) {
+    if (!this.ctx) return 0.3;
+    const t = this.now(), b = this.sfxBus, f = SFX[name];
+    if (!f) return 0;
+    return f.call(this, b, t);
+  },
+
+  /* --- audience --- */
+  laugh(kind) {
+    const big = kind === 'big', total = big ? 2.0 : 1.15;
+    if (!this.ctx) return total;
+    const t = this.now();
+    if (kind === 'applause') return this.applause(t, 2.8);
+    if (kind === 'ooh') return this.ooh(t);
+    const n = big ? 12 : 7;
+    for (let i = 0; i < n; i++) this.laugher(this.lafBus, t + rnd(0, 0.22), total * rnd(0.55, 1), rnd(170, 360), big ? 0.5 : 0.45);
+    this.noise(this.lafBus, { t, dur: total * 0.8, vol: big ? 0.09 : 0.06, type: 'bandpass', f: 1500, q: 0.8, a: 0.05 });
+    return total;
+  },
+  laugher(bus, t, dur, f0, vol) {
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = 'sawtooth';
+    const f1 = c.createBiquadFilter(), f2 = c.createBiquadFilter();
+    f1.type = f2.type = 'bandpass'; f1.Q.value = f2.Q.value = 4; f2.frequency.value = 1250;
+    o.connect(f1); o.connect(f2); f1.connect(g); f2.connect(g); g.connect(bus);
+    const step = 1 / rnd(5.5, 7.7);
+    let tt = t, k = 0;
+    g.gain.setValueAtTime(0.0001, t);
+    while (tt < t + dur) {
+      const amp = vol * Math.max(0.15, 1 - ((tt - t) / dur) * 0.85);
+      g.gain.setValueAtTime(0.0001, tt);
+      g.gain.linearRampToValueAtTime(amp, tt + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, tt + step * 0.82);
+      o.frequency.setValueAtTime(f0 * (1.12 - k * 0.012), tt);
+      f1.frequency.setValueAtTime(rnd(680, 880), tt);
+      tt += step; k++;
+    }
+    o.start(t); o.stop(tt + 0.05);
+  },
+  ooh(t) {
+    const c = this.ctx, g = c.createGain(), fl = c.createBiquadFilter(), lp = c.createBiquadFilter();
+    fl.type = 'bandpass'; fl.frequency.value = 430; fl.Q.value = 2.5; lp.type = 'lowpass'; lp.frequency.value = 1400;
+    fl.connect(lp); lp.connect(g); g.connect(this.lafBus);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.5, t + 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
+    for (let i = 0; i < 6; i++) {
+      const o = c.createOscillator(); o.type = 'sawtooth';
+      const f = rnd(190, 330); o.frequency.setValueAtTime(f * 1.08, t); o.frequency.exponentialRampToValueAtTime(f * 0.78, t + 1.4);
+      o.connect(fl); o.start(t + rnd(0, 0.08)); o.stop(t + 1.55);
+    }
+    return 1.4;
+  },
+  applause(t, dur) {
+    const c = this.ctx, s = c.createBufferSource(), g = c.createGain(), fl = c.createBiquadFilter();
+    s.buffer = this.noiseBuf; s.loop = true; fl.type = 'bandpass'; fl.frequency.value = 2300; fl.Q.value = 0.5;
+    s.connect(fl); fl.connect(g); g.connect(this.lafBus);
+    g.gain.setValueAtTime(0.0001, t);
+    for (let x = 0; x < dur; x += 0.03) {
+      const env = Math.min(1, x / 0.4) * Math.min(1, (dur - x) / 0.9);
+      g.gain.linearRampToValueAtTime(Math.max(0.0001, env * rnd(0.12, 0.5)), t + x);
+    }
+    g.gain.linearRampToValueAtTime(0.0001, t + dur);
+    s.start(t); s.stop(t + dur + 0.05);
+    for (let i = 0; i < 70; i++) { const x = rnd(0, dur - 0.3); this.noise(this.lafBus, { t: t + x, dur: 0.012, vol: 0.5 * Math.min(1, x / 0.5), type: 'highpass', f: 1800 }); }
+    return dur;
+  },
+  /* muffled landlord: a wah-wah mumble through a wall */
+  mumble(dur) {
+    if (!this.ctx) return dur;
+    const c = this.ctx, t = this.now(), o = c.createOscillator(), g = c.createGain(), fl = c.createBiquadFilter();
+    o.type = 'sawtooth'; fl.type = 'lowpass'; fl.Q.value = 6; fl.frequency.value = 420;
+    o.connect(fl); fl.connect(g); g.connect(this.sfxBus);
+    g.gain.setValueAtTime(0.0001, t);
+    let tt = t;
+    while (tt < t + dur) {
+      const sy = rnd(0.13, 0.26);
+      o.frequency.setValueAtTime(rnd(80, 125), tt); fl.frequency.setValueAtTime(rnd(260, 700), tt);
+      g.gain.setValueAtTime(0.0001, tt); g.gain.linearRampToValueAtTime(0.35, tt + 0.03); g.gain.setValueAtTime(0.35, tt + sy * 0.6); g.gain.linearRampToValueAtTime(0.0001, tt + sy);
+      tt += sy + (Math.random() < 0.18 ? rnd(0.08, 0.2) : 0.02);
+    }
+    o.start(t); o.stop(tt + 0.05);
+    return dur;
+  }
+};
+
+/* named effects: function(bus, t) -> seconds */
+const SFX = {
+  click(b, t) { this.noise(b, { t, dur: 0.025, vol: 0.9, type: 'bandpass', f: 3500 }); this.tone(b, { t, type: 'square', f: 900, dur: 0.025, vol: 0.3 }); return 0.1; },
+  buzz(b, t) { this.tone(b, { t, type: 'sawtooth', f: 118, dur: 0.45, vol: 0.3, lp: 900 }); this.tone(b, { t, type: 'square', f: 60, dur: 0.45, vol: 0.2 }); return 0.5; },
+  pager(b, t) { [0, 0.11, 0.22].forEach(o => this.tone(b, { t: t + o, type: 'square', f: 2700, dur: 0.06, vol: 0.2, a: 0.002, r: 0.01 })); return 0.35; },
+  slam(b, t) { this.noise(b, { t, dur: 0.22, vol: 0.85, type: 'lowpass', f: 1300, f2: 200 }); this.tone(b, { t, type: 'sine', f: 140, f2: 50, dur: 0.18, vol: 0.7 }); this.noise(b, { t: t + 0.02, dur: 0.12, vol: 0.25, type: 'highpass', f: 4000 }); return 0.3; },
+  knock(b, t) { [0, 0.17, 0.34].forEach(o => { this.tone(b, { t: t + o, type: 'sine', f: 260, f2: 120, dur: 0.07, vol: 0.6 }); this.noise(b, { t: t + o, dur: 0.03, vol: 0.4, type: 'bandpass', f: 1200 }); }); return 0.55; },
+  bang(b, t) { [0, 0.26, 0.52].forEach(o => { this.tone(b, { t: t + o, type: 'sine', f: 85, f2: 42, dur: 0.17, vol: 0.9, a: 0.002 }); this.noise(b, { t: t + o, dur: 0.16, vol: 0.7, type: 'lowpass', f: 420 }); }); return 0.8; },
+  door(b, t) { this.noise(b, { t, dur: 0.2, vol: 0.85, type: 'lowpass', f: 700 }); this.tone(b, { t, type: 'square', f: 300, dur: 0.03, vol: 0.25 }); this.tone(b, { t: t + 0.03, type: 'sawtooth', f: 180, f2: 110, dur: 0.25, vol: 0.06, lp: 600 }); return 0.35; },
+  keys(b, t) { [72, 76, 79, 84].forEach((m, i) => { this.tone(b, { t: t + i * 0.1, type: 'triangle', f: mf(m), dur: 0.13, vol: 0.25 }); this.tone(b, { t: t + i * 0.1, type: 'square', f: mf(m), dur: 0.1, vol: 0.06, lp: 2400 }); }); return 0.5; },
+  ding(b, t) { this.tone(b, { t, type: 'sine', f: 1568, dur: 0.5, vol: 0.3, r: 0.2 }); this.tone(b, { t, type: 'sine', f: 2349, dur: 0.35, vol: 0.12 }); this.tone(b, { t, type: 'sine', f: 3136, dur: 0.2, vol: 0.06 }); return 0.6; },
+  static(b, t) { this.noise(b, { t, dur: 0.35, vol: 0.4, type: 'bandpass', f: 3000, q: 0.4 }); return 0.35; },
+  paper(b, t) { for (let i = 0; i < 5; i++) this.noise(b, { t: t + i * 0.055, dur: 0.05, vol: 0.28, type: 'bandpass', f: rnd(3000, 5500), q: 1.2 }); return 0.35; },
+  phone(b, t) { [0, 0.55].forEach(o => { this.tone(b, { t: t + o, type: 'sine', f: 480, dur: 0.4, vol: 0.14, a: 0.01 }); this.tone(b, { t: t + o, type: 'sine', f: 440, dur: 0.4, vol: 0.14, a: 0.01 }); }); return 1.0; },
+  gasp(b, t) { this.noise(b, { t, dur: 0.35, vol: 0.7, type: 'bandpass', f: 700, f2: 1700, q: 1.2, a: 0.1 }); return 0.4; },
+  whistle(b, t) { this.tone(b, { t, type: 'sine', f: 500, f2: 1800, dur: 0.5, vol: 0.4, r: 0.05 }); return 0.55; },
+  womp(b, t) { [[233, 0], [220, 0.34], [208, 0.68]].forEach(([f, o]) => this.tone(b, { t: t + o, type: 'sawtooth', f, dur: 0.3, vol: 0.32, lp: 800, a: 0.03 })); this.tone(b, { t: t + 1.02, type: 'sawtooth', f: 196, f2: 140, dur: 0.8, vol: 0.32, lp: 700, a: 0.03 }); return 1.9; },
+  rimshot(b, t) { this.snare(b, t, 0.5); this.kick(b, t + 0.12); this.noise(b, { t: t + 0.26, dur: 0.6, vol: 0.3, type: 'highpass', f: 6000 }); return 0.9; },
+  crash(b, t) { this.noise(b, { t, dur: 0.9, vol: 0.5, type: 'highpass', f: 3500 }); this.tone(b, { t, type: 'sine', f: 90, f2: 40, dur: 0.3, vol: 0.6 }); return 1.0; },
+  thud(b, t) { this.tone(b, { t, type: 'sine', f: 100, f2: 50, dur: 0.15, vol: 0.8 }); this.noise(b, { t, dur: 0.12, vol: 0.5, type: 'lowpass', f: 300 }); return 0.2; },
+  whoosh(b, t) { this.noise(b, { t, dur: 0.4, vol: 0.4, type: 'bandpass', f: 400, f2: 3000, q: 0.8, a: 0.1 }); return 0.4; }
+};
+const SFX_NAMES = Object.keys(SFX);
+
+/* ---------- 3. speech (the phone's built-in voices; free) ---------- */
+const SP = {
+  ok: typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined',
+  voices: [], assigned: {},
+  load() {
+    if (!this.ok) return;
+    const bad = /albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|fred|junior|kathy|ralph/i;
+    this.voices = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang) && !bad.test(v.name))
+      .sort((a, b) => (/premium|enhanced|neural|natural/i.test(b.name) ? 1 : 0) - (/premium|enhanced|neural|natural/i.test(a.name) ? 1 : 0) || (b.localService ? 1 : 0) - (a.localService ? 1 : 0));
+  },
+  gender(v) {
+    if (/samantha|karen|moira|tessa|victoria|allison|ava|susan|zira|fiona|serena|kate|catherine|nicky|joelle|veena|jenny|aria|emma|libby|female|sonia|hazel/i.test(v.name)) return 'f';
+    if (/daniel|alex|tom|oliver|aaron|arthur|david|mark|rishi|gordon|james|guy|ryan|george|male|thomas|eric/i.test(v.name)) return 'm';
+    return '?';
+  },
+  voiceFor(vs) {
+    if (!this.voices.length) this.load();
+    if (!this.voices.length) return null;
+    const key = vs.key || 'x';
+    if (this.assigned[key] && this.voices.includes(this.assigned[key])) return this.assigned[key];
+    let pool = this.voices.filter(v => this.gender(v) === (vs.g || '?'));
+    if (!pool.length) pool = this.voices;
+    const used = Object.values(this.assigned);
+    const v = pool.find(x => !used.includes(x)) || pool[hash(key) % pool.length];
+    this.assigned[key] = v; return v;
+  },
+  speak(text, vs) {
+    return new Promise(resolve => {
+      if (!this.ok || AU.muted || !text) { resolve(false); return; }
+      let done = false;
+      const t0 = performance.now(), est = (estDur(text, vs.rate) * 1000) / (window.TV_SPEED || 1);
+      const fin = ok => { if (done) return; done = true; clearTimeout(to); resolve(ok); };
+      const u = new SpeechSynthesisUtterance(text), v = this.voiceFor(vs);
+      if (v) u.voice = v;
+      u.lang = (v && v.lang) || 'en-US';
+      u.pitch = clamp(vs.pitch || 1, 0.1, 2); u.rate = clamp(vs.rate || 1, 0.5, 1.6); u.volume = 1;
+      u.onend = () => { const el = performance.now() - t0; if (el < est * 0.3) setTimeout(() => fin(true), est * 0.6 - el); else fin(true); };
+      u.onerror = () => fin(false);
+      const to = setTimeout(() => fin(true), est * 2.2 + 2500);
+      try { speechSynthesis.speak(u); } catch (e) { fin(false); }
+    });
+  },
+  stop() { if (this.ok) try { speechSynthesis.cancel(); } catch (e) { } }
+};
+if (SP.ok) { try { speechSynthesis.onvoiceschanged = () => SP.load(); SP.load(); } catch (e) { } }
+
+/* ---------- 4. pixel renderer (320x240, everything drawn from rectangles) ---------- */
+const W = 320, H = 240, FLOOR = 198, PXF = '"Press Start 2P", "Courier New", monospace';
+const cv = $('cv'), ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const F = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+function txt(s, x, y, size, col, align = 'left', shadow) {
+  ctx.font = size + 'px ' + PXF; ctx.textAlign = align; ctx.textBaseline = 'top';
+  if (shadow) { ctx.fillStyle = shadow; ctx.fillText(s, Math.round(x) + 1, Math.round(y) + 1); }
+  ctx.fillStyle = col; ctx.fillText(s, Math.round(x), Math.round(y));
+}
+const SKY = { day: ['#7fc4ee', '#c9e9fa'], dusk: ['#5a3d7a', '#f2995a'], night: ['#0a1030', '#1d2a5a'] };
+function sky(x, y, w, h, time, T) {
+  const [a, b] = SKY[time] || SKY.day;
+  for (let i = 0; i < h; i += 2) { ctx.fillStyle = i < h / 2 ? a : b; ctx.fillRect(x, y + i, w, 2); }
+  if (time === 'night') for (let i = 0; i < 7; i++) { const sx = x + ((hash('s' + i) % (w - 2))), sy = y + (hash('t' + i) % Math.max(2, h / 2)); F(sx, sy, 1, 1, (Math.floor(T * 2) + i) % 4 ? '#fff' : '#889'); }
+  else if (time === 'day') { F(x + 6, y + 8, 14, 4, '#fff'); F(x + 10, y + 5, 10, 4, '#fff'); F(x + w - 24, y + 14, 16, 4, '#fff'); F(x + w - 20, y + 11, 8, 4, '#fff'); }
+  else F(x + w / 2 - 6, y + h - 10, 12, 6, '#ffd36e');
+}
+const shade = (hex, k) => { const n = parseInt(hex.slice(1), 16); return '#' + [16, 8, 0].map(s => Math.round(clamp(((n >> s) & 255) * k, 0, 255)).toString(16).padStart(2, '0')).join(''); };
+
+/* ---- people ---- */
+function drawPerson(c, T) {
+  const L = c.look, u = 2, f = c.face || 1, sit = c.pose === 'sit';
+  const walking = c.moving, step = walking ? Math.floor(T * 9) % 2 : 0;
+  const talk = c.talking, shout = c.emote === 'shout';
+  let top = Math.round(c.y) - 22 * u + (sit ? 10 : 0);
+  if (walking && step) top -= 1;
+  if (talk && !walking && Math.floor(T * 7) % 2) top -= shout ? 2 : 1;
+  const X0 = Math.round(c.x);
+  const R = (dx, ty, w, h, col) => { ctx.fillStyle = col; const px = f > 0 ? X0 + dx * u : X0 - (dx + w) * u; ctx.fillRect(Math.round(px), Math.round(top + ty * u), Math.max(1, Math.round(w * u)), Math.max(1, Math.round(h * u))); };
+  if (!c.bust) F(X0 - 11, Math.round(c.y) - 1, 22, 3, 'rgba(0,0,0,.28)');
+  const skin = L.skin, sleeve = L.sleeve || L.top;
+  // legs
+  if (!sit) {
+    const lift = walking && step;
+    R(-3, 15, 2, lift ? 5 : 7, L.bottom); R(1, 15, 2, lift ? 7 : 5 + (walking ? 0 : 2), L.bottom);
+    R(-4, lift ? 20 : 21, 3, 1, L.shoes); R(1, lift ? 21 : 20 + (walking ? 0 : 1), 3, 1, L.shoes);
+  } else R(-3, 15, 6, 2, L.bottom);
+  // torso
+  const st = L.style;
+  if (st === 'jacket') { R(-4, 7, 8, 8, L.top); R(-1, 7, 2, 8, L.under); R(-4, 14, 8, 1, shade(L.top, .8)); }
+  else if (st === 'vest') { R(-4, 7, 8, 8, '#f2efe6'); R(-3, 8, 6, 7, L.top); R(-1, 7, 2, 1.5, '#fff'); R(-3, 14, 6, 1, shade(L.top, .75)); }
+  else if (st === 'suit') { R(-4, 7, 8, 8, L.top); R(-1, 7, 2, 6, '#f4f4f4'); R(-.5, 8, 1, 5, '#c0262d'); R(-4, 14, 8, 1, shade(L.top, .8)); R(-3, 8, 1, 4, shade(L.top, 1.15)); R(2, 8, 1, 4, shade(L.top, 1.15)); }
+  else if (st === 'apron') { R(-4, 7, 8, 8, L.under); R(-3, 9, 6, 6, L.top); R(-3, 7, 1, 3, L.top); R(2, 7, 1, 3, L.top); R(-2, 11, 4, 2, shade(L.top, .85)); }
+  else { R(-4, 7, 8, 8, L.top); R(-4, 14, 8, 1, shade(L.top, .8)); }
+  ctx.fillStyle = 'rgba(0,0,0,.16)'; R(3, 8, 1, 7, 'rgba(0,0,0,.16)');
+  if (L.extra === 'pager') { R(-4, 13.5, 8, .5, '#222'); R(2, 12.5, 3, 2, '#2a2a2a'); R(2.5, 13, 2, 1, (c.pagerFlash > 0 && Math.floor(T * 8) % 2) ? '#b8ff9a' : '#3d4d38'); }
+  if (L.extra === 'brickphone') { R(-7, 11, 2, 5, '#2b2b2b'); R(-7, 9, .6, 2, '#2b2b2b'); R(-6.5, 12, 1, 1, '#7aa07a'); }
+  // arms
+  const aY = sit ? 10 : 8;
+  const prop = c.prop;
+  const act = c.act && c.actT > 0 ? c.act : null;
+  if (act === 'tally') { const w = Math.floor(T * 14) % 2; R(4, 2, 2, 6, sleeve); R(4 + w * .5, 0, 2, 2, skin); R(5, -1, 1, 1.5, '#fff'); R(-6, aY, 2, 5, sleeve); R(-6, aY + 5, 2, 2, skin); }
+  else if (act === 'poke') { R(4, 9, 6, 2, sleeve); R(10, 9, 2, 2, skin); R(-6, aY, 2, 5, sleeve); R(-6, aY + 5, 2, 2, skin); }
+  else {
+    // viewer-left arm
+    if (prop === 'phone') { R(-6, 4, 2, 5, sleeve); R(-6, 2.5, 2, 2, skin); R(-7.5, 1, 2, 5, '#222'); }
+    else if (prop === 'papers') { R(-6, aY, 2, 4, sleeve); R(-6, aY + 4, 2, 2, skin); R(-6, 11, 7, 4, '#f8f6ee'); R(-5, 12, 4, .5, '#99a'); R(-5, 13, 5, .5, '#99a'); }
+    else if (prop === 'envelope') { R(-6, aY, 2, 4, sleeve); R(-6, aY + 4, 2, 2, skin); R(-7, 11, 5, 3.5, '#f1e9d2'); R(-5, 11, 1, 1, '#c0262d'); }
+    else { R(-6, aY, 2, 5, sleeve); R(-6, aY + 5, 2, 2, skin); }
+    // viewer-right arm
+    const up = shout ? 1 : (talk && Math.floor(T * 3.3 + (c.seed || 0)) % 2 === 0);
+    if (up && !sit) { R(4, 4, 2, 5, sleeve); R(4 + (Math.floor(T * 7) % 2) * .5, 2, 2, 2, skin); if (shout) { R(-6, 4, 2, 5, sleeve); R(-6, 2, 2, 2, skin); } }
+    else if (prop === 'mug') { R(4, aY, 2, 4, sleeve); R(4, aY + 4, 2, 2, skin); R(5, aY + 3, 3, 3, '#f4f0e6'); }
+    else { R(4, aY, 2, 5, sleeve); R(4, aY + 5, 2, 2, skin); }
+  }
+  // head
+  R(-4, 3, 1, 2, skin); R(3, 3, 1, 2, skin); R(-3, 0, 6, 7, skin); R(2, 1, 1, 6, shade(skin, .9)); R(-3, 6, 6, 1, shade(skin, .92));
+  R(-.5, 4.2, .5, .8, shade(skin, .8));
+  // hair
+  const hc = L.hair, hs = L.hairStyle;
+  if (hs === 'curly') { R(-4.5, -2, 9, 4.5, hc); R(-3, -3, 2, 1.5, hc); R(1, -3, 2, 1.5, hc); R(-5, 1, 2, 6, hc); R(3, 1, 2, 6, hc); R(-5.5, 6, 2, 2, hc); R(3.5, 6, 2, 2, hc); R(-3, 0, 6, 1.2, hc); R(-2, -2.6, 1, .6, shade(hc, 1.5)); }
+  else if (hs === 'side') { R(-3.5, -1, 7, 3, hc); R(-3.5, 1, 1, 2, hc); R(2.5, 1, 1, 2, hc); R(-1, -1, 1, 1.5, shade(hc, 1.6)); R(-3, .5, 3, 1, hc); }
+  else if (hs === 'slick') { R(-3.5, -1.5, 7, 3.5, hc); R(-3.5, 1, 1, 3, hc); R(2.5, 1, 1, 3, hc); R(-1, -1, 2, .5, '#777'); }
+  else if (hs === 'natural') { R(-4, -2, 8, 4.5, hc); R(-3, -3, 6, 1.5, hc); R(-4, 1, 1, 3, hc); R(3, 1, 1, 3, hc); R(-1.5, -2.5, 1, .5, shade(hc, 2)); }
+  else if (hs === 'long') { R(-4, -1.5, 8, 3.5, hc); R(-4.5, 1, 2, 10, hc); R(2.5, 1, 2, 10, hc); R(-3, 0, 6, 1, hc); }
+  else if (hs === 'bald') { R(-3.5, -.5, 7, 1, shade(skin, 1.05)); R(-4, 2, 1, 2, hc); R(3, 2, 1, 2, hc); }
+  else if (hs === 'bun') { R(-3.5, -1, 7, 3, hc); R(-1.5, -3.5, 3, 2.5, hc); R(-4, 1, 1, 4, hc); R(3, 1, 1, 4, hc); }
+  else { R(-3.5, -1, 7, 3, hc); R(-3.5, 1, 1, 2, hc); R(2.5, 1, 1, 2, hc); }
+  // face
+  const blink = ((T + (c.seed || 0) * 1.7) % 3.7) < .12, em = c.emote || L.emote || 'normal', ink = '#1a1410', brow = shade(hc, .8);
+  const eh = blink ? .5 : em === 'deadpan' ? .9 : em === 'shout' || em === 'shock' ? 2.2 : 1.6;
+  R(-2, 3.4, 1, eh, ink); R(1, 3.4, 1, eh, ink);
+  if (em === 'deadpan') { R(-2.5, 2.7, 2, .5, brow); R(.5, 2.7, 2, .5, brow); }
+  else if (em === 'shout' || em === 'shock') { R(-2.5, 1.8, 2, .5, brow); R(.5, 1.8, 2, .5, brow); }
+  else if (em === 'sad') { R(-2.5, 2.7, 1, .5, brow); R(-1.5, 2.2, 1, .5, brow); R(.5, 2.2, 1, .5, brow); R(1.5, 2.7, 1, .5, brow); }
+  else if (em === 'angry') { R(-2.5, 2.2, 1, .5, brow); R(-1.5, 2.7, 1, .5, brow); R(.5, 2.7, 1, .5, brow); R(1.5, 2.2, 1, .5, brow); }
+  const mo = '#5a1a14', mc = shade(skin, .6);
+  if (talk && Math.floor(T * 8 + (c.seed || 0)) % 2 === 0) R(-1, 5, 2, shout ? 1.8 : 1.2, mo);
+  else if (em === 'shock') R(-.5, 5, 1, 1.5, mo);
+  else if (em === 'happy') { R(-1.5, 5.4, 3, .5, mc); R(-2, 5, .5, .5, mc); R(1.5, 5, .5, .5, mc); }
+  else if (em === 'sad') { R(-1, 5.3, 2, .5, mc); R(-1.5, 5.8, .5, .5, mc); R(1, 5.8, .5, .5, mc); }
+  else R(-1, 5.4, 2, .5, mc);
+  if (L.glasses) { R(-2.5, 3, 2, 2, 'rgba(255,255,255,.18)'); R(.5, 3, 2, 2, 'rgba(255,255,255,.18)'); R(-2.7, 2.9, 2.4, .4, '#222'); R(.3, 2.9, 2.4, .4, '#222'); R(-.3, 3.3, .6, .4, '#222'); }
+}
+
+/* ---- sets: [back layer, front layer] ---- */
+function brick(x, y, w, h, base, mortar) {
+  F(x, y, w, h, base);
+  for (let r = 0; r * 6 < h; r++) { F(x, y + r * 6, w, 1, mortar); for (let c = (r % 2) * 8; c < w; c += 16) F(x + c, y + r * 6, 1, 6, mortar); }
+}
+function winFrame(x, y, w, h, time, T, lit) {
+  F(x - 3, y - 3, w + 6, h + 6, '#efe9dc');
+  if (lit) F(x, y, w, h, '#4a3b2e'), F(x + 4, y + h - 14, w - 8, 14, '#6a4a30'), F(x + w / 2 - 6, y + 10, 12, 10, '#d9c9a0'); else sky(x, y, w, h, time, T);
+  F(x + w / 2 - 1, y, 2, h, '#efe9dc'); F(x, y + h / 2 - 1, w, 2, '#efe9dc'); F(x - 5, y + h + 3, w + 10, 3, '#cfc7b4');
+}
+const SETS = {
+  apt: {
+    back(env, T) {
+      F(0, 0, W, 176, '#d9b98a'); for (let x = 0; x < W; x += 16) F(x, 0, 6, 176, '#d1ae7b'); F(0, 0, W, 8, '#b79767'); F(0, 8, W, 1, '#9b7c52');
+      F(0, 168, W, 8, '#7a5a3a'); F(0, 168, W, 1, '#9b7c52');
+      F(0, 176, W, 64, '#8a5a34'); for (let i = 0; i < 6; i++) { F(0, 176 + i * 12, W, 1, '#6e4527'); for (let x = (i % 2) * 28; x < W; x += 56) F(x, 176 + i * 12, 1, 12, '#6e4527'); }
+      // door
+      F(4, 38, 36, 138, '#4a2f1b'); F(8, 42, 28, 130, '#5e3c24'); F(11, 48, 22, 38, '#6d4729'); F(11, 94, 22, 70, '#6d4729'); F(32, 112, 3, 3, '#e8c040'); F(14, 24, 16, 10, '#2a1a10'); txt('4C', 22, 27, 6, '#e8c040', 'center');
+      // window + curtains
+      winFrame(56, 46, 56, 66, env.time, T); F(50, 40, 11, 76, '#a8453a'); F(107, 40, 11, 76, '#a8453a'); F(52, 40, 2, 76, '#c0594c'); F(109, 40, 2, 76, '#c0594c');
+      // poster
+      F(176, 54, 52, 44, '#222'); F(179, 57, 46, 38, '#f1e4c2'); F(186, 64, 14, 14, '#e0613d'); F(200, 76, 20, 14, '#3a7a8a'); F(190, 80, 8, 10, '#e8c040');
+      // kitchen
+      F(262, 66, 30, 110, '#e8e8e4'); F(262, 112, 30, 2, '#b8b8b2'); F(285, 80, 2, 20, '#999'); F(285, 120, 2, 24, '#999'); F(293, 58, 27, 44, '#8b6b43'); F(296, 62, 21, 36, '#9d7a4e'); F(293, 118, 27, 58, '#a3a09a'); F(293, 112, 27, 7, '#d4d0c6');
+      F(300, 100, 10, 12, '#d9d4c4'); F(302, 96, 6, 4, '#d9d4c4');
+      // keyboard on stand
+      F(124, 160, 2, 32, '#555'); F(154, 160, 2, 32, '#555'); F(118, 150, 44, 8, '#1c1c20'); F(120, 154, 40, 4, '#f4f4f4'); for (let x = 123; x < 158; x += 5) F(x, 154, 2, 2.5, '#111');
+      // couch back
+      F(166, 158, 80, 34, '#3e6b5a'); F(172, 164, 26, 12, '#4d8068'); F(212, 164, 26, 12, '#4d8068'); F(212, 160, 14, 10, '#d9a05a');
+    },
+    front(env, T) { F(166, 188, 80, 12, '#4d8068'); F(166, 196, 80, 4, '#2f5546'); F(158, 160, 12, 40, '#356050'); F(242, 160, 12, 40, '#356050'); }
+  },
+  hall: {
+    back(env, T) {
+      F(0, 0, W, 176, '#8c7a64'); F(0, 118, W, 58, '#5b4a3a'); F(0, 116, W, 3, '#cdbd9f'); F(0, 0, W, 8, '#6f6150');
+      for (let x = 0; x < W; x += 20) F(x, 120, 1, 56, '#4d3e30');
+      F(0, 176, W, 64, '#6b2d3a'); for (let y = 176; y < 240; y += 12) for (let x = (((y - 176) / 12) % 2) * 12; x < W; x += 24) { F(x + 8, y + 2, 8, 8, '#8a3d4c'); F(x + 11, y + 5, 2, 2, '#6b2d3a'); }
+      const door = (x, n) => { F(x - 4, 36, 72, 142, '#2f2418'); F(x, 40, 64, 136, '#3d5a4a'); F(x + 6, 48, 22, 50, '#46695a'); F(x + 36, 48, 22, 50, '#46695a'); F(x + 6, 106, 52, 60, '#46695a'); F(x + 52, 108, 4, 4, '#e8c040'); F(x + 24, 28, 18, 10, '#cdb560'); txt(n, x + 33, 31, 6, '#2a2010', 'center'); F(x + 29, 70, 6, 6, '#111'); };
+      door(28, '4C'); door(228, '4D');
+      F(136, 56, 48, 120, '#2a2a2e'); F(140, 60, 40, 116, '#3a3a40'); F(150, 44, 20, 9, '#3a0a0a'); txt('EXIT', 160, 46, 5, '#ff6a5a', 'center'); F(176, 100, 5, 10, '#222');
+      F(114, 120, 10, 24, '#c0262d'); F(116, 114, 6, 6, '#222');
+      // flickering ceiling light
+      const fl = (Math.sin(T * 31) + Math.sin(T * 17.3) > 1.2 || (env.flickerSeed = (Math.floor(T * 9) * 7919) % 11) === 3) ? .35 : 1;
+      F(142, 10, 36, 6, '#d8d2c0'); ctx.globalAlpha = .22 * fl; F(100, 16, 120, 140, '#fff4b0'); ctx.globalAlpha = 1; F(146, 12, 28, 3, fl > .5 ? '#fffbe0' : '#8a867a');
+    },
+    front() { }
+  },
+  cafe: {
+    back(env, T) {
+      brick(0, 0, W, 120, '#7a4a3a', '#5f372a'); F(0, 118, W, 58, '#d8cdb4'); for (let x = 0; x < W; x += 16) F(x, 118, 1, 58, '#b7ab90'); F(0, 118, W, 3, '#4a2f1b');
+      F(0, 176, W, 64, '#59473a'); for (let y = 176; y < 240; y += 16) for (let x = (((y - 176) / 16) % 2) * 16; x < W; x += 32) F(x, y, 16, 16, '#6a5646');
+      // window
+      F(10, 26, 116, 94, '#2a1a10'); sky(14, 30, 108, 86, env.time, T); F(14, 90, 108, 26, '#6e6a62'); F(70, 30, 3, 86, '#2a1a10'); F(14, 72, 108, 3, '#2a1a10');
+      txt('BEAN', 42, 40, 8, '#f6ead0', 'center'); txt('THERE', 42, 52, 8, '#f6ead0', 'center'); F(94, 44, 14, 12, '#f6ead0'); F(108, 46, 4, 6, '#f6ead0'); F(96, 40, 2, 3, '#f6ead0'); F(102, 39, 2, 4, '#f6ead0');
+      // chalkboard
+      F(188, 18, 124, 78, '#6e4d2c'); F(192, 22, 116, 70, '#232d28'); txt('COMPLAINTS', 250, 26, 6, '#e8e4d0', 'center');
+      const names = Object.keys(env.tally || {}).slice(0, 4);
+      names.forEach((n, i) => {
+        const y = 40 + i * 12, cnt = env.tally[n], hot = env.tallyFlash && env.tallyFlash.who === n && env.tallyFlash.t > 0;
+        txt(n, 196, y, 6, hot ? '#fff' : '#cfd6c4');
+        if (cnt <= 60) for (let k = 0; k < cnt; k++) { const g = Math.floor(k / 5), j = k % 5; if (j < 4) F(234 + g * 6 + j, y, 1, 7, hot && k === cnt - 1 ? '#fff' : '#d9d6c4'); else F(234 + g * 6 - 1, y + 3, 6, 1, '#d9d6c4'); }
+        txt(String(cnt), 304, y, 6, hot ? '#ffe86a' : '#9fb8a0', 'right');
+      });
+      // espresso machine + shelf
+      F(270, 120, 34, 66, '#8d9298'); F(274, 124, 26, 14, '#2a2e32'); F(280, 142, 14, 3, '#2a2e32'); F(278, 146, 6, 6, '#e8e4dc'); F(290, 112, 8, 8, '#c0262d'); F(194, 110, 4, 3, '#e8e4dc');
+      for (let i = 0; i < 5; i++) F(194 + i * 10, 100, 7, 7, ['#e8e4dc', '#c0262d', '#3a7a8a', '#e8c040', '#e8e4dc'][i]);
+      F(190, 107, 62, 2, '#4a2f1b');
+      // table chair backs
+      [62, 92, 122].forEach(x => { F(x - 9, 152, 18, 5, '#3a2a1a'); F(x - 9, 152, 3, 44, '#3a2a1a'); F(x + 6, 152, 3, 44, '#3a2a1a'); });
+      // tables
+      F(44, 188, 96, 5, '#c9a56a'); F(44, 193, 96, 1, '#8a6b3a');
+    },
+    front(env, T) {
+      // tablecloth front hides seated legs
+      F(48, 194, 88, 18, '#b8352f'); for (let x = 48; x < 136; x += 8) F(x, 194, 4, 18, '#c9514a'); for (let x = 48; x < 136; x += 8) F(x, 212, 4, 3, '#b8352f');
+      F(60, 180, 8, 8, '#f4f0e6'); F(62, 178, 4, 2, '#7a5a38'); F(100, 181, 7, 7, '#f4f0e6');
+      // counter
+      F(186, 186, 134, 8, '#c9a56a'); F(186, 194, 134, 46, '#5a3b24'); for (let x = 190; x < 320; x += 22) { F(x, 199, 18, 36, '#6b4730'); F(x + 2, 201, 14, 32, '#5a3b24'); }
+      F(200, 164, 26, 22, '#d8d2bc'); F(203, 167, 20, 10, '#2a3a2e'); F(206, 170, 6, 3, '#7dffa0'); F(290, 174, 14, 12, 'rgba(200,230,240,.5)'); F(292, 178, 4, 4, '#a0522d'); F(298, 178, 4, 4, '#a0522d');
+    }
+  },
+  stoop: {
+    back(env, T) {
+      sky(0, 0, W, 20, env.time, T);
+      brick(0, 6, W, 144, '#8e4a3a', '#6e3628'); F(0, 6, W, 6, '#d0c6b0');
+      // 4C window (Dana leans out here)
+      winFrame(40, 20, 52, 52, env.time, T, true); F(36, 16, 8, 60, 'rgba(168,69,58,.9)'); F(88, 16, 8, 60, 'rgba(168,69,58,.9)');
+      winFrame(138, 20, 44, 40, env.time, T, true); winFrame(236, 20, 44, 40, env.time, T, true);
+      const lit = env.time !== 'day'; if (lit) { F(139, 21, 42, 38, 'rgba(255,214,120,.55)'); F(237, 21, 42, 38, 'rgba(255,214,120,.35)'); F(41, 21, 50, 50, 'rgba(255,214,120,.4)'); }
+      // door + transom
+      F(128, 74, 64, 80, '#d0c6b0'); F(134, 80, 52, 70, '#111'); F(138, 84, 20, 62, '#1d3a3a'); F(162, 84, 20, 62, '#1d3a3a'); F(176, 114, 3, 3, '#e8c040'); F(138, 66, 44, 8, '#e8c040'); txt('4', 160, 67, 6, '#2a1a10', 'center');
+      // steps + rail
+      F(120, 150, 80, 6, '#b5b0a5'); F(112, 156, 96, 6, '#a29d92'); F(104, 162, 112, 8, '#8f8a80'); F(116, 120, 3, 36, '#222'); F(202, 120, 3, 36, '#222'); F(116, 120, 14, 2, '#222');
+      // buzzer panel
+      F(204, 90, 24, 40, '#bfbfbf'); F(206, 92, 20, 36, '#9a9a9a'); for (let i = 0; i < 6; i++) F(209 + (i % 2) * 8, 108 + Math.floor(i / 2) * 6, 5, 4, i === 4 ? '#e8c040' : '#333'); for (let i = 0; i < 3; i++) F(210, 95 + i * 3, 12, 1, '#555');
+      // sidewalk + street
+      F(0, 150, W, 56, '#9a978f'); for (let x = 20; x < W; x += 52) F(x, 150, 1, 56, '#7f7c74'); F(0, 170, W, 1, '#7f7c74'); F(0, 206, W, 5, '#c8c4ba'); F(0, 211, W, 29, '#35353d'); for (let x = 0; x < W; x += 40) F(x + 6, 226, 22, 3, '#d8c860');
+      // tree
+      F(22, 96, 5, 60, '#4a3320'); [[6, 70, 34, 18], [0, 82, 46, 18], [10, 60, 26, 14]].forEach(([x, y, w, h]) => F(x, y, w, h, '#3f7a3a')); F(12, 76, 12, 5, '#57a04c');
+    },
+    front() { }
+  }
+};
+const SET_NAMES = Object.keys(SETS);
+
+/* ---- cards (title / end / text / test pattern) ---- */
+function drawCard(card, T) {
+  if (card.style === 'title') {
+    F(0, 0, W, H, '#0a0612'); for (let y = 0; y < 150; y += 3) F(0, y, W, 3, y < 50 ? '#150a2a' : y < 100 ? '#26103a' : '#4a1a4a');
+    const b = Math.floor(T / (60 / 126)) % 2, pulse = (T % (60 / 126)) < .12 ? 1 : 0;
+    // skyline
+    [[0, 70, 28], [26, 50, 24], [48, 84, 30], [76, 40, 22], [100, 66, 30], [130, 56, 26], [156, 90, 28], [184, 46, 26], [210, 72, 30], [240, 52, 24], [264, 82, 28], [290, 60, 30]].forEach(([x, h, w], i) => {
+      F(x, 170 - h, w, h + 70, '#0f0820'); for (let wy = 174 - h; wy < 168; wy += 8) for (let wx = x + 4; wx < x + w - 4; wx += 8) if ((hash(i + ':' + wx + ':' + wy) + Math.floor(T * .7)) % 3 === 0) F(wx, wy, 3, 4, '#ffd36e');
+    });
+    F(0, 232, W, 8, '#000');
+    const jig = pulse ? -2 : 0;
+    ctx.save(); ctx.translate(0, jig);
+    txt("RENT'S", 160, 28, 26, '#ff3d7f', 'center', '#25d0e8'); txt('DUE', 160, 62, 26, '#ffd23d', 'center', '#25d0e8');
+    ctx.restore();
+    F(0, 103, W, 16, 'rgba(0,0,0,.6)'); txt(card.sub || 'A SITCOM IN APARTMENT 4C', 160, 108, 7, '#e8e0ff', 'center', '#000');
+    for (let i = 0; i < 14; i++) { const sx = (hash('c' + i) % 300) + 10, sy = ((hash('d' + i) % 90) + T * (14 + i)) % 150; F(sx, sy, 2, 2, ['#ff3d7f', '#25d0e8', '#ffd23d'][i % 3]); }
+    return;
+  }
+  if (card.style === 'end') {
+    F(0, 0, W, H, '#0a0612'); for (let y = 0; y < H; y += 3) F(0, y, W, 3, y < 120 ? '#150a2a' : '#26103a');
+    txt("RENT'S DUE", 160, 70, 14, '#ff3d7f', 'center', '#25d0e8');
+    txt('"' + (card.text || '').toUpperCase() + '"', 160, 108, 8, '#ffd23d', 'center', '#000');
+    txt('EP. ' + (card.ep || 1), 160, 128, 7, '#e8e0ff', 'center', '#000');
+    if (card.sub) txt(card.sub, 160, 160, 6, '#a898d8', 'center');
+    return;
+  }
+  if (card.style === 'bars') {
+    const cols = ['#c0c0c0', '#c0c000', '#00c0c0', '#00c000', '#c000c0', '#c00000', '#0000c0'];
+    cols.forEach((c, i) => F(i * (W / 7), 0, W / 7 + 1, 150, c));
+    ['#0000c0', '#111', '#c000c0', '#111', '#00c0c0', '#111', '#c0c0c0'].forEach((c, i) => F(i * (W / 7), 150, W / 7 + 1, 18, c));
+    F(0, 168, W, 72, '#0a0a14'); F(40, 176, 60, 10, '#fff'); F(100, 176, 60, 10, '#aaa'); F(160, 176, 60, 10, '#666');
+    txt(card.text || 'NO SIGNAL', 160, 196, 10, '#fff', 'center', '#000'); txt(card.sub || 'PLEASE STAND BY', 160, 214, 7, '#7dffa0', 'center');
+    if (Math.floor(T * 1.5) % 2) F(236, 180, 8, 8, '#c00000');
+    return;
+  }
+  F(0, 0, W, H, '#000'); txt(card.text || '', 160, 112, 10, '#fff', 'center');
+}
+
+/* ---------- 6. show data (bible, looks, prompts, pilot) ---------- */
+const LOOKS = {
+  DANA: { skin: '#f1c8a0', hair: '#a8431f', hairStyle: 'curly', top: '#3f6fb5', under: '#f0e0c0', style: 'jacket', bottom: '#44506b', shoes: '#c0262d', g: 'f', pitch: 1.2, rate: 1.05, color: '#ffb86b' },
+  GARY: { skin: '#e8b890', hair: '#4a3020', hairStyle: 'side', top: '#8a3b3b', style: 'vest', sleeve: '#f2efe6', bottom: '#a58a5a', shoes: '#4a3020', extra: 'pager', g: 'm', pitch: 0.9, rate: 0.95, color: '#9fd4ff' },
+  MITCH: { skin: '#d9a37c', hair: '#151515', hairStyle: 'slick', top: '#1fa89a', style: 'suit', bottom: '#1fa89a', shoes: '#111111', extra: 'brickphone', g: 'm', pitch: 1.0, rate: 1.2, color: '#7dffb0' },
+  BEV: { skin: '#7a4a2d', hair: '#1a1008', hairStyle: 'natural', top: '#2f7a4a', under: '#efe4cc', sleeve: '#efe4cc', style: 'apron', bottom: '#3a3340', shoes: '#222222', emote: 'deadpan', g: 'f', pitch: 0.85, rate: 0.9, color: '#ff9ec0' },
+  SAL: { voice: 'mumble', color: '#cfcfcf', label: 'SAL (O.S.)', rate: 1.0 }
+};
+const G_HAIR = ['#2b1d12', '#6b4423', '#c9a24a', '#8a8a8a', '#a8431f', '#111111'], G_SKIN = ['#f1c8a0', '#e8b890', '#d9a37c', '#a56b46', '#7a4a2d'],
+  G_TOP = ['#b04a7a', '#4a7ab0', '#c9a24a', '#6a4ab0', '#d0583a', '#3a9a7a'], G_STYLE = ['short', 'long', 'bun', 'side', 'curly', 'natural'];
+function guestLook(name, o = {}) {
+  const h = hash(name), fem = o.g ? o.g === 'f' : /WOMAN|GIRL|LADY|MS\b|MRS|MOM|MARY|LORRAINE|NANCY|WAITRESS|SISTER|AUNT|GRANDMA/i.test(name);
+  const ok = (v, list) => (typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v)) ? v : list[h % list.length];
+  return {
+    skin: ok(o.skin, G_SKIN), hair: ok(o.hair, G_HAIR), hairStyle: G_STYLE.includes(o.hairStyle) || o.hairStyle === 'bald' ? o.hairStyle : G_STYLE[(h >> 3) % G_STYLE.length],
+    top: ok(o.top, G_TOP), style: 'tee', bottom: ok(o.bottom, ['#333344', '#44403a', '#2a3a55']), shoes: '#222222', glasses: !!o.glasses,
+    g: fem ? 'f' : 'm', pitch: fem ? 1.15 : 0.9, rate: 1.0, color: '#d8d8d8'
+  };
+}
+const BIBLE = `SHOW: RENT'S DUE — a 90s multi-cam sitcom, Philadelphia, 1996. Apartment 4C and the coffee shop downstairs.
+TONE: warm, quick, observational. Small problems treated as huge ones. Each episode ends where it started, a little worse off. Family friendly (PG): no swearing, no sex jokes.
+CAST:
+- DANA PRUITT (29): aspiring jingle writer stuck at a copy-shop counter. Convinced one great jingle will change her life; writes bad jingles about everything. Wants the Slumber Barn mattress jingle. Fears being "a copy shop lifer."
+- GARY KOWALSKI (31): Dana's roommate, a substitute teacher who treats every life event like a lesson plan ("Okay, let's break into groups"). Sincere, rule-following, secretly sweet on Bev. His pager only ever gets wrong numbers from someone looking for "Lorraine."
+- MITCH ALBERS (30): lives across the hall, sells extended warranties and upsells his friends on everything. Total confidence, zero self-awareness. Catchphrase: "Have you considered coverage?"
+- BEV OKAFOR (34): owns the coffee shop Bean There. Deadpan, unimpressed, the only adult in the room. Keeps a chalkboard tally of each regular's complaints. Secretly likes Gary but would rather die than say so.
+- SAL PETROCELLI: the landlord. Never seen; only heard (banging on the ceiling/floor, yelling through the vent). Speaks as SAL, off-screen.
+RUNNING GAGS: (1) the buzzer never works; visitors shout up from the street. (2) Lorraine: Gary's pager, nobody knows who she is. (3) Mitch: "Have you considered coverage?" (4) Bev's complaint tally board; Dana's column is winning. (5) Dana's bad jingles, then a beat of silence. (6) Sal bangs when anyone gets loud; nobody knows how he hears it.
+SEASON ARCS: (a) Dana chases the Slumber Barn jingle job (callbacks, rewrites, a rival jingle writer). (b) The building was sold and rent may go up; the gang schemes to stop it. (c) Gary & Bev slow burn; almost-moments get interrupted, usually by the pager. (d) Mitch is one warranty from winning a sales-contest trip to Branson, Missouri.
+SETS: apt (Apt 4C living room: couch, window, kitchenette, front door, Dana's keyboard) · hall (hallway, doors 4C and 4D facing each other, flickering light) · cafe (Bean There: counter, complaint chalkboard, tables) · stoop (front steps and street; broken buzzer panel; the 4C window is above).`;
+
+const WRITER_SYS = `You are the head writer of the sitcom described below. Write ONE new episode that continues the story so far.
+
+${BIBLE}
+
+RULES
+- Performed length is 2-3 minutes: about 280-340 words of dialogue. Structure: COLD OPEN (one very short scene) -> SCENE 1 -> SCENE 2 -> SCENE 3 -> TAG (very short, ends on a hook or button). The theme song plays after the cold open; do not write it.
+- One simple A-story, escalated scene by scene; the status quo returns at the end, slightly worse.
+- Use at least three running gags and one specific callback to an earlier episode. Move exactly one season arc forward a small step; never resolve an arc before episode 10.
+- Jokes are short, character-based, setup then punchline. Keep every line under 20 words. No speeches.
+- Use only the four sets. Regular cast plus at most two guest characters (give each a name in CAPS such as WOMAN or PIZZA GUY).
+- When someone complains in the cafe, Bev adds a chalk mark: write it as [BEV adds a mark under NAME].
+- Never reuse a premise from an earlier episode.
+
+OUTPUT FORMAT (exactly this, nothing else):
+TITLE: <2-4 words>
+SCRIPT:
+[COLD OPEN - stoop - day]
+NAME: spoken line
+NAME (emotion): spoken line        <- emotions allowed: shout, deadpan, happy, sad, angry, shock
+[stage direction. SFX: click. LAUGH]   <- audience cues inside brackets: LAUGH, BIG LAUGH, OOH, APPLAUSE
+[SCENE 1 - apt - night]            <- heading format: [NAME - set - day|dusk|night] with set one of apt, hall, cafe, stoop
+...
+CONTINUITY:
+- 3 to 6 short bullets: new facts established, gags used, which arc moved, any change to the complaint tally`;
+
+const DIRECTOR_SYS = `You are the director of a pixel-art sitcom. You turn a script into a JSON shot list that a playback engine performs on a 320x240 canvas. Return ONLY one JSON object: no markdown fences, no commentary.
+
+SHAPE
+{"title":"...","guests":{"WOMAN":{"g":"f","hair":"#6b4423","hairStyle":"long","skin":"#f1c8a0","top":"#b04a7a","bottom":"#333344"}},
+ "scenes":[
+  {"type":"scene","set":"stoop","time":"day","caption":"FRONT STOOP","cast":{"MITCH":{"x":198}},"beats":[ ... ]},
+  {"type":"card","style":"title","music":"theme"},
+  {"type":"scene", ...},
+  {"type":"card","style":"end","text":"<episode title>","music":"outro"}]}
+
+BEATS (each beat is an object; all keys optional; processed in this order): enter, pose, prop, react, exit, move, act, sfx, fx, sting, say+line (+emote, sing, hold), laugh, wait
+- "enter":{"MITCH":"CL"} walks on from the nearest edge (or {"MITCH":{"to":"CL","from":"R"}}). In the stoop set {"DANA":"window"} makes a character lean out of the 4C window.
+- "pose":{"GARY":"sit"|"stand"}   "prop":{"DANA":"phone"|"papers"|"envelope"|"mug"|"none"}   "react":{"GARY":"shock"} (emotes: normal, happy, sad, angry, shock, deadpan, shout)
+- "exit":{"MITCH":"L"|"R"|"window"}   "move":{"GARY":"CR"} (walk there)
+- "act":{"who":"MITCH","do":"poke"} (jab at the buzzer)  or  {"who":"BEV","do":"tally","target":"DANA"} (Bev chalks a mark under that name)
+- "sfx": one of ${SFX_NAMES.join(', ')}
+- "fx":"shake"|"flash"|"freeze"     "sting":"bump" (end of a scene) | "dramatic"
+- "say":"NAME","line":"spoken words only","emote":"deadpan"; "sing":true for Dana's jingles; "hold":seconds of silence after the line before the laugh
+- "laugh":"small"|"big"|"ooh"|"applause" (audience; goes in the same beat as the line that earns it)   "wait":seconds
+POSITIONS: L=40, CL=100, C=160, CR=220, R=280, or a number 0-320.
+SET LAYOUTS
+- apt: front door at x 22 (enter/exit there), window x 84, Dana's keyboard x 140 (stand at 150 to play it), couch seats x 190 and 220 (pose sit), fridge x 276.
+- hall: door 4C x 60, door 4D x 260, stairwell x 160.
+- cafe: BEV stands behind the counter at x 250. Customers sit at the table seats x 62, 92, 122 (pose sit). Stand at x 172 to lean on the counter. Enter through the door with sfx ding.
+- stoop: buzzer panel at x 216 (stand at x 198 to poke it). Visitors arrive from the right edge.
+RULES
+- One beat per spoken line. Keep every line verbatim from the script minus stage directions, parentheses and brackets. Speaker names in CAPS exactly as in the script. SAL is off-screen: never put him in a cast.
+- Each script heading becomes one scene. The COLD OPEN is followed by {"type":"card","style":"title","music":"theme"}. The TAG ends with a freeze or applause beat and then the end card.
+- Cast of a scene: only people on screen at its first moment (others use enter). At most four characters at once; keep them at least 28 pixels apart.
+- Start every scene with {"wait":0.6}. End every scene except the last with a beat {"sting":"bump"}. Put SFX cues from the script in a beat just before the line they precede.
+- Use "react" for reaction shots and "emote" on shouted lines. Pager beeps: {"sfx":"pager","wait":0.7}. Bev's tally: a separate act beat followed by her line.
+- Add "caption" (2-3 words, caps) to every scene.
+EXAMPLE SCENE
+{"type":"scene","set":"cafe","time":"day","caption":"BEAN THERE","cast":{"BEV":{"x":250},"DANA":{"x":62,"pose":"sit"}},"beats":[{"wait":0.6},{"say":"DANA","line":"This coffee is lukewarm.","emote":"deadpan"},{"act":{"who":"BEV","do":"tally","target":"DANA"},"laugh":"small"},{"say":"BEV","line":"That's forty-one.","emote":"deadpan","laugh":"small"},{"sting":"bump"}]}`;
+
+const SHOWS = {
+  rents_due: { id: 'rents_due', ch: 1, name: "RENT'S DUE", genre: 'SITCOM', cast: LOOKS, writer: WRITER_SYS, director: DIRECTOR_SYS, theme: 'theme' }
+};
+const CHANNELS = [
+  { ch: 1, show: 'rents_due', label: "RENT'S DUE" },
+  { ch: 2, label: 'NATURE' }, { ch: 3, label: 'SCI-FI' }, { ch: 4, label: 'TRAILERS' }
+];
+const STATE_SEED = {
+  rents_due: {
+    next: 2, tally: { DANA: 41, MITCH: 13, GARY: 5 },
+    log: [{ ep: 1, title: 'The Buzzer', bullets: ['Dana has a Slumber Barn jingle deadline of Friday.', 'The building was sold; a notice says "rent adjustments to follow."', 'Gary tried to ask Bev out and was interrupted by the pager (Lorraine).', 'A woman showed up at the broken buzzer asking if a Gary lives there; she keeps getting his pages. Is she Lorraine?', "Bev's tally: Dana at 41."] }]
+  }
+};
+
+/* ---- pilot episode, as a director's shot list ---- */
+const PILOT = {
+  show: 'rents_due', ep: 1, title: 'The Buzzer', tally: { DANA: 40, MITCH: 13, GARY: 5 },
+  guests: { WOMAN: { g: 'f', hair: '#6b4423', hairStyle: 'bun', skin: '#f1c8a0', top: '#b04a7a', bottom: '#333344' } },
+  scenes: [
+    {
+      type: 'scene', set: 'stoop', time: 'day', caption: 'FRONT STOOP', cast: { MITCH: { x: 198 } }, beats: [
+        { wait: 0.8 },
+        { act: { who: 'MITCH', do: 'poke' }, sfx: 'click' }, { act: { who: 'MITCH', do: 'poke' }, sfx: 'click' }, { act: { who: 'MITCH', do: 'poke' }, sfx: 'click', wait: 0.2 },
+        { say: 'MITCH', line: "Dana! Your buzzer's broken!", emote: 'shout' },
+        { enter: { DANA: 'window' }, sfx: 'door', wait: 0.3 },
+        { say: 'DANA', line: "We know! It's been broken since March!", emote: 'shout' },
+        { say: 'MITCH', line: 'Have you considered coverage?' },
+        { exit: { DANA: 'window' }, sfx: 'slam', fx: 'shake', laugh: 'small' }
+      ]
+    },
+    { type: 'card', style: 'title', music: 'theme' },
+    {
+      type: 'scene', set: 'apt', time: 'day', caption: 'APT 4C', cast: { DANA: { x: 150, prop: 'phone' }, GARY: { x: 204, pose: 'sit', prop: 'papers' } }, beats: [
+        { wait: 0.6 },
+        { prop: { DANA: 'none' }, say: 'DANA', line: 'That was Slumber Barn. They want a jingle by Friday. A real jingle! For money!', emote: 'shout' },
+        { say: 'GARY', line: "Dana, that's wonderful. Let's take a moment to set some goals.", emote: 'happy' },
+        { say: 'DANA', line: 'I already have one.' },
+        { say: 'DANA', line: "Slumber Barn, it's a barn... for slumber...", sing: true, hold: 0.7, laugh: 'small' },
+        { say: 'GARY', line: "Okay. So that's a rough draft." },
+        { sfx: 'pager', wait: 0.7 },
+        { say: 'GARY', line: 'Lorraine again.', emote: 'sad' },
+        { say: 'DANA', line: 'Who is Lorraine?' },
+        { say: 'GARY', line: "I don't know! Somebody really needs her!", emote: 'shout', laugh: 'small' },
+        { sfx: 'knock', wait: 0.7 },
+        { sfx: 'door', enter: { MITCH: 90 } },
+        { say: 'MITCH', line: "Heard the news through the wall. Big jingle money. You're gonna want coverage on that keyboard." },
+        { say: 'DANA', line: "It's from a garage sale.", emote: 'deadpan' },
+        { say: 'MITCH', line: 'Then you definitely want coverage.', laugh: 'small' },
+        { sting: 'bump' }
+      ]
+    },
+    {
+      type: 'scene', set: 'cafe', time: 'day', caption: 'BEAN THERE', cast: { BEV: { x: 250 }, DANA: { x: 62, pose: 'sit' }, GARY: { x: 92, pose: 'sit' }, MITCH: { x: 122, pose: 'sit' } }, beats: [
+        { sfx: 'ding', wait: 0.7 },
+        { say: 'DANA', line: 'Bev, this coffee is lukewarm.' },
+        { act: { who: 'BEV', do: 'tally', target: 'DANA' }, laugh: 'small' },
+        { say: 'BEV', line: "That's forty-one.", emote: 'deadpan' },
+        { say: 'GARY', line: "Dana's leading the season." },
+        { say: 'BEV', line: "Dana's leading the decade.", laugh: 'small' },
+        { pose: { GARY: 'stand' }, move: { GARY: 172 } },
+        { say: 'GARY', line: 'So, Bev... I was thinking, maybe this weekend you and I could...', emote: 'happy' },
+        { sfx: 'pager', wait: 0.7 },
+        { say: 'GARY', line: 'Lorraine.', emote: 'sad' },
+        { say: 'BEV', line: 'Tell her I said hi.', emote: 'deadpan', laugh: 'ooh' },
+        { sting: 'bump' }
+      ]
+    },
+    {
+      type: 'scene', set: 'apt', time: 'dusk', caption: 'APT 4C', cast: {}, beats: [
+        { wait: 0.4 },
+        { sfx: 'door', enter: { DANA: 150 }, prop: { DANA: 'envelope' } },
+        { enter: { GARY: 100, MITCH: 68 } },
+        { say: 'DANA', line: 'This was taped to our door. It says, the building has been sold. New management. Rent adjustments to follow.', emote: 'shock' },
+        { say: 'MITCH', line: "Adjustments. That's a word for... up." },
+        { say: 'GARY', line: "Okay. Nobody panic. Let's break into groups.", emote: 'happy' },
+        { say: 'DANA', line: 'There are three of us!', emote: 'shout' },
+        { say: 'GARY', line: "Then it'll be a very efficient group!", laugh: 'small' },
+        { prop: { DANA: 'none' }, sfx: 'keys', say: 'DANA', line: "Rent is due, rent is due, what's a girl supposed to do...", sing: true },
+        { sfx: 'bang', fx: 'shake', wait: 0.9 },
+        { say: 'SAL', line: 'KEEP IT DOWN UP THERE!' },
+        { say: 'DANA', line: "He's a critic now.", emote: 'deadpan', laugh: 'big' },
+        { sting: 'bump' }
+      ]
+    },
+    {
+      type: 'scene', set: 'stoop', time: 'dusk', caption: 'FRONT STOOP', cast: {}, beats: [
+        { wait: 0.5 },
+        { enter: { WOMAN: 196 } },
+        { act: { who: 'WOMAN', do: 'poke' }, sfx: 'click', wait: 0.4 },
+        { say: 'WOMAN', line: 'Hello? Does a Gary live here? He keeps getting my pages!', emote: 'shout' },
+        { fx: 'freeze', sting: 'dramatic', laugh: 'applause' }
+      ]
+    },
+    { type: 'card', style: 'end', text: 'The Buzzer', ep: 1, music: 'outro' }
+  ]
+};
+
+/* ---------- 7. playback engine ---------- */
+const env = { time: 'day', tally: {}, tallyFlash: null };
+const S = {
+  power: false, ch: 1, paused: false, T: 0, clock: 0, last: 0, run: 0, timers: [], chars: {}, set: 'apt', time: 'day', card: null, cardT: 0,
+  fx: { shake: 0, flash: 0, fade: 0, fadeTo: 0, freeze: false, freezeT: 0 }, noise: 0, tally: {}, guestLooks: {}, now: null, ending: false
+};
+const POS = { L: 40, CL: 100, C: 160, CR: 220, R: 280 };
+const posX = p => typeof p === 'number' ? clamp(p, 0, W) : (POS[String(p).toUpperCase()] != null ? POS[String(p).toUpperCase()] : 160);
+const lookFor = n => LOOKS[n] || S.guestLooks[n] || (S.guestLooks[n] = guestLook(n));
+const spd = () => window.TV_SPEED || 1;
+function sleep(sec) { return new Promise(res => S.timers.push({ at: S.T + sec / spd(), res })); }
+function after(sec, fn) { S.timers.push({ at: S.T + sec / spd(), res: fn }); }
+function flushTimers() { const t = S.timers; S.timers = []; t.forEach(x => { try { x.res(); } catch (e) { } }); }
+function newRun() {
+  const my = ++S.run; flushTimers(); SP.stop(); AU.stopMusic(); clearSub();
+  S.fx.freeze = false; S.fx.shake = 0; S.fx.flash = 0; S.ending = false;
+  return () => S.run === my;
+}
+function blip(k = 1) { S.noise = k; AU.sfx('static'); }
+
+function newChar(name, o = {}) {
+  const look = lookFor(name);
+  return Object.assign({ name, look, x: 160, y: FLOOR, tx: 160, face: 1, pose: 'stand', prop: null, emote: look.emote || 'normal', seed: (hash(name) % 100) / 10, talking: false, moving: false, speed: 78, act: null, actT: 0, pagerFlash: 0 }, o);
+}
+function addCast(name, o = {}) {
+  if (name === 'SAL' || lookFor(name).voice) return;
+  if (o.x === 'window' || o === 'window') { S.chars[name] = newChar(name, { x: 66, y: 76, tx: 66, bust: true }); return; }
+  const x = posX(o.x != null ? o.x : 160);
+  S.chars[name] = newChar(name, { x, tx: x, face: o.face === -1 ? -1 : 1, pose: o.pose === 'sit' ? 'sit' : 'stand', prop: o.prop && o.prop !== 'none' ? o.prop : null });
+}
+function stepWorld(dt) {
+  for (const n of Object.keys(S.chars)) {
+    const c = S.chars[n], d = c.tx - c.x;
+    if (Math.abs(d) > 1) { c.x += Math.sign(d) * Math.min(Math.abs(d), c.speed * dt); c.moving = true; c.face = Math.sign(d); } else { c.x = c.tx; c.moving = false; }
+    if (c.exiting && (c.x < -20 || c.x > W + 20)) delete S.chars[n];
+    if (c.actT > 0) { c.actT -= dt; if (c.actT <= 0) c.act = null; }
+    if (c.pagerFlash > 0) c.pagerFlash -= dt;
+  }
+  const f = S.fx;
+  if (f.shake > 0) f.shake -= dt; if (f.flash > 0) f.flash -= dt * 2.5;
+  if (f.fade !== f.fadeTo) { const s = 4 * dt; f.fade = f.fade < f.fadeTo ? Math.min(f.fadeTo, f.fade + s) : Math.max(f.fadeTo, f.fade - s); }
+  if (env.tallyFlash && env.tallyFlash.t > 0) env.tallyFlash.t -= dt;
+  if (S.card) S.cardT += dt;
+}
+function render() {
+  ctx.save();
+  if (!S.power) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H); ctx.restore(); return; }
+  if (S.fx.shake > 0) ctx.translate(Math.round(rnd(-2, 2)), Math.round(rnd(-2, 2)));
+  const AT = S.fx.freeze ? S.fx.freezeT : S.T;
+  if (S.card) drawCard(S.card, S.cardT);
+  else {
+    env.time = S.time; env.tally = S.tally;
+    const set = SETS[S.set] || SETS.apt;
+    set.back(env, AT);
+    Object.values(S.chars).sort((a, b) => a.y - b.y || a.x - b.x).forEach(c => {
+      if (c.bust) { ctx.save(); ctx.beginPath(); ctx.rect(40, 20, 52, 52); ctx.clip(); drawPerson(c, AT); ctx.restore(); } else drawPerson(c, AT);
+    });
+    set.front(env, AT);
+    if (S.time === 'dusk') { ctx.fillStyle = 'rgba(255,110,50,.16)'; ctx.fillRect(0, 0, W, H); }
+    else if (S.time === 'night') { ctx.fillStyle = 'rgba(15,25,90,.36)'; ctx.fillRect(0, 0, W, H); }
+  }
+  ctx.restore();
+  if (S.fx.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${clamp(S.fx.flash, 0, 1)})`; ctx.fillRect(0, 0, W, H); }
+  if (S.fx.freeze) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 6; ctx.strokeRect(3, 3, W - 6, H - 6); }
+  if (S.fx.fade > 0.01) { ctx.fillStyle = `rgba(0,0,0,${clamp(S.fx.fade, 0, 1)})`; ctx.fillRect(0, 0, W, H); }
+}
+const nz = $('noise'), nctx = nz.getContext('2d'), nimg = nctx.createImageData(nz.width, nz.height), n32 = new Uint32Array(nimg.data.buffer);
+function drawNoise() {
+  const k = S.power ? Math.max(S.noise, 0.07) : 0;
+  nz.style.opacity = k; if (k <= 0) return;
+  for (let i = 0; i < n32.length; i++) { const v = (Math.random() * 255) | 0; n32[i] = 0xff000000 | (v << 16) | (v << 8) | v; }
+  nctx.putImageData(nimg, 0, 0);
+}
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, ((now - S.last) / 1000) || 0); S.last = now; S.clock += dt;
+  if (S.noise > 0) S.noise = Math.max(0, S.noise - dt * 2.4);
+  if (S.power && !S.paused) {
+    S.T += dt; stepWorld(dt);
+    const due = S.timers.filter(t => S.T >= t.at);
+    if (due.length) { S.timers = S.timers.filter(t => S.T < t.at); due.forEach(t => { try { t.res(); } catch (e) { console.error(e); } }); }
+  }
+  render(); drawNoise();
+}
+
+/* ---- text overlays ---- */
+let osdTimer = 0, capTimer = 0;
+function showOSD(t, ms = 2200) { const o = $('osd'); o.textContent = t; o.classList.add('show'); clearTimeout(osdTimer); osdTimer = setTimeout(() => o.classList.remove('show'), ms); }
+function showCap(t, ms = 2400) { const o = $('cap'); o.textContent = t; o.classList.add('show'); clearTimeout(capTimer); capTimer = setTimeout(() => o.classList.remove('show'), ms); }
+function showSub(name, line, color) { $('sub').innerHTML = `<span class="line"><b style="color:${color || '#fff'}">${esc(name)}:</b>${esc(line)}</span>`; }
+function clearSub() { $('sub').innerHTML = ''; }
+
+/* ---- beats ---- */
+const cleanSpeech = s => String(s).replace(/\b4C\b/g, 'four C').replace(/\b4D\b/g, 'four D').replace(/[*_#\[\]<>]/g, '').replace(/\.{2,}/g, ',').replace(/\s+/g, ' ').trim();
+async function arrive(names, A, cap = 4) {
+  for (let i = 0; i < cap / 0.05 && A(); i++) {
+    if (!names.some(n => S.chars[n] && (Math.abs(S.chars[n].tx - S.chars[n].x) > 1))) return;
+    await sleep(0.05);
+  }
+}
+async function sayLine(b, A) {
+  const name = String(b.say).toUpperCase(), line = String(b.line || ''), look = lookFor(name), ch = S.chars[name];
+  if (ch) {
+    ch.talking = true; if (b.emote) ch.emote = b.emote;
+    let near = null, best = 1e9; for (const o of Object.values(S.chars)) if (o !== ch && !o.bust && Math.abs(o.x - ch.x) < best) { best = Math.abs(o.x - ch.x); near = o; }
+    if (near && !ch.moving && !ch.bust) ch.face = Math.sign(near.x - ch.x) || ch.face;
+  }
+  showSub(look.label || name, line, look.color);
+  const rate = b.sing ? 0.85 : (look.rate || 1), dur = estDur(line, rate) / spd();
+  if (look.voice === 'mumble') { AU.mumble(estDur(line, 1) * 0.92); await sleep(estDur(line, 1)); }
+  else {
+    if (b.sing) AU.jingle(line, estDur(line, rate) * 0.9);
+    const spoken = await SP.speak(cleanSpeech(line), { key: name, g: look.g, pitch: b.sing ? 1.55 : look.pitch, rate });
+    if (A() && !spoken) await sleep(estDur(line, rate));
+  }
+  if (!A()) return;
+  if (ch) { ch.talking = false; ch.emote = look.emote || 'normal'; }
+  await sleep(b.hold != null ? clamp(+b.hold || 0, 0, 3) : 0.18);
+  if (A()) clearSub();
+}
+async function runBeat(b, A) {
+  const t0 = S.T; let actWait = 0;
+  if (b.enter) for (const [n, v] of Object.entries(b.enter)) {
+    if (S.chars[n]) { S.chars[n].tx = posX(typeof v === 'object' ? v.to : v); continue; }
+    const to = typeof v === 'object' ? v.to : v;
+    if (to === 'window') { addCast(n, { x: 'window' }); continue; }
+    const x = posX(to), fromL = (typeof v === 'object' && v.from) ? /^l/i.test(v.from) : x < 160;
+    addCast(n, { x }); const c = S.chars[n]; if (c) { c.x = fromL ? -24 : W + 24; c.tx = x; }
+  }
+  if (b.pose) for (const [n, v] of Object.entries(b.pose)) if (S.chars[n]) S.chars[n].pose = v === 'sit' ? 'sit' : 'stand';
+  if (b.prop) for (const [n, v] of Object.entries(b.prop)) if (S.chars[n]) S.chars[n].prop = v === 'none' ? null : v;
+  if (b.react) for (const [n, v] of Object.entries(b.react)) if (S.chars[n]) S.chars[n].emote = v;
+  if (b.exit) for (const [n, v] of Object.entries(b.exit)) { const c = S.chars[n]; if (!c) continue; if (v === 'window' || c.bust) delete S.chars[n]; else { c.tx = /^l/i.test(String(v)) ? -30 : W + 30; c.exiting = true; } }
+  if (b.move) for (const [n, v] of Object.entries(b.move)) if (S.chars[n]) S.chars[n].tx = posX(v);
+  if (b.act && b.act.who && S.chars[b.act.who]) {
+    const c = S.chars[b.act.who];
+    if (b.act.do === 'poke') { c.act = 'poke'; c.actT = 0.5; actWait = 0.55; }
+    else if (b.act.do === 'tally') {
+      c.act = 'tally'; c.actT = 0.95; actWait = 1.0;
+      for (let i = 0; i < 5; i++) after(i * 0.17, () => AU.ctx && AU.noise(AU.sfxBus, { t: AU.now(), dur: 0.09, vol: 0.18, type: 'bandpass', f: 4500, q: 1.5 }));
+      const target = String(b.act.target || '').toUpperCase();
+      after(0.8, () => { if (!A()) return; S.tally[target] = (S.tally[target] || 0) + 1; env.tallyFlash = { who: target, t: 1.6 }; });
+    }
+  }
+  if (b.sfx) {
+    AU.sfx(b.sfx);
+    if (b.sfx === 'pager') Object.values(S.chars).forEach(c => { if (c.look.extra === 'pager') c.pagerFlash = 1.4; });
+    if (b.sfx === 'slam' || b.sfx === 'bang' || b.sfx === 'crash') S.fx.shake = Math.max(S.fx.shake, 0.35);
+  }
+  if (b.fx === 'shake') S.fx.shake = 0.5; else if (b.fx === 'flash') S.fx.flash = 1; else if (b.fx === 'freeze') { S.fx.freeze = true; S.fx.freezeT = S.T; }
+  let stingDur = 0; if (b.sting) { stingDur = AU.sting(b.sting === 'dramatic' ? 'dramatic' : 'bump'); }
+  if (b.say) await sayLine(b, A);
+  else if (b.move || b.enter || b.exit) await arrive(Object.keys(Object.assign({}, b.move, b.enter, b.exit)), A);
+  if (!A()) return;
+  if (b.laugh) { const k = ['small', 'big', 'ooh', 'applause'].includes(b.laugh) ? b.laugh : 'small'; const d = AU.laugh(k); await sleep(d * (k === 'applause' ? 0.45 : 0.55)); }
+  if (!A()) return;
+  if (!b.say && actWait) await sleep(actWait);
+  if (stingDur) await sleep(Math.max(0, stingDur * 0.85 - (S.T - t0) * spd()));
+  if (b.wait) await sleep(clamp(+b.wait || 0, 0, 6));
+}
+async function fadeTo(v, A) { S.fx.fadeTo = v; for (let i = 0; i < 20 && A() && Math.abs(S.fx.fade - v) > 0.02; i++) await sleep(0.05); }
+async function runScene(sc, A) {
+  await fadeTo(1, A); if (!A()) return;
+  S.card = null; S.set = SETS[sc.set] ? sc.set : 'apt'; S.time = sc.time || 'day'; S.chars = {}; env.tallyFlash = null; clearSub();
+  for (const [n, o] of Object.entries(sc.cast || {})) addCast(n, o);
+  Object.values(S.chars).forEach(c => { c.x = c.tx; });
+  if (sc.caption) showCap(sc.caption);
+  await fadeTo(0, A);
+  for (const b of sc.beats || []) { if (!A()) return; await runBeat(b, A); }
+  clearSub();
+}
+async function runCard(cd, A) {
+  await fadeTo(1, A); if (!A()) return;
+  S.chars = {}; S.card = Object.assign({}, cd); S.cardT = 0; clearSub(); $('cap').classList.remove('show'); S.fx.freeze = false;
+  await fadeTo(0, A);
+  let hold = cd.hold || 2.5;
+  if (cd.music) { hold = Math.max(hold, AU.playMusic(cd.music)); }
+  await sleep(hold);
+}
+function endTallyOf(ep, start) {
+  const t = Object.assign({}, start);
+  (ep.scenes || []).forEach(sc => (sc.beats || []).forEach(b => { if (b.act && b.act.do === 'tally' && b.act.target) { const k = String(b.act.target).toUpperCase(); t[k] = (t[k] || 0) + 1; } }));
+  return t;
+}
+async function playEpisode(ep) {
+  const A = newRun(); S.now = ep; S.paused = false; syncButtons();
+  S.guestLooks = {}; for (const [n, o] of Object.entries(ep.guests || {})) S.guestLooks[n.toUpperCase()] = guestLook(n.toUpperCase(), o);
+  S.tally = Object.assign({}, ep.tally || {}); S.card = null; S.chars = {}; S.fx.fade = 1; S.fx.fadeTo = 1;
+  showOSD(`EP ${ep.ep}`, 2600);
+  for (const sc of ep.scenes) { if (!A()) return; if (sc.type === 'card') await runCard(sc, A); else await runScene(sc, A); }
+  if (!A()) return;
+  const seen = lsGet('tv_seen', {}); seen[ep.show + ':' + ep.ep] = 1; lsSet('tv_seen', seen);
+  await fadeTo(1, A); blip(); S.chars = {}; S.card = { style: 'bars', text: 'EP ' + ep.ep + ' COMPLETE', sub: 'TAP GUIDE FOR MORE' }; S.fx.fadeTo = 0; S.ending = true; clearSub();
+  S.paused = false; syncButtons();
+}
+
+/* ---------- 8. writer + director (Claude API, your own key) ---------- */
+const KEY_LS = 'gh_ai_key';                         // shared with GleefulHabit and Slab Happy on this site
+const getKey = () => { try { return localStorage.getItem(KEY_LS) || ''; } catch (e) { return ''; } };
+const cfg = () => Object.assign({ writer: 'claude-sonnet-5-5', director: 'claude-haiku-5-5', muted: false }, lsGet('tv_cfg', {}) || {});
+const getState = id => { const all = lsGet('tv_state', {}) || {}; return all[id] || JSON.parse(JSON.stringify(STATE_SEED[id])); };
+const setState = (id, st) => { const all = lsGet('tv_state', {}) || {}; all[id] = st; lsSet('tv_state', all); };
+const allEpisodes = () => [PILOT].concat(lsGet('tv_eps', []) || []).sort((a, b) => a.ep - b.ep);
+
+async function callClaude(model, system, user, max_tokens) {
+  const key = getKey(); if (!key) throw { code: 'no_key' };
+  let resp;
+  try {
+    resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model, max_tokens, system, messages: [{ role: 'user', content: user }] })
+    });
+  } catch (e) { throw { code: 'network' }; }
+  if (!resp.ok) { let d = ''; try { d = (await resp.json()).error.message || ''; } catch (e) { } throw { status: resp.status, detail: d, model }; }
+  const j = await resp.json();
+  return { text: (j.content || []).filter(b => b.type === 'text').map(b => b.text).join(''), usage: j.usage || {} };
+}
+function apiError(e) {
+  if (e.code === 'no_key') return 'Add your Anthropic API key first (Settings below).';
+  if (e.code === 'network') return 'Couldn’t reach Anthropic. Check your connection and try again.';
+  if (e.status === 401) return 'Your API key was rejected. Check it in Settings.';
+  if (e.status === 404) return `Model “${e.model}” isn’t available on your account. Pick another in Settings.`;
+  if (/credit balance/i.test(e.detail || '')) return 'Your Anthropic account is out of credit. Add some at console.anthropic.com.';
+  if (e.status === 429) return 'Rate limited. Wait a minute and try again.';
+  return e.message || ('Something went wrong' + (e.status ? ' (' + e.status + ')' : '') + (e.detail ? ': ' + e.detail.slice(0, 120) : '.'));
+}
+const EMOTES = ['normal', 'happy', 'sad', 'angry', 'shock', 'deadpan', 'shout'], PROPS = ['phone', 'papers', 'envelope', 'mug', 'none'];
+function sanitizeEpisode(raw, show) {
+  if (!raw || !Array.isArray(raw.scenes) || !raw.scenes.length) throw new Error('The director returned no scenes.');
+  const strip = s => String(s || '').replace(/\([^)]*\)|\[[^\]]*\]|[*_#]/g, '').replace(/\s+/g, ' ').trim().slice(0, 230);
+  const ep = { show: show.id, title: String(raw.title || 'Untitled').slice(0, 50), guests: {}, scenes: [] };
+  Object.entries(raw.guests || {}).slice(0, 4).forEach(([n, o]) => { ep.guests[String(n).toUpperCase()] = o && typeof o === 'object' ? o : {}; });
+  const posOk = p => typeof p === 'number' || (typeof p === 'string' && (POS[p.toUpperCase()] != null || p === 'window'));
+  const mapOf = (o, f) => { const r = {}; if (o && typeof o === 'object') Object.entries(o).slice(0, 5).forEach(([k, v]) => { const x = f(v); if (x !== undefined) r[String(k).toUpperCase()] = x; }); return r; };
+  raw.scenes.slice(0, 14).forEach(sc => {
+    if (!sc || typeof sc !== 'object') return;
+    if (sc.type === 'card') { ep.scenes.push({ type: 'card', style: ['title', 'end', 'text', 'bars'].includes(sc.style) ? sc.style : 'text', text: String(sc.text || '').slice(0, 60), sub: sc.sub ? String(sc.sub).slice(0, 50) : undefined, music: ['theme', 'outro'].includes(sc.music) ? sc.music : undefined }); return; }
+    const out = { type: 'scene', set: SETS[sc.set] ? sc.set : 'apt', time: ['day', 'dusk', 'night'].includes(sc.time) ? sc.time : 'day', caption: String(sc.caption || '').slice(0, 24), cast: {}, beats: [] };
+    Object.entries(sc.cast || {}).slice(0, 5).forEach(([n, o]) => { o = o && typeof o === 'object' ? o : {}; out.cast[String(n).toUpperCase()] = { x: posOk(o.x) ? o.x : 'C', pose: o.pose === 'sit' ? 'sit' : 'stand', face: o.face === -1 ? -1 : 1, prop: PROPS.includes(o.prop) ? o.prop : 'none' }; });
+    (Array.isArray(sc.beats) ? sc.beats : []).slice(0, 70).forEach(b => {
+      if (!b || typeof b !== 'object') return;
+      const nb = {};
+      if (b.say && b.line && strip(b.line)) { nb.say = String(b.say).toUpperCase().slice(0, 20); nb.line = strip(b.line); if (EMOTES.includes(b.emote)) nb.emote = b.emote; if (b.sing) nb.sing = true; if (b.hold != null) nb.hold = clamp(+b.hold || 0, 0, 3); }
+      if (b.enter && typeof b.enter === 'object') nb.enter = mapOf(b.enter, v => { const to = typeof v === 'object' && v ? v.to : v; if (!posOk(to)) return undefined; return typeof v === 'object' ? { to, from: v.from } : v; });
+      if (b.exit && typeof b.exit === 'object') nb.exit = mapOf(b.exit, v => ['L', 'R', 'window'].includes(String(v)) ? String(v) : 'R');
+      if (b.move && typeof b.move === 'object') nb.move = mapOf(b.move, v => posOk(v) ? v : undefined);
+      if (b.pose && typeof b.pose === 'object') nb.pose = mapOf(b.pose, v => v === 'sit' ? 'sit' : 'stand');
+      if (b.prop && typeof b.prop === 'object') nb.prop = mapOf(b.prop, v => PROPS.includes(v) ? v : 'none');
+      if (b.react && typeof b.react === 'object') nb.react = mapOf(b.react, v => EMOTES.includes(v) ? v : undefined);
+      if (b.act && typeof b.act === 'object' && ['poke', 'tally'].includes(b.act.do) && b.act.who) nb.act = { who: String(b.act.who).toUpperCase(), do: b.act.do, target: b.act.target ? String(b.act.target).toUpperCase() : undefined };
+      if (b.sfx && SFX_NAMES.includes(b.sfx)) nb.sfx = b.sfx;
+      if (['shake', 'flash', 'freeze'].includes(b.fx)) nb.fx = b.fx;
+      if (b.sting) nb.sting = b.sting === 'dramatic' ? 'dramatic' : 'bump';
+      if (b.laugh) nb.laugh = ['small', 'big', 'ooh', 'applause'].includes(b.laugh) ? b.laugh : 'small';
+      if (b.wait != null) nb.wait = clamp(+b.wait || 0, 0, 5);
+      if (Object.keys(nb).length) out.beats.push(nb);
+    });
+    if (out.beats.length) ep.scenes.push(out);
+  });
+  if (!ep.scenes.some(s => s.type === 'scene')) throw new Error('The director returned no playable scenes.');
+  if (!ep.scenes.some(s => s.type === 'card' && s.style === 'title')) { const i = ep.scenes.findIndex(s => s.type === 'scene'); ep.scenes.splice(i + 1, 0, { type: 'card', style: 'title', music: 'theme' }); }
+  if (!ep.scenes.some(s => s.type === 'card' && s.style === 'end')) ep.scenes.push({ type: 'card', style: 'end', text: ep.title, music: 'outro' });
+  return ep;
+}
+function parseJson(text) {
+  let s = String(text).replace(/```json|```/gi, '');
+  const a = s.indexOf('{'), z = s.lastIndexOf('}');
+  if (a < 0 || z < a) throw new Error('no json');
+  return JSON.parse(s.slice(a, z + 1));
+}
+async function generateEpisode(showId, premise, status) {
+  const show = SHOWS[showId], st = getState(showId), c = cfg(), used = { in: 0, out: 0 };
+  const tally = (o) => { used.in += o.usage.input_tokens || 0; used.out += o.usage.output_tokens || 0; };
+  const recent = st.log.slice(-8).map(l => `EP ${l.ep} "${l.title}":\n` + l.bullets.map(b => '- ' + b).join('\n')).join('\n\n');
+  const older = st.log.slice(0, -8).map(l => `EP ${l.ep} "${l.title}"`).join(', ');
+  status('Writer is in the room…');
+  const wUser = `STORY SO FAR\n${older ? 'Earlier episodes (titles only): ' + older + '\n\n' : ''}${recent}\n\nBEV'S COMPLAINT TALLY NOW: ${JSON.stringify(st.tally)}\n\nWrite EPISODE ${st.next}.${premise ? '\nThe viewer asked for this idea (use it if it fits the show): ' + premise : ''}`;
+  const w = await callClaude(c.writer, show.writer, wUser, 2600); tally(w);
+  const tm = w.text.match(/TITLE:\s*(.+)/i), sm = w.text.match(/SCRIPT:\s*([\s\S]*?)(?:\n\s*CONTINUITY:|$)/i), cm = w.text.match(/CONTINUITY:\s*([\s\S]*)$/i);
+  if (!sm || sm[1].trim().length < 200) throw new Error('The writer’s script came back too short. Try again.');
+  const title = (tm ? tm[1] : 'Untitled').replace(/[*"]/g, '').trim().slice(0, 50), script = sm[1].trim();
+  const bullets = cm ? cm[1].split('\n').map(x => x.replace(/^[-*•\s]+/, '').trim()).filter(Boolean).slice(0, 7) : [];
+  status(`Director is blocking “${title}”…`);
+  const dUser = `EPISODE ${st.next}: ${title}\nBEV'S TALLY AT START: ${JSON.stringify(st.tally)}\n\nSCRIPT:\n${script}`;
+  let ep = null, lastErr = null;
+  for (let tries = 0; tries < 2 && !ep; tries++) {
+    try { const d = await callClaude(c.director, show.director, dUser + (tries ? '\n\nYour previous reply was not valid JSON. Return ONLY the JSON object.' : ''), 9000); tally(d); ep = sanitizeEpisode(parseJson(d.text), show); }
+    catch (e) { lastErr = e; if (e.status || e.code) throw e; }
+  }
+  if (!ep) throw new Error('The director’s shot list was malformed (' + (lastErr && lastErr.message) + '). Try again.');
+  ep.title = title; ep.ep = st.next; ep.tally = Object.assign({}, st.tally); ep.script = script; ep.date = new Date().toISOString().slice(0, 10);
+  const stored = (lsGet('tv_eps', []) || []).concat(ep).slice(-40); lsSet('tv_eps', stored);
+  st.log.push({ ep: ep.ep, title, bullets }); st.next = ep.ep + 1; st.tally = endTallyOf(ep, st.tally); setState(showId, st);
+  return { ep, used };
+}
+
+/* ---------- 9. UI: remote, TV guide, settings ---------- */
+const pad2 = n => String(n).padStart(2, '0');
+function syncButtons() {
+  $('bPlay').textContent = S.paused ? '▶ PLAY' : '❚❚ PAUSE';
+  $('bMute').textContent = AU.muted ? 'SND OFF' : 'SND ON'; $('bMute').classList.toggle('lit', !AU.muted);
+  $('led').classList.toggle('on', S.power);
+}
+function pickEpisode() { const eps = allEpisodes(), seen = lsGet('tv_seen', {}) || {}; return eps.find(e => !seen[e.show + ':' + e.ep]) || eps[eps.length - 1]; }
+async function tune(ch, ep) {
+  S.ch = ch; newRun(); S.card = null; S.chars = {}; S.now = null; S.paused = false; S.fx.fade = 0; S.fx.fadeTo = 0; syncButtons(); blip();
+  const def = CHANNELS.find(c => c.ch === ch);
+  showOSD('CH ' + pad2(ch) + '  ' + def.label);
+  if (def.show) await playEpisode(ep || pickEpisode());
+  else { S.card = { style: 'bars', text: 'CH ' + pad2(ch) + ' ' + def.label, sub: 'COMING SOON' }; S.cardT = 0; }
+}
+function unlockSpeech() { try { if (SP.ok) { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } } catch (e) { } }
+function power(on) {
+  if (on === S.power) return;
+  const scr = $('screen');
+  if (on) {
+    AU.init(); AU.resume(); SP.load(); unlockSpeech();
+    S.power = true; S.paused = false; $('offmsg').classList.add('hide');
+    scr.classList.remove('pwr-off'); scr.classList.add('pwr-on'); blip(1.2); syncButtons();
+    setTimeout(() => { if (S.power) { const ep = S.pendingEp; S.pendingEp = null; tune(S.ch, ep || undefined); } }, 420);
+  } else {
+    newRun(); S.now = null; clearSub(); $('osd').classList.remove('show'); $('cap').classList.remove('show');
+    scr.classList.remove('pwr-on'); scr.classList.add('pwr-off'); syncButtons();
+    setTimeout(() => { S.power = false; S.paused = false; $('offmsg').classList.remove('hide'); syncButtons(); }, 400);
+  }
+}
+function togglePause() {
+  if (!S.power) return;
+  if (!S.now || S.ending) { tune(S.ch, S.now || undefined); return; }
+  S.paused = !S.paused;
+  if (S.paused) { AU.suspend(); try { speechSynthesis.pause(); } catch (e) { } showOSD('❚❚ PAUSE', 1e7); }
+  else { AU.resume(); try { speechSynthesis.resume(); } catch (e) { } showOSD('▶ PLAY', 1200); }
+  syncButtons();
+}
+function setPaused(p) { if (S.power && S.now && !S.ending && S.paused !== p) togglePause(); }
+function toggleMute() { AU.setMuted(!AU.muted); lsSet('tv_cfg', Object.assign(cfg(), { muted: AU.muted })); syncButtons(); showOSD(AU.muted ? 'SOUND OFF' : 'SOUND ON', 1200); }
+function chStep(d) { const ch = ((S.ch - 1 + d + CHANNELS.length) % CHANNELS.length) + 1; if (S.power) tune(ch); else { S.ch = ch; showOSD('CH ' + pad2(ch), 1200); } }
+
+let guidePaused = false;
+function openGuide() {
+  guidePaused = false;
+  if (S.power && S.now && !S.ending && !S.paused) { togglePause(); guidePaused = true; }
+  renderGuide(); $('guide').hidden = false; $('guide').scrollTop = 0;
+}
+function closeGuide() { $('guide').hidden = true; if (guidePaused) { guidePaused = false; setPaused(false); } }
+function renderGuide(msg) {
+  const eps = allEpisodes(), seen = lsGet('tv_seen', {}) || {}, st = getState('rents_due'), c = cfg(), hasKey = !!getKey();
+  $('gin').innerHTML = `<h1>TV GUIDE</h1><p class="dim">Tap a show to tune in.</p>
+  <h2>CHANNELS</h2>` + CHANNELS.map(ch => `<div class="row ${ch.show ? '' : 'soon'}" ${ch.show ? 'data-act="ch" data-ch="' + ch.ch + '"' : ''}><span class="n">${pad2(ch.ch)}</span><span class="t">${esc(ch.label)}</span><span class="s">${ch.show ? 'SITCOM' : 'COMING SOON'}</span></div>`).join('') +
+    `<h2>RENT'S DUE · EPISODES</h2>` + eps.slice().reverse().map(e => `<div class="row" data-act="ep" data-ep="${e.ep}"><span class="n">${e.ep}</span><span class="t">${esc(e.title)}</span><span class="s">${seen['rents_due:' + e.ep] ? '✓ SEEN' : 'NEW'}</span></div>`).join('') +
+    `<h2>WRITE A NEW EPISODE</h2>
+  <p>The writer reads the story so far, then the director stages it. Takes about a minute.</p>
+  <label for="prem">Optional idea</label><textarea id="prem" maxlength="200" placeholder="e.g. Mitch gets a rival warranty salesman"></textarea>
+  <button class="gbtn" id="genBtn" data-act="gen">✍ WRITE EPISODE ${st.next}</button><p class="status" id="gstat">${msg || ''}</p>
+  <details id="gset"><summary>⚙ SETTINGS · API key ${hasKey ? '✓ set' : '✗ not set'}</summary>
+    <label for="keyin">Anthropic API key</label><input id="keyin" type="password" autocomplete="off" placeholder="sk-ant-…">
+    <button class="gbtn alt" data-act="savekey">SAVE KEY</button>
+    <p class="dim">Shared with your other apps on this site and stored only on this device. Each episode costs a few cents.</p>
+    <label for="mw">Writer model</label><input id="mw" value="${esc(c.writer)}" autocapitalize="off" autocorrect="off">
+    <label for="md">Director model</label><input id="md" value="${esc(c.director)}" autocapitalize="off" autocorrect="off">
+    <button class="gbtn alt" data-act="savemodels">SAVE MODELS</button>
+    <button class="gbtn alt" data-act="reset">DELETE WRITTEN EPISODES &amp; RESET STORY</button>
+  </details>
+  <button class="gbtn alt" data-act="close" style="margin-top:22px">✕ CLOSE GUIDE</button>`;
+}
+async function onGenerate() {
+  const btn = $('genBtn'), stat = $('gstat'), t0 = Date.now(); btn.disabled = true; stat.className = 'status';
+  let label = 'Starting…'; const tick = setInterval(() => { stat.textContent = label + ' ' + Math.round((Date.now() - t0) / 1000) + 's'; }, 500);
+  stat.textContent = label;
+  try {
+    const { ep, used } = await generateEpisode('rents_due', ($('prem').value || '').trim().slice(0, 200), t => { label = t; stat.textContent = t; });
+    clearInterval(tick);
+    renderGuide(`Episode ${ep.ep} “${esc(ep.title)}” is ready · ${used.in.toLocaleString()} tokens in, ${used.out.toLocaleString()} out. Tap it above to watch.`);
+  } catch (e) { clearInterval(tick); stat.className = 'status err'; stat.textContent = apiError(e); btn.disabled = false; }
+}
+$('gin').addEventListener('click', e => {
+  const t = e.target.closest('[data-act]'); if (!t) return;
+  const a = t.dataset.act;
+  if (a === 'close') closeGuide();
+  else if (a === 'ch') { guidePaused = false; $('guide').hidden = true; S.ch = +t.dataset.ch; if (!S.power) power(true); else tune(S.ch); }
+  else if (a === 'ep') { const ep = allEpisodes().find(x => x.ep === +t.dataset.ep); guidePaused = false; $('guide').hidden = true; S.ch = 1; S.pendingEp = ep; if (!S.power) power(true); else { S.pendingEp = null; tune(1, ep); } }
+  else if (a === 'gen') onGenerate();
+  else if (a === 'savekey') {
+    const k = ($('keyin').value || '').trim();
+    if (!/^sk-ant-/.test(k)) { $('gstat').className = 'status err'; $('gstat').textContent = 'That doesn’t look like an Anthropic key (it starts with sk-ant-).'; return; }
+    try { localStorage.setItem(KEY_LS, k); } catch (err) { $('gstat').textContent = 'Couldn’t save the key on this device.'; return; }
+    renderGuide('Key saved.');
+  } else if (a === 'savemodels') { lsSet('tv_cfg', Object.assign(cfg(), { writer: ($('mw').value || '').trim() || 'claude-sonnet-5-5', director: ($('md').value || '').trim() || 'claude-haiku-5-5' })); $('gstat').textContent = 'Models saved.'; }
+  else if (a === 'reset') {
+    if (confirm('Delete every episode you generated and reset the story back to the end of episode 1?')) { try { localStorage.removeItem('tv_eps'); localStorage.removeItem('tv_state'); localStorage.removeItem('tv_seen'); } catch (err) { } renderGuide('Story reset.'); }
+  }
+});
+
+$('bPwr').onclick = () => power(!S.power);
+$('bChUp').onclick = () => chStep(1);
+$('bChDn').onclick = () => chStep(-1);
+$('bMute').onclick = toggleMute;
+$('bPlay').onclick = togglePause;
+$('bSkip').onclick = () => { if (S.power) tune(S.ch, S.now || undefined); };
+$('bGuide').onclick = openGuide;
+document.addEventListener('keydown', e => {
+  if (!$('guide').hidden || /INPUT|TEXTAREA/.test((e.target || {}).tagName || '')) return;
+  if (e.key === ' ') { e.preventDefault(); S.power ? togglePause() : power(true); }
+  else if (e.key === 'ArrowUp') chStep(1); else if (e.key === 'ArrowDown') chStep(-1);
+  else if (e.key === 'm') toggleMute(); else if (e.key === 'g') openGuide();
+});
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') setPaused(true); else checkForUpdate(); });
+
+/* ---------- update check (same pattern as the other apps in this repo) ---------- */
+const APP_VERSION = '2026-10-08.1200';
+let updateShown = false;
+async function checkForUpdate() {
+  if (updateShown || location.protocol === 'file:') return;
+  try {
+    const resp = await fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' });
+    if (!resp.ok) return;
+    const m = (await resp.text()).match(/const APP_VERSION = '([^']+)'/);
+    if (!m || m[1] <= APP_VERSION) return;
+    updateShown = true;
+    const bar = document.createElement('button');
+    bar.className = 'updatebar'; bar.type = 'button';
+    bar.innerHTML = `<b>New version ready</b><span>Tap to update to ${esc(m[1])}</span>`;
+    bar.onclick = () => location.replace(location.pathname + '?v=' + encodeURIComponent(m[1]));
+    document.body.appendChild(bar);
+  } catch (e) { /* offline — try again next time */ }
+}
+
+/* ---------- 10. boot ---------- */
+(function boot() {
+  AU.muted = !!cfg().muted;
+  $('ver').textContent = 'Pixel TV · version ' + APP_VERSION;
+  const lastV = lsGet('tv_lastVersion'); if (lastV && lastV !== APP_VERSION) setTimeout(() => showOSD('UPDATED ' + APP_VERSION.slice(5, 10), 3000), 600);
+  lsSet('tv_lastVersion', APP_VERSION);
+  if (location.search.includes('v=')) history.replaceState(null, '', location.pathname);
+  syncButtons();
+  try { if (document.fonts) document.fonts.load('16px "Press Start 2P"'); } catch (e) { }
+  S.last = performance.now(); requestAnimationFrame(frame);
+  checkForUpdate();
+  window.__TV = { S, AU, SP, SFX, SETS, PILOT, LOOKS, env, allEpisodes, sanitizeEpisode, parseJson, endTallyOf, playEpisode, tune, power, render, drawCard, drawPerson, generateEpisode, guestLook, getState };
+})();
+</script>
+</body>
+</html>
