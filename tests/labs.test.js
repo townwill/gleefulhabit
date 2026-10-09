@@ -67,29 +67,29 @@ console.log('labs: entering panels (full ladder)');
     // A: everything improves a little; ratio lands on exactly 5.0 which is NOT under 5; HDL holds
     const a = addLabPanel('2026-11-20',225,45,200,140);
     OUT.A = JSON.stringify({err:a.error, xp:a.report.xp, packs:a.report.packs, hanger:a.report.hanger, rewarded:a.report.rewarded, derived:[a.panel.nonHdl,a.panel.ratio], lines:a.report.lines.length});
-    OUT.xpA = S.user.xp - xp0; OUT.packsA = S.user.packsBank;
+    OUT.xpA = S.user.xp - xp0; OUT.packsA = S.user.wishlistPoints;
     // B: big drop: crits at the 2024 level + three defeats
     const b = addLabPanel('2026-12-20',195,50,145,130);
     OUT.B = JSON.stringify({xp:b.report.xp, packs:b.report.packs, hanger:b.report.hanger});
-    OUT.packsB = S.user.packsBank; OUT.hangersB = S.user.hangersBank;
+    OUT.packsB = S.user.wishlistPoints; OUT.hangersB = 0;
     OUT.flags = JSON.stringify(Object.keys(S.labs.awarded).sort());
     // C: everything in range -> two more defeats + the boss falls
     const c = addLabPanel('2027-01-20',170,50,120,95);
     OUT.C = JSON.stringify({xp:c.report.xp, packs:c.report.packs, hanger:c.report.hanger});
-    OUT.packsC = S.user.packsBank; OUT.hangersC = S.user.hangersBank;
+    OUT.packsC = S.user.wishlistPoints; OUT.hangersC = 0;
     OUT.history = S.user.packHistory.map(h => h.type + ':' + h.reason).join(' | ');
     const st = labBossState(); OUT.final = JSON.stringify(st.markers.map(m => m.status)); OUT.downFinal = st.downCount;
   `);
   check('A: no error, 6 improved markers x25 XP = 150, no packs', sb.OUT.A.includes('"xp":150') && sb.OUT.A.includes('"packs":0') && sb.OUT.A.includes('"rewarded":true') && !sb.OUT.A.includes('err":"'), sb.OUT.A);
   check('A: derived Non-HDL 180 and ratio 5.0 computed for you', sb.OUT.A.includes('"derived":[180,5]'), sb.OUT.A);
   check('A: XP actually landed on the user', sb.OUT.xpA === 150, sb.OUT.xpA);
-  check('A: ratio exactly 5.0 is not "under 5", so no defeat/pack', sb.OUT.packsA === 0, sb.OUT.packsA);
-  check('B: 6x25 + 5 crits x50 + 3 defeats x100 = 700 XP, 3 packs', sb.OUT.B === '{"xp":700,"packs":3,"hanger":0}', sb.OUT.B);
-  check('B: packs banked (3), no hanger yet', sb.OUT.packsB === 3 && sb.OUT.hangersB === 0, [sb.OUT.packsB, sb.OUT.hangersB]);
+  check('A: ratio exactly 5.0 is not "under 5", so no defeat/points', sb.OUT.packsA === 0, sb.OUT.packsA);
+  check('B: 6x25 + 5 crits x50 + 3 defeats x100 = 700 XP, 3 x 40 = 120 pts', sb.OUT.B === '{"xp":700,"packs":120,"hanger":0}', sb.OUT.B);
+  check('B: 120 wishlist points landed (no victory yet)', sb.OUT.packsB === 120, sb.OUT.packsB);
   check('B: one-time crit + defeat flags recorded', ['crit_ldl', 'crit_tg', 'crit_total', 'crit_nonHdl', 'crit_ratio', 'defeat_tg', 'defeat_total', 'defeat_ratio'].every(k => sb.OUT.flags.includes(k)), sb.OUT.flags);
-  check('C: 2 new defeats (LDL, Non-HDL) -> 2 packs + Hanger Box for the boss', JSON.parse(sb.OUT.C).packs === 2 && JSON.parse(sb.OUT.C).hanger === 1, sb.OUT.C);
-  check('C: totals 5 packs + 1 hanger', sb.OUT.packsC === 5 && sb.OUT.hangersC === 1, [sb.OUT.packsC, sb.OUT.hangersC]);
-  check('pack history records pack + hanger types', sb.OUT.history.includes('hanger:Cholesterol boss defeated') && sb.OUT.history.includes('pack:LDL defeated'), sb.OUT.history);
+  check('C: 2 new defeats (80) + boss victory (600) = 680 pts', JSON.parse(sb.OUT.C).packs === 680, sb.OUT.C);
+  check('C: totals 800 pts (5 defeats x 40 + 600)', sb.OUT.packsC === 800, sb.OUT.packsC);
+  check('history records victory + defeat entries', sb.OUT.history.includes('labs_victory:Cholesterol boss defeated') && sb.OUT.history.includes('labs_defeat:LDL defeated'), sb.OUT.history);
   check('final boss state: all six down, HDL held', sb.OUT.downFinal === 6 && JSON.parse(sb.OUT.final)[5] === 'held', sb.OUT.final);
 }
 
@@ -98,7 +98,7 @@ console.log('labs: worse results + HDL rules');
   const sb = run({ now: '2026-12-15T12:00:00' }, `
     const xp0 = S.user.xp;
     const w = addLabPanel('2026-12-01',240,40,230,160);   // everything worse, HDL dropped
-    OUT.xp = S.user.xp - xp0; OUT.lines = w.report.lines.join('|'); OUT.packs = S.user.packsBank;
+    OUT.xp = S.user.xp - xp0; OUT.lines = w.report.lines.join('|'); OUT.packs = S.user.wishlistPoints;
     const st = labBossState();
     OUT.worse = JSON.stringify(st.markers.map(m => m.worse));
     OUT.ldlHp = Math.round(st.markers[0].hp * 100);
@@ -106,10 +106,10 @@ console.log('labs: worse results + HDL rules');
     const h1 = addLabPanel('2026-12-05',200,38,200,150);  // hdl 38 (<40)
     const h2 = addLabPanel('2026-12-10',200,41,190,150);  // hdl 41 >= 40: defeat
     OUT.hdlDefeat = h2.report.lines.some(l => l.includes('HDL DEFEATED'));
-    const packsAfter = S.user.packsBank;
+    const packsAfter = S.user.wishlistPoints;
     const h3 = addLabPanel('2026-12-12',200,36,190,150);
     const h4 = addLabPanel('2026-12-14',200,43,180,150);  // recovers again: flag already set
-    OUT.hdlOnce = S.user.packsBank === packsAfter;
+    OUT.hdlOnce = S.user.wishlistPoints === packsAfter;
   `);
   check('worse panel earns nothing', sb.OUT.xp === 0 && sb.OUT.packs === 0, sb.OUT);
   check('worse markers are called out (boss heals)', sb.OUT.lines.includes('no damage') && JSON.parse(sb.OUT.worse).every(x => x === true), sb.OUT.worse);
@@ -159,15 +159,15 @@ console.log('labs: mini-bosses');
     for (let i = 1; i <= 22; i++) { const dk = '2026-10-' + String(i).padStart(2,'0'); S.logEntries[dk] = {p:[{amt:30,label:'x',fiber:35}]}; }
     for (let i = 1; i <= 31; i++) { const dk = '2026-10-' + String(i).padStart(2,'0'); if (i % 7 !== 0) { S.logs[dk] = S.logs[dk] || {}; S.logs[dk].s = true; } }  // 27/31 = 87%
     checkLabsMilestones();
-    OUT.packs = S.user.packsBank;
+    OUT.packs = S.user.wishlistPoints;
     OUT.flags = JSON.stringify(['cardio','fiber','sugar'].map(k => S.labs.awarded['mini_2026-10_' + k]));
     checkLabsMilestones(); checkLabsMilestones();     // idempotent
-    OUT.packsAgain = S.user.packsBank;
+    OUT.packsAgain = S.user.wishlistPoints;
     OUT.history = S.user.packHistory.map(h => h.reason).join('|');
     OUT.r = JSON.stringify(['cardio','fiber','sugar'].map(k => { const r = labMiniResult(k,'2026-10'); return [r.ok, r.label]; }));
   `);
-  check('all three mini-bosses pay a pack each', pass.OUT.packs === 3 && pass.OUT.flags === '[true,true,true]', pass.OUT);
-  check('running the check again never double-pays', pass.OUT.packsAgain === 3, pass.OUT.packsAgain);
+  check('all three mini-bosses pay 16 pts each', pass.OUT.packs === 48 && pass.OUT.flags === '[true,true,true]', pass.OUT);
+  check('running the check again never double-pays', pass.OUT.packsAgain === 48, pass.OUT.packsAgain);
   check('history names them with the month', pass.OUT.history.includes('Cardio Crusher — Oct 2026') && pass.OUT.history.includes('Fiber Fiend — Oct 2026') && pass.OUT.history.includes('Sugar Slayer — Oct 2026'), pass.OUT.history);
   check('progress labels', pass.OUT.r.includes('4 / 4 weeks at 150+ min') && pass.OUT.r.includes('avg 35g / 30g') && pass.OUT.r.includes('87% of 31 days'), pass.OUT.r);
 
@@ -179,13 +179,13 @@ console.log('labs: mini-bosses');
     for (let i = 20; i <= 31; i++) { const dk = '2026-10-' + String(i).padStart(2,'0'); S.logEntries[dk] = {p:[{amt:30,label:'no fiber field'}]}; } // unknown days are skipped, not zero
     for (let i = 1; i <= 31; i++) { const dk = '2026-10-' + String(i).padStart(2,'0'); if (i <= 24) { S.logs[dk] = S.logs[dk] || {}; S.logs[dk].s = true; } }   // 24/31 = 77%
     checkLabsMilestones();
-    OUT.packs = S.user.packsBank;
+    OUT.packs = S.user.wishlistPoints;
     OUT.flags = JSON.stringify(['cardio','fiber','sugar'].map(k => S.labs.awarded['mini_2026-10_' + k]));
     // back-filling after the month was judged cannot pay out the old month
     for (let i = 20; i <= 31; i++) { const dk = '2026-10-' + String(i).padStart(2,'0'); S.logs[dk] = S.logs[dk] || {}; S.logs[dk].s = true; }
     S.cardioLogs['2026-10-20'] = [{min:200}];
     checkLabsMilestones();
-    OUT.packsAfterBackfill = S.user.packsBank;
+    OUT.packsAfterBackfill = S.user.wishlistPoints;
   `);
   check('3 weeks / 149 min, 19 fiber days (unknown days skipped), 77%: all miss', miss.OUT.packs === 0 && miss.OUT.flags === '[false,false,false]', miss.OUT);
   check('a judged month is frozen: back-filling pays nothing', miss.OUT.packsAfterBackfill === 0, miss.OUT.packsAfterBackfill);
@@ -196,16 +196,16 @@ console.log('labs: mini-bosses');
     ['2026-10-27','2026-11-03','2026-11-10','2026-11-17'].forEach(d => S.cardioLogs[d] = [{min:150}]);   // 4 of 5 weeks
     for (let i = 1; i <= 20; i++) { const dk = '2026-11-' + String(i).padStart(2,'0'); S.logEntries[dk] = {p:[{amt:30,label:'x',fiber:30}]}; }  // exactly 20 days, exactly 30g
     OUT.r = JSON.stringify(['cardio','fiber'].map(k => { const r = labMiniResult(k,'2026-11'); return [r.ok, r.label]; }));
-    checkLabsMilestones(); OUT.packs = S.user.packsBank;
+    checkLabsMilestones(); OUT.packs = S.user.wishlistPoints;
   `);
-  check('5-Sunday month allows one missed week; 20 days at exactly goal passes', edge.OUT.r.includes('[true,"4 / 4 weeks') && edge.OUT.r.includes('[true,"avg 30g / 30g"') && edge.OUT.packs === 2, edge.OUT);
+  check('5-Sunday month allows one missed week; 20 days at exactly goal passes', edge.OUT.r.includes('[true,"4 / 4 weeks') && edge.OUT.r.includes('[true,"avg 30g / 30g"') && edge.OUT.packs === 32, edge.OUT);
 
   const before = run({ now: '2026-11-02T09:00:00' }, HABITS + `
     // default start is the first full month after install: October is never judged
     S.labs.miniBossStart = '2026-11';
     ['2026-09-29','2026-10-06','2026-10-13','2026-10-20'].forEach(d => S.cardioLogs[d] = [{min:200}]);
     checkLabsMilestones();
-    OUT.packs = S.user.packsBank; OUT.keys = Object.keys(S.labs.awarded).length;
+    OUT.packs = S.user.wishlistPoints; OUT.keys = Object.keys(S.labs.awarded).length;
   `);
   check('months before the start month are never judged', before.OUT.packs === 0 && before.OUT.keys === 0, before.OUT);
 
@@ -291,7 +291,7 @@ console.log('labs: existing systems untouched');
     OUT.pausable = S.habits.map(h => isPausable(h)).join(',');
     toggleHabit('w'); checkWeeklyPacksAndMilestones(); __flushTimers();
     OUT.err = OUT.__timerError || '';
-    OUT.packs = S.user.packsBank; OUT.habits = S.habits.length;
+    OUT.packs = S.user.wishlistPoints; OUT.habits = S.habits.length;
     const back = JSON.parse(JSON.stringify(S));            // export -> import round trip keeps Labs
     const back2 = migrateState(back);
     OUT.rt = back2.labs.panels.length + ':' + back2.labs.recheckDate;

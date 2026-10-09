@@ -85,10 +85,16 @@ This is a **real deployed static site**, not a Claude Artifacts preview — so A
 ## Labs + cholesterol boss (Labs sub-tab under Track)
 - Data: `S.labs = {panels:[{date,total,hdl,tg,ldl,ratio,nonHdl}], recheckDate, targets, awarded:{}, report:{}}`. Seeded by `seedLabs()` (hoisted function: migration runs before later consts, so no TDZ-bound refs). Dates are strictly validated on load/import (they reach inline handlers).
 - Targets are editable (`LAB_TARGET_DEFAULTS`: LDL<100, TG<150, Total<200, Non-HDL<130, ratio<5.0, HDL>=40) — confirm with doctor.
-- Rewards: only the newest panel, once per panel date (`awarded.panel_<date>`). Improved marker +25 XP; crit (crossing back past the 2024 value) +50 once; defeat +100 XP + pack; all six down = Hanger Box. All go through `grantReward()` so a future wishlist-points swap is a one-function change.
+- Rewards: only the newest panel, once per panel date (`awarded.panel_<date>`). Improved marker +25 XP; crit (crossing back past the 2024 value) +50 once; defeat +100 XP + pack; all six down = Hanger Box. All go through `grantReward(kind,flag,reason)` which now pays wishlist points (`LABS_USD`: defeat $10, mini $4, victory $150, times the points-per-dollar rate).
 - Mini-bosses (`LAB_MINIBOSSES`): cardio = >=4 Mon-Sun weeks >=150 min ending in the month; fiber = average over logged days (>=20 logged) >= goal; sugar = Less Sugar done >=80% of days. Judged after month end, frozen in `S.labs.report`; start next full month.
 - Day before `recheckDate` an in-app fasting banner (`#labsFastBanner`) shows; it must not add height to Today habit cards.
 - Tests: `node tests/cardio.test.js tests/fuel.test.js tests/labs.test.js` (each file run separately).
+
+## Rewards = wishlist points (no more boxes)
+- Every old box reward now calls `awardBox(type,reason)`, which pays `boxPoints(type)` = `BOX_USD[type]` x `S.user.wishlistPointsPerDollar` (default 4): pack $4, blaster $30, super $40, mega $50, hobby $150, mythic $250. Nothing increments the legacy `*Bank` counters any more; the Pack Vault only renders if an old bank is non-zero.
+- Earning: `awardHabitDayPoints()` = +2 per habit per day, once (`S.user.habitPtsPaid[date_habit]`, no clawback), only for days on/after `habitPtsSince` (set the first run) and within the last 14 days. Perfect week (both halves) = +20 once (`weeklyPackFlags[wk].bonus`). The three weekly pack drops are gone. Check-in 3/8, measurement 10, training score 20 unchanged.
+- The box shop is seeded as wishlist items (`_boxShopSeeded`); buying uses the existing `redeemWishlistItem`.
+- Tests: `node tests/points.test.js`.
 
 ## Deploy workflow
 Historically: design/discuss in claude.ai chat, then deploy via Claude Code or GitHub's web editor — this file exists specifically to collapse that into one step by giving Claude Code on the Web (or Remote Control) the same context a chat conversation would have had. When finishing a change:

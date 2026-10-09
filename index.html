@@ -1036,7 +1036,7 @@ function blankState() {
       packHistory:[],weeklyPacksAwarded:{},weeklyPackFlags:{},
       consecutivePackWeeks:0,lastPackWeek:null,milestones:{},
       perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null,favoriteQuotes:[],lastQuotePeriod:null,lastQuoteData:null,milestonesRedeemed:{},blasterAnchorMonth:null,calorieGoal:null,sugarAutoCalcSince:null,
-      wishlistPoints:0,wishlistItems:[],wishlistHistory:[],measurementWeekFlags:{},measurementStreakWeeks:0,trainingScoreWeekFlags:{},wishlistPointsPerDollar:4,survivalMode:false,winCount:0,workoutWeeklyTarget:3,cardioGoalMin:150,fuelTargets:{fiber:30,satFat:13,sugar:15}},
+      wishlistPoints:0,habitPtsSince:null,habitPtsPaid:{},wishlistItems:[],wishlistHistory:[],measurementWeekFlags:{},measurementStreakWeeks:0,trainingScoreWeekFlags:{},wishlistPointsPerDollar:4,survivalMode:false,winCount:0,workoutWeeklyTarget:3,cardioGoalMin:150,fuelTargets:{fiber:30,satFat:13,sugar:15}},
   };
 }
 
@@ -1128,6 +1128,8 @@ function migrateState(raw) {
   if (!raw.checkins)                  raw.checkins={};
   if (raw.user.wishlistPoints==null)  raw.user.wishlistPoints=0;
   if (!raw.user.wishlistItems)        raw.user.wishlistItems=[];
+  if (!raw.user.habitPtsPaid || typeof raw.user.habitPtsPaid!=='object' || Array.isArray(raw.user.habitPtsPaid)) raw.user.habitPtsPaid={};
+  if (!labValidDate(raw.user.habitPtsSince)) raw.user.habitPtsSince=null; // set the first time points are awarded
   if (!raw.user.wishlistHistory)      raw.user.wishlistHistory=[];
   if (raw.user.wishlistPointsPerDollar==null) raw.user.wishlistPointsPerDollar=4;
   if (raw.user.survivalMode==null) raw.user.survivalMode=false;
@@ -1167,6 +1169,14 @@ function migrateState(raw) {
       {id:Date.now().toString(36)+'3',name:'Lego Set',priceUsd:37.5,redeemedCount:0},
       {id:Date.now().toString(36)+'4',name:'Exercise Equipment',priceUsd:75,redeemedCount:0},
     );
+  }
+  // The box shop: each old box is now a wishlist item priced in dollars (cost = price x points-per-dollar).
+  if (!raw.user._boxShopSeeded) {
+    raw.user._boxShopSeeded=true;
+    [['Pack',4],['Blaster Box',30],['Super Box',40],['Mega Box',50],['Hobby Box',150],['Mythic Box',250]].forEach(([name,usd],i)=>{
+      if (!raw.user.wishlistItems.some(x=>x&&x.name===name))
+        raw.user.wishlistItems.push({id:'box'+i+Date.now().toString(36),name,priceUsd:usd,redeemedCount:0});
+    });
   }
   // One-time conversion from the old flat point-cost model to a shared
   // points-per-dollar rate, so a rate change (e.g. redoing the "max points
@@ -1240,7 +1250,7 @@ let S = (() => {
   try {
     let raw = JSON.parse(localStorage.getItem(STORE_KEY)||'null');
     if (!raw) for (const k of ['hf4','hf3']){const o=localStorage.getItem(k);if(o){raw=JSON.parse(o);break;}}
-    if (!raw) return blankState();
+    if (!raw) return migrateState(blankState());
     return migrateState(raw);
   } catch(err){console.error('GleefulHabit: load failed, starting fresh —',err);return blankState();}
 })();
@@ -1482,6 +1492,26 @@ function checkBadges(){
   if(wStreak>=7) earnBadge('weight_log');
 }
 
+const PERFECT_WEEK_PTS=20, HABIT_DAY_PTS=2;
+// +2 wishlist points per habit per day, once each (no clawback on un-tick). Only days from the day the
+// feature first ran count, and only the last 14 days are scanned, so history is never retro-paid.
+// Idempotent, so it is safe to call from every completion path.
+function awardHabitDayPoints(){
+  if(!S.user.habitPtsSince)S.user.habitPtsSince=todayKey();
+  if(!S.user.habitPtsPaid)S.user.habitPtsPaid={};
+  const paid=S.user.habitPtsPaid;let n=0;
+  const d=new Date();
+  for(let i=0;i<14;i++){
+    const dk=dateKey(d);d.setDate(d.getDate()-1);
+    if(dk<S.user.habitPtsSince)break;
+    S.habits.forEach(h=>{
+      if(dk<h.createdAt)return;
+      const key=dk+'_'+h.id;
+      if(!paid[key]&&habitDoneOn(h,dk)){paid[key]=true;n++;}
+    });
+  }
+  if(n)awardWishlistPoints(n*HABIT_DAY_PTS,n===1?'Habit done':`${n} habits done`);
+}
 function checkWeeklyPacksAndMilestones(){
   const wk=isoWeek(),days=thisWeekDays(); // Monday..Sunday
   const halfA=days.slice(0,3), halfB=days.slice(3,6); // Mon-Wed, Thu-Sat (Sunday is days[6])
@@ -1496,22 +1526,24 @@ function checkWeeklyPacksAndMilestones(){
   if(newlyEarned.length){
     S.user.weeklyPackFlags[wk]=flags;
     S.user.weeklyPacksAwarded[wk]=(flags.halfA?1:0)+(flags.halfB?1:0)+(flags.ten?1:0);
-    const np=newlyEarned.length;
-    S.user.packsBank=(S.user.packsBank||0)+np;
     const pvd=new Date();pvd.setDate(pvd.getDate()-7);const pvk=weekKeyFor(pvd);
     if(S.user.lastPackWeek===pvk)S.user.consecutivePackWeeks=(S.user.consecutivePackWeeks||0)+1;
     else if(S.user.lastPackWeek!==wk)S.user.consecutivePackWeeks=1;
     S.user.lastPackWeek=wk;
-    newlyEarned.forEach(reason=>S.user.packHistory.unshift({date:todayKey(),count:1,type:'pack',reason}));
-    earnBadge('pack_earner',(S.user.packHistory||[]).length>=1);
     save();
-    setTimeout(()=>{toast(`📦 ${np} Pack${np>1?'s':''} earned!`);confetti(50);},400);
+    setTimeout(()=>{toast(newlyEarned.join(' · '));confetti(30);},400);
   }
+  // Weekly pack drops were replaced by wishlist points: one bonus when both halves of the week are perfect.
+  if(flags.halfA&&flags.halfB&&!flags.bonus){
+    flags.bonus=true;S.user.weeklyPackFlags[wk]=flags;
+    awardWishlistPoints(PERFECT_WEEK_PTS,'Perfect week! 🏅');
+  }
+  awardHabitDayPoints();
   checkHangerMilestones();checkBlasterMilestones();checkLabsMilestones();
 }
 function checkHangerMilestones(){
   const m=S.user.milestones;
-  function aw(key,reason){if(m[key])return;m[key]=true;S.user.packsBank=(S.user.packsBank||0)+1;S.user.packHistory.unshift({date:todayKey(),count:1,type:'pack',reason});save();setTimeout(()=>{toast(`📦 Pack earned — ${reason}`);confetti(70);},800);}
+  function aw(key,reason){if(m[key])return;m[key]=true;awardBox('pack',reason);}
 
   // 2 perfect weeks in a row (both halves — Mon-Wed and Thu-Sat — perfect).
   // Repeatable: fires again every 2 more consecutive perfect weeks. Recomputed
@@ -1550,10 +1582,10 @@ function checkHangerMilestones(){
 
 function checkBlasterMilestones(){
   const m=S.user.milestones, mk=calMonthKey();
-  function awBlaster(key,reason){if(m[key])return;m[key]=true;S.user.blastersBank=(S.user.blastersBank||0)+1;S.user.packHistory.unshift({date:todayKey(),count:1,type:'blaster',reason});save();setTimeout(()=>{toast(`🏆 Blaster Box earned — ${reason}`);confetti(120);},1600);}
-  function awMega(key,reason){if(m[key])return;m[key]=true;S.user.megaBank=(S.user.megaBank||0)+1;S.user.packHistory.unshift({date:todayKey(),count:1,type:'mega',reason});save();setTimeout(()=>{toast(`💎 Mega Box earned — ${reason}`);confetti(160);},1800);}
-  function awHobby(key,reason){if(m[key])return;m[key]=true;S.user.hobbyBank=(S.user.hobbyBank||0)+1;S.user.packHistory.unshift({date:todayKey(),count:1,type:'hobby',reason});save();setTimeout(()=>{toast(`🗃️ Hobby Box earned — ${reason}`);confetti(200);},2000);}
-  function awSuper(key,reason){if(m[key])return;m[key]=true;S.user.superBank=(S.user.superBank||0)+1;S.user.packHistory.unshift({date:todayKey(),count:1,type:'super',reason});save();setTimeout(()=>{toast(`🌟 SUPER BOX earned — ${reason}`);confetti(250);},2200);}
+  function awBlaster(key,reason){if(m[key])return;m[key]=true;awardBox('blaster',reason);}
+  function awMega(key,reason){if(m[key])return;m[key]=true;awardBox('mega',reason);}
+  function awHobby(key,reason){if(m[key])return;m[key]=true;awardBox('hobby',reason);}
+  function awSuper(key,reason){if(m[key])return;m[key]=true;awardBox('super',reason);}
 
   // Escalating % of all possible habit completions this month (habits × days
   // elapsed), using each habit's real completion bar — not just "logged something".
@@ -2426,7 +2458,7 @@ function renderRewards(){
   const wLost=wStart!=null&&wCurrent!=null?Math.max(0,+(wStart-wCurrent).toFixed(1)):0;
   const wGoal=S.weight.goal;
   let html='';
-  html+=`<div class="pack-vault"><div class="vault-header">🎴 Pack Vault</div><div class="vault-counts">
+  if(totalBanked>0) html+=`<div class="pack-vault"><div class="vault-header">🎴 Pack Vault (old rewards)</div><div class="vault-counts">
     <div class="vault-item packs"><div class="vault-num" style="color:var(--purple)">${bank.p}</div><div class="vault-lbl">Packs</div></div>
     <div class="vault-divider"></div>
     <div class="vault-item hangers"><div class="vault-num" style="color:var(--orange)">${bank.h}</div><div class="vault-lbl">Hanger</div></div>
@@ -2466,7 +2498,7 @@ function renderRewards(){
   }
   html+=`<button class="btn-submit" style="margin-bottom:20px" onclick="addWishlistItem()">+ New Wishlist Item</button>`;
   const daysDoneCount=(wkFlags.halfA?3:halfADays.filter(d=>daySatisfiedWithRest(dateKey(d))).length)+(wkFlags.halfB?3:halfBDays.filter(d=>daySatisfiedWithRest(dateKey(d))).length);
-  html+=`<div class="week-card"><div class="week-card-title">📅 This Week <span>${daysDoneCount}/6 days${isSundayNow?' + bonus day':''}</span></div><div class="week-days-row">${days.map((d,i)=>{const k=dateKey(d),flagged=(i<3&&wkFlags.halfA)||(i>=3&&i<6&&wkFlags.halfB),c=flagged||isDayComplete(k),rest=dayRestSkipCount(k)>0,t=k===todayKey(),bonus=i===6;return`<div class="week-day-dot ${c?'done':''} ${rest&&!c?'rest':''} ${t?'today':''}" title="${bonus?'Sunday — bonus':''}"></div>`;}).join('')}</div><div class="week-progress-label"><span>Side quests this week</span><span>${sct} / 10</span></div><div class="week-mini-bar"><div class="week-mini-bar-fill" style="width:${Math.min(sct/10*100,100)}%"></div></div><div class="week-rewards-list"><div class="week-reward-row ${halfAPerfect?'earned':''}">${inHalfA?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — Mon–Wed at 80%+ of habits <span class="milestone-cadence">Weekly</span></div><div class="week-reward-status">${halfAPerfect?'✓ Earned':'In progress'}</div></div><div class="week-reward-row ${halfBPerfect?'earned':''}">${inHalfB?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — Thu–Sat at 80%+ of habits <span class="milestone-cadence">Weekly</span></div><div class="week-reward-status">${halfBPerfect?'✓ Earned':'In progress'}</div></div><div class="week-reward-row ${sct>=10?'earned':''}">${isSundayNow?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Pack — 10 side quests (awarded Sunday) <span class="milestone-cadence">Weekly</span></div><div class="week-reward-status">${sct>=10?'✓ Earned':sct+'/10'}</div></div></div></div>`;
+  html+=`<div class="week-card"><div class="week-card-title">📅 This Week <span>${daysDoneCount}/6 days${isSundayNow?' + bonus day':''}</span></div><div class="week-days-row">${days.map((d,i)=>{const k=dateKey(d),flagged=(i<3&&wkFlags.halfA)||(i>=3&&i<6&&wkFlags.halfB),c=flagged||isDayComplete(k),rest=dayRestSkipCount(k)>0,t=k===todayKey(),bonus=i===6;return`<div class="week-day-dot ${c?'done':''} ${rest&&!c?'rest':''} ${t?'today':''}" title="${bonus?'Sunday — bonus':''}"></div>`;}).join('')}</div><div class="week-progress-label"><span>Side quests this week</span><span>${sct} / 10</span></div><div class="week-mini-bar"><div class="week-mini-bar-fill" style="width:${Math.min(sct/10*100,100)}%"></div></div><div class="week-rewards-list"><div class="week-reward-row ${halfAPerfect?'earned':''}">${inHalfA?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Mon–Wed at 80%+ of habits <span class="milestone-cadence">Weekly</span></div><div class="week-reward-status">${halfAPerfect?'✓ Earned':'In progress'}</div></div><div class="week-reward-row ${halfBPerfect?'earned':''}">${inHalfB?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">Thu–Sat at 80%+ · both halves = +${PERFECT_WEEK_PTS} pts <span class="milestone-cadence">Weekly</span></div><div class="week-reward-status">${halfBPerfect?'✓ Earned':'In progress'}</div></div><div class="week-reward-row ${sct>=10?'earned':''}">${isSundayNow?'<div class="week-reward-icon">👉</div>':'<div class="week-reward-icon">📦</div>'}<div class="week-reward-text">10 side quests (no points, still counts) <span class="milestone-cadence">Weekly</span></div><div class="week-reward-status">${sct>=10?'✓ Earned':sct+'/10'}</div></div></div></div>`;
 
   const wk=isoWeek(),wkSct=weekSideQuestCount(days);
   const hangers=[
@@ -2476,9 +2508,9 @@ function renderRewards(){
     {key:'wt_hanger_10',                                icon:'💪', title:'10 lbs Lost',         val:wLost,     max:10, desc:`${wLost.toFixed(1)}/10 lbs lost`, cadence:'One-Time'},
     {key:FITNESS_LEVEL_MILESTONE_KEYS[1], icon:'🏋️', title:'Fitness Level 1', val:fitnessLevelStatus(1).doneCount, max:5, desc:`${fitnessLevelStatus(1).doneCount}/5 Level 1 strength PRs hit`, cadence:'One-Time'},
   ];
-  html+=`<div class="rewards-section-label">📦 Pack Milestones</div><div class="milestone-grid">`;
+  html+=`<div class="rewards-section-label">📦 Pack Milestones · ${boxPoints('pack')} pts each</div><div class="milestone-grid">`;
   html+=hangers.map(h=>{const e=!!m[h.key];return`<div class="milestone-card ${e?'earned':''}"><div class="milestone-icon">${h.icon}</div><div class="milestone-title">${h.title} <span class="milestone-cadence">${h.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':h.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(h.val/h.max*100,100)}%"></div></div>${e?'<div class="milestone-earned-tag">✓ Pack Earned</div>':''}</div>`;}).join('');
-  html+=`</div><div class="rewards-section-label">🏆 Blaster Box Milestones</div><div class="milestone-grid">`;
+  html+=`</div><div class="rewards-section-label">🏆 Blaster Milestones · ${boxPoints('blaster')} pts each</div><div class="milestone-grid">`;
   const blasters=[
     {key:'blaster_month_'+mk, icon:'📅', title:`${targetPctDisplay}% Habit Completion`,  val:monthPct,   max:targetPctDisplay, desc:`${monthPct}%/${targetPctDisplay}% completion this month`, paceNote, paceClass, cadence:'Monthly'},
     {key:'blaster_level10',   icon:'🌟', title:'Level 10',        val:curLv, max:10, desc:`Level ${curLv}/10`, cadence:'One-Time'},
@@ -2487,26 +2519,26 @@ function renderRewards(){
     {key:FITNESS_LEVEL_MILESTONE_KEYS[2], icon:'🏋️', title:'Fitness Level 2', val:fitnessLevelStatus(2).doneCount, max:5, desc:`${fitnessLevelStatus(2).doneCount}/5 Level 2 strength PRs hit`, cadence:'One-Time'},
   ];
   html+=blasters.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title} <span class="milestone-cadence">${b.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%"></div></div>${!e&&b.paceNote?`<div class="milestone-pace ${b.paceClass}">${b.paceNote}</div>`:''}${e?'<div class="milestone-earned-tag">✓ Blaster Box Earned</div>':''}</div>`;}).join('');
-  html+=`</div><div class="rewards-section-label">💎 Mega Box Milestones</div><div class="milestone-grid">`;
+  html+=`</div><div class="rewards-section-label">💎 Mega Milestones · ${boxPoints('mega')} pts each</div><div class="milestone-grid">`;
   const megas=[
     {key:'mega_level20', icon:'⚡', title:'Level 20',     val:curLv, max:20, desc:`Level ${curLv}/20`, cadence:'One-Time'},
     {key:'wt_mega_25',   icon:'⚡', title:'25 lbs Lost',  val:wLost, max:25, desc:`${wLost.toFixed(1)}/25 lbs lost`, cadence:'One-Time'},
   ];
   html+=megas.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title} <span class="milestone-cadence">${b.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%;background:linear-gradient(90deg,var(--teal),var(--cyan))"></div></div>${e?'<div class="milestone-earned-tag" style="background:rgba(0,255,204,.12);color:var(--teal)">✓ Mega Box Earned</div>':''}</div>`;}).join('');
-  html+=`</div><div class="rewards-section-label">🌟 Super Box Milestones</div><div class="milestone-grid">`;
+  html+=`</div><div class="rewards-section-label">🌟 Super Milestones · ${boxPoints('super')} pts each</div><div class="milestone-grid">`;
   const supers=[
     {key:'wt_super_20',  icon:'🏆', title:'20 lbs Lost',  val:wLost, max:20, desc:`${wLost.toFixed(1)}/20 lbs lost`, cadence:'One-Time'},
     {key:'super_level15',icon:'🏆', title:'Level 15', val:curLv, max:15, desc:`Level ${curLv}/15`, cadence:'One-Time'},
     {key:FITNESS_LEVEL_MILESTONE_KEYS[3], icon:'🏋️', title:'Fitness Level 3', val:fitnessLevelStatus(3).doneCount, max:5, desc:`${fitnessLevelStatus(3).doneCount}/5 Level 3 strength PRs hit`, cadence:'One-Time'},
   ];
   html+=supers.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title} <span class="milestone-cadence">${b.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%;background:linear-gradient(90deg,var(--lime),var(--cyan))"></div></div>${e?'<div class="milestone-earned-tag" style="background:rgba(168,255,62,.12);color:var(--lime)">✓ Super Box Earned</div>':''}</div>`;}).join('');
-  html+=`</div><div class="rewards-section-label">🗃️ Hobby Box Milestones</div><div class="milestone-grid">`;
+  html+=`</div><div class="rewards-section-label">🗃️ Hobby Milestones · ${boxPoints('hobby')} pts each</div><div class="milestone-grid">`;
   const hobbies=[
     {key:'hobby_level30',  icon:'🗃️', title:'Secret Level 30',      val:S.user.xp,           max:15000,desc:`${S.user.xp}/15000 XP · 🤫 secret`, cadence:'One-Time'},
     {key:'hobby_365quests',icon:'🌟', title:'365 Side Quests',      val:S.user.sideQuestCount, max:365, desc:`${S.user.sideQuestCount}/365 · 🤫 secret`, cadence:'One-Time'},
   ];
   html+=hobbies.map(b=>{const e=!!m[b.key];return`<div class="milestone-card blaster ${e?'earned':''}"><div class="milestone-icon">${b.icon}</div><div class="milestone-title">${b.title} <span class="milestone-cadence">${b.cadence}</span></div><div class="milestone-desc">${e?'✓ Completed!':b.desc}</div><div class="milestone-prog-bar"><div class="milestone-prog-fill" style="width:${Math.min(b.val/b.max*100,100)}%;background:linear-gradient(90deg,var(--yellow),var(--orange))"></div></div>${e?'<div class="milestone-earned-tag" style="background:rgba(255,229,92,.12);color:var(--yellow)">✓ Hobby Box Earned</div>':''}</div>`;}).join('');
-  html+=`</div><div class="rewards-section-label">🏵️ Mythic Box Milestones</div><div class="milestone-grid full-width">`;
+  html+=`</div><div class="rewards-section-label">🏵️ Mythic Milestone · ${boxPoints('mythic')} pts</div><div class="milestone-grid full-width">`;
   const wGoalRange2=wGoal!=null&&wStart!=null?Math.max(1,wStart-wGoal):1;
   const mythics=[
     {key:'wt_mythic_goal', icon:'🏵️', title:'Goal Weight — Celebrini Young Guns', val:wLost, max:wGoalRange2, desc:wGoal!=null?`${wLost.toFixed(1)} lbs lost of ${wGoalRange2.toFixed(1)} needed`:'Set a goal weight first', cadence:'One-Time'},
@@ -2865,11 +2897,11 @@ function checkWeightMilestones(){
   const m       = S.user.milestones;
 
   function awBadge(id){ earnBadge(id, true); }
-  function awPack(key,reason){ if(m[key])return; m[key]=true; S.user.packsBank=(S.user.packsBank||0)+1; S.user.packHistory.unshift({date:todayKey(),count:1,type:'pack',reason}); save(); setTimeout(()=>{toast(`📦 Pack earned — ${reason}`);confetti(50);},600); }
-  function awBlaster(key,reason){ if(m[key])return; m[key]=true; S.user.blastersBank=(S.user.blastersBank||0)+1; S.user.packHistory.unshift({date:todayKey(),count:1,type:'blaster',reason}); save(); setTimeout(()=>{toast(`🏆 Blaster Box earned — ${reason}`);confetti(120);},1000); }
-  function awMega(key,reason){ if(m[key])return; m[key]=true; S.user.megaBank=(S.user.megaBank||0)+1; S.user.packHistory.unshift({date:todayKey(),count:1,type:'mega',reason}); save(); setTimeout(()=>{toast(`💎 Mega Box earned — ${reason}`);confetti(160);},1200); }
-  function awSuper(key,reason){ if(m[key])return; m[key]=true; S.user.superBank=(S.user.superBank||0)+1; S.user.packHistory.unshift({date:todayKey(),count:1,type:'super',reason}); save(); setTimeout(()=>{toast(`🌟 SUPER BOX earned — ${reason}`);confetti(250);},1400); }
-  function awMythic(key,reason){ if(m[key])return; m[key]=true; S.user.mythicBank=(S.user.mythicBank||0)+1; S.user.packHistory.unshift({date:todayKey(),count:1,type:'mythic',reason}); save(); setTimeout(()=>{toast(`🏵️ MYTHIC BOX earned — ${reason}`);confetti(300);},1600); }
+  function awPack(key,reason){ if(m[key])return; m[key]=true; awardBox('pack',reason); }
+  function awBlaster(key,reason){ if(m[key])return; m[key]=true; awardBox('blaster',reason); }
+  function awMega(key,reason){ if(m[key])return; m[key]=true; awardBox('mega',reason); }
+  function awSuper(key,reason){ if(m[key])return; m[key]=true; awardBox('super',reason); }
+  function awMythic(key,reason){ if(m[key])return; m[key]=true; awardBox('mythic',reason); }
 
   // Any loss at all (needs 2+ entries)
   if (all.length >= 2 && lost > 0) awBadge('first_drop');
@@ -2908,7 +2940,7 @@ function saveExercisePRs(){
 }
 function checkExerciseMilestones(){
   const m=S.user.milestones, e=S.exercise||{};
-  function awPackSecret(key,reason){if(m[key])return;m[key]=true;S.user.packsBank=(S.user.packsBank||0)+1;S.user.packHistory.unshift({date:todayKey(),count:1,type:'pack',reason});save();setTimeout(()=>{toast(`🔓 Secret unlocked — ${reason}`);confetti(70);},600);}
+  function awPackSecret(key,reason){if(m[key])return;m[key]=true;awardBox('pack','🔓 '+reason);}
   if(e.dumbbellPress  >= 20)  awPackSecret('secret_dumbbell20', '20 reps @ 20lb dumbbell press! 💪');
   if(e.dumbbellPress25 >= 20) awPackSecret('secret_dumbbell25', '20 reps @ 25lb dumbbell press! 💪');
   if(e.inclinePushups >= 20)  awPackSecret('secret_incline20',  '20 incline push-ups! 💪');
@@ -2971,11 +3003,7 @@ function checkFitnessLevelMilestones(){
     const status=fitnessLevelStatus(levelNum);
     if(status.doneCount<status.goals.length)return;
     m[key]=true;
-    const bankField={hanger:'hangersBank',blaster:'blastersBank',super:'superBank',pack:'packsBank'}[status.boxType];
-    S.user[bankField]=(S.user[bankField]||0)+1;
-    S.user.packHistory.unshift({date:todayKey(),count:1,type:status.boxType,reason:`All 5 Level ${levelNum} fitness goals complete! 💪`});
-    save();
-    setTimeout(()=>{toast(`🎉 ${FITNESS_BOX_LABELS[status.boxType]} earned — Level ${levelNum} complete!`);confetti(90);},700);
+    awardBox(status.boxType,`All 5 Level ${levelNum} fitness goals complete! 💪`);
   });
 }
 function saveWeightGoal(){const v=parseFloat(document.getElementById('wGoalInput')?.value);if(!v||v<=0)return;S.weight.goal=+v.toFixed(1);save();renderWeight();toast(`🎯 Goal set: ${v.toFixed(1)} lbs`);}
@@ -3186,9 +3214,7 @@ function checkCircuitWeightsUp(w){
   const allUp=comparable.every(e=>parseWeightNum(e.weight)>e.origWeight);
   if(!allUp)return false;
   w.weightsUpAwarded=true;
-  S.user.packsBank=(S.user.packsBank||0)+1;
-  S.user.packHistory.unshift({date:todayKey(),count:1,type:'pack',reason:`💪 All weights up — ${w.name}`});
-  setTimeout(()=>{toast(`💪 Every weight in "${w.name}" is up! 📦 Pack earned`);confetti(60);},600);
+  awardBox('pack',`💪 All weights up — ${w.name}`);
   return true;
 }
 function checkCircuitRecord(w,rounds){
@@ -3196,9 +3222,7 @@ function checkCircuitRecord(w,rounds){
   if(w.bestRounds==null){w.bestRounds=rounds;return false;}
   if(rounds>w.bestRounds){
     w.bestRounds=rounds;
-    S.user.packsBank=(S.user.packsBank||0)+1;
-    S.user.packHistory.unshift({date:todayKey(),count:1,type:'pack',reason:`🏆 New circuit record — ${w.name} (${rounds} rounds)`});
-    setTimeout(()=>{toast(`🏆 New record! ${rounds} rounds — 📦 Pack earned`);confetti(70);},600);
+    awardBox('pack',`🏆 New circuit record — ${w.name} (${rounds} rounds)`);
     return true;
   }
   return false;
@@ -3375,17 +3399,16 @@ function labMonthDays(ym){const [y,m]=ym.split('-').map(Number),n=new Date(y,m,0
 function labDaysUntil(ds){const [y,m,d]=ds.split('-').map(Number),n=new Date(),today=new Date(n.getFullYear(),n.getMonth(),n.getDate());return Math.round((new Date(y,m-1,d)-today)/86400000);}
 function labValidDate(ds){if(!/^\d{4}-\d{2}-\d{2}$/.test(ds||''))return false;const [y,m,d]=ds.split('-').map(Number),x=new Date(y,m-1,d);return x.getFullYear()===y&&x.getMonth()===m-1&&x.getDate()===d;}
 
-// The single place Labs rewards are handed out. Packs/Hanger Boxes today; a future move to wishlist
-// points only has to change this function. flagKey (stored in S.labs.awarded) makes every grant once-only.
+// The single place Labs rewards are handed out, now as wishlist points (kind -> shop-price dollars x rate).
+// flagKey (stored in S.labs.awarded) makes every grant once-only.
+const LABS_USD={defeat:10,mini:4,victory:150};
 function grantReward(kind,flagKey,reason){
   if(!S.labs.awarded)S.labs.awarded={};
   if(flagKey){if(S.labs.awarded[flagKey])return false;S.labs.awarded[flagKey]=true;}
-  const hanger=kind==='hanger',bank=hanger?'hangersBank':'packsBank';
-  S.user[bank]=(S.user[bank]||0)+1;
-  S.user.packHistory.unshift({date:todayKey(),count:1,type:hanger?'hanger':'pack',reason});
-  save();
-  setTimeout(()=>{toast(`${hanger?'🎁 Hanger Box':'📦 Pack'} earned — ${reason}`);confetti(hanger?120:70);},600);
-  return true;
+  const pts=Math.round((LABS_USD[kind]||0)*(S.user.wishlistPointsPerDollar||4));
+  S.user.packHistory.unshift({date:todayKey(),count:1,type:'labs_'+kind,reason,points:pts,redeemed:true});
+  awardWishlistPoints(pts,reason);
+  return pts;
 }
 
 // ── Boss state: one health bar per marker, measured from the baseline panel toward the desirable range ──
@@ -3437,14 +3460,15 @@ function addLabPanel(date,total,hdl,tg,ldl){
       }
       if(!labMet(m.id,a,t)&&labMet(m.id,b,t)){
         xp+=LABS_XP.defeat;bigHit=true;
-        const got=grantReward('pack','defeat_'+m.id,`${m.label} defeated`);
-        if(got)report.packs++;
-        report.lines.push(`☠️ ${m.label} DEFEATED${got?' — pack earned':''} (+${LABS_XP.defeat} XP)`);
+        const got=grantReward('defeat','defeat_'+m.id,`${m.label} defeated`);
+        if(got)report.packs+=got;
+        report.lines.push(`☠️ ${m.label} DEFEATED${got?` — +${got} pts`:''} (+${LABS_XP.defeat} XP)`);
       }
       report.xp+=xp;
     });
-    if(LAB_MARKERS.every(m=>labMet(m.id,panel[m.id],t))&&grantReward('hanger','labs_victory','Cholesterol boss defeated')){
-      report.hanger=1;report.lines.push('🏆 BOSS DEFEATED — Hanger Box earned!');
+    let won=0;
+    if(LAB_MARKERS.every(m=>labMet(m.id,panel[m.id],t))&&(won=grantReward('victory','labs_victory','Cholesterol boss defeated'))){
+      report.packs+=won;report.lines.push(`🏆 BOSS DEFEATED — +${won} pts!`);
     }
     if(report.xp>0)addXP(report.xp);
     if(bigHit)confetti(90);
@@ -3499,7 +3523,7 @@ function checkLabsMilestones(){
     LAB_MINIBOSSES.forEach(mb=>{
       const key=`mini_${ym}_${mb.id}`;if(key in L.awarded)return;
       const r=labMiniResult(mb.id,ym);if(!r)return; // habit missing: skip, judge later
-      if(r.ok)grantReward('pack',key,`${mb.title} — ${labMonthLabel(ym)}`);
+      if(r.ok)grantReward('mini',key,`${mb.title} — ${labMonthLabel(ym)}`);
       else{L.awarded[key]=false;save();}
     });
     ym=labNextMonth(ym);
@@ -3548,13 +3572,13 @@ function renderLabsTab(){
   const rep=L.lastReport&&L.lastReport.lines&&L.lastReport.lines.length?`<div class="weight-settings-card">
     <div class="weight-settings-title">⚔️ Battle report · ${escapeHtml(L.lastReport.date)}</div>
     ${L.lastReport.lines.map(x=>`<div class="data-card-desc" style="margin-top:6px;color:var(--text)">${escapeHtml(x)}</div>`).join('')}
-    ${L.lastReport.xp?`<div class="data-card-desc" style="margin-top:8px;font-weight:800;color:var(--lime)">+${L.lastReport.xp} XP${L.lastReport.packs?` · ${L.lastReport.packs} pack${L.lastReport.packs>1?'s':''}`:''}${L.lastReport.hanger?' · Hanger Box':''}</div>`:''}
+    ${L.lastReport.xp?`<div class="data-card-desc" style="margin-top:8px;font-weight:800;color:var(--lime)">+${L.lastReport.xp} XP${L.lastReport.packs?` · +${L.lastReport.packs} pts`:''}</div>`:''}
   </div>`:'';
   const cur=calMonthKey(),prevYm=(()=>{const [y,m]=cur.split('-').map(Number);return m===1?`${y-1}-12`:`${y}-${String(m-1).padStart(2,'0')}`;})();
   const started=L.miniBossStart&&cur>=L.miniBossStart;
   const miniHTML=LAB_MINIBOSSES.map(mb=>{
     const r=labMiniResult(mb.id,cur),pk=`mini_${prevYm}_${mb.id}`;
-    const last=(pk in (L.awarded||{}))?(L.awarded[pk]?`<span style="color:var(--lime)">✓ pack earned for ${labMonthLabel(prevYm)}</span>`:`missed ${labMonthLabel(prevYm)}`):'';
+    const last=(pk in (L.awarded||{}))?(L.awarded[pk]?`<span style="color:var(--lime)">✓ points earned for ${labMonthLabel(prevYm)}</span>`:`missed ${labMonthLabel(prevYm)}`):'';
     return `<div style="margin-top:14px">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
         <span style="font-size:14px;font-weight:700">${mb.icon} ${mb.title}</span>
@@ -3598,7 +3622,7 @@ function renderLabsTab(){
     </div>
     <div class="weight-settings-card">
       <div class="weight-settings-title">📅 Monthly mini-bosses</div>
-      <div class="data-card-desc" style="margin-top:4px">${started?`${labMonthLabel(cur)} so far. Each one is judged on the first open after the month ends and pays a pack.`:`Starts ${labMonthLabel(L.miniBossStart||cur)}. Progress below is a warm-up and pays nothing yet.`}</div>
+      <div class="data-card-desc" style="margin-top:4px">${started?`${labMonthLabel(cur)} so far. Each one is judged on the first open after the month ends and pays points.`:`Starts ${labMonthLabel(L.miniBossStart||cur)}. Progress below is a warm-up and pays nothing yet.`}</div>
       ${miniHTML}
     </div>
     <div class="weight-settings-card">
@@ -3677,6 +3701,15 @@ function deleteCustomGoal(id){
 }
 // ── Wishlist Points: a separate "real rewards" currency alongside the
 // pack/box economy, redeemable against items Will defines himself. ──
+// Every old "box" reward now pays wishlist points equal to that box's shop price x the points-per-dollar rate.
+const BOX_USD={pack:4,blaster:30,super:40,mega:50,hobby:150,mythic:250};
+function boxPoints(type){return Math.round((BOX_USD[type]||0)*(S.user.wishlistPointsPerDollar||4));}
+function awardBox(type,reason){
+  const pts=boxPoints(type);if(!pts)return 0;
+  S.user.packHistory.unshift({date:todayKey(),count:1,type,reason,points:pts,redeemed:true});
+  awardWishlistPoints(pts,reason); // saves + toasts
+  return pts;
+}
 function awardWishlistPoints(points,reason){
   if(!points)return;
   S.user.wishlistPoints=(S.user.wishlistPoints||0)+points;
@@ -3901,10 +3934,8 @@ function checkCustomGoals(){
     }
     if(met){
       g.achieved=true;g.achievedDate=todayKey();
-      S.user.packsBank=(S.user.packsBank||0)+1;
-      S.user.packHistory.unshift({date:todayKey(),count:1,type:'pack',reason:`🎯 ${g.name}`});
+      awardBox('pack',`🎯 ${g.name}`);
       anyNew=true;
-      setTimeout(()=>{toast(`🎯 ${g.name} — achieved! 📦 Pack earned`);confetti(60);},600);
     }
   });
   if(anyNew)save();
@@ -3998,7 +4029,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-10-09.0520';
+const APP_VERSION = '2026-10-09.0610';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);
