@@ -30,7 +30,7 @@ Before considering a change done, run the actual script through a **Node.js DOM-
 - This approach has caught real bugs (missing constants, flawed ISO-week formulas, scope leakage from `eval`) that syntax checking alone missed.
 - Re-extract the `<script>...</script>` body fresh before each harness run — don't trust a stale extraction after edits.
 
-If a harness file already exists in the repo, extend it rather than rewriting from scratch. If not, build a minimal one following the pattern above before making non-trivial changes.
+A harness now exists: `tests/harness.js` (vm-based DOM stub + fake clock + fake localStorage; re-extracts the real `<script>` every run). Test code is appended to the app source and run in the same script, e.g. `run({now:'2026-10-07T12:00:00'}, "OUT.x = cardioWeekMinutes(todayKey());")`. Run a suite with `node tests/cardio.test.js`. Extend it rather than rewriting. For layout checks, load the page in headless Chromium (Playwright) at 390px wide and compare Today habit-card heights against the previous commit.
 
 ## Explain-first workflow
 Will prefers understanding *why* something works or is broken before changes are made, especially for bugs — dig for root cause rather than surface-patching if something seems off. For ambiguous or open-ended feature requests, propose an approach and get confirmation before writing code; for small clear requests, just build it. Keep explanations concrete — what changed, why, and what to watch for — not exhaustive.
@@ -68,6 +68,9 @@ Dedicated tab (`section-protein` / `renderProteinTab()`) that surfaces everythin
 - **AI Food Logging panel** — text description and/or photo, calls the Anthropic API directly from the browser (`fetch` to `api.anthropic.com/v1/messages`) using a user-supplied key, model `claude-haiku-4-5-20251001`, asks for a strict JSON response (`{food, grams_protein, confidence}`), fills the amount box with the estimate for the user to review before tapping Add (never auto-adds).
 - Today's Food Log — full list of the day's entries (labeled or "Manual entry").
 - **AI API Key card** — collapsed by default (tap-to-expand), shows a compact "Set / Not set" status in the header even while collapsed so the key field isn't exposed unless deliberately opened. Key lives in `gh_ai_key`, outside `S`, never in backups.
+
+### Weekly cardio minutes (inside the Workout habit)
+`S.cardioLogs[dateKey]` is an array of `{min}`; `S.user.cardioGoalMin` defaults to 150. `cardioWeekMinutes(dk)` sums Mon-Sun via `weekDayKeysFor`, so it resets Monday. It is purely additive: logging minutes never completes the day, awards XP, or affects rest days / pause. Logging UI lives in the Circuits sub-tab's "Other Workouts Today" card (`cardioSectionHTML`); the Today Workout card only gets a compact `.habit-mini-progress.sm` bar so its height does not change.
 
 ### Anthropic API calls from the browser (not an Artifacts sandbox)
 This is a **real deployed static site**, not a Claude Artifacts preview — so API calls to `api.anthropic.com` require:
