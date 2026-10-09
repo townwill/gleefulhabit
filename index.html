@@ -554,6 +554,10 @@
     <button onclick="exportData()">Back Up Now</button>
     <button class="backup-reminder-dismiss" onclick="hideBackupReminder(true)">✕</button>
   </div>
+  <div id="labsFastBanner" class="backup-reminder" style="display:none">
+    <span>🩸 Blood draw tomorrow. Fast beforehand, following your lab's instructions.</span>
+    <button class="backup-reminder-dismiss" onclick="dismissLabsFast()">✕</button>
+  </div>
   <div id="updateBanner" class="update-banner" style="display:none">
     <span>✨ A new version is ready.</span>
     <button onclick="reloadForUpdate()">Refresh Now</button>
@@ -691,11 +695,13 @@
       <button class="track-tab" onclick="switchTrackingSubTab('measurements',this)">📏 Measurements</button>
       <button class="track-tab" onclick="switchTrackingSubTab('circuits',this)">🏋️ Circuits</button>
       <button class="track-tab" onclick="switchTrackingSubTab('fitness',this)">🏆 Fitness Goals</button>
+      <button class="track-tab" onclick="switchTrackingSubTab('labs',this)">🧪 Labs</button>
     </div>
     <div class="track-panel active" id="panel-track-weight"><div id="weightContent"></div></div>
     <div class="track-panel" id="panel-track-measurements"><div id="measurementsContent"></div></div>
     <div class="track-panel" id="panel-track-circuits"><div id="circuitsContent"></div></div>
     <div class="track-panel" id="panel-track-fitness"><div id="fitnessContent"></div></div>
+    <div class="track-panel" id="panel-track-labs"><div id="labsContent"></div></div>
   </div>
 
   <!-- PACKS -->
@@ -1022,7 +1028,7 @@ function blankState() {
     xpAwarded:{},
     weight:{logs:{},unit:'lbs',goal:null,startWeight:null,startDate:null},
     exercise:{dumbbellPress:0,dumbbellPress20Sets:0,dumbbellPress25:0,inclinePushups60:0,inclinePushups:0,groundPushups:0,deadHangSec:0,plankSec:0,jumpRopeSec:0},
-    customWorkouts:[],customWorkoutLogs:{},customGoals:[],workoutExtras:{},cardioLogs:{},
+    customWorkouts:[],customWorkoutLogs:{},customGoals:[],workoutExtras:{},cardioLogs:{},labs:seedLabs(),
     measurements:{logs:{}},
     checkins:{},
     user:{xp:0,badges:[],totalDone:0,numericHits:0,sideQuestCount:0,
@@ -1035,6 +1041,23 @@ function blankState() {
 }
 
 const STORE_KEY = 'habitflow';
+// Seeded once (never re-seeded if panels are later deleted). Literals only: this runs while the script loads.
+function seedLabs(){
+  const n=new Date(),cm=n.getMonth()+1,ny=cm===12?n.getFullYear()+1:n.getFullYear(),nm=cm===12?1:cm+1;
+  return {
+    panels:[
+      {date:'2024-12-12',total:209,hdl:45,tg:160,ldl:134,ratio:4.6,nonHdl:164},
+      {date:'2026-09-29',total:231,hdl:45,tg:217,ldl:150,ratio:5.1,nonHdl:186},
+    ],
+    recheckDate:'2027-03-29',
+    baselineDate:'2026-09-29',
+    targets:{ldl:100,tg:150,total:200,nonHdl:130,ratio:5,hdl:40},
+    awarded:{},
+    miniBossStart:`${ny}-${String(nm).padStart(2,'0')}`, // first full month after install, so no month is judged retroactively
+    fastDismissed:null,
+    lastReport:null,
+  };
+}
 function migrateState(raw) {
   // Migrate old field names (stretches -> sideQuests) from saves made before the rename
   if (raw.stretches && !raw.sideQuests)         raw.sideQuests=raw.stretches;
@@ -1115,6 +1138,27 @@ function migrateState(raw) {
   if (typeof raw.user.fuelTargets.fiber!=='number')  raw.user.fuelTargets.fiber=30;
   if (typeof raw.user.fuelTargets.satFat!=='number') raw.user.fuelTargets.satFat=13;
   if (typeof raw.user.fuelTargets.sugar!=='number')  raw.user.fuelTargets.sugar=15;
+  if (!raw.labs || typeof raw.labs!=='object') raw.labs=seedLabs();
+  else {
+    const L=raw.labs;
+    // An imported backup is untrusted: keep only well-formed panels (strict dates, finite numbers)
+    // so nothing odd can ever reach the page or an inline handler.
+    if (!Array.isArray(L.panels)) L.panels=[];
+    L.panels=L.panels.filter(p=>p && typeof p==='object' && labValidDate(p.date) && ['total','hdl','tg','ldl','ratio','nonHdl'].every(k=>typeof p[k]==='number' && isFinite(p[k])))
+      .map(p=>({date:p.date,total:p.total,hdl:p.hdl,tg:p.tg,ldl:p.ldl,ratio:p.ratio,nonHdl:p.nonHdl}));
+    if (!labValidDate(L.recheckDate)) L.recheckDate='2027-03-29';
+    if (!labValidDate(L.baselineDate)) L.baselineDate=L.panels.length?L.panels[L.panels.length-1].date:'2026-09-29';
+    if (!L.targets || typeof L.targets!=='object') L.targets={};
+    const lt={ldl:100,tg:150,total:200,nonHdl:130,ratio:5,hdl:40};
+    Object.keys(lt).forEach(k=>{ if (typeof L.targets[k]!=='number') L.targets[k]=lt[k]; });
+    if (!L.awarded || typeof L.awarded!=='object') L.awarded={};
+    if (!/^\d{4}-\d{2}$/.test(L.miniBossStart||'')) L.miniBossStart=seedLabs().miniBossStart;
+    const R=L.lastReport;
+    if (!R || typeof R!=='object' || !Array.isArray(R.lines) || !labValidDate(R.date) || ['xp','packs','hanger'].some(k=>typeof R[k]!=='number'))
+      L.lastReport=null;
+    else L.lastReport={date:R.date,lines:R.lines.map(x=>String(x)).slice(0,30),xp:R.xp,packs:R.packs,hanger:R.hanger,rewarded:!!R.rewarded};
+    if (typeof L.fastDismissed!=='string') L.fastDismissed=null;
+  }
   if (!raw.user._wishlistSeeded) {
     raw.user._wishlistSeeded=true;
     raw.user.wishlistItems.push(
@@ -1463,7 +1507,7 @@ function checkWeeklyPacksAndMilestones(){
     save();
     setTimeout(()=>{toast(`📦 ${np} Pack${np>1?'s':''} earned!`);confetti(50);},400);
   }
-  checkHangerMilestones();checkBlasterMilestones();
+  checkHangerMilestones();checkBlasterMilestones();checkLabsMilestones();
 }
 function checkHangerMilestones(){
   const m=S.user.milestones;
@@ -1532,7 +1576,7 @@ function checkBlasterMilestones(){
   if(S.user.sideQuestCount>=365)  awHobby('hobby_365quests','365 Side Quests — legendary! 🌟');
 }
 
-function renderAll(){renderHeader();renderXP();renderToday();renderManage();}
+function renderAll(){renderHeader();renderXP();renderToday();renderManage();renderLabsFastBanner();}
 function renderHeader(){const h=new Date().getHours();document.getElementById('greeting').textContent=h<5?'Good Night':h<12?'Good Morning':h<17?'Good Afternoon':h<21?'Good Evening':'Good Night';document.getElementById('dateDisplay').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});}
 function renderXP(){const info=levelInfo(S.user.xp);document.getElementById('levelBadge').textContent=info.lv;document.getElementById('levelName').textContent=info.name;document.getElementById('levelSub').textContent=info.lv<20?`${S.user.xp} / ${info.hi} XP to next level`:'Max Level!';document.getElementById('xpAmount').textContent=info.lv<20?`${S.user.xp}/${info.hi} XP`:'MAX';const lxp=document.getElementById('lifetimeXPDisplay');if(lxp)lxp.textContent=`Lifetime XP: ${S.user.xp.toLocaleString()}`;requestAnimationFrame(()=>{document.getElementById('xpBarFill').style.width=`${Math.round(info.pct*100)}%`;});}
 
@@ -3300,6 +3344,279 @@ function renderCircuitsTab(){
   }).join('')+`<button class="btn-submit" onclick="openCircuitModal()">+ New Circuit</button>`;
 }
 
+// ══════════ Labs + Cholesterol Boss Fight ══════════
+// S.labs = {panels, recheckDate, baselineDate, targets, awarded, miniBossStart, fastDismissed, lastReport}
+// Everything lives in S so backup/import carries it. seedLabs()/migrateState run while the script is
+// still loading, so they use literals only (no later-declared consts).
+const LAB_MARKERS=[
+  {id:'ldl',   label:'LDL',           icon:'🔴',better:'lower'},
+  {id:'tg',    label:'Triglycerides', icon:'💧',better:'lower'},
+  {id:'total', label:'Total',         icon:'🧪',better:'lower'},
+  {id:'nonHdl',label:'Non-HDL',       icon:'📉',better:'lower'},
+  {id:'ratio', label:'Chol/HDL',      icon:'⚖️',better:'lower'},
+  {id:'hdl',   label:'HDL',           icon:'🛡️',better:'higher'},
+];
+const LAB_TARGET_DEFAULTS={ldl:100,tg:150,total:200,nonHdl:130,ratio:5,hdl:40}; // general reference ranges; editable, confirm yours with your doctor
+const LABS_XP={improve:25,crit:50,defeat:100};
+const LAB_MINIBOSSES=[
+  {id:'cardio',icon:'🫀',title:'Cardio Crusher',desc:'4 Mon–Sun weeks at your cardio goal'},
+  {id:'fiber', icon:'🌿',title:'Fiber Fiend',   desc:'Monthly fiber average ≥ goal (20+ logged days)'},
+  {id:'sugar', icon:'🍬',title:'Sugar Slayer',  desc:'Less Sugar kept on 80%+ of days'},
+];
+const MONTH_NAMES=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function labTargets(){const t=(S.labs&&S.labs.targets)||{},o={};Object.keys(LAB_TARGET_DEFAULTS).forEach(k=>{o[k]=(typeof t[k]==='number'&&t[k]>0)?t[k]:LAB_TARGET_DEFAULTS[k];});return o;}
+function labPanelsSorted(){return ((S.labs&&S.labs.panels)||[]).filter(p=>p&&labValidDate(p.date)).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);}
+function labDerived(total,hdl){return {nonHdl:Math.round(total-hdl),ratio:Math.round(total/hdl*10)/10};}
+// "Desirable range reached": lower-is-better markers must be strictly under the target, HDL at or above it.
+function labMet(id,val,t){return id==='hdl'?val>=t.hdl:val<t[id];}
+function labMonthLabel(ym){const [y,m]=ym.split('-').map(Number);return `${MONTH_NAMES[m-1]} ${y}`;}
+function labNextMonth(ym){const [y,m]=ym.split('-').map(Number);return m===12?`${y+1}-01`:`${y}-${String(m+1).padStart(2,'0')}`;}
+function labMonthDays(ym){const [y,m]=ym.split('-').map(Number),n=new Date(y,m,0).getDate();return Array.from({length:n},(_,i)=>`${ym}-${String(i+1).padStart(2,'0')}`);}
+function labDaysUntil(ds){const [y,m,d]=ds.split('-').map(Number),n=new Date(),today=new Date(n.getFullYear(),n.getMonth(),n.getDate());return Math.round((new Date(y,m-1,d)-today)/86400000);}
+function labValidDate(ds){if(!/^\d{4}-\d{2}-\d{2}$/.test(ds||''))return false;const [y,m,d]=ds.split('-').map(Number),x=new Date(y,m-1,d);return x.getFullYear()===y&&x.getMonth()===m-1&&x.getDate()===d;}
+
+// The single place Labs rewards are handed out. Packs/Hanger Boxes today; a future move to wishlist
+// points only has to change this function. flagKey (stored in S.labs.awarded) makes every grant once-only.
+function grantReward(kind,flagKey,reason){
+  if(!S.labs.awarded)S.labs.awarded={};
+  if(flagKey){if(S.labs.awarded[flagKey])return false;S.labs.awarded[flagKey]=true;}
+  const hanger=kind==='hanger',bank=hanger?'hangersBank':'packsBank';
+  S.user[bank]=(S.user[bank]||0)+1;
+  S.user.packHistory.unshift({date:todayKey(),count:1,type:hanger?'hanger':'pack',reason});
+  save();
+  setTimeout(()=>{toast(`${hanger?'🎁 Hanger Box':'📦 Pack'} earned — ${reason}`);confetti(hanger?120:70);},600);
+  return true;
+}
+
+// ── Boss state: one health bar per marker, measured from the baseline panel toward the desirable range ──
+function labBossState(){
+  const panels=labPanelsSorted();if(!panels.length)return null;
+  const t=labTargets(),latest=panels[panels.length-1],ref=panels[0];
+  const base=panels.find(p=>p.date===S.labs.baselineDate)||latest;
+  const markers=LAB_MARKERS.map(m=>{
+    const cur=latest[m.id],b=base[m.id],tgt=t[m.id],met=labMet(m.id,cur,t),metAtBase=labMet(m.id,b,t);
+    let hp=1;
+    if(met)hp=0;
+    else if(m.better==='lower'&&b>tgt)hp=Math.max(0.02,Math.min(1,(cur-tgt)/(b-tgt)));
+    const worse=m.better==='lower'?cur>b:cur<b;
+    const status=met?(metAtBase?'held':'defeated'):'alive';
+    return {id:m.id,label:m.label,icon:m.icon,better:m.better,cur,base:b,ref:ref[m.id],target:tgt,hp,met,status,worse};
+  });
+  return {latest,base,ref,markers,downCount:markers.filter(x=>x.met).length,total:markers.length};
+}
+
+// ── Enter a panel: damage + XP per improved marker, crit at the 2024 value, defeat at the desirable range ──
+function addLabPanel(date,total,hdl,tg,ldl){
+  const num=(v,lo,hi)=>{const n=typeof v==='number'?v:parseFloat(v);return isFinite(n)&&n>=lo&&n<=hi?n:null;};
+  const T=num(total,50,600),H=num(hdl,10,200),G=num(tg,20,2000),L=num(ldl,10,500);
+  if(!labValidDate(date)||date>todayKey())return {error:'Pick a valid date (today or earlier).'};
+  if(T==null||H==null||G==null||L==null)return {error:'Check the numbers: Total, HDL, Triglycerides and LDL are all needed.'};
+  const existing=labPanelsSorted();
+  if(existing.some(p=>p.date===date))return {error:'There is already a panel for that date.'};
+  const prev=existing.filter(p=>p.date<date).pop()||null;
+  const isNewest=existing.every(p=>p.date<date);
+  const ref=existing[0]||null;
+  const d=labDerived(T,H);
+  const panel={date,total:T,hdl:H,tg:G,ldl:L,ratio:d.ratio,nonHdl:d.nonHdl};
+  S.labs.panels.push(panel);
+  const report={date,lines:[],xp:0,packs:0,hanger:0,rewarded:false};
+  const aw=S.labs.awarded;
+  if(isNewest&&prev&&!aw['panel_'+date]){
+    aw['panel_'+date]=true;report.rewarded=true;
+    const t=labTargets();let bigHit=false;
+    LAB_MARKERS.forEach(m=>{
+      const a=prev[m.id],b=panel[m.id];
+      const improved=m.better==='lower'?b<a:b>=a;
+      if(!improved){report.lines.push(`🩸 ${m.label} ${a} → ${b}: no damage`);return;}
+      let xp=LABS_XP.improve;
+      const dmg=m.better==='lower'?Math.round((a-b)*10)/10:Math.round(Math.max(0,b-a)*10)/10;
+      report.lines.push(m.better==='higher'&&dmg===0?`🛡️ ${m.label} held at ${b} (+${LABS_XP.improve} XP)`:`⚔️ ${m.label} ${a} → ${b}: ${dmg} damage (+${LABS_XP.improve} XP)`);
+      if(m.better==='lower'&&ref&&a>ref[m.id]&&b<=ref[m.id]&&!aw['crit_'+m.id]){
+        aw['crit_'+m.id]=true;xp+=LABS_XP.crit;bigHit=true;
+        report.lines.push(`💥 CRITICAL HIT: ${m.label} is back to its ${ref.date.slice(0,4)} level (+${LABS_XP.crit} XP)`);
+      }
+      if(!labMet(m.id,a,t)&&labMet(m.id,b,t)){
+        xp+=LABS_XP.defeat;bigHit=true;
+        const got=grantReward('pack','defeat_'+m.id,`${m.label} defeated`);
+        if(got)report.packs++;
+        report.lines.push(`☠️ ${m.label} DEFEATED${got?' — pack earned':''} (+${LABS_XP.defeat} XP)`);
+      }
+      report.xp+=xp;
+    });
+    if(LAB_MARKERS.every(m=>labMet(m.id,panel[m.id],t))&&grantReward('hanger','labs_victory','Cholesterol boss defeated')){
+      report.hanger=1;report.lines.push('🏆 BOSS DEFEATED — Hanger Box earned!');
+    }
+    if(report.xp>0)addXP(report.xp);
+    if(bigHit)confetti(90);
+  }else{
+    report.lines.push(aw['panel_'+date]?'Rewards for this date were already paid, so this is history only.':isNewest?'Logged as your starting panel (no earlier panel to fight against).':'Logged as history only: rewards go to your newest panel.');
+  }
+  S.labs.lastReport=report;
+  save();
+  return {ok:true,panel,report};
+}
+function deleteLabPanel(date){
+  if(!confirm(`Delete the ${date} panel? Rewards already earned are kept.`))return;
+  S.labs.panels=S.labs.panels.filter(p=>p.date!==date);
+  save();renderLabsTab();
+}
+
+// ── Monthly mini-bosses, computed from app data ──
+function labMiniResult(id,ym){
+  const days=labMonthDays(ym),today=todayKey();
+  if(id==='cardio'){
+    const goal=cardioGoalMin(),suns=days.filter(dk=>new Date(dk+'T00:00:00').getDay()===0);
+    const hit=suns.filter(dk=>cardioWeekMinutes(dk)>=goal).length;
+    return {id,hit,of:suns.length,need:4,frac:Math.min(hit/4,1),ok:hit>=4,label:`${hit} / 4 weeks at ${goal}+ min`,sub:`${suns.length} Mon–Sun weeks end in ${labMonthLabel(ym)}`};
+  }
+  if(id==='fiber'){
+    const p=S.habits.find(isProteinHabit);if(!p)return null;
+    let n=0,sum=0;
+    days.forEach(dk=>{if(dk>today)return;const t=macroTotalOn(p.id,dk,'fiber');if(t.known>0){n++;sum+=t.sum;}});
+    const avg=n?Math.round(sum/n*10)/10:0,goal=fuelTarget('fiber');
+    return {id,n,avg,goal,need:20,frac:Math.min(goal?avg/goal:0,1),ok:n>=20&&avg>=goal,label:`avg ${avg}g / ${goal}g`,sub:`${n} logged days (need 20+); days with no fiber data are skipped`};
+  }
+  if(id==='sugar'){
+    const sh=S.habits.find(isLessSugarHabit);if(!sh)return null;
+    let act=0,dn=0;
+    days.forEach(dk=>{
+      if(dk>today)return;if((sh.createdAt||'2000-01-01')>dk)return;if(isHabitPausedOn(sh.id,dk))return;
+      const done=habitDoneOn(sh,dk);if(dk===today&&!done)return;
+      act++;if(done)dn++;
+    });
+    const pct=act?Math.round(dn/act*100):0;
+    return {id,act,dn,pct,frac:Math.min(pct/80,1),ok:act>=20&&dn/act>=0.8,label:`${pct}% of ${act} days`,sub:'need 80%+ over 20+ active days; paused days are skipped'};
+  }
+  return null;
+}
+// Runs on every load / habit toggle. A completed month is judged once (hit or miss), so later
+// back-filling can't pay out an old month.
+function checkLabsMilestones(){
+  const L=S.labs;if(!L||!L.miniBossStart)return;
+  if(!L.awarded)L.awarded={};
+  const cur=calMonthKey();let ym=L.miniBossStart,guard=0;
+  while(ym<cur&&guard++<36){
+    LAB_MINIBOSSES.forEach(mb=>{
+      const key=`mini_${ym}_${mb.id}`;if(key in L.awarded)return;
+      const r=labMiniResult(mb.id,ym);if(!r)return; // habit missing: skip, judge later
+      if(r.ok)grantReward('pack',key,`${mb.title} — ${labMonthLabel(ym)}`);
+      else{L.awarded[key]=false;save();}
+    });
+    ym=labNextMonth(ym);
+  }
+}
+
+// ── Recheck countdown + fasting reminder ──
+function labsFastBannerVisible(){const L=S.labs;if(!L||!L.recheckDate||!labValidDate(L.recheckDate))return false;if(L.fastDismissed===L.recheckDate)return false;return labDaysUntil(L.recheckDate)===1;}
+function renderLabsFastBanner(){const el=document.getElementById('labsFastBanner');if(el)el.style.display=labsFastBannerVisible()?'flex':'none';}
+function dismissLabsFast(){S.labs.fastDismissed=S.labs.recheckDate;save();renderLabsFastBanner();}
+function saveRecheckDate(){
+  const v=(document.getElementById('labRecheckInput')||{}).value;
+  if(!labValidDate(v))return;
+  S.labs.recheckDate=v;S.labs.fastDismissed=null;save();renderLabsTab();renderLabsFastBanner();
+}
+function saveLabTargets(){
+  const t=S.labs.targets||(S.labs.targets={});
+  Object.keys(LAB_TARGET_DEFAULTS).forEach(k=>{const v=parseFloat((document.getElementById('labT-'+k)||{}).value);if(isFinite(v)&&v>0)t[k]=v;});
+  save();renderLabsTab();toast('🎯 Boss ranges saved');
+}
+function logLabPanelFromForm(){
+  const g=id=>(document.getElementById(id)||{}).value;
+  const res=addLabPanel(g('labDate'),g('labTotal'),g('labHdl'),g('labTg'),g('labLdl'));
+  if(res.error){const el=document.getElementById('labFormMsg');if(el)el.textContent=res.error;return;}
+  renderXP();renderLabsTab();
+  toast(res.report.xp>0?`⚔️ Panel logged — +${res.report.xp} XP`:'🧪 Panel logged');
+}
+
+function renderLabsTab(){
+  const el=document.getElementById('labsContent');if(!el||!S.labs)return;
+  const L=S.labs,boss=labBossState(),t=labTargets(),today=todayKey();
+  const days=L.recheckDate&&labValidDate(L.recheckDate)?labDaysUntil(L.recheckDate):null;
+  const countdown=days==null?'—':days>1?`${days} days`:days===1?'Tomorrow':days===0?'Today':`${-days}d overdue`;
+  const fmt=(id,v)=>id==='ratio'?v.toFixed(1):v;
+  const bossHTML=boss?boss.markers.map(m=>{
+    const tgtTxt=`${m.better==='higher'?'≥':'<'}${m.target}`;
+    const state=m.status==='defeated'?`<span style="color:var(--lime);font-weight:800">☠️ Defeated</span>`:m.status==='held'?`<span style="color:var(--cyan);font-weight:800">🛡️ Holding</span>`:`<span style="color:${m.worse?'var(--rose)':'var(--text-muted)'};font-weight:700">${m.worse?'🩸 healing':Math.round(m.hp*100)+'% HP'}</span>`;
+    return `<div style="margin-top:12px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+        <span style="font-size:14px;font-weight:700">${m.icon} ${m.label}</span>
+        <span style="font-size:14px;font-weight:800">${fmt(m.id,m.cur)} <span style="font-weight:600;color:var(--text-muted);font-size:12px">/ ${tgtTxt}</span> · ${state}</span>
+      </div>
+      <div class="habit-mini-progress-track" style="width:100%;margin-top:5px"><div class="habit-mini-progress-fill" style="width:${m.met?100:Math.round(m.hp*100)}%;background:${m.met?'var(--lime)':m.worse?'var(--rose)':'linear-gradient(90deg,var(--rose),var(--orange))'}"></div></div>
+      <div class="data-card-desc" style="font-size:11px;margin-top:3px">start ${fmt(m.id,m.base)} · ${boss.ref?boss.ref.date.slice(0,4)+' level '+fmt(m.id,m.ref):''}</div>
+    </div>`;}).join(''):`<div class="data-card-desc" style="margin-top:8px">Add a panel below to spawn the boss.</div>`;
+  const rep=L.lastReport&&L.lastReport.lines&&L.lastReport.lines.length?`<div class="weight-settings-card">
+    <div class="weight-settings-title">⚔️ Battle report · ${escapeHtml(L.lastReport.date)}</div>
+    ${L.lastReport.lines.map(x=>`<div class="data-card-desc" style="margin-top:6px;color:var(--text)">${escapeHtml(x)}</div>`).join('')}
+    ${L.lastReport.xp?`<div class="data-card-desc" style="margin-top:8px;font-weight:800;color:var(--lime)">+${L.lastReport.xp} XP${L.lastReport.packs?` · ${L.lastReport.packs} pack${L.lastReport.packs>1?'s':''}`:''}${L.lastReport.hanger?' · Hanger Box':''}</div>`:''}
+  </div>`:'';
+  const cur=calMonthKey(),prevYm=(()=>{const [y,m]=cur.split('-').map(Number);return m===1?`${y-1}-12`:`${y}-${String(m-1).padStart(2,'0')}`;})();
+  const started=L.miniBossStart&&cur>=L.miniBossStart;
+  const miniHTML=LAB_MINIBOSSES.map(mb=>{
+    const r=labMiniResult(mb.id,cur),pk=`mini_${prevYm}_${mb.id}`;
+    const last=(pk in (L.awarded||{}))?(L.awarded[pk]?`<span style="color:var(--lime)">✓ pack earned for ${labMonthLabel(prevYm)}</span>`:`missed ${labMonthLabel(prevYm)}`):'';
+    return `<div style="margin-top:14px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+        <span style="font-size:14px;font-weight:700">${mb.icon} ${mb.title}</span>
+        <span style="font-size:13px;font-weight:800">${r?r.label:'needs its habit'}</span>
+      </div>
+      <div class="data-card-desc" style="font-size:11px;margin-top:2px">${mb.desc}</div>
+      ${r?`<div class="habit-mini-progress-track" style="width:100%;margin-top:5px"><div class="habit-mini-progress-fill" style="width:${Math.round(r.frac*100)}%;background:${r.ok?'var(--lime)':'var(--cyan)'}"></div></div><div class="data-card-desc" style="font-size:11px;margin-top:3px">${r.sub}</div>`:''}
+      ${last?`<div class="data-card-desc" style="font-size:11px;margin-top:3px">${last}</div>`:''}
+    </div>`;}).join('');
+  const hist=labPanelsSorted().slice().reverse().map(p=>`<div style="padding:10px 0;border-top:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:800;font-size:14px">${escapeHtml(p.date)}</span><button class="circuit-icon-btn" onclick="deleteLabPanel('${escapeHtml(p.date)}')" title="Delete">🗑️</button></div>
+      <div class="data-card-desc" style="margin-top:4px;color:var(--text)">LDL ${p.ldl} · TG ${p.tg} · Total ${p.total} · HDL ${p.hdl} · Non-HDL ${p.nonHdl} · Ratio ${(+p.ratio).toFixed(1)}</div>
+    </div>`).join('');
+  const tin=(k,label)=>`<label style="display:block"><span class="data-card-desc" style="display:block;margin-bottom:4px">${label}</span><input class="form-input" id="labT-${k}" type="number" inputmode="decimal" step="any" min="0" value="${t[k]}" style="margin:0"></label>`;
+  const fin=(id,label,ph)=>`<label style="display:block"><span class="data-card-desc" style="display:block;margin-bottom:4px">${label}</span><input class="form-input" id="${id}" type="number" inputmode="decimal" step="any" min="0" placeholder="${ph}" style="margin:0" onkeydown="if(event.key==='Enter'){logLabPanelFromForm();event.preventDefault();}"></label>`;
+  el.innerHTML=`
+    <div class="weight-hero">
+      <div class="weight-delta neutral" style="margin:0">🩸 Next blood test</div>
+      <div style="line-height:1;margin-top:6px"><span class="weight-current-num" style="font-size:44px;background:linear-gradient(135deg,var(--rose),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${countdown}</span></div>
+      <div class="data-card-desc" style="margin-top:8px">${L.recheckDate?escapeHtml(L.recheckDate):'no date set'}</div>
+      <div class="weight-entry-row" style="margin-top:10px">
+        <input class="weight-input-big" id="labRecheckInput" type="date" value="${escapeHtml(L.recheckDate||'')}" style="font-size:16px">
+        <button class="weight-log-btn" onclick="saveRecheckDate()">Set</button>
+      </div>
+    </div>
+    <div class="weight-settings-card">
+      <div class="weight-settings-title">👹 Cholesterol Boss</div>
+      ${boss?`<div class="data-card-desc" style="margin-top:4px">${boss.downCount} of ${boss.total} markers down. Bars show health left, measured from your ${escapeHtml(boss.base.date)} panel.</div>`:''}
+      ${bossHTML}
+    </div>
+    ${rep}
+    <div class="weight-settings-card">
+      <div class="weight-settings-title">🧪 Enter a new panel</div>
+      <div class="data-card-desc" style="margin:4px 0 10px">Non-HDL and the ratio are worked out for you. Rewards are paid once per panel date, to your newest panel.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <label style="display:block;grid-column:1 / -1"><span class="data-card-desc" style="display:block;margin-bottom:4px">Date</span><input class="form-input" id="labDate" type="date" value="${today}" max="${today}" style="margin:0"></label>
+        ${fin('labLdl','LDL','mg/dL')}${fin('labTg','Triglycerides','mg/dL')}${fin('labTotal','Total','mg/dL')}${fin('labHdl','HDL','mg/dL')}
+      </div>
+      <button class="weight-log-btn" style="margin-top:12px;width:100%" onclick="logLabPanelFromForm()">⚔️ Strike!</button>
+      <div class="data-card-desc" id="labFormMsg" style="margin-top:8px;color:var(--rose)"></div>
+    </div>
+    <div class="weight-settings-card">
+      <div class="weight-settings-title">📅 Monthly mini-bosses</div>
+      <div class="data-card-desc" style="margin-top:4px">${started?`${labMonthLabel(cur)} so far. Each one is judged on the first open after the month ends and pays a pack.`:`Starts ${labMonthLabel(L.miniBossStart||cur)}. Progress below is a warm-up and pays nothing yet.`}</div>
+      ${miniHTML}
+    </div>
+    <div class="weight-settings-card">
+      <div class="weight-settings-title">📋 Panels</div>
+      ${hist||'<div class="data-card-desc" style="margin-top:8px">No panels yet.</div>'}
+    </div>
+    <div class="weight-settings-card">
+      <details>
+        <summary style="cursor:pointer;font-weight:800;font-size:14px">🎯 Boss ranges (editable)</summary>
+        <div class="data-card-desc" style="margin:10px 0">General reference ranges: under the number for everything except HDL, which must be at or above it. Confirm what is right for you with your doctor.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          ${tin('ldl','LDL under')}${tin('tg','Triglycerides under')}${tin('total','Total under')}${tin('nonHdl','Non-HDL under')}${tin('ratio','Chol/HDL under')}${tin('hdl','HDL at least')}
+        </div>
+        <button class="weight-log-btn" style="margin-top:12px;width:100%" onclick="saveLabTargets()">Save ranges</button>
+      </details>
+    </div>`;
+}
+
 // ── Custom Rewards (user-defined goals: circuit rounds, or progressing the weight used on a specific exercise within a circuit) ──
 let _goalType='circuit';
 function populateGoalExerciseOptions(){
@@ -3605,17 +3922,18 @@ function switchTab(name,btn){
   if(name==='stats')   renderStats();
   if(name==='rewards') renderRewards();
   if(name==='protein'){renderProteinTab();renderMacroTrends();updateMacroScrollLock();}
-  if(name==='tracking'){renderWeight();renderMeasurementsTab();renderCircuitsTab();renderFitnessTab();}
+  if(name==='tracking'){renderWeight();renderMeasurementsTab();renderCircuitsTab();renderFitnessTab();renderLabsTab();}
 }
 function switchTrackingSubTab(name,btn){
   document.querySelectorAll('.track-tab').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.track-panel').forEach(p=>p.classList.remove('active'));
-  btn.classList.add('active');
+  btn.classList.add('active'); try{btn.scrollIntoView({inline:'nearest',block:'nearest'});}catch(e){}
   document.getElementById('panel-track-'+name).classList.add('active');
   if(name==='weight')   renderWeight();
   if(name==='measurements') renderMeasurementsTab();
   if(name==='circuits') renderCircuitsTab();
   if(name==='fitness')  renderFitnessTab();
+  if(name==='labs')     renderLabsTab();
 }
 let _macroSubTab='log';
 function switchMacroSubTab(name,btn){
@@ -3680,7 +3998,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-10-09.0513';
+const APP_VERSION = '2026-10-09.0520';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);

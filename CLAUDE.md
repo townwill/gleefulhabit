@@ -82,6 +82,14 @@ This is a **real deployed static site**, not a Claude Artifacts preview — so A
 - The user's own Anthropic Console billing — this is pay-as-you-go API usage, unrelated to any Claude.ai/Pro subscription.
 - Always handle `fetch` failures (network errors, non-2xx status, malformed/non-JSON model output) gracefully with a clear inline status message — never let a failed AI call throw or silently do nothing.
 
+## Labs + cholesterol boss (Labs sub-tab under Track)
+- Data: `S.labs = {panels:[{date,total,hdl,tg,ldl,ratio,nonHdl}], recheckDate, targets, awarded:{}, report:{}}`. Seeded by `seedLabs()` (hoisted function: migration runs before later consts, so no TDZ-bound refs). Dates are strictly validated on load/import (they reach inline handlers).
+- Targets are editable (`LAB_TARGET_DEFAULTS`: LDL<100, TG<150, Total<200, Non-HDL<130, ratio<5.0, HDL>=40) — confirm with doctor.
+- Rewards: only the newest panel, once per panel date (`awarded.panel_<date>`). Improved marker +25 XP; crit (crossing back past the 2024 value) +50 once; defeat +100 XP + pack; all six down = Hanger Box. All go through `grantReward()` so a future wishlist-points swap is a one-function change.
+- Mini-bosses (`LAB_MINIBOSSES`): cardio = >=4 Mon-Sun weeks >=150 min ending in the month; fiber = average over logged days (>=20 logged) >= goal; sugar = Less Sugar done >=80% of days. Judged after month end, frozen in `S.labs.report`; start next full month.
+- Day before `recheckDate` an in-app fasting banner (`#labsFastBanner`) shows; it must not add height to Today habit cards.
+- Tests: `node tests/cardio.test.js tests/fuel.test.js tests/labs.test.js` (each file run separately).
+
 ## Deploy workflow
 Historically: design/discuss in claude.ai chat, then deploy via Claude Code or GitHub's web editor — this file exists specifically to collapse that into one step by giving Claude Code on the Web (or Remote Control) the same context a chat conversation would have had. When finishing a change:
 1. Bump `APP_VERSION`.
