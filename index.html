@@ -706,7 +706,7 @@
   <div class="tab-bar-inner">
     <button class="tab-btn active" onclick="switchTab('today',this)"><span class="tab-icon">🏠</span><span>Today</span></button>
     <button class="tab-btn" onclick="switchTab('habits',this)"><span class="tab-icon">✅</span><span>✦ Habits</span></button>
-    <button class="tab-btn" onclick="switchTab('protein',this)"><span class="tab-icon">🍗</span><span>Macros</span></button>
+    <button class="tab-btn" onclick="switchTab('protein',this)"><span class="tab-icon">⛽</span><span>Fuel</span></button>
     <button class="tab-btn" onclick="switchTab('stats',this)"><span class="tab-icon">📊</span><span>Stats</span></button>
     <button class="tab-btn" onclick="switchTab('tracking',this)"><span class="tab-icon">📈</span><span>Tracking</span></button>
     <button class="tab-btn" onclick="switchTab('rewards',this)"><span class="tab-icon">🎴</span><span>Packs</span></button>
@@ -1030,7 +1030,7 @@ function blankState() {
       packHistory:[],weeklyPacksAwarded:{},weeklyPackFlags:{},
       consecutivePackWeeks:0,lastPackWeek:null,milestones:{},
       perfectWeekStreak:0,perfectWeekBoxesEarned:0,lastPerfectCheckWeek:null,favoriteQuotes:[],lastQuotePeriod:null,lastQuoteData:null,milestonesRedeemed:{},blasterAnchorMonth:null,calorieGoal:null,sugarAutoCalcSince:null,
-      wishlistPoints:0,wishlistItems:[],wishlistHistory:[],measurementWeekFlags:{},measurementStreakWeeks:0,trainingScoreWeekFlags:{},wishlistPointsPerDollar:4,survivalMode:false,winCount:0,workoutWeeklyTarget:3,cardioGoalMin:150},
+      wishlistPoints:0,wishlistItems:[],wishlistHistory:[],measurementWeekFlags:{},measurementStreakWeeks:0,trainingScoreWeekFlags:{},wishlistPointsPerDollar:4,survivalMode:false,winCount:0,workoutWeeklyTarget:3,cardioGoalMin:150,fuelTargets:{fiber:30,satFat:13,sugar:15}},
   };
 }
 
@@ -1111,6 +1111,10 @@ function migrateState(raw) {
   if (raw.user.winCount==null) raw.user.winCount=0;
   if (raw.user.workoutWeeklyTarget==null) raw.user.workoutWeeklyTarget=3;
   if (raw.user.cardioGoalMin==null) raw.user.cardioGoalMin=150;
+  if (!raw.user.fuelTargets || typeof raw.user.fuelTargets!=='object') raw.user.fuelTargets={};
+  if (typeof raw.user.fuelTargets.fiber!=='number')  raw.user.fuelTargets.fiber=30;
+  if (typeof raw.user.fuelTargets.satFat!=='number') raw.user.fuelTargets.satFat=13;
+  if (typeof raw.user.fuelTargets.sugar!=='number')  raw.user.fuelTargets.sugar=15;
   if (!raw.user._wishlistSeeded) {
     raw.user._wishlistSeeded=true;
     raw.user.wishlistItems.push(
@@ -1622,8 +1626,8 @@ async function analyzeFood(id){
       },
       body:JSON.stringify({
         model:'claude-haiku-4-5-20251001',
-        max_tokens:300,
-        system:'You are a nutrition estimator inside a habit tracking app. Given a text description and/or photo of a food or meal, estimate its protein content in grams, its ADDED sugar content in grams (the FDA nutrition-label "Added Sugars" line — sugar/syrup added during processing — NOT total sugars. Naturally-occurring sugar like lactose in milk/whey/yogurt or fructose in whole fruit counts as 0 added sugar unless the product is also sweetened), its total calories, its total carbohydrates in grams, its total fat in grams, and its dietary fiber in grams. Respond ONLY with a JSON object, no markdown fences, no other text: {"food":"short name","grams_protein":number,"added_sugar_g":number,"calories":number,"carbs_g":number,"fat_g":number,"fiber_g":number,"confidence":"low"|"medium"|"high"}. If multiple items are shown, sum every field, and name the food generically (e.g. "chicken & rice bowl").',
+        max_tokens:400,
+        system:'You are a nutrition estimator inside a habit tracking app. Given a text description and/or photo of a food or meal, estimate its protein content in grams, its ADDED sugar content in grams (the FDA nutrition-label "Added Sugars" line — sugar/syrup added during processing — NOT total sugars. Naturally-occurring sugar like lactose in milk/whey/yogurt or fructose in whole fruit counts as 0 added sugar unless the product is also sweetened), its total calories, its total carbohydrates in grams, its total fat in grams, its saturated fat in grams (the Nutrition Facts "Saturated Fat" line, a subset of total fat), and its dietary fiber in grams. Use 0 when the food contains none of a nutrient; use null only if you genuinely cannot estimate it. Respond ONLY with a JSON object, no markdown fences, no other text: {"food":"short name","grams_protein":number,"added_sugar_g":number,"calories":number,"carbs_g":number,"fat_g":number,"sat_fat_g":number,"fiber_g":number,"confidence":"low"|"medium"|"high"}. If multiple items are shown, sum every field, and name the food generically (e.g. "chicken & rice bowl").',
         messages:[{role:'user',content}]
       })
     });
@@ -1642,12 +1646,15 @@ async function analyzeFood(id){
     try{parsed=JSON.parse(cleaned);}catch(e){statusEl.textContent='Could not parse estimate — try rephrasing.';btn.disabled=false;return;}
     const grams=Math.round((+parsed.grams_protein||0)*10)/10;
     if(!grams||grams<=0){statusEl.textContent="Couldn't estimate protein for that — try adding more detail.";btn.disabled=false;return;}
+    // A field the model left out (or sent as null) stays undefined = unknown. Only a real number, including 0, is stored.
+    const numOrUnknown=(v,dec)=>(v===null||v===undefined||v==='')?undefined:macroVal(+v,dec);
     const macros={
-      sugar:Math.max(0,Math.round((+parsed.added_sugar_g||0)*10)/10),
-      calories:Math.max(0,Math.round(+parsed.calories||0)),
-      carbs:Math.max(0,Math.round((+parsed.carbs_g||0)*10)/10),
-      fat:Math.max(0,Math.round((+parsed.fat_g||0)*10)/10),
-      fiber:Math.max(0,Math.round((+parsed.fiber_g||0)*10)/10),
+      sugar:numOrUnknown(parsed.added_sugar_g,1),
+      calories:numOrUnknown(parsed.calories,0),
+      carbs:numOrUnknown(parsed.carbs_g,1),
+      fat:numOrUnknown(parsed.fat_g,1),
+      satFat:numOrUnknown(parsed.sat_fat_g,1),
+      fiber:numOrUnknown(parsed.fiber_g,1),
     };
     const h=S.habits.find(x=>x.id===id);
     const amtInp=document.getElementById(`padd-${id}`);
@@ -1656,10 +1663,19 @@ async function analyzeFood(id){
     _pendingFoodMacros[id]=macros;
     const confEmoji=parsed.confidence==='high'?'🟢':parsed.confidence==='low'?'🟡':'🟠';
     const foodLabel=escapeHtml(parsed.food||'Food');
-    const macroSummary=`~${grams}g protein, ~${macros.carbs}g carbs, ~${macros.fat}g fat, ~${macros.sugar}g added sugar, ~${macros.calories} cal`;
+    const sumParts=[`~${grams}g protein`];
+    if(macros.carbs!==undefined)sumParts.push(`~${macros.carbs}g carbs`);
+    if(macros.fat!==undefined)sumParts.push(`~${macros.fat}g fat`);
+    if(macros.satFat!==undefined)sumParts.push(`~${macros.satFat}g sat fat`);
+    if(macros.fiber!==undefined)sumParts.push(`~${macros.fiber}g fiber`);
+    if(macros.sugar!==undefined)sumParts.push(`~${macros.sugar}g added sugar`);
+    if(macros.calories!==undefined)sumParts.push(`~${macros.calories} cal`);
+    const macroSummary=sumParts.join(', ');
     const macroBtnBits=[`Add ${grams}${(h&&h.unit)||'g'}`];
     if(macros.carbs>0)macroBtnBits.push(`🌾${macros.carbs}g`);
     if(macros.fat>0)macroBtnBits.push(`🧈${macros.fat}g`);
+    if(macros.satFat>0)macroBtnBits.push(`🥓${macros.satFat}g`);
+    if(macros.fiber>0)macroBtnBits.push(`🌿${macros.fiber}g`);
     if(macros.sugar>0)macroBtnBits.push(`🍬${macros.sugar}g`);
     if(macros.calories>0)macroBtnBits.push(`🔥${macros.calories}cal`);
     resultEl.innerHTML=`${confEmoji} ${foodLabel} — ${macroSummary}${h&&h.unit&&h.unit!=='g'?` (target unit is ${h.unit})`:''}.<button class="ai-log-add-btn" onclick="addProteinEntry('${id}')">✅ ${macroBtnBits.join(' · ')}</button>`;
@@ -1752,7 +1768,7 @@ function habitCardHTML(h){
 function autoTrackedNotice(id){
   const h=S.habits.find(x=>x.id===id);
   if(isWorkoutHabit(h))toast(`🏋️ ${h.name} is auto-tracked from Circuits/Cycle/Kids — see the Tracking tab.`);
-  else toast(`🍬 ${h?h.name:'This habit'} is auto-tracked from your food log — log food in the Macros tab.`);
+  else toast(`🍬 ${h?h.name:'This habit'} is auto-tracked from your food log — log food in the Fuel tab.`);
 }
 function pausedHabitNotice(id){
   const h=S.habits.find(x=>x.id===id);if(!h)return;
@@ -1798,6 +1814,60 @@ function renderAiKeyStatus(){
   if(el)el.textContent=key?`✅ Key saved (ends …${key.slice(-4)})`:'No key saved yet — AI food logging is off until you add one.';
   if(headerEl)headerEl.textContent=key?'✅ Set':'Not set';
 }
+function fuelBarsHTML(h,c){
+  const tk=todayKey(),cal=macroTotalOn(h.id,tk,'calories'),fib=macroTotalOn(h.id,tk,'fiber'),sat=macroTotalOn(h.id,tk,'satFat'),sug=macroTotalOn(h.id,tk,'sugar');
+  const protVal=Math.round(numVal(h.id)*10)/10,protT=habitTargetOn(h,tk);
+  const rows=[
+    {icon:'🍗',label:'Protein',val:protVal,unit:'g',target:protT,mode:'goal',hex:c.hex},
+    {icon:'🔥',label:'Calories',val:cal.sum,unit:' cal',target:S.user.calorieGoal||null,mode:'limit',hex:'var(--orange)',k:cal},
+    {icon:'🌿',label:'Fiber',val:fib.sum,unit:'g',target:fuelTarget('fiber'),mode:'goal',hex:'var(--lime)',k:fib},
+    {icon:'🥓',label:'Saturated fat',val:sat.sum,unit:'g',target:fuelTarget('satFat'),mode:'limit',hex:'var(--yellow)',k:sat},
+    {icon:'🍬',label:'Added sugar',val:sug.sum,unit:'g',target:fuelTarget('sugar'),mode:'limit',hex:'var(--rose)',k:sug},
+  ];
+  return `<div class="weight-settings-card">
+    <div class="weight-settings-title">⛽ Today's Fuel</div>
+    ${rows.map(r=>{
+      const hasT=!!r.target,pct=hasT?Math.min(r.val/r.target*100,100):0;
+      const over=r.mode==='limit'&&hasT&&r.val>r.target,met=r.mode==='goal'&&hasT&&r.val>=r.target;
+      const fill=over?'var(--rose)':met?'var(--lime)':r.hex;
+      const tgtTxt=hasT?`${r.mode==='limit'?'≤':'≥'}${r.target}${r.unit}`:'no goal set';
+      const unk=r.k?r.k.unknown:0;
+      return `<div style="margin-top:12px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+          <span style="font-size:14px;font-weight:700">${r.icon} ${r.label}</span>
+          <span style="font-size:14px;font-weight:800;${over?'color:var(--rose)':met?'color:var(--lime)':''}">${r.val}${r.unit} <span style="font-weight:600;color:var(--text-muted);font-size:12px">/ ${tgtTxt}</span></span>
+        </div>
+        <div class="habit-mini-progress-track" style="width:100%;margin-top:5px"><div class="habit-mini-progress-fill" style="width:${pct}%;background:${fill}"></div></div>
+        ${unk>0?`<div class="data-card-desc" style="font-size:11px;margin-top:3px">+${unk} ${unk===1?'entry':'entries'} without ${r.label.toLowerCase()} data, not counted</div>`:''}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function fuelTargetsCardHTML(calGoal,calToday,calPct){
+  const inp=(id,label,val,step)=>`<label style="display:block"><span class="data-card-desc" style="display:block;margin-bottom:4px">${label}</span><input class="form-input" id="${id}" type="number" inputmode="decimal" min="0" step="${step}" value="${val!=null?val:''}" style="margin:0" onkeydown="if(event.key==='Enter'){saveFuelTargets();event.preventDefault();}"></label>`;
+  return `<div class="weight-settings-card">
+    <div class="weight-settings-title">🎯 Daily Targets</div>
+    <div class="data-card-desc" style="margin-bottom:10px">Protein's target is edited on the habit in ✦ Habits.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      ${inp('calGoalInput','Calories (limit)',calGoal,1)}
+      ${inp('fuelFiberInput','Fiber g (goal)',fuelTarget('fiber'),1)}
+      ${inp('fuelSatInput','Saturated fat g (limit)',fuelTarget('satFat'),0.5)}
+      ${inp('fuelSugarInput','Added sugar g (limit)',fuelTarget('sugar'),0.5)}
+    </div>
+    <button class="weight-log-btn" style="margin-top:12px;width:100%" onclick="saveFuelTargets()">Save targets</button>
+    <div class="data-card-desc" style="margin-top:8px">${calGoal!=null?`${calToday} / ${calGoal} cal today (${Math.round(calPct)}%). `:`${calToday} cal logged today. `}The Less Sugar habit still completes at ≤${SUGAR_LIMIT_G}g, so changing the sugar goal never rewrites past days.</div>
+  </div>`;
+}
+function saveFuelTargets(){
+  const num=id=>{const v=parseFloat(document.getElementById(id)?.value);return isFinite(v)&&v>0?v:null;};
+  const cal=num('calGoalInput'),fib=num('fuelFiberInput'),sat=num('fuelSatInput'),sug=num('fuelSugarInput');
+  if(!S.user.fuelTargets)S.user.fuelTargets={};
+  if(cal!=null)S.user.calorieGoal=Math.round(cal);
+  if(fib!=null)S.user.fuelTargets.fiber=Math.round(fib*10)/10;
+  if(sat!=null)S.user.fuelTargets.satFat=Math.round(sat*10)/10;
+  if(sug!=null)S.user.fuelTargets.sugar=Math.round(sug*10)/10;
+  save();renderProteinTab();renderToday();renderMacroTrends();toast('🎯 Targets saved');
+}
 function renderProteinTab(){
   const el=document.getElementById('proteinContent');if(!el)return;
   const h=S.habits.find(x=>isProteinHabit(x));
@@ -1806,11 +1876,10 @@ function renderProteinTab(){
     return;
   }
   const c=colorOf(h.color),total=numVal(h.id),tgt=habitTargetOn(h,todayKey()),pct=Math.min(total/tgt*100,100),
-    entries=numEntries(h.id),unit=h.unit?' '+h.unit:'',addedSugar=todaysAddedSugar(h.id),
-    sugarPct=Math.min(addedSugar/SUGAR_LIMIT_G*100,100),sugarOver=addedSugar>SUGAR_LIMIT_G,
+    entries=numEntries(h.id),unit=h.unit?' '+h.unit:'',
     calToday=todaysCalories(h.id),calGoal=S.user.calorieGoal,calPct=calGoal?Math.min(calToday/calGoal*100,100):0;
   const rows=entries.length?entries.slice().reverse().map(v=>typeof v==='object'
-    ?`<div class="food-log-row"><span class="food-log-amt" style="--c-hex:${c.hex}">+${v.amt}${unit}</span><span class="food-log-label">${escapeHtml(v.label)}${typeof v.carbs==='number'&&v.carbs>0?` · 🌾${v.carbs}g carbs`:''}${typeof v.fat==='number'&&v.fat>0?` · 🧈${v.fat}g fat`:''}${typeof v.fiber==='number'&&v.fiber>0?` · 🌿${v.fiber}g fiber`:''}${typeof v.sugar==='number'&&v.sugar>0?` · 🍬${v.sugar}g added sugar`:''}${typeof v.calories==='number'&&v.calories>0?` · 🔥${v.calories}cal`:''}</span></div>`
+    ?`<div class="food-log-row"><span class="food-log-amt" style="--c-hex:${c.hex}">+${v.amt}${unit}</span><span class="food-log-label">${escapeHtml(v.label)}${typeof v.carbs==='number'&&v.carbs>0?` · 🌾${v.carbs}g carbs`:''}${typeof v.fat==='number'&&v.fat>0?` · 🧈${v.fat}g fat`:''}${typeof v.satFat==='number'&&v.satFat>0?` · 🥓${v.satFat}g sat fat`:''}${typeof v.fiber==='number'&&v.fiber>0?` · 🌿${v.fiber}g fiber`:''}${typeof v.sugar==='number'&&v.sugar>0?` · 🍬${v.sugar}g added sugar`:''}${typeof v.calories==='number'&&v.calories>0?` · 🔥${v.calories}cal`:''}</span></div>`
     :`<div class="food-log-row"><span class="food-log-amt" style="--c-hex:${c.hex}">+${v}${unit}</span><span class="food-log-label food-log-manual">Manual entry</span></div>`
   ).join(''):`<div class="food-log-empty">No entries logged yet today.</div>`;
   const hasKey=!!localStorage.getItem('gh_ai_key');
@@ -1827,14 +1896,8 @@ function renderProteinTab(){
     <div class="weight-hero">
       <div style="line-height:1"><span class="weight-current-num" style="background:linear-gradient(135deg,${c.hex},var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${total}</span><span class="weight-unit-lbl">${h.unit||'g'}</span></div>
       <div class="weight-delta ${pct>=100?'good':'neutral'}">${pct>=100?'🎯 Target hit today!':`${Math.round(pct)}% of today's target`}</div>
-      <div class="weight-stats-row">
-        <div class="wstat"><div class="wstat-val">🔥${calToday}</div><div class="wstat-lbl">Calories${calGoal!=null?` / ${calGoal}`:''}</div></div>
-        <div class="wstat"><div class="wstat-val" style="${sugarOver?'color:var(--rose)':''}">🍬${addedSugar}g</div><div class="wstat-lbl">Sugar / ${SUGAR_LIMIT_G}g</div></div>
-      </div>
-      <div class="weight-goal-track"><div class="weight-goal-bar"><div class="weight-goal-fill" style="width:${pct}%;background:linear-gradient(90deg,${c.hex},var(--pink))"></div></div></div>
-      ${calGoal!=null?`<div class="weight-goal-track"><div class="weight-goal-bar"><div class="weight-goal-fill" style="width:${calPct}%;background:linear-gradient(90deg,var(--orange),var(--yellow))"></div></div></div>`:''}
-      <div class="weight-goal-track"><div class="weight-goal-bar"><div class="weight-goal-fill" style="width:${sugarPct}%;background:${sugarOver?'var(--rose)':'linear-gradient(90deg,var(--rose),var(--orange))'}"></div></div></div>
     </div>
+    ${fuelBarsHTML(h,c)}
     <div class="weight-settings-card">
       <div class="weight-settings-title">📷 Log Food With AI</div>
       <img class="ai-log-thumb" id="ailog-thumb-${h.id}">
@@ -1843,7 +1906,7 @@ function renderProteinTab(){
         <button class="ai-log-photo-btn" onclick="document.getElementById('ailog-file-${h.id}').click()" title="Add a photo">📷</button>
         <input type="file" id="ailog-file-${h.id}" accept="image/*" capture="environment" style="display:none" onchange="aiLogPhotoPicked('${h.id}',event)">
       </div>
-      <button class="ai-log-analyze-btn" id="ailog-btn-${h.id}" style="background:${c.hex}" onclick="analyzeFood('${h.id}')">Analyze protein, sugar & calories</button>
+      <button class="ai-log-analyze-btn" id="ailog-btn-${h.id}" style="background:${c.hex}" onclick="analyzeFood('${h.id}')">Analyze this food</button>
       <div class="ai-log-status" id="ailog-status-${h.id}">${hasKey?'':'Add your Anthropic API key below to enable this.'}</div>
       <div class="ai-log-result" id="ailog-result-${h.id}" style="--c-hex:${c.hex};--c-rgb:${c.rgb}"></div>
     </div>
@@ -1864,15 +1927,7 @@ function renderProteinTab(){
       ${rows}
     </div>
 
-    <div class="weight-settings-card">
-      <div class="weight-settings-title">🔥 Calories Goal</div>
-      <div class="weight-entry-row">
-        <input class="weight-input-big" id="calGoalInput" type="number" min="0" step="1" placeholder="daily goal" value="${calGoal!=null?calGoal:''}" style="font-size:18px;padding:10px" onkeydown="if(event.key==='Enter')saveCalorieGoal()">
-        <button class="weight-log-btn" onclick="saveCalorieGoal()">Set</button>
-      </div>
-      ${calGoal!=null?`<div class="data-card-desc" style="margin-top:8px">${calToday} / ${calGoal} cal today (${Math.round(calPct)}%)</div>`
-        :`<div class="data-card-desc" style="margin-top:8px">${calToday} cal logged today. Set a daily goal above to track progress.</div>`}
-    </div>
+    ${fuelTargetsCardHTML(calGoal,calToday,calPct)}
 
     <div class="weight-settings-card">
       <div class="ai-key-header" onclick="toggleKeyPanel()">
@@ -2045,7 +2100,7 @@ function renderTrendsSection(h,c){
     ${miniTrendChart('Carbs','g','#5ec8ff',carbPts)}
     ${miniTrendChart('Fat','g','#ffcf5e',fatPts)}
     ${miniTrendChart('Fiber','g','#8affc1',fiberPts)}
-    ${miniTrendChart('Added Sugar','g','#ff6b8a',sugarPts,SUGAR_LIMIT_G,'limit','255,107,138')}
+    ${miniTrendChart('Added Sugar','g','#ff6b8a',sugarPts,fuelTarget('sugar'),'limit','255,107,138')}
     ${miniTrendChart('Calories','cal','#ff9544',calPts,S.user.calorieGoal,'goal')}
   </div>`;
 }
@@ -2601,11 +2656,7 @@ function rememberFood(name,grams,macros){
   const old=list.find(f=>String(f.name).trim().toLowerCase()===key);
   const filtered=list.filter(f=>String(f.name).trim().toLowerCase()!==key);
   const entry={name:String(name).trim().slice(0,40),grams:Math.round(grams*10)/10};
-  if(macros&&typeof macros.sugar==='number'&&macros.sugar>0)entry.sugar=Math.round(macros.sugar*10)/10;
-  if(macros&&typeof macros.calories==='number'&&macros.calories>0)entry.calories=Math.round(macros.calories);
-  if(macros&&typeof macros.carbs==='number'&&macros.carbs>0)entry.carbs=Math.round(macros.carbs*10)/10;
-  if(macros&&typeof macros.fat==='number'&&macros.fat>0)entry.fat=Math.round(macros.fat*10)/10;
-  if(macros&&typeof macros.fiber==='number'&&macros.fiber>0)entry.fiber=Math.round(macros.fiber*10)/10;
+  MACRO_KEYS.forEach(([k,d])=>{const mv=macroVal(macros&&macros[k],d);if(mv!==undefined)entry[k]=mv;});
   if(old&&old.favorite)entry.favorite=true; // re-logging a favorite shouldn't un-star it
   filtered.unshift(entry);
   saveFoodHistory(filtered);
@@ -2618,7 +2669,7 @@ function toggleFavoriteFood(idx){
 }
 function quickAddFoodAt(id,idx){
   const list=getFoodHistory();const item=list[idx];if(!item)return;
-  if(!addNumCore(id,item.grams,item.name,{sugar:item.sugar,calories:item.calories,carbs:item.carbs,fat:item.fat,fiber:item.fiber}))return;
+  if(!addNumCore(id,item.grams,item.name,{sugar:item.sugar,calories:item.calories,carbs:item.carbs,fat:item.fat,fiber:item.fiber,satFat:item.satFat}))return;
   renderToday();renderXP();renderProteinTab();
   const h=S.habits.find(x=>x.id===id);
   toast(`✅ +${item.grams}${(h&&h.unit)||'g'} · ${item.name}`);
@@ -2672,11 +2723,7 @@ function addNumCore(id,amt,label,macros){
   const prev=numVal(id),next=prev+amt;S.logs[tk][id]=next;
   if(label){
     const entry={amt:+amt.toFixed(2),label};
-    if(macros&&typeof macros.sugar==='number'&&macros.sugar>0)entry.sugar=Math.round(macros.sugar*10)/10;
-    if(macros&&typeof macros.calories==='number'&&macros.calories>0)entry.calories=Math.round(macros.calories);
-    if(macros&&typeof macros.carbs==='number'&&macros.carbs>0)entry.carbs=Math.round(macros.carbs*10)/10;
-    if(macros&&typeof macros.fat==='number'&&macros.fat>0)entry.fat=Math.round(macros.fat*10)/10;
-    if(macros&&typeof macros.fiber==='number'&&macros.fiber>0)entry.fiber=Math.round(macros.fiber*10)/10;
+    MACRO_KEYS.forEach(([k,d])=>{const mv=macroVal(macros&&macros[k],d);if(mv!==undefined)entry[k]=mv;});
     S.logEntries[tk][id].push(entry);
   }else S.logEntries[tk][id].push(+amt.toFixed(2));
   checkNumTarget(id,prev,next);save();return true;
@@ -2696,6 +2743,21 @@ function fatOn(hid,dk){
 function fiberOn(hid,dk){
   return numEntriesOn(hid,dk).reduce((sum,v)=>sum+(typeof v==='object'&&typeof v.fiber==='number'?v.fiber:0),0);
 }
+// ── Fuel targets + "unknown is not zero" ──
+// Sugar here is the Fuel-bar goal only. The Less Sugar habit's auto-complete threshold stays
+// SUGAR_LIMIT_G, because habit completion is recomputed live and editing a goal must never
+// rewrite past days or streaks.
+const FUEL_DEFAULTS={fiber:30,satFat:13,sugar:15};
+function fuelTarget(k){const t=(S.user&&S.user.fuelTargets)||{};return (typeof t[k]==='number'&&t[k]>0)?t[k]:FUEL_DEFAULTS[k];}
+// Entries logged before a macro existed (or typed in by hand) simply lack that field. A missing
+// field is UNKNOWN, a stored 0 is a real zero. Totals report both so the UI never undercounts silently.
+function macroTotalOn(hid,dk,field){
+  let sum=0,known=0,total=0;
+  numEntriesOn(hid,dk).forEach(v=>{total++;if(v&&typeof v==='object'&&typeof v[field]==='number'&&isFinite(v[field])){sum+=v[field];known++;}});
+  return {sum:Math.round(sum*10)/10,known,total,unknown:total-known};
+}
+function macroVal(x,dec){if(typeof x!=='number'||!isFinite(x)||x<0)return undefined;const f=dec?10:1;return Math.round(x*f)/f;}
+const MACRO_KEYS=[['sugar',1],['calories',0],['carbs',1],['fat',1],['fiber',1],['satFat',1]];
 function todaysAddedSugar(hid){ return addedSugarOn(hid,todayKey()); }
 function todaysCalories(hid){ return caloriesOn(hid,todayKey()); }
 function todaysCarbs(hid){ return carbsOn(hid,todayKey()); }
@@ -3454,7 +3516,7 @@ function saveCheckin(){
   }else{
     closeModal('checkinOverlay');
     if(alreadyCheckedIn)toast('✅ Check-in updated');
-    else if(note&&!hasKey)toast('✅ Checked in — add an API key in Macros for a reflection on what you write');
+    else if(note&&!hasKey)toast('✅ Checked in — add an API key in Fuel for a reflection on what you write');
   }
 }
 async function requestCheckinReflection(tk,note,mood,stressful){
@@ -3482,7 +3544,7 @@ async function requestCheckinReflection(tk,note,mood,stressful){
     if(!resp.ok){
       const errBody=await resp.text().catch(()=>'');
       console.error('Checkin reflection error',resp.status,errBody);
-      if(reflEl)reflEl.innerHTML=`<div class="data-card-desc" style="margin-bottom:10px;color:var(--rose)">${resp.status===401?'API key rejected — check it in Macros.':`Couldn't get a reflection (${resp.status}).`} Your check-in is saved either way.</div>`;
+      if(reflEl)reflEl.innerHTML=`<div class="data-card-desc" style="margin-bottom:10px;color:var(--rose)">${resp.status===401?'API key rejected — check it in Fuel.':`Couldn't get a reflection (${resp.status}).`} Your check-in is saved either way.</div>`;
       if(btn){btn.disabled=false;btn.textContent='Close';btn.onclick=()=>closeModal('checkinOverlay');}
       return;
     }
@@ -3618,7 +3680,7 @@ function checkProteinReminder(){
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 function confetti(n=40){const box=document.getElementById('confettiBox'),colors=['#00d4ff','#ff6bff','#a8ff3e','#ff9544','#9b6dff','#ffe55c','#ff6b8a','#00ffcc'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='cp';const sz=5+Math.random()*9;p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.6}s;animation-duration:${1.6+Math.random()*1.2}s;`;box.appendChild(p);setTimeout(()=>p.remove(),3500);}}
 
-const APP_VERSION = '2026-10-09.0510';
+const APP_VERSION = '2026-10-09.0513';
 { const txt = `GleefulHabit v${APP_VERSION}`; const vf1 = document.getElementById('versionFooter'); if (vf1) vf1.textContent = txt; const vf2 = document.getElementById('versionFooterToday'); if (vf2) vf2.textContent = txt; }
 if (localStorage.getItem('gh_lastVersion') && localStorage.getItem('gh_lastVersion') !== APP_VERSION) {
   setTimeout(() => toast(`✨ Updated to latest version!`), 900);

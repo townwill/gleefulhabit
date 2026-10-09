@@ -60,13 +60,16 @@ Two rendering modes exist for numeric habits on the Today tab, controlled by `is
 
 If a future numeric habit should also get the compact treatment + a dedicated tab, generalize `isProteinHabit`-style detection rather than hardcoding — but don't change the behavior for existing non-protein numeric habits without being asked.
 
-### Protein tab (6th bottom tab, between ✦ Habits and Stats)
+### Fuel tab (6th bottom tab, between ✦ Habits and Stats; formerly "Protein"/"Macros" — ids and `renderProteinTab()` keep the old name)
 Dedicated tab (`section-protein` / `renderProteinTab()`) that surfaces everything related to the protein habit so it doesn't clutter Today:
 - Hero block (current/target, % bar, streak, entries-logged count) — styled to match the existing Weight tab's hero for consistency.
 - **Quick Add** — chips of previously-logged foods (name + grams) for one-tap re-adding with zero AI calls. Backed by `gh_food_history` in raw `localStorage` (capped at 12, deduped case-insensitively, most-recent-grams-wins). Only renders when history is non-empty.
 - Manual "Add Protein" box (`padd-{habitId}` input + Add button) — the tab's equivalent of the old inline add-row.
 - **AI Food Logging panel** — text description and/or photo, calls the Anthropic API directly from the browser (`fetch` to `api.anthropic.com/v1/messages`) using a user-supplied key, model `claude-haiku-4-5-20251001`, asks for a strict JSON response (`{food, grams_protein, confidence}`), fills the amount box with the estimate for the user to review before tapping Add (never auto-adds).
 - Today's Food Log — full list of the day's entries (labeled or "Manual entry").
+- **Today's Fuel card** (`fuelBarsHTML`) — five daily bars: protein, calories (limit), fiber (goal, default 30g), saturated fat (limit, default 13g), added sugar (limit, default 15g). Targets are editable in the **Daily Targets** card (`saveFuelTargets`); fiber/sat fat/sugar live in `S.user.fuelTargets` (migrated per key), calories in `S.user.calorieGoal`, protein on the habit.
+- **Unknown is not zero**: food entries are `{amt,label,sugar,calories,carbs,fat,fiber,satFat}`; a macro field that was never recorded is simply absent (= unknown), while a real 0 is stored as 0. Always read totals through `macroTotalOn(hid,dk,field)` → `{sum,known,total,unknown}` and surface `unknown` rather than treating it as 0. The Haiku prompt returns `sat_fat_g`/`fiber_g`/`added_sugar_g` etc.; `null` or an omitted key stays unknown. Entries/quick-add history are written through `MACRO_KEYS`/`macroVal`.
+- **Fuel-bar sugar goal vs the Less Sugar habit**: the habit still auto-completes at the `SUGAR_LIMIT_G` constant (15g) because habit completion is recomputed live and editing a goal must never rewrite past days/streaks. Only the Fuel bar and trend line use `fuelTarget('sugar')`.
 - **AI API Key card** — collapsed by default (tap-to-expand), shows a compact "Set / Not set" status in the header even while collapsed so the key field isn't exposed unless deliberately opened. Key lives in `gh_ai_key`, outside `S`, never in backups.
 
 ### Weekly cardio minutes (inside the Workout habit)
