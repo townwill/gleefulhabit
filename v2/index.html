@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="GleefulHabit">
+<meta name="theme-color" content="#ffffff">
+<title>GleefulHabit 2.0</title>
+<!--@@ICONS-->
+<style>
+:root{
+  --green:#1F5F3A; --tint:#EEF3EF; --g2:#8DBE9C; --text:#1d1d1f; --muted:#6E6E73; --track:#E8E8ED; --line:#E8E8ED;
+  --bad:#B3402F;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%;background:#fff;color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;overscroll-behavior:none}
+body{height:100dvh;overflow:hidden;position:fixed;inset:0;width:100%}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
+input,textarea{font:inherit;color:inherit}
+.num{font-family:ui-rounded,"SF Pro Rounded",-apple-system,sans-serif;font-variant-numeric:tabular-nums}
+
+#app{height:100%;display:flex;flex-direction:column;padding-top:var(--sat);padding-bottom:calc(var(--sab) + 2px)}
+#pagerWrap{flex:1;min-height:0;overflow:hidden;position:relative}
+#pager{display:flex;width:200%;height:100%;transition:transform .28s cubic-bezier(.3,.7,.2,1)}
+.page{width:50%;height:100%;padding:0 16px;display:flex;flex-direction:column;gap:7px;min-height:0}
+.page.scrolly{overflow-y:auto;-webkit-overflow-scrolling:touch}
+.dots{display:flex;justify-content:center;gap:8px;height:22px;align-items:center}
+.dots button{width:44px;height:22px;display:flex;align-items:center;justify-content:center}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--track);display:block;transition:all .2s}
+.dots button.on i{background:var(--green);width:18px;border-radius:4px}
+
+.top{display:flex;align-items:center;justify-content:space-between;height:44px;flex-shrink:0}
+.top h1{margin:0;font-size:21px;font-weight:700;letter-spacing:-.4px}
+.top h1 span{color:var(--green)}
+.icon-btn{width:44px;height:44px;display:flex;align-items:center;justify-content:center;margin-right:-10px;border-radius:12px;color:var(--green)}
+.icon-btn svg{width:24px;height:24px}
+
+.balance{text-align:center;flex-shrink:0;padding:2px 0 0}
+.balance .big{font-size:50px;font-weight:700;letter-spacing:-1.5px;color:var(--green);line-height:1.05}
+.balance .lbl{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-top:1px}
+.balance .sub{font-size:12.5px;color:var(--muted);margin-top:3px}
+
+.bars{display:grid;grid-template-columns:1fr 1fr;gap:14px;flex-shrink:0}
+.bar .bl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px}
+.bar .bl b{color:var(--text);font-weight:600}
+.track{height:6px;background:var(--track);border-radius:3px;overflow:hidden}
+.track i{display:block;height:100%;background:var(--green);border-radius:3px;transition:width .3s}
+.bar.bonus .track i{background:var(--g2)}
+
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex-shrink:0}
+.btn{height:44px;border-radius:12px;background:var(--tint);color:var(--green);font-weight:600;font-size:15px;display:flex;align-items:center;justify-content:center;gap:4px}
+.btn:active{opacity:.7}
+.btn.primary{background:var(--green);color:#fff}
+.btn.quiet{background:#f4f4f6;color:var(--muted)}
+.btn.danger{background:#fbeeec;color:var(--bad)}
+.btn[disabled]{opacity:.4;pointer-events:none}
+
+.habits{display:flex;flex-direction:column;gap:5px;flex-shrink:0}
+.hrow{display:flex;align-items:center;gap:10px;min-height:50px;padding:3px 4px 3px 10px;border-radius:14px;background:#fafafb;border:1px solid var(--line);text-align:left;width:100%}
+.hrow:active{background:var(--tint)}
+.hrow .ic{width:34px;height:34px;border-radius:10px;background:var(--tint);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.hrow .mid{flex:1;min-width:0}
+.hrow .nm{font-size:16px;font-weight:600;line-height:1.2}
+.hrow .sb{font-size:12.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hrow .st{width:30px;height:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-right:6px}
+.hrow .pz{min-width:52px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;font-weight:600;flex-shrink:0;padding:0 4px}
+.hrow.paused .pz{color:var(--green)}
+.lg{display:inline-flex;align-items:center;gap:4px;margin-left:8px}
+.lg i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.hrow.paused{background:#f3f3f5;color:var(--muted)}
+.hrow.paused .ic{background:#e9e9ec;filter:grayscale(1);opacity:.6}
+.hrow.paused .nm{color:var(--muted)}
+.hrow .wb{color:var(--green);font-weight:600}
+.chk{width:26px;height:26px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center}
+.chk svg{width:15px;height:15px}
+
+.cal{flex:1;min-height:0;display:flex;flex-direction:column}
+.cal .ch{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px}
+.cal .ch b{font-size:15px;font-weight:700}
+.cal .ch span{font-size:11.5px;color:var(--muted)}
+.cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;flex:1;min-height:0;grid-auto-rows:minmax(0,1fr);max-height:240px}
+.cgrid .wd{font-size:10.5px;color:var(--muted);text-align:center;font-weight:600;align-self:end;line-height:1.5}
+.cgrid .c{border-radius:6px;font-size:11.5px;display:flex;align-items:center;justify-content:center;color:var(--muted);min-height:0}
+.cgrid .c.full{background:var(--green);color:#fff}
+.cgrid .c.part{background:var(--g2);color:#0f3320}
+.cgrid .c.miss{background:var(--track);color:var(--muted)}
+.cgrid .c.fut{color:#b8b8bd}
+.cgrid .c.today{outline:2px solid var(--green);outline-offset:-2px;font-weight:700}
+.cgrid .c.free{background:#fff;outline:1.5px dashed var(--g2);outline-offset:-1.5px}
+
+.winsrow{flex-shrink:0;display:flex;align-items:center;gap:8px;min-height:30px;font-size:12.5px;color:var(--muted)}
+.winsrow b{color:var(--text);font-weight:600;white-space:nowrap}
+.winsrow .chips{display:flex;gap:5px;overflow:hidden;flex:1;min-width:0}
+.winsrow .w{background:var(--tint);color:var(--green);border-radius:10px;padding:3px 8px;white-space:nowrap;font-size:12px;font-weight:600}
+
+/* sheets + overlays */
+#sheetRoot .scrim{position:fixed;inset:0;background:rgba(0,0,0,.32);z-index:40;animation:fade .18s}
+#sheetRoot .sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;background:#fff;border-radius:22px 22px 0 0;padding:8px 16px calc(var(--sab) + 16px);max-height:92dvh;overflow-y:auto;animation:up .24s cubic-bezier(.3,.8,.3,1)}
+.sheet .grab{width:38px;height:5px;border-radius:3px;background:var(--track);margin:0 auto 10px}
+.sheet h2{margin:0 0 4px;font-size:21px;letter-spacing:-.3px}
+.sheet .hint{font-size:13px;color:var(--muted);margin:0 0 10px}
+.sheet .q{font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 7px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:44px;padding:0 14px;border-radius:22px;background:#f4f4f6;font-size:15px;font-weight:500;display:flex;align-items:center;justify-content:center}
+.chip.on{background:var(--green);color:#fff}
+.chip.sm{min-height:36px;padding:0 12px;font-size:14px}
+.field{width:100%;height:48px;border-radius:12px;border:1.5px solid var(--line);padding:0 14px;font-size:17px;background:#fff;outline:none}
+.field:focus{border-color:var(--green)}
+textarea.field{height:76px;padding:10px 14px;resize:none}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sheet .btn{margin-top:14px;width:100%}
+.over .body>.btn,.over .card .btn{width:100%;margin-top:10px}
+.seg{display:flex;background:#f1f1f3;border-radius:11px;padding:3px;gap:3px}
+.seg button{flex:1;height:36px;border-radius:9px;font-size:14px;font-weight:600;color:var(--muted)}
+.seg button.on{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.seg button[disabled]{opacity:.35}
+.winsgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.winsgrid .chip{border-radius:14px;min-height:50px;font-size:14px;text-align:center;line-height:1.2;padding:6px 8px}
+
+.over{position:fixed;inset:0;z-index:30;background:#fff;display:flex;flex-direction:column;padding-top:var(--sat);animation:slide .26s cubic-bezier(.3,.8,.3,1)}
+.over .bar2{display:flex;align-items:center;height:48px;padding:0 6px;flex-shrink:0}
+.over .bar2 .back{height:44px;padding:0 10px;color:var(--green);font-size:16px;font-weight:600;display:flex;align-items:center;gap:2px}
+.over .bar2 h2{margin:0;flex:1;text-align:center;font-size:17px;margin-right:60px}
+.over .body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 16px calc(var(--sab) + 24px)}
+.card{background:#fafafb;border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.card h3{margin:0 0 8px;font-size:15px}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+.keyhead{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:44px;font-size:15px}
+.frow{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
+.frow .fa{position:absolute;right:0;top:0;bottom:0;display:flex}
+.frow .fab{width:70px;color:#fff;font-weight:600;font-size:15px}
+.frow .fab.e{background:var(--g2);color:#0f3320}
+.frow .fab.d{background:var(--bad)}
+.frow .fc{position:relative;background:#fff;transition:transform .2s;padding:10px 2px;min-height:54px}
+.frow.open .fc{transform:translateX(-140px)}
+.fl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fn{font-size:16px;font-weight:600}
+.fv{font-size:13px;color:var(--muted);margin-top:2px}
+.fv b{color:var(--text)}
+.tagp{background:var(--tint);color:var(--green);border-radius:8px;padding:2px 7px;font-size:11px;font-weight:700}
+.cgrid .c.fr{outline:1.5px dashed var(--g2);outline-offset:-1.5px}
+.cgrid .c.today.fr{outline:2px solid var(--green)}
+
+#toast{position:fixed;left:50%;top:calc(var(--sat) + 8px);transform:translate(-50%,-90px);background:#1d1d1f;color:#fff;padding:10px 16px;border-radius:14px;font-size:14px;font-weight:500;z-index:99;max-width:88%;text-align:center;transition:transform .25s}
+#toast.show{transform:translate(-50%,0)}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes up{from{transform:translateY(40px);opacity:.6}to{transform:none;opacity:1}}
+@keyframes slide{from{transform:translateX(30px);opacity:.5}to{transform:none;opacity:1}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="overRoot"></div>
+<div id="sheetRoot"></div>
+<div id="toast"></div>
+<script>
+/* ============================================================
+   GleefulHabit 2.0 — single file, localStorage only (key: gh2).
+   v1 lives at the site root and is never read-modified here.
+   ============================================================ */
+
+/* ── Constants ── */
+const SCHEMA = 2;
+const STORE_KEY = 'gh2';
+const V1_KEY = 'habitflow';
+const APP_VERSION = '2026-10-24.2300';
+const HABITS = ['workout','protein','wind','sugar'];
+const HABIT_META = {
+  workout:{name:'Workout',icon:'🏋️'},
+  protein:{name:'Protein',icon:'🍗'},
+  wind:{name:'Wind down',icon:'🌙'},
+  sugar:{name:'Less sugar',icon:'🍬'},
+};
+const PAUSABLE = ['workout','wind','sugar'];   // Protein only pauses via Sick day
+
+/* ── Dates (all keys are local YYYY-MM-DD) ── */
+const pad = n => String(n).padStart(2,'0');
+const dkOf = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parseDk = dk => { const [y,m,d] = dk.split('-').map(Number); return new Date(y, m-1, d); };
+const todayKey = () => dkOf(new Date());
+const addDays = (dk, n) => { const d = parseDk(dk); d.setDate(d.getDate()+n); return dkOf(d); };
+const diffDays = (a, b) => Math.round((parseDk(b) - parseDk(a)) / 86400000);
+const ymOf = dk => dk.slice(0,7);
+const dim = ym => { const [y,m] = ym.split('-').map(Number); return new Date(y, m, 0).getDate(); };
+const addMonths = (ym, n) => { const [y,m] = ym.split('-').map(Number); const d = new Date(y, m-1+n, 1); return `${d.getFullYear()}-${pad(d.getMonth()+1)}`; };
+const weekStart = dk => { const d = parseDk(dk); const dow = d.getDay(); d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow)); return dkOf(d); };
+const weekDays = dk => { const s = weekStart(dk); return Array.from({length:7}, (_, i) => addDays(s, i)); };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+/* Logging window: today any time; yesterday until noon, then it locks. */
+function canLog(dk) {
+  const t = todayKey();
+  if (dk === t) return true;
+  if (dk === addDays(t, -1)) return new Date().getHours() < 12;
+  return false;
+}
+
+/* ── State ── */
+function blankState() {
+  return {
+    schema: SCHEMA,
+    startDate: null,
+    settings: { monthly:200, drip:100, pool:50, proteinGoal:150, sugarBudget:25, workoutWeek:3, freeDaysPerYear:10 },
+    days: {},        // dk -> { workout, windDown, foods:[] }
+    pauses: [],      // { id, habit, from, to|null, why, expect, planned, back, sick, sickId }
+    freeDays: [],    // ['YYYY-MM-DD', ...] set in advance only
+    spends: [],      // { id, dk, cents, cat }
+    wins: [],        // { id, dk, label, other }
+    weight: { unit:'lbs', goal:null, logs:{} },
+    months: {},      // 'YYYY-MM' -> frozen month-close snapshot
+    comeback: null,  // { from, gapDays, firstLog }
+    imported: null,  // { at, from:'v1', counts }
+    ui: { lastVersion:null, v1Offer:'none' },
+  };
+}
+
+/* Every new field gets a default here. Shared by normal load and backup import. */
+function migrateState(raw) {
+  const b = blankState();
+  if (!raw || typeof raw !== 'object') return b;
+  const s = Object.assign(b, raw);
+  s.schema = SCHEMA;
+  s.settings = Object.assign(blankState().settings, raw.settings || {});
+  for (const k of ['days','months']) if (!s[k] || typeof s[k] !== 'object') s[k] = {};
+  for (const k of ['pauses','freeDays','spends','wins']) if (!Array.isArray(s[k])) s[k] = [];
+  if (!s.weight || typeof s.weight !== 'object') s.weight = { unit:'lbs', goal:null, logs:{} };
+  if (!s.weight.logs) s.weight.logs = {};
+  if (!s.weight.unit) s.weight.unit = 'lbs';
+  if (s.weight.goal === undefined) s.weight.goal = null;
+  s.ui = Object.assign({ lastVersion:null, v1Offer:'none' }, raw.ui || {});
+  if (s.comeback === undefined) s.comeback = null;
+  if (s.imported === undefined) s.imported = null;
+  for (const dk of Object.keys(s.days)) {
+    const d = s.days[dk];
+    if (!Array.isArray(d.foods)) d.foods = [];
+    if (d.workout === undefined) d.workout = null;
+    if (d.windDown === undefined) d.windDown = null;
+  }
+  return s;
+}
+
+function loadState() {
+  let raw = null;
+  try { raw = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch (e) { console.error('GleefulHabit: load failed', e); }
+  if (raw) return migrateState(raw);
+  const s = blankState();
+  s.startDate = todayKey();
+  try { if (localStorage.getItem(V1_KEY)) s.ui.v1Offer = 'pending'; } catch (e) {}
+  return s;
+}
+let S = loadState();
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) {} }
+function dayOf(dk) {
+  if (!S.days[dk]) S.days[dk] = { workout:null, windDown:null, foods:[] };
+  return S.days[dk];
+}
+
+/* ── v1 history import (optional, one time, history only — money starts fresh) ── */
+function readV1() {
+  try { return JSON.parse(localStorage.getItem(V1_KEY) || 'null'); } catch (e) { return null; }
+}
+function v1Summary(v1) {
+  if (!v1 || !v1.habits) return null;
+  const dks = new Set();
+  for (const k of Object.keys(v1.logs || {})) dks.add(k);
+  const w = Object.keys((v1.weight && v1.weight.logs) || {}).length;
+  return { days: dks.size, weights: w };
+}
+/* Converts v1 data into `into`. Only days before 2.0's startDate are brought over. */
+function importV1(v1, into) {
+  const counts = { workouts:0, foods:0, weights:0, wins:0, pauses:0 };
+  if (!v1 || !Array.isArray(v1.habits)) return counts;
+  const start = into.startDate || todayKey();
+  const hW = v1.habits.find(h => h.type !== 'numeric' && /work\s*out/i.test(h.name));
+  const hP = v1.habits.find(h => h.type === 'numeric' && /protein/i.test(h.name));
+  const hS = v1.habits.find(h => h.type !== 'numeric' && /sugar/i.test(h.name));
+  const logs = v1.logs || {}, ents = v1.logEntries || {}, rest = v1.restDayLogs || {};
+  const extras = v1.workoutExtras || {}, circuits = v1.customWorkoutLogs || {};
+  const keys = new Set([...Object.keys(logs), ...Object.keys(rest), ...Object.keys(extras), ...Object.keys(circuits)]);
+  let last = null;
+  const dayFor = dk => { if (!into.days[dk]) into.days[dk] = { workout:null, windDown:null, foods:[] }; return into.days[dk]; };
+  for (const dk of keys) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dk) || dk >= start) continue;
+    try {
+      const day = dayFor(dk);
+      const ex = extras[dk] || {}, circ = circuits[dk] || {};
+      const hasCircuit = Object.values(circ).some(c => c && c.rounds > 0);
+      const manual = hW && (logs[dk] || {})[hW.id] === true;
+      if (!day.workout && (manual || ex.cycle || ex.kids || hasCircuit)) {
+        day.workout = { kind:'workout', what: hasCircuit ? 'Circuit' : ex.cycle ? 'Bike' : 'Imported', imp:true };
+        counts.workouts++;
+      } else if (!day.workout && hW && (rest[dk] || {})[hW.id]) {
+        day.workout = { kind:'rest', imp:true };
+      }
+      if (hP && !day.foods.length) {
+        const list = (ents[dk] || {})[hP.id] || [];
+        for (const e of list) {
+          if (typeof e === 'number') day.foods.push({ id:uid(), label:'Manual entry', protein:e, sugar:0, src:'manual', imp:true });
+          else if (e && typeof e === 'object') day.foods.push({ id:uid(), label:e.label || 'Food', protein:+e.amt || 0, sugar:+e.sugar || 0, src:'ai', imp:true });
+        }
+        const total = (logs[dk] || {})[hP.id];
+        if (!day.foods.length && typeof total === 'number' && total > 0) day.foods.push({ id:uid(), label:'Imported total', protein:total, sugar:0, src:'manual', imp:true });
+        counts.foods += day.foods.length;
+      }
+      if ((day.workout || day.foods.length) && (!last || dk > last)) last = dk;
+    } catch (e) { console.error('v1 import: skipped', dk, e); }
+  }
+  const wl = (v1.weight && v1.weight.logs) || {};
+  for (const [dk, val] of Object.entries(wl)) {
+    if (dk < start && typeof val === 'number') { into.weight.logs[dk] = val; counts.weights++; }
+  }
+  if (v1.weight) {
+    if (v1.weight.unit) into.weight.unit = v1.weight.unit;
+    if (v1.weight.goal != null && into.weight.goal == null) into.weight.goal = v1.weight.goal;
+  }
+  for (const w of (v1.littleWins || [])) {
+    if (w && w.dateKey && w.dateKey < start && w.text) { into.wins.push({ id:uid(), dk:w.dateKey, label:String(w.text).slice(0,80), other:true, imp:true }); counts.wins++; }
+  }
+  const byId = {}; if (hW) byId[hW.id] = 'workout'; if (hS) byId[hS.id] = 'sugar';
+  const dayBefore = addDays(start, -1);
+  for (const [hid, rs] of Object.entries(v1.habitPauseRanges || {})) {
+    if (!byId[hid]) continue;
+    for (const r of (rs || [])) if (r && r.from && r.to && r.from < start) { into.pauses.push({ id:uid(), habit:byId[hid], from:r.from, to:r.to < start ? r.to : dayBefore, why:'Imported', imp:true }); counts.pauses++; }
+  }
+  for (const [hid, p] of Object.entries(v1.habitPauses || {})) {
+    if (byId[hid] && p && p.since && p.since < start) { into.pauses.push({ id:uid(), habit:byId[hid], from:p.since, to:dayBefore, why:'Imported', imp:true }); counts.pauses++; }
+  }
+  if (last) into.comeback = { from:last, gapDays:Math.max(0, diffDays(last, start) - 1), firstLog:null };
+  into.imported = { at:todayKey(), from:'v1', counts };
+  return counts;
+}
+function doV1Import() {
+  const v1 = readV1();
+  const counts = importV1(v1, S);
+  S.ui.v1Offer = 'done';
+  save();
+  return counts;
+}
+function skipV1Import() { S.ui.v1Offer = 'done'; save(); }
+
+/* ── Habit engine: one function says what a habit's day looks like ── */
+const round1 = n => Math.round(n * 10) / 10;
+function pauseFor(habit, dk) {
+  for (const p of S.pauses) if (p.habit === habit && dk >= p.from && (p.to == null || dk <= p.to)) return p;
+  return null;
+}
+function isFree(dk) { return S.freeDays.indexOf(dk) >= 0; }
+function foodsOn(dk) { const d = S.days[dk]; return d ? d.foods : []; }
+function proteinOn(dk) { return round1(foodsOn(dk).reduce((a, f) => a + (+f.protein || 0), 0)); }
+function sugarOn(dk) { return round1(foodsOn(dk).reduce((a, f) => a + (+f.sugar || 0), 0)); }
+function smallAt() { return Math.ceil(S.settings.proteinGoal * 0.75); }   // 113 g for a 150 g goal
+function weekWorkouts(dk) {
+  return weekDays(dk).filter(d => { const w = S.days[d] && S.days[d].workout; return w && w.kind === 'workout'; }).length;
+}
+/* st: done | small | rest | ok (sugar, day still open) | over | none | paused | free
+   share: fraction of the habit's daily drip share it pays (sugar only pays once the day has closed). */
+function habitState(h, dk) {
+  const day = S.days[dk] || null, today = todayKey();
+  const p = pauseFor(h, dk);
+  if (p) return { st:'paused', logged:true, share:0, pct:0, pause:p };
+  if (h === 'workout') {
+    const w = day && day.workout;
+    if (w && w.kind === 'workout') return { st:'done', logged:true, share:1, pct:1 };
+    if (w && w.kind === 'rest') return { st:'rest', logged:true, share:0, pct:0 };
+    return { st:'none', logged:false, share:0, pct:0 };
+  }
+  if (h === 'protein') {
+    const g = S.settings.proteinGoal, n = proteinOn(dk), logged = foodsOn(dk).length > 0;
+    if (n >= g) return { st:'done', logged, share:1, pct:1, val:n };
+    if (n >= smallAt()) return { st:'small', logged, share:.5, pct:n / g, val:n };
+    return { st:'none', logged, share:0, pct:n / g, val:n };
+  }
+  if (h === 'wind') {
+    const w = day && day.windDown;
+    return w ? { st:'done', logged:true, share:1, pct:1 } : { st:'none', logged:false, share:0, pct:0 };
+  }
+  if (h === 'sugar') {
+    if (isFree(dk)) return { st:'free', logged:true, share:0, pct:0 };
+    const logged = foodsOn(dk).length > 0, n = sugarOn(dk), b = S.settings.sugarBudget;
+    if (!logged) return { st:'none', logged:false, share:0, pct:0, val:0 };
+    if (n > b) return { st:'over', logged:true, share:0, pct:Math.min(1, n / b), val:n };
+    return dk < today ? { st:'done', logged:true, share:1, pct:n / b, val:n } : { st:'ok', logged:true, share:0, pct:n / b, val:n };
+  }
+  return { st:'none', logged:false, share:0, pct:0 };
+}
+function hasData(d) { return !!(d && (d.workout || d.windDown || (d.foods && d.foods.length))); }
+function firstDataDate() {
+  let f = S.startDate || todayKey();
+  for (const k of Object.keys(S.days)) if (k < f && hasData(S.days[k])) f = k;
+  return f;
+}
+/* Calendar class for a day: full | part | miss | fut | '' (before there was any data) */
+function dayLevel(dk) {
+  if (dk > todayKey()) return 'fut';
+  if (dk < firstDataDate()) return '';
+  let counted = 0, good = 0, partial = 0;
+  for (const h of HABITS) {
+    const s = habitState(h, dk);
+    if (s.st === 'paused' || s.st === 'free') continue;
+    counted++;
+    if (s.st === 'done' || s.st === 'rest' || s.st === 'ok') good++;
+    else if (s.st === 'small') partial++;
+  }
+  if (!counted) return 'part';
+  if (good === counted) return 'full';
+  return good + partial > 0 ? 'part' : 'miss';
+}
+
+/* ── Logging actions. Every write goes through canLog (today, or yesterday until noon). ── */
+function afterLog(dk, before) {
+  lastEarnedC = before == null ? 0 : unlockedTotalC() - before;
+  if (S.comeback && !S.comeback.firstLog) {
+    S.comeback.firstLog = dk;
+    const gap = S.comeback.gapDays;
+    setTimeout(() => toast(`Welcome back — that's your comeback after ${gap} days away`), 700);
+  }
+  save(); refresh();
+}
+/* Logging a habit that is paused ends the pause (the log is the resume). */
+function resumeIfPaused(habit, dk) {
+  const p = pauseFor(habit, dk);
+  if (!p || p.to != null) return;
+  if (p.from >= dk) S.pauses = S.pauses.filter(x => x !== p);
+  else p.to = addDays(dk, -1);
+}
+function logWorkout(dk, v) {
+  if (!canLog(dk)) { toast('That day is locked'); return false; }
+  const b0 = unlockedTotalC();
+  resumeIfPaused('workout', dk);
+  dayOf(dk).workout = v.kind === 'rest' ? { kind:'rest', at:Date.now() } : { kind:'workout', what:v.what, len:v.len, hard:v.hard, at:Date.now() };
+  afterLog(dk, b0); return true;
+}
+function clearWorkout(dk) { if (!canLog(dk)) return; dayOf(dk).workout = null; save(); refresh(); }
+function logWind(dk, v) {
+  if (!canLog(dk)) { toast('That day is locked'); return false; }
+  const b0 = unlockedTotalC();
+  resumeIfPaused('wind', dk);
+  dayOf(dk).windDown = { what:v.what.slice(), len:v.len, lights:v.lights, at:Date.now() };
+  afterLog(dk, b0); return true;
+}
+function clearWind(dk) { if (!canLog(dk)) return; dayOf(dk).windDown = null; save(); refresh(); }
+function addFood(dk, f) {
+  if (!canLog(dk)) { toast('That day is locked'); return false; }
+  const protein = round1(+f.protein || 0), sugar = round1(Math.max(0, +f.sugar || 0));
+  if (protein <= 0) { toast('Enter the protein grams'); return false; }
+  const b0 = unlockedTotalC();
+  resumeIfPaused('protein', dk);
+  dayOf(dk).foods.push({ id:uid(), label:String(f.label || 'Manual entry').slice(0, 60), protein, sugar, src:f.src || 'manual', at:Date.now() });
+  afterLog(dk, b0); return true;
+}
+function updateFood(dk, id, patch) {
+  if (!canLog(dk)) { toast('That day is locked'); return false; }
+  const f = foodsOn(dk).find(x => x.id === id); if (!f) return false;
+  if (patch.label != null) f.label = String(patch.label).slice(0, 60) || f.label;
+  if (patch.protein != null) f.protein = round1(Math.max(0, +patch.protein || 0));
+  if (patch.sugar != null) f.sugar = round1(Math.max(0, +patch.sugar || 0));
+  save(); refresh(); return true;
+}
+function deleteFood(dk, id) {
+  if (!canLog(dk)) { toast('That day is locked'); return false; }
+  const d = S.days[dk]; if (!d) return false;
+  d.foods = d.foods.filter(x => x.id !== id);
+  save(); refresh(); return true;
+}
+/* One-tap chips: most-logged foods, using the latest grams you logged for each. */
+function quickChips(max) {
+  const map = {};
+  for (const dk of Object.keys(S.days).sort()) for (const f of S.days[dk].foods) {
+    if (f.imp || /^(manual entry|imported total)$/i.test(f.label)) continue;
+    const k = f.label.trim().toLowerCase();
+    const e = map[k] || (map[k] = { label:f.label, n:0, protein:0, sugar:0 });
+    e.n++; e.label = f.label; e.protein = f.protein; e.sugar = f.sugar || 0;
+  }
+  return Object.values(map).sort((a, b) => b.n - a.n).slice(0, max || 8);
+}
+function isHPLS(f) { return (+f.protein || 0) >= 20 && (+f.sugar || 0) <= 5; }
+
+/* ── Money engine ──
+   Everything is derived from the logs (nothing is stored per-payout), in integer cents at the edges.
+   $100 daily drip: pot ÷ days in month ÷ 4 habits per day, full share when done, half when small.
+   $50 bonus pool: +$2 fully-logged week, +$3 per workout past 3, welcome-back after a 3+ day pause. Capped per month.
+   The other $50 of the $200 stays outside the app. */
+const BONUS = { week:200, extraWorkout:300, wbMin:3, wbCap:500 };
+const KIND_ORDER = { week:0, extra:1, back:2 };
+const SPEND_CATS = ['Cards','LEGO','Eating out','Other'];
+const monthFirst = ym => ym + '-01';
+const monthLast = ym => `${ym}-${pad(dim(ym))}`;
+const startMonth = () => ymOf(S.startDate || todayKey());
+/* Days in this month that can pay: from the launch day (or the 1st) to month end. */
+function payableDays(ym) {
+  const first = monthFirst(ym), last = monthLast(ym);
+  const from = (S.startDate && S.startDate > first) ? S.startDate : first;
+  return from > last ? 0 : diffDays(from, last) + 1;
+}
+function dripFor(ym) {                       // dollars, unrounded
+  let earn = 0;
+  const share = S.settings.drip / dim(ym) / HABITS.length, today = todayKey();
+  for (let d = 1; d <= dim(ym); d++) {
+    const dk = `${ym}-${pad(d)}`;
+    if ((S.startDate && dk < S.startDate) || dk > today) continue;
+    for (const h of HABITS) earn += share * habitState(h, dk).share;
+  }
+  return earn;
+}
+/* The log that counts as "the habit resumed": a real session/entry (a rest day doesn't). */
+function payingLog(h, dk) {
+  const d = S.days[dk]; if (!d) return false;
+  if (h === 'workout') return !!(d.workout && d.workout.kind === 'workout');
+  if (h === 'protein' || h === 'sugar') return d.foods.length > 0;
+  if (h === 'wind') return !!d.windDown;
+  return false;
+}
+/* Welcome-back amount for a pause that ended: day N = pause day number on the day you come back.
+   N<3 pays nothing; N=3 pays $3, then +$1/day to a $5 cap. */
+function welcomeBackC(N) { return N < BONUS.wbMin ? 0 : Math.min(BONUS.wbCap, N * 100); }
+function bonusEvents() {
+  const ev = [], today = todayKey(), start = S.startDate || today;
+  for (let w = weekStart(start); w <= today; w = addDays(w, 7)) {
+    const days = weekDays(w), sun = days[6];
+    const wk = days.filter(dk => dk >= start && dk <= today && S.days[dk] && S.days[dk].workout && S.days[dk].workout.kind === 'workout');
+    wk.forEach((dk, i) => { if (i >= S.settings.workoutWeek) ev.push({ dk, kind:'extra', cents:BONUS.extraWorkout }); });
+    if (sun <= today && days[0] >= start) {          // a fully logged week: every habit, every day, Mon-Sun
+      let all = true, real = 0;
+      for (const dk of days) { for (const h of HABITS) { const s = habitState(h, dk); if (!s.logged) { all = false; break; } if (s.st !== 'paused' && s.st !== 'free') real++; } if (!all) break; }
+      if (all && real > 0) ev.push({ dk:sun, kind:'week', cents:BONUS.week });
+    }
+  }
+  const sickGroups = {};
+  for (const p of S.pauses) {
+    if (p.imp || p.to == null || p.from < start) continue;
+    if (!(PAUSABLE.includes(p.habit) || (p.habit === 'protein' && p.sick))) continue;
+    const R = addDays(p.to, 1), N = diffDays(p.from, R) + 1, cents = welcomeBackC(N);
+    if (!cents) continue;
+    let pay = null;
+    for (let dk = R; dk <= today; dk = addDays(dk, 1)) if (payingLog(p.habit, dk)) { pay = dk; break; }
+    if (!pay) continue;
+    const e = { dk:pay, kind:'back', cents, habit:p.habit, pauseId:p.id };
+    if (p.sickId) { const g = sickGroups[p.sickId]; if (!g || pay < g.dk) sickGroups[p.sickId] = e; }   // one bonus per sick day
+    else ev.push(e);
+  }
+  Object.values(sickGroups).forEach(e => ev.push(e));
+  ev.sort((a, b) => a.dk < b.dk ? -1 : a.dk > b.dk ? 1 : KIND_ORDER[a.kind] - KIND_ORDER[b.kind]);
+  return ev;
+}
+function moneyFor(ym) {
+  const snap = S.months[ym];
+  if (snap && snap.closed) return snap;
+  const pd = payableDays(ym);
+  const dripPotC = Math.round(S.settings.drip * 100 * pd / dim(ym));
+  const poolPotC = Math.round(S.settings.pool * 100 * pd / dim(ym));
+  const dripC = Math.min(dripPotC, Math.round(dripFor(ym) * 100));
+  let run = 0; const events = [];
+  for (const e of bonusEvents()) {
+    if (ymOf(e.dk) !== ym) continue;
+    const paid = Math.max(0, Math.min(e.cents, poolPotC - run));
+    run += paid; events.push({ dk:e.dk, kind:e.kind, cents:e.cents, paidC:paid, habit:e.habit });
+  }
+  const spentC = S.spends.filter(s => ymOf(s.dk) === ym).reduce((a, s) => a + s.cents, 0);
+  const unlockedC = dripC + run, potC = dripPotC + poolPotC;
+  return { ym, dripC, dripPotC, poolC:run, poolPotC, unlockedC, potC, savingsC:Math.max(0, potC - unlockedC), spentC, events, closed:false };
+}
+/* A month closes once its last day is locked (after noon on the 1st). Its numbers are frozen and the
+   unearned part is recorded as that month's savings (not spendable in the app). */
+function monthLocked(ym) { const last = monthLast(ym); return last < todayKey() && !canLog(last); }
+function closeMonths() {
+  let changed = false; const cur = ymOf(todayKey());
+  for (let ym = startMonth(); ym < cur; ym = addMonths(ym, 1)) {
+    if (S.months[ym] && S.months[ym].closed) continue;
+    if (!monthLocked(ym)) continue;
+    S.months[ym] = Object.assign({}, moneyFor(ym), { closed:true, closedOn:todayKey() });
+    changed = true;
+  }
+  if (changed) save();
+}
+function netBefore(ym) {                       // unlocked − spent over every earlier month (unspent earnings carry over)
+  let t = 0;
+  for (let m = startMonth(); m < ym; m = addMonths(m, 1)) { const x = moneyFor(m); t += x.unlockedC - x.spentC; }
+  return t;
+}
+function unlockedTotalC() {
+  let t = 0; const cur = ymOf(todayKey());
+  for (let m = startMonth(); m <= cur; m = addMonths(m, 1)) t += moneyFor(m).unlockedC;
+  return t;
+}
+function savingsTotalC() { return Object.values(S.months).filter(m => m.closed).reduce((a, m) => a + m.savingsC, 0); }
+function moneyNow() {
+  const ym = ymOf(todayKey()), m = moneyFor(ym), carryC = netBefore(ym);
+  return { balanceC:carryC + m.unlockedC - m.spentC, unlockedC:m.unlockedC, spentC:m.spentC, carryC,
+    dripC:m.dripC, dripPotC:m.dripPotC, bonusC:m.poolC, poolC:m.poolPotC, potC:m.potC };
+}
+function balanceC() { return moneyNow().balanceC; }
+function addSpend(cents, cat) {
+  cents = Math.round(cents);
+  if (!(cents > 0)) { toast('Enter an amount'); return false; }
+  if (SPEND_CATS.indexOf(cat) < 0) { toast('Pick a category'); return false; }
+  const bal = balanceC();
+  if (cents > bal) { toast(`Only ${money(Math.max(0, bal))} to spend`); return false; }
+  S.spends.push({ id:uid(), dk:todayKey(), cents, cat });
+  save(); refresh(); return true;
+}
+function deleteSpend(id) {
+  const s = S.spends.find(x => x.id === id); if (!s) return false;
+  if (ymOf(s.dk) !== ymOf(todayKey())) { toast('Past months are closed'); return false; }
+  S.spends = S.spends.filter(x => x !== s); save(); refresh(); return true;
+}
+let lastEarnedC = 0;
+function earnedTxt() { return lastEarnedC > 0 ? ` · +${money(lastEarnedC)}` : ''; }
+
+/*@@ENGINE2*/
+/* ── UI helpers ── */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = c => (c < 0 ? '-$' : '$') + (Math.abs(c) / 100).toFixed(2);
+let _toastT = null;
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(_toastT); _toastT = setTimeout(() => t.classList.remove('show'), 2600);
+}
+const ICON_CHART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>';
+const ICON_CHECK = '<svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg>';
+function ringSVG(pct, size, stroke, color, track) {
+  const r = (size - stroke) / 2, c = 2 * Math.PI * r, p = Math.max(0, Math.min(1, pct)), m = size / 2;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${m}" cy="${m}" r="${r}" fill="none" stroke="${track || '#E8E8ED'}" stroke-width="${stroke}"/><circle cx="${m}" cy="${m}" r="${r}" fill="none" stroke="${color || '#1F5F3A'}" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${(c * p).toFixed(2)} ${c.toFixed(2)}" transform="rotate(-90 ${m} ${m})"/></svg>`;
+}
+
+/* ── Pager: Weight (left) · Today (right). Swipe right on Today, or tap the dots. ── */
+let curPage = 1;
+function setPage(i) { curPage = i; const p = $('pager'); if (p) p.style.transform = `translateX(${i === 1 ? -50 : 0}%)`; renderDots(); }
+function renderDots() {
+  const d = $('dots'); if (!d) return;
+  d.innerHTML = `<button class="${curPage === 0 ? 'on' : ''}" onclick="setPage(0)" aria-label="Weight"><i></i></button><button class="${curPage === 1 ? 'on' : ''}" onclick="setPage(1)" aria-label="Today"><i></i></button>`;
+}
+let _tx = 0, _ty = 0;
+document.addEventListener('touchstart', e => { const t = e.touches[0]; _tx = t.clientX; _ty = t.clientY; }, { passive: true });
+document.addEventListener('touchend', e => {
+  if (document.querySelector && document.querySelector('.over,.sheet')) return;
+  const t = e.changedTouches[0], dx = t.clientX - _tx, dy = t.clientY - _ty;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+    if (dx > 0 && curPage === 1) setPage(0); else if (dx < 0 && curPage === 0) setPage(1);
+  }
+}, { passive: true });
+
+/* ── Today ── */
+function weekWinLabels() { const days = weekDays(todayKey()); return S.wins.filter(w => days.includes(w.dk)).map(w => w.label); }
+function pauseDayN(p, dk) { return diffDays(p.from, dk) + 1; }
+function subFor(id, s, dk) {
+  if (s.st === 'paused') return `Paused · day ${pauseDayN(s.pause, dk)}${s.pause.sick ? ' · sick day' : ''}${wbHint(id, s, dk)}`;
+  const d = S.days[dk] || {};
+  if (id === 'workout') return `${weekWorkouts(dk)} of ${S.settings.workoutWeek} this week${s.st === 'rest' ? ' · rest day today' : ''}`;
+  if (id === 'protein') return `${s.val || 0} / ${S.settings.proteinGoal} g${s.st === 'small' ? ' · small' : ''}`;
+  if (id === 'wind') return d.windDown ? `${d.windDown.what.join(', ')} · ${d.windDown.len}` : 'Not yet · 10 min counts';
+  if (id === 'sugar') {
+    const b = S.settings.sugarBudget;
+    if (s.st === 'free') return 'Free day · budget off';
+    if (s.st === 'none') return `${b} g budget · nothing logged`;
+    if (s.st === 'over') return `${round1(s.val - b)} g over budget`;
+    return `${round1(b - s.val)} g left today`;
+  }
+  return '';
+}
+function wbHint() { return ''; }   /* welcome-back card text: filled in by step 5 */
+function calendarCells(ym) {
+  const t = todayKey(), cells = [];
+  for (let d = 1; d <= dim(ym); d++) {
+    const k = `${ym}-${pad(d)}`, lvl = dayLevel(k);
+    let cls = lvl;
+    if (k === t) cls = (lvl === 'miss' || lvl === '' ? '' : lvl) + ' today';
+    if (isFree(k)) cls += ' fr';
+    cells.push({ n: d, cls });
+  }
+  return cells;
+}
+function todayModel() {
+  const dk = todayKey(), ym = ymOf(dk), m = moneyNow();
+  const [y, mo] = ym.split('-').map(Number);
+  const habits = HABITS.map(id => {
+    const s = habitState(id, dk);
+    return { id, st: s.st, pct: s.pct, paused: s.st === 'paused', sub: subFor(id, s, dk),
+      pausable: PAUSABLE.includes(id) || (id === 'protein' && s.st === 'paused') };
+  });
+  return Object.assign({}, m, {
+    habits, monthLabel: new Date(y, mo - 1, 1).toLocaleDateString('en-US', { month: 'long' }),
+    monthStartDow: (new Date(y, mo - 1, 1).getDay() + 6) % 7, cells: calendarCells(ym), wins: weekWinLabels(),
+  });
+}
+function statusHTML(h) {
+  if (h.paused) return `<div class="st"></div>`;
+  if (h.st === 'done') return `<div class="st"><div class="chk">${ICON_CHECK}</div></div>`;
+  if (h.st === 'free') return `<div class="st"><span class="small muted">free</span></div>`;
+  if (h.st === 'rest') return `<div class="st"><div class="chk" style="background:var(--g2)">${ICON_CHECK}</div></div>`;
+  const col = h.st === 'over' ? '#B3402F' : (h.st === 'small' || h.st === 'ok') ? '#8DBE9C' : '#1F5F3A';
+  return `<div class="st">${ringSVG(h.pct || 0, 28, 3.5, col)}</div>`;
+}
+function habitRowHTML(h) {
+  const meta = HABIT_META[h.id];
+  const pz = h.pausable ? `<span class="pz" role="button" aria-label="${h.paused ? 'Resume' : 'Pause'} ${meta.name}" onclick="event.stopPropagation();onPauseTap('${h.id}')">${h.paused ? 'Resume' : 'Pause'}</span>` : '';
+  return `<div class="hrow ${h.paused ? 'paused' : ''}" onclick="onHabitTap('${h.id}')" role="button">
+    <div class="ic">${meta.icon}</div>
+    <div class="mid"><div class="nm">${meta.name}</div><div class="sb">${h.sub}</div></div>
+    ${pz}${statusHTML(h)}</div>`;
+}
+function calHTML(m) {
+  const wd = ['M','T','W','T','F','S','S'].map(x => `<div class="wd">${x}</div>`).join('');
+  const blanks = Array.from({ length: m.monthStartDow }, () => '<div></div>').join('');
+  const cells = m.cells.map(c => `<div class="c ${c.cls}">${c.n}</div>`).join('');
+  const legend = `<span><span class="lg"><i style="background:#1F5F3A"></i>full</span><span class="lg"><i style="background:#8DBE9C"></i>partial</span><span class="lg"><i style="background:#E8E8ED"></i>missed</span></span>`;
+  return `<div class="cal"><div class="ch"><b>${m.monthLabel}</b>${legend}</div><div class="cgrid">${wd}${blanks}${cells}</div></div>`;
+}
+function todayHTML() {
+  const m = todayModel();
+  const winsHTML = m.wins.length
+    ? `<b>Little wins · this week</b><div class="chips">${m.wins.map(w => `<span class="w">${esc(w)}</span>`).join('')}</div>`
+    : `<b>Little wins · this week</b><span>none yet</span>`;
+  return `<section class="page today">
+    <header class="top"><h1>GleefulHabit <span>2.0</span></h1><button class="icon-btn" onclick="openHistory()" aria-label="History">${ICON_CHART}</button></header>
+    <div class="balance"><div class="big num">${money(m.balanceC)}</div><div class="lbl">to spend</div>
+      <div class="sub">${money(m.unlockedC)} of $150 unlocked · ${money(m.spentC)} spent</div></div>
+    <div class="bars">
+      <div class="bar"><div class="bl"><span>Daily</span><b class="num">${money(m.dripC)} / $100</b></div><div class="track"><i style="width:${Math.min(100, m.dripC / m.dripPotC * 100)}%"></i></div></div>
+      <div class="bar bonus"><div class="bl"><span>Bonus</span><b class="num">${money(m.bonusC)} / $50</b></div><div class="track"><i style="width:${Math.min(100, m.bonusC / m.poolC * 100)}%"></i></div></div>
+    </div>
+    <div class="actions"><button class="btn" onclick="openSpend()">Spend</button><button class="btn" onclick="openWin()">+ Win</button><button class="btn" onclick="onSickDay()">Sick day</button></div>
+    <div class="habits">${m.habits.map(habitRowHTML).join('')}</div>
+    ${calHTML(m)}
+    <div class="winsrow">${winsHTML}</div>
+  </section>`;
+}
+function weightHTML() {
+  return `<section class="page weight"><header class="top"><h1>Weight</h1></header><p class="muted">Weight page arrives in step 6.</p></section>`;
+}
+let OV = null;   // which full-screen page is open: 'protein' | 'history' | null
+function render() {
+  $('app').innerHTML = `<div id="pagerWrap"><div id="pager" style="transform:translateX(${curPage === 1 ? -50 : 0}%)">${weightHTML()}${todayHTML()}</div></div><div class="dots" id="dots"></div>`;
+  renderDots();
+}
+function refresh() {
+  render();
+  if (OV === 'protein') renderProteinOver();
+  if (OV === 'history' && typeof renderHistoryOver === 'function') renderHistoryOver();
+}
+function onHabitTap(id) {
+  const s = habitState(id, todayKey());
+  if (s.st === 'paused') return onPauseTap(id);
+  if (id === 'workout') return openWorkoutSheet();
+  if (id === 'wind') return openWindSheet();
+  return openProtein();
+}
+
+/* ── Sheets ── */
+let SH = null;
+function openSheet(inner, inPlace) {
+  const root = $('sheetRoot');
+  const sh = inPlace && root.querySelector ? root.querySelector('.sheet') : null;
+  if (sh) { sh.innerHTML = `<div class="grab"></div>${inner}`; return; }
+  root.innerHTML = `<div class="scrim" onclick="closeSheet()"></div><div class="sheet"><div class="grab"></div>${inner}</div>`;
+}
+function closeSheet() { SH = null; $('sheetRoot').innerHTML = ''; }
+function daySeg(dk, fn) {
+  const t = todayKey(), y = addDays(t, -1), yok = canLog(y);
+  return `<div class="seg"><button class="${dk === t ? 'on' : ''}" onclick="${fn}('${t}')">Today</button><button class="${dk === y ? 'on' : ''}" ${yok ? '' : 'disabled'} onclick="${fn}('${y}')">Yesterday${yok ? '' : ' · locked'}</button></div>`;
+}
+function chipsHTML(opts, sel, fn, multi) {
+  return `<div class="chips">${opts.map((o, i) => {
+    const on = multi ? sel.includes(o) : sel === o;
+    return `<button class="chip ${on ? 'on' : ''}" onclick="${fn}(${i})">${esc(o)}</button>`;
+  }).join('')}</div>`;
+}
+
+const WORKOUT_WHAT = ['Circuit','Kettlebell','Bike','Slack board','Yoga','Walk/Run'];
+const WORKOUT_LEN = ['<20m','20–40','40–60','60+'];
+const WORKOUT_HARD = ['Easy','Solid','Hard'];
+function openWorkoutSheet(dk) {
+  dk = dk || todayKey();
+  const w = (S.days[dk] || {}).workout;
+  SH = { kind:'workout', dk, what:w && w.kind === 'workout' ? w.what : null, len:w && w.len || null, hard:w && w.hard || null, has:!!w };
+  renderWorkoutSheet(false);
+}
+function renderWorkoutSheet(inPlace) {
+  const s = SH, ready = s.what && s.len && s.hard;
+  openSheet(`<h2>Log a workout</h2>
+    ${daySeg(s.dk, 'wkDay')}
+    <div class="q">What</div>${chipsHTML(WORKOUT_WHAT, s.what, 'wkPick_what')}
+    <div class="q">How long</div>${chipsHTML(WORKOUT_LEN, s.len, 'wkPick_len')}
+    <div class="q">Strenuous?</div>${chipsHTML(WORKOUT_HARD, s.hard, 'wkPick_hard')}
+    <button class="btn primary" ${ready ? '' : 'disabled'} onclick="wkSave()">Log workout</button>
+    <button class="btn quiet" onclick="wkRest()">Rest day <span class="small" style="font-weight:500">· logs, doesn't pay</span></button>
+    ${s.has ? `<button class="btn danger" onclick="wkRemove()">Remove this log</button>` : ''}`, inPlace);
+}
+function wkDay(dk) { openWorkoutSheet(dk); }
+function wkPick_what(i) { SH.what = WORKOUT_WHAT[i]; renderWorkoutSheet(true); }
+function wkPick_len(i) { SH.len = WORKOUT_LEN[i]; renderWorkoutSheet(true); }
+function wkPick_hard(i) { SH.hard = WORKOUT_HARD[i]; renderWorkoutSheet(true); }
+function wkSave() { if (SH.what && SH.len && SH.hard && logWorkout(SH.dk, { kind:'workout', what:SH.what, len:SH.len, hard:SH.hard })) { closeSheet(); toast('Workout logged' + earnedTxt()); } }
+function wkRest() { if (logWorkout(SH.dk, { kind:'rest' })) { closeSheet(); toast('Rest day logged'); } }
+function wkRemove() { clearWorkout(SH.dk); closeSheet(); }
+
+const WIND_WHAT = ['Reading','Phone puzzle','Meditation','Plan tomorrow','LEGO','Puzzle with wife'];
+const WIND_LEN = ['10m','20m','30m','45m+'];
+const WIND_LIGHTS = ['9:30','10:00','10:30','Later'];
+function openWindSheet(dk) {
+  dk = dk || todayKey();
+  const w = (S.days[dk] || {}).windDown;
+  SH = { kind:'wind', dk, what:w ? w.what.slice() : [], len:w ? w.len : null, lights:w ? w.lights : null, has:!!w };
+  renderWindSheet(false);
+}
+function renderWindSheet(inPlace) {
+  const s = SH, ready = s.what.length && s.len && s.lights;
+  openSheet(`<h2>Log a wind-down</h2>
+    ${daySeg(s.dk, 'wdDay')}
+    <div class="q">What <span style="text-transform:none;font-weight:500">· pick any</span></div>${chipsHTML(WIND_WHAT, s.what, 'wdPick_what', true)}
+    <p class="hint" style="margin-top:6px">Phone puzzle = one game, no scrolling.</p>
+    <div class="q">How long</div>${chipsHTML(WIND_LEN, s.len, 'wdPick_len')}
+    <div class="q">Lights out by</div>${chipsHTML(WIND_LIGHTS, s.lights, 'wdPick_lights')}
+    <button class="btn primary" ${ready ? '' : 'disabled'} onclick="wdSave()">Log wind-down</button>
+    ${s.has ? `<button class="btn danger" onclick="wdRemove()">Remove this log</button>` : ''}`, inPlace);
+}
+function wdDay(dk) { openWindSheet(dk); }
+function wdPick_what(i) { const v = WIND_WHAT[i], a = SH.what, k = a.indexOf(v); if (k >= 0) a.splice(k, 1); else a.push(v); renderWindSheet(true); }
+function wdPick_len(i) { SH.len = WIND_LEN[i]; renderWindSheet(true); }
+function wdPick_lights(i) { SH.lights = WIND_LIGHTS[i]; renderWindSheet(true); }
+function wdSave() { if (SH.what.length && SH.len && SH.lights && logWind(SH.dk, { what:SH.what, len:SH.len, lights:SH.lights })) { closeSheet(); toast('Wind-down logged' + earnedTxt()); } }
+function wdRemove() { clearWind(SH.dk); closeSheet(); }
+
+/* ── Protein page ── */
+let protDay = null, aiMode = null, aiPhoto = null, keyOpen = false;
+function openProtein() { OV = 'protein'; protDay = todayKey(); aiMode = null; aiPhoto = null; renderProteinOver(); }
+function closeOver() { OV = null; $('overRoot').innerHTML = ''; }
+function protDaySet(dk) { protDay = dk; renderProteinOver(); }
+function foodRowHTML(f) {
+  const tag = isHPLS(f) ? `<span class="tagp">High protein, low sugar</span>` : '';
+  return `<div class="frow"><div class="fa"><button class="fab e" onclick="openFoodEdit('${f.id}')">Edit</button><button class="fab d" onclick="delFood('${f.id}')">Delete</button></div>
+    <div class="fc" ontouchstart="fsStart(event)" ontouchmove="fsMove(event)" ontouchend="fsEnd(event,this)" onclick="fsTap(this,'${f.id}')">
+      <div class="fl"><div class="fn">${esc(f.label)}</div>${tag}</div>
+      <div class="fv num"><b>${f.protein} g</b> protein<span> · ${f.sugar || 0} g added sugar</span></div></div></div>`;
+}
+let _fsx = 0, _fsMoved = false;
+function fsStart(e) { _fsx = e.touches[0].clientX; _fsMoved = false; }
+function fsMove(e) { if (Math.abs(e.touches[0].clientX - _fsx) > 8) _fsMoved = true; }
+function fsEnd(e, el) { const dx = e.changedTouches[0].clientX - _fsx; if (dx < -50) el.parentNode.classList.add('open'); else if (dx > 30) el.parentNode.classList.remove('open'); }
+function fsTap(el, id) { if (_fsMoved) { _fsMoved = false; return; } if (el.parentNode.classList.contains('open')) { el.parentNode.classList.remove('open'); return; } openFoodEdit(id); }
+function keyCardHTML() {
+  const has = !!localStorage.getItem('gh_ai_key');
+  return `<div class="card"><button class="keyhead" onclick="toggleKey()"><b>AI key</b><span class="muted small">${has ? 'Set' : 'Not set'} ${keyOpen ? '▲' : '▼'}</span></button>${keyOpen ? `
+    <input class="field" id="keyInput" type="password" placeholder="Anthropic API key" autocomplete="off" style="margin-top:8px">
+    <button class="btn" onclick="saveKey()">Save key</button>${has ? `<button class="btn quiet" onclick="clearKey()">Remove key</button>` : ''}
+    <p class="small muted" style="margin:10px 0 0">Stays on this device only — never in backups. Uses your own Anthropic billing.</p>` : ''}</div>`;
+}
+function toggleKey() { keyOpen = !keyOpen; renderProteinOver(); }
+function saveKey() { const v = ($('keyInput').value || '').trim(); if (!v) return; localStorage.setItem('gh_ai_key', v); keyOpen = false; renderProteinOver(); toast('Key saved'); }
+function clearKey() { localStorage.removeItem('gh_ai_key'); renderProteinOver(); toast('Key removed'); }
+function proteinOverHTML() {
+  const dk = protDay, g = S.settings.proteinGoal, n = proteinOn(dk), st = habitState('protein', dk);
+  const sg = sugarOn(dk), b = S.settings.sugarBudget, can = canLog(dk), foods = foodsOn(dk);
+  const col = n >= g ? '#1F5F3A' : n >= smallAt() ? '#8DBE9C' : '#1F5F3A';
+  const chips = quickChips(8);
+  const note = n >= g ? 'Goal reached' : n >= smallAt() ? `Small win · ${round1(g - n)} g to full` : `Small at ${smallAt()} g · full at ${g} g`;
+  return `<div class="bar2"><button class="back" onclick="closeOver()">‹ Today</button><h2>Protein</h2></div>
+  <div class="body">
+    ${daySeg(dk, 'protDaySet')}
+    ${st.st === 'paused' ? `<div class="card" style="margin-top:12px"><b>Protein is paused</b><div class="small muted">Sick day. Log anything and it resumes.</div></div>` : ''}
+    <div style="display:flex;flex-direction:column;align-items:center;margin:14px 0 6px;position:relative">
+      <div style="position:relative;width:176px;height:176px">${ringSVG(Math.min(1, n / g), 176, 15, col, '#E8E8ED')}
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div class="num" style="font-size:46px;font-weight:700;color:var(--green);line-height:1">${n}</div><div class="muted small">of ${g} g</div></div></div>
+      <div class="small muted" style="margin-top:6px">${note}</div>
+    </div>
+    <div class="card" style="padding:10px 14px"><div style="display:flex;justify-content:space-between" class="small"><b>Added sugar</b><span class="num" style="color:${sg > b ? 'var(--bad)' : 'var(--muted)'}">${sg} / ${b} g</span></div>
+      <div class="track" style="margin-top:6px"><i style="width:${Math.min(100, sg / b * 100)}%;background:${sg > b ? 'var(--bad)' : 'var(--g2)'}"></i></div></div>
+    ${can ? `
+    <div class="row2">
+      <label class="btn primary" style="margin:0">Snap meal<input type="file" accept="image/*" id="snapFile" style="display:none" onchange="onSnap(event)"></label>
+      <button class="btn primary" style="margin:0" onclick="onSayIt()">Say it</button>
+    </div>
+    ${aiMode ? `<div class="card" style="margin-top:10px">
+      ${aiPhoto ? `<img src="${aiPhoto.url}" alt="" style="width:100%;max-height:150px;object-fit:cover;border-radius:12px;margin-bottom:8px">` : ''}
+      <textarea class="field" id="aiText" placeholder="Say or type what you ate. Tip: tap the mic on your keyboard to dictate."></textarea>
+      <button class="btn primary" id="aiBtn" onclick="analyzeMeal()">Estimate protein + sugar</button>
+      <div class="small muted" id="aiStatus" style="margin-top:8px;min-height:16px"></div></div>` : ''}
+    <div class="q" style="font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 7px">Add</div>
+    ${chips.length ? `<div class="chips" style="margin-bottom:10px">${chips.map((c, i) => `<button class="chip sm" onclick="quickAdd(${i})">${esc(c.label)} · ${c.protein}g</button>`).join('')}</div>` : ''}
+    <input class="field" id="fLabel" placeholder="What was it? (optional)" style="margin-bottom:8px">
+    <div class="row2"><input class="field num" id="fProt" type="number" inputmode="decimal" placeholder="Protein g"><input class="field num" id="fSugar" type="number" inputmode="decimal" placeholder="Added sugar g"></div>
+    <button class="btn primary" onclick="manualAdd()">Add</button>` : `<p class="muted small" style="text-align:center">This day is locked.</p>`}
+    <div class="q" style="font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:18px 0 6px">Food ${dk === todayKey() ? 'today' : 'yesterday'}</div>
+    ${foods.length ? foods.map(foodRowHTML).join('') : `<p class="muted small">Nothing logged yet.</p>`}
+    <div style="height:14px"></div>${keyCardHTML()}
+  </div>`;
+}
+function renderProteinOver() { $('overRoot').innerHTML = `<div class="over">${proteinOverHTML()}</div>`; }
+function quickAdd(i) { const c = quickChips(8)[i]; if (c && addFood(protDay, { label:c.label, protein:c.protein, sugar:c.sugar, src:'chip' })) toast(`+${c.protein} g · ${c.label}${earnedTxt()}`); }
+function manualAdd() {
+  const p = parseFloat($('fProt').value), sg = parseFloat($('fSugar').value) || 0;
+  if (!(p > 0)) { toast('Enter the protein grams'); return; }
+  if (addFood(protDay, { label:$('fLabel').value.trim() || 'Manual entry', protein:p, sugar:sg, src:'manual' })) toast(`+${p} g protein${earnedTxt()}`);
+}
+function delFood(id) { if (deleteFood(protDay, id)) toast('Entry deleted'); }
+function openFoodEdit(id) {
+  const f = foodsOn(protDay).find(x => x.id === id); if (!f) return;
+  SH = { kind:'food', id };
+  openSheet(`<h2>Edit entry</h2>
+    <div class="q">Name</div><input class="field" id="eLabel" value="${esc(f.label)}">
+    <div class="row2"><div><div class="q">Protein g</div><input class="field num" id="eProt" type="number" inputmode="decimal" value="${f.protein}"></div>
+    <div><div class="q">Added sugar g</div><input class="field num" id="eSugar" type="number" inputmode="decimal" value="${f.sugar || 0}"></div></div>
+    <button class="btn primary" onclick="saveFoodEdit()">Save</button>
+    <button class="btn danger" onclick="delFoodFromSheet()">Delete entry</button>`);
+}
+function saveFoodEdit() {
+  const p = parseFloat($('eProt').value);
+  if (!(p > 0)) { toast('Protein must be above 0'); return; }
+  if (updateFood(protDay, SH.id, { label:$('eLabel').value.trim(), protein:p, sugar:parseFloat($('eSugar').value) || 0 })) { closeSheet(); toast('Saved'); }
+}
+function delFoodFromSheet() { const id = SH.id; closeSheet(); delFood(id); }
+
+/* AI meal estimate: photo and/or description -> Claude Haiku with the user's own key.
+   It only fills the fields for review; it never adds anything on its own. */
+function onSayIt() { aiMode = 'say'; renderProteinOver(); setTimeout(() => { const t = $('aiText'); if (t) t.focus(); }, 60); }
+function fileToJpeg(file, max) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onerror = reject;
+    fr.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const sc = Math.min(1, (max || 1280) / Math.max(img.width, img.height));
+        const c = document.createElement('canvas'); c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        const url = c.toDataURL('image/jpeg', .82);
+        resolve({ b64:url.split(',')[1], type:'image/jpeg', url });
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+async function onSnap(ev) {
+  const file = ev.target.files && ev.target.files[0]; if (!file) return;
+  try { aiPhoto = await fileToJpeg(file, 1280); aiMode = 'snap'; renderProteinOver(); }
+  catch (e) { toast("Couldn't read that photo"); }
+}
+const AI_SYSTEM = 'You are a nutrition estimator inside a habit tracking app. Given a text description and/or photo of a food or meal, estimate its protein in grams and its ADDED sugar in grams (the FDA nutrition-label "Added Sugars" line: sugar or syrup added during processing, NOT total sugars; naturally occurring sugar such as lactose in plain milk or yogurt and fructose in whole fruit counts as 0 unless the product is also sweetened). Respond ONLY with a JSON object, no markdown fences, no other text: {"food":"short name","grams_protein":number,"added_sugar_g":number,"confidence":"low"|"medium"|"high"}. If several items are shown, sum them and name the meal generically.';
+async function analyzeMeal() {
+  const key = localStorage.getItem('gh_ai_key'), st = $('aiStatus'), btn = $('aiBtn');
+  if (!key) { st.textContent = 'Add your Anthropic API key below first.'; return; }
+  const desc = ($('aiText').value || '').trim();
+  if (!desc && !aiPhoto) { st.textContent = 'Say or type what you ate, or snap a photo first.'; return; }
+  btn.disabled = true; st.textContent = 'Estimating…';
+  try {
+    const content = [];
+    if (aiPhoto) content.push({ type:'image', source:{ type:'base64', media_type:aiPhoto.type, data:aiPhoto.b64 } });
+    content.push({ type:'text', text:desc ? `Food description: ${desc}` : 'Estimate the protein and added sugar of the food in this photo.' });
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{ 'content-type':'application/json', 'x-api-key':key, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+      body:JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:300, system:AI_SYSTEM, messages:[{ role:'user', content }] }),
+    });
+    if (!resp.ok) { st.textContent = resp.status === 401 ? 'API key rejected — check it below.' : `Request failed (${resp.status}). Try again.`; btn.disabled = false; return; }
+    const data = await resp.json();
+    const block = (data.content || []).find(b => b.type === 'text');
+    if (!block) { st.textContent = 'No answer came back — try again.'; btn.disabled = false; return; }
+    let parsed; try { parsed = JSON.parse(block.text.replace(/```json|```/g, '').trim()); } catch (e) { st.textContent = "Couldn't read that estimate — try rephrasing."; btn.disabled = false; return; }
+    const prot = round1(+parsed.grams_protein || 0);
+    if (!(prot > 0)) { st.textContent = "Couldn't estimate protein for that — add more detail."; btn.disabled = false; return; }
+    $('fLabel').value = String(parsed.food || '').slice(0, 60);
+    $('fProt').value = prot;
+    $('fSugar').value = round1(Math.max(0, +parsed.added_sugar_g || 0));
+    st.textContent = `Estimate (${parsed.confidence || 'medium'} confidence). Check the numbers below, then tap Add.`;
+    btn.disabled = false;
+  } catch (e) {
+    st.textContent = 'Network problem — check your connection and try again.'; btn.disabled = false;
+  }
+}
+
+/* Stubs filled in by later steps. */
+function openHistory() { toast('History: step 6'); }
+/* ── Spend ── */
+function openSpend() { SH = { kind:'spend', cat:null }; renderSpendSheet(false); }
+function renderSpendSheet(inPlace) {
+  const bal = Math.max(0, balanceC()), keep = $('spAmt') ? $('spAmt').value : '';
+  openSheet(`<h2>Spend</h2><p class="hint"><b class="num" style="color:var(--green)">${money(bal)}</b> to spend</p>
+    <div class="q">Amount</div><input class="field num" id="spAmt" type="number" inputmode="decimal" placeholder="$0.00" value="${esc(keep)}">
+    <div class="q">What for</div>${chipsHTML(SPEND_CATS, SH.cat, 'spPick')}
+    <button class="btn primary" onclick="spSave()">Spend it</button>
+    <p class="small muted" style="margin:12px 0 0">The other $50 a month stays outside the app — it isn't tracked here.</p>`, inPlace);
+}
+function spPick(i) { SH.cat = SPEND_CATS[i]; renderSpendSheet(true); }
+function spSave() {
+  const amt = parseFloat($('spAmt').value);
+  if (addSpend(Math.round(amt * 100), SH.cat)) { const c = SH.cat; closeSheet(); toast(`Spent ${money(Math.round(amt * 100))} on ${c}`); }
+}
+function openWin() { toast('+ Win: step 6'); }
+function onSickDay() { toast('Sick day: step 5'); }
+function onPauseTap() { toast('Pause: step 5'); }
+
+/*@@INIT*/
+render();
+</script>
+</body>
+</html>
