@@ -74,6 +74,14 @@ This is a **real deployed static site**, not a Claude Artifacts preview — so A
 - The user's own Anthropic Console billing — this is pay-as-you-go API usage, unrelated to any Claude.ai/Pro subscription.
 - Always handle `fetch` failures (network errors, non-2xx status, malformed/non-JSON model output) gracefully with a clear inline status message — never let a failed AI call throw or silently do nothing.
 
+## GleefulHabit 2.0 (`v2/index.html`) — a separate, new app
+Rebuilt from `v2/SPEC-2.0.md`. v1 (root `index.html`) is untouched and stays live. Same hard constraints (single file, no backend, localStorage, `APP_VERSION` bump on every deploy), but **different state**:
+- Saves to its own key **`gh2`** (`schema: 2`), never reads-and-writes v1's `habitflow`. v1 history is brought over once, only if the user says yes (`importV1`); XP/packs/points are deliberately left behind and money starts at $0.
+- **Money is derived, not stored**: `moneyFor(ym)` recomputes drip + bonus pool from the logs. A month is frozen into `S.months[ym]` (with its savings) only once its last day is locked (`closeMonths`). Don't add per-payout ledgers.
+- Rules decided with the user beyond the spec: Less sugar only counts on days with food logged and pays when the day closes; welcome-back amount = pause-day number you come back on (N<3 pays 0, then $N capped at $5) and is paid on the first real log (a rest day doesn't count); a Sick day pays one welcome-back, not one per habit; free days must be tomorrow or later; the launch month is prorated from `S.startDate`; unspent earnings carry into the next month's balance; weight and wins never pay; no reminders (dropped).
+- New fields go in `blankState()` and `migrateState()` (shared by load and backup import).
+- Tests: `node v2/tests/harness.js v2/index.html v2/tests/test_<name>.js` (DOM-stub; the test code is eval'd in the same call as the app script). Real-browser pass: serve the repo (`python3 -m http.server 9001`) and run `node v2/tests/e2e.js`. Today must never scroll at 390×844 (and 390×760, the real home-screen height); every tap target ≥ 44px.
+
 ## Deploy workflow
 Historically: design/discuss in claude.ai chat, then deploy via Claude Code or GitHub's web editor — this file exists specifically to collapse that into one step by giving Claude Code on the Web (or Remote Control) the same context a chat conversation would have had. When finishing a change:
 1. Bump `APP_VERSION`.
