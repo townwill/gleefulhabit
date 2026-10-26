@@ -227,7 +227,7 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 const SCHEMA = 2;
 const STORE_KEY = 'gh2';
 const V1_KEY = 'habitflow';
-const APP_VERSION = '2026-10-26.2101';
+const APP_VERSION = '2026-10-26.2131';
 const HABITS = ['workout','protein','wind','sugar'];
 const HABIT_META = {
   workout:{name:'Workout',icon:'🏋️'},
@@ -929,11 +929,14 @@ function nutritionGoals() {
 /* Per-meal bands are the table in the spec at the default goals, scaled proportionally when a goal is edited
    (computed every time, never stored). g = green edge, y = yellow edge. */
 const NUTRI_DEFAULT = { protein:{ goal:150, g:35, y:20 }, sugar:{ goal:25, g:8, y:15 }, fiber:{ goal:30, g:8, y:4 }, satFat:{ goal:18, g:5, y:9 } };
-function mealThresholds(goals) {
+/* A snack is judged as half a meal (protein green at 18 g, not 35). Only Meal ideas knows it is a snack (kind:'Snack'); Check a meal can't tell. */
+const mealShare = m => m && m.kind === 'Snack' ? 0.5 : 1;
+function mealThresholds(goals, share) {
+  share = share || 1;
   const t = {};
   for (const k of Object.keys(NUTRI_DEFAULT)) {
     const d = NUTRI_DEFAULT[k], f = (+(goals || nutritionGoals())[k] || d.goal) / d.goal;
-    let g = Math.max(1, Math.round(d.g * f)), y = Math.max(1, Math.round(d.y * f));
+    let g = Math.max(1, Math.round(d.g * f * share)), y = Math.max(1, Math.round(d.y * f * share));
     if (k === 'protein' || k === 'fiber') y = Math.min(y, g - 1); else y = Math.max(y, g + 1);
     t[k] = { g, y };
   }
@@ -945,7 +948,7 @@ function readingLevel(k, v, t) {
   return v <= t[k].g ? 'g' : v <= t[k].y ? 'y' : 'r';
 }
 function mealLevels(m, goals) {
-  const t = mealThresholds(goals);
+  const t = mealThresholds(goals, mealShare(m));
   return { protein:readingLevel('protein', m.protein_g, t), sugar:readingLevel('sugar', m.added_sugar_g, t), fiber:readingLevel('fiber', m.fiber_g, t), satFat:readingLevel('satFat', m.sat_fat_g, t) };
 }
 /* Red if sat fat or added sugar is red. Green if all four green, or three green and one yellow. Otherwise yellow. */
@@ -1140,7 +1143,7 @@ function groceryText() {
 const IDEA_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 const IDEAS_SYSTEM = `You suggest 3 different meals for the meal type the user asks for, fitted to what is left in their day.
 The user's goals: high protein, low added sugar, high fiber (especially soluble: oats, beans, chia, psyllium), low saturated fat, healthy fats from olive oil, nuts, seeds, avocado.
-Use common grocery-store foods: the user's pantry is not stocked yet, so list everything needed. Favor family-friendly meals. Prep under 20 minutes for breakfast, lunch and snacks. Estimate the numbers for ONE adult serving.
+Use common grocery-store foods: the user's pantry is not stocked yet, so list everything needed. Favor family-friendly meals. Prep under 20 minutes for breakfast, lunch and snacks. Estimate the numbers for ONE adult serving. A Snack should be about half the size of a meal.
 Do not suggest anything on the "recent" list. Count only ADDED sugar in added_sugar_g (not fruit or milk sugar). Each aisle is one of: Produce, Protein, Dairy, Grains & bread, Canned & dry, Frozen, Other. Steps: at most 4, each short.
 Return ONLY JSON, no prose: {"options":[{"meal_name":"","ingredients":[{"item":"","amount":"","aisle":""}],"steps":[""],"protein_g":0,"added_sugar_g":0,"fiber_g":0,"sat_fat_g":0,"calories":0}]}`;
 /* Defensive like parseMealJSON: fences, prose around the JSON, junk entries dropped, numbers clamped >= 0. Returns up to 3 options or null. */
@@ -1192,8 +1195,8 @@ async function requestIdeas(type, extraAvoid) {
   return options ? { options } : { err:'parse' };
 }
 /* An idea as a normal meal result, so scoring, Log it and Save meal all work the same way. */
-function ideaAsMeal(o) {
-  return { is_food:true, meal_name:o.meal_name, items:o.ingredients.map(i => ({ name:i.item, amount:i.amount })), protein_g:o.protein_g, added_sugar_g:o.added_sugar_g,
+function ideaAsMeal(o, kind) {
+  return { kind:kind === 'Snack' ? 'Snack' : undefined, is_food:true, meal_name:o.meal_name, items:o.ingredients.map(i => ({ name:i.item, amount:i.amount })), protein_g:o.protein_g, added_sugar_g:o.added_sugar_g,
     fiber_g:o.fiber_g, sat_fat_g:o.sat_fat_g, calories:o.calories, confidence:'medium', assumptions:'Suggested meal, one serving.', swap:'', swap_items:[] };
 }
 
@@ -1852,7 +1855,7 @@ function mcLogIt() {
 function mcSaveMeal() { if (!MC || !MC.result || MC.saved) return; saveMealResult(MC.result); MC.saved = true; toast('Meal saved'); renderMealSheet(true); }
 
 function mealResultHTML() {
-  const m = MC.result, v = mealVerdict(m), g = nutritionGoals(), t = mealThresholds(g), today = todayKey();
+  const m = MC.result, v = mealVerdict(m), g = nutritionGoals(), t = mealThresholds(g, mealShare(m)), today = todayKey();
   const c = S.mealChecks.find(x => x.id === MC.checkId), logged = !!(c && c.logged), dot = { g:'vg', y:'vy', r:'vr' };
   const rows = [
     ['Protein', 'protein', m.protein_g, proteinOn(today), g.protein, `${t.protein.g} g or more`],
@@ -1920,12 +1923,12 @@ function mcIdeaList(i) {
 }
 function mcIdeaLog(i) {
   const o = MC && MC.opts[i], st = MC && MC.ist[i]; if (!o || MC.busy) return;
-  if (!st.checkId) st.checkId = recordMealCheck(ideaAsMeal(o)).id;
+  if (!st.checkId) st.checkId = recordMealCheck(ideaAsMeal(o, MC.itype)).id;
   if (logMealCheck(st.checkId)) { toast(`Logged ${o.meal_name}${earnedTxt()}`); renderMealSheet(true); }
 }
-function mcIdeaSave(i) { const o = MC && MC.opts[i], st = MC && MC.ist[i]; if (!o || st.saved) return; saveMealResult(ideaAsMeal(o)); st.saved = true; toast('Meal saved'); renderMealSheet(true); }
+function mcIdeaSave(i) { const o = MC && MC.opts[i], st = MC && MC.ist[i]; if (!o || st.saved) return; saveMealResult(ideaAsMeal(o, MC.itype)); st.saved = true; toast('Meal saved'); renderMealSheet(true); }
 function ideaCardHTML(o, i) {
-  const v = mealVerdict(ideaAsMeal(o)), st = MC.ist[i], dot = { g:'vg', y:'vy', r:'vr' };
+  const v = mealVerdict(ideaAsMeal(o, MC.itype)), st = MC.ist[i], dot = { g:'vg', y:'vy', r:'vr' };
   const c = st.checkId && S.mealChecks.find(x => x.id === st.checkId), logged = !!(c && c.logged);
   const nums = [['Protein', 'protein', o.protein_g], ['Sugar', 'sugar', o.added_sugar_g], ['Fiber', 'fiber', o.fiber_g], ['Sat fat', 'satFat', o.sat_fat_g]];
   return `<div class="idea"><div class="mc-top"><div class="mc-name" style="font-size:18px;min-width:0">${esc(o.meal_name)}</div>
@@ -1966,7 +1969,7 @@ function renderMealSheet(inPlace) {
         <button class="btn primary" onclick="mcIdeaRun()">Try again</button>
         <button class="btn quiet" onclick="mcShow('ideaPick')">Back</button>`; break; }
     case 'ideaOpts':
-      h = `<h2>${esc(MC.itype)} ideas</h2><p class="hint" style="margin-bottom:4px">One adult serving each. Scored against your goals like any meal.</p>
+      h = `<h2>${esc(MC.itype)} ideas</h2><p class="hint" style="margin-bottom:4px">One adult serving each. ${MC.itype === 'Snack' ? `Judged as a snack: half a meal's targets (protein green at ${mealThresholds(nutritionGoals(), 0.5).protein.g} g).` : 'Scored against your goals like any meal.'}</p>
         ${MC.opts.map((o, i) => ideaCardHTML(o, i)).join('')}
         <button class="btn primary" onclick="mcIdeaShuffle()">Shuffle</button>
         <div class="mc-btns" style="grid-template-columns:1fr 1fr"><button class="btn" onclick="mcOpenList('ideaOpts')">Grocery list${groceryOpenCount() ? ' · ' + groceryOpenCount() : ''}</button><button class="btn quiet" onclick="mcShow('ideaPick')">Change meal</button></div>

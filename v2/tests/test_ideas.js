@@ -76,6 +76,19 @@ const userText = () => calls[calls.length - 1].body.messages[0].content[0].text;
   onMealIdeas(); MC.opts = parseIdeasJSON(JSON.stringify(SET2)); MC.ist = MC.opts.map(() => ({ listed: false, checkId: null, saved: false })); MC.itype = 'Dinner'; MC.view = 'ideaOpts'; renderMealSheet(false);
   ok('opening the grocery list from the sheet and coming back returns to the options', (mcOpenList('ideaOpts'), MC.view === 'list' && sheet().includes('class="g-aisle">Produce') && sheet().includes('×2')) && (mcShow('ideaOpts'), MC.view === 'ideaOpts' && MC.opts.length === 3));
 
+  // ---- snacks are judged as half a meal ----
+  const cc = opt('Cottage cheese bowl', { protein_g: 28, added_sugar_g: 2, fiber_g: 9, sat_fat_g: 0.9 });
+  ok('a meal-sized protein band stays: 28 g at dinner is yellow, 35 g is green', mealLevels(ideaAsMeal(cc, 'Dinner')).protein === 'y' && mealLevels(ideaAsMeal(opt('x', { protein_g: 35 }), 'Lunch')).protein === 'g');
+  ok('...but for a SNACK 28 g protein is green (green at 18 g, yellow from 10 g)', mealLevels(ideaAsMeal(cc, 'Snack')).protein === 'g' && mealThresholds(null, 0.5).protein.g === 18 && mealThresholds(null, 0.5).protein.y === 10 && mealLevels(ideaAsMeal(opt('x', { protein_g: 17 }), 'Snack')).protein === 'y' && mealLevels(ideaAsMeal(opt('x', { protein_g: 9 }), 'Snack')).protein === 'r');
+  ok('...and the limits halve too (snack sugar green to 4 g, sat fat to 3 g)', mealThresholds(null, 0.5).sugar.g === 4 && mealThresholds(null, 0.5).satFat.g === 3 && mealLevels(ideaAsMeal(opt('x', { added_sugar_g: 6, sat_fat_g: 4 }), 'Snack')).sugar === 'y' && mealLevels(ideaAsMeal(opt('x', { added_sugar_g: 6, sat_fat_g: 4 }), 'Dinner')).sugar === 'g');
+  ok('a snack carries its kind into the saved meal and the recorded check; other meals do not', ideaAsMeal(cc, 'Snack').kind === 'Snack' && !('kind' in JSON.parse(JSON.stringify(ideaAsMeal(cc, 'Dinner')))));
+  world(); onMealIdeas(); queue = [{ options: [cc] }]; await mcIdeaPick(3); await tick();
+  ok('the Snack screen says it is judged as a snack and the card shows protein green', MC.view === 'ideaOpts' && sheet().includes('Judged as a snack') && sheet().includes('protein green at 18 g') && /Cottage cheese bowl[\s\S]*Great fit/.test(sheet()));
+  ok('the Snack prompt tells the model a snack is about half a meal', /Meal type: Snack/.test(userText()) && /Snack should be about half/.test(IDEAS_SYSTEM));
+  mcIdeaSave(0); mcIdeaLog(0);
+  ok('saving / logging a snack keeps it judged as a snack (verdict green, saved result remembers)', S.savedMeals.find(x => x.name === 'Cottage cheese bowl').result.kind === 'Snack' && S.mealChecks[0].verdict === 'green' && mealVerdict(S.savedMeals.find(x => x.name === 'Cottage cheese bowl').result).verdict === 'green');
+  closeSheet();
+
   // ---- failures ----
   const fail = async (q, expect, label) => { world(); S.days[todayKey()] = undefined; delete S.days[todayKey()]; onMealIdeas(); queue = [q]; calls = []; await mcIdeaPick(0); await tick(); ok(label, MC.view === 'ideaErr' && sheet().includes(expect) && MC.busy === false && S.recentSuggestions.length === 0); };
   await fail('{"options":', "Couldn't read those ideas", 'malformed JSON: friendly message with a retry, nothing remembered');
