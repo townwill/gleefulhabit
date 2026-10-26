@@ -118,6 +118,22 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .sheet .btn{margin-top:14px;width:100%}
 .over .body>.btn,.over .card .btn{width:100%;margin-top:10px}
+.vdot{display:inline-block;width:22px;height:22px;border-radius:50%;flex-shrink:0}
+.vdot.sm{width:12px;height:12px}
+.vg{background:var(--green)}.vy{background:#E3A008}.vr{background:var(--bad)}
+.mc-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:2px 0 6px}
+.mc-name{font-size:20px;font-weight:700;letter-spacing:-.3px;line-height:1.2}
+.mc-verdict{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px;white-space:nowrap}
+.mc-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--line)}
+.mc-l{flex:1;min-width:0}.mc-l b{display:block;font-size:15px;line-height:1.2}.mc-l span{font-size:12px;color:var(--muted)}
+.mc-n{font-size:32px;font-weight:700;letter-spacing:-1px;line-height:1}.mc-n small{font-size:14px;color:var(--muted);font-weight:600;letter-spacing:0}
+.mc-swap{margin:8px 0 0;color:var(--green);font-weight:600;font-size:15px;line-height:1.3}
+.mc-btns{display:grid;grid-template-columns:1.1fr 1fr .8fr;gap:8px}
+.sheet .mc-btns .btn{margin:0;width:100%}
+.linkbtn{min-height:44px;color:var(--muted);font-size:13px;font-weight:600;padding:0 2px}
+.mc-saved{display:flex;align-items:center;gap:10px;min-height:56px;padding:6px 12px;border-radius:14px;background:#fafafb;border:1px solid var(--line);width:100%;text-align:left;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.spin{width:36px;height:36px;border:4px solid var(--track);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 .seg{display:flex;background:#f1f1f3;border-radius:11px;padding:3px;gap:3px}
 .seg button{flex:1;height:44px;border-radius:9px;font-size:14px;font-weight:600;color:var(--muted)}
 .seg button.on{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
@@ -178,7 +194,7 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 const SCHEMA = 2;
 const STORE_KEY = 'gh2';
 const V1_KEY = 'habitflow';
-const APP_VERSION = '2026-10-24.2345';
+const APP_VERSION = '2026-10-26.0759';
 const HABITS = ['workout','protein','wind','sugar'];
 const HABIT_META = {
   workout:{name:'Workout',icon:'🏋️'},
@@ -211,16 +227,22 @@ function canLog(dk) {
 }
 
 /* ── State ── */
+/* The seeded saved meal starts unscored (result:null); the first tap scores it once and caches it. */
+function seedMeals() {
+  return [{ id:'seed-breakfast', name:'Usual breakfast', desc:'2 eggs, ½ cup egg whites, 2 tbsp cottage cheese, scrambled with olive oil spray', result:null, uses:0, lastUsed:null }];
+}
 function blankState() {
   return {
     schema: SCHEMA,
     startDate: null,
-    settings: { monthly:200, drip:100, pool:50, proteinGoal:150, sugarBudget:25, workoutWeek:3, freeDaysPerYear:10 },
+    settings: { monthly:200, drip:100, pool:50, proteinGoal:150, sugarBudget:25, workoutWeek:3, freeDaysPerYear:10, fiberGoal:30, satFatGoal:13 },
     days: {},        // dk -> { workout, windDown, foods:[] }
     pauses: [],      // { id, habit, from, to|null, why, expect, planned, back, sick, sickId }
     freeDays: [],    // ['YYYY-MM-DD', ...] set in advance only
     spends: [],      // { id, dk, cents, cat }
     wins: [],        // { id, dk, label, other }
+    savedMeals: seedMeals(),   // Meal Check: { id, name, desc?, result|null, uses, lastUsed }
+    mealChecks: [],  // Meal Check history (last 365 days): { id, date, ts, mealName, verdict, protein_g, added_sugar_g, fiber_g, sat_fat_g, logged }
     weight: { unit:'lbs', goal:null, logs:{} },
     months: {},      // 'YYYY-MM' -> frozen month-close snapshot
     comeback: null,  // { from, gapDays, firstLog }
@@ -245,6 +267,12 @@ function migrateState(raw) {
   s.ui = Object.assign({ lastVersion:null, v1Offer:'none' }, raw.ui || {});
   if (s.comeback === undefined) s.comeback = null;
   if (s.imported === undefined) s.imported = null;
+  for (const k of ['fiberGoal', 'satFatGoal']) if (!(+s.settings[k] > 0)) s.settings[k] = blankState().settings[k];
+  s.savedMeals = Array.isArray(raw.savedMeals) ? raw.savedMeals.filter(m => m && typeof m === 'object' && m.id && typeof m.name === 'string')
+    : seedMeals();                                   // an old save gets the seeded meal; a deliberately emptied list stays empty
+  s.savedMeals.forEach(m => { m.uses = +m.uses || 0; if (m.result === undefined) m.result = null; });
+  if (!Array.isArray(s.mealChecks)) s.mealChecks = [];
+  { const cut = addDays(todayKey(), -365); s.mealChecks = s.mealChecks.filter(c => c && typeof c === 'object' && c.date >= cut); }
   for (const dk of Object.keys(s.days)) {
     const d = s.days[dk];
     if (!Array.isArray(d.foods)) d.foods = [];
@@ -457,10 +485,12 @@ function clearWind(dk) { if (!canLog(dk)) return; dayOf(dk).windDown = null; sav
 function addFood(dk, f) {
   if (!canLog(dk)) { toast('That day is locked'); return false; }
   const protein = round1(+f.protein || 0), sugar = round1(Math.max(0, +f.sugar || 0));
-  if (protein <= 0) { toast('Enter the protein grams'); return false; }
+  if (protein <= 0 && f.src !== 'check') { toast('Enter the protein grams'); return false; }
   const b0 = unlockedTotalC();
   resumeIfPaused('protein', dk);
-  dayOf(dk).foods.push({ id:uid(), label:String(f.label || 'Manual entry').slice(0, 60), protein, sugar, src:f.src || 'manual', at:Date.now() });
+  const entry = { id:uid(), label:String(f.label || 'Manual entry').slice(0, 60), protein, sugar, src:f.src || 'manual', at:Date.now() };
+  if (f.mc) entry.mc = f.mc;
+  dayOf(dk).foods.push(entry);
   afterLog(dk, b0); return true;
 }
 function updateFood(dk, id, patch) {
@@ -474,6 +504,8 @@ function updateFood(dk, id, patch) {
 function deleteFood(dk, id) {
   if (!canLog(dk)) { toast('That day is locked'); return false; }
   const d = S.days[dk]; if (!d) return false;
+  const gone = d.foods.find(x => x.id === id);
+  if (gone && gone.mc) { const c = S.mealChecks.find(x => x.id === gone.mc); if (c) c.logged = false; }   // un-log the meal's fiber / sat fat too
   d.foods = d.foods.filter(x => x.id !== id);
   save(); refresh(); return true;
 }
@@ -803,6 +835,149 @@ function windInsights() {
   return { total, earlyAll, items, lens, note };
 }
 
+/* ── Meal Check: the model estimates, the code judges. ──
+   No points, no money, no XP. It reads protein, added sugar, fiber and saturated fat for one meal,
+   scores it against the daily goals, and can log the meal into today's food list. */
+const MEAL_MODEL = 'claude-haiku-4-5-20251001';
+const MEAL_SYSTEM = `You estimate nutrition for one meal from a photo or description.
+Return ONLY JSON matching the schema. No prose outside JSON.
+Estimate typical portions unless a size is given; state assumptions in "assumptions".
+Count only ADDED sugar in added_sugar_g (not fruit or milk sugar).
+The user's goals: high protein, low added sugar, high fiber (especially soluble: oats, beans, chia, psyllium), low saturated fat, healthy fats from olive oil, nuts, seeds, avocado.
+Give ONE practical swap or add-on that most improves the weakest goal, using common pantry or freezer foods. Max 15 words.
+If the image is not food, set is_food to false.
+Response schema:
+{"is_food":true,"meal_name":"short name","items":[{"name":"item","amount":"portion"}],"protein_g":0,"added_sugar_g":0,"fiber_g":0,"sat_fat_g":0,"calories":0,"confidence":"low|medium|high","assumptions":"one short sentence","swap":"max 15 words"}`;
+const VERDICT_LABEL = { green:'Great fit', yellow:'Okay', red:'Rethink' };
+
+/* Daily goals. Protein and sugar are the money rules (they also drive the daily drip), so only fiber and
+   saturated fat are editable; they pay nothing. */
+function nutritionGoals() {
+  return { protein:S.settings.proteinGoal, sugar:S.settings.sugarBudget, fiber:S.settings.fiberGoal, satFat:S.settings.satFatGoal };
+}
+/* Per-meal bands are the table in the spec at the default goals, scaled proportionally when a goal is edited
+   (computed every time, never stored). g = green edge, y = yellow edge. */
+const NUTRI_DEFAULT = { protein:{ goal:150, g:35, y:20 }, sugar:{ goal:25, g:8, y:15 }, fiber:{ goal:30, g:8, y:4 }, satFat:{ goal:13, g:4, y:7 } };
+function mealThresholds(goals) {
+  const t = {};
+  for (const k of Object.keys(NUTRI_DEFAULT)) {
+    const d = NUTRI_DEFAULT[k], f = (+(goals || nutritionGoals())[k] || d.goal) / d.goal;
+    let g = Math.max(1, Math.round(d.g * f)), y = Math.max(1, Math.round(d.y * f));
+    if (k === 'protein' || k === 'fiber') y = Math.min(y, g - 1); else y = Math.max(y, g + 1);
+    t[k] = { g, y };
+  }
+  return t;
+}
+/* 'g' | 'y' | 'r' for one reading. Protein and fiber are "at least"; sugar and sat fat are "at most". */
+function readingLevel(k, v, t) {
+  if (k === 'protein' || k === 'fiber') return v >= t[k].g ? 'g' : v >= t[k].y ? 'y' : 'r';
+  return v <= t[k].g ? 'g' : v <= t[k].y ? 'y' : 'r';
+}
+function mealLevels(m, goals) {
+  const t = mealThresholds(goals);
+  return { protein:readingLevel('protein', m.protein_g, t), sugar:readingLevel('sugar', m.added_sugar_g, t), fiber:readingLevel('fiber', m.fiber_g, t), satFat:readingLevel('satFat', m.sat_fat_g, t) };
+}
+/* Red if sat fat or added sugar is red. Green if all four green, or three green and one yellow. Otherwise yellow. */
+function mealVerdict(m, goals) {
+  const levels = mealLevels(m, goals), vals = Object.values(levels);
+  const g = vals.filter(x => x === 'g').length, y = vals.filter(x => x === 'y').length;
+  let verdict = 'yellow';
+  if (levels.satFat === 'r' || levels.sugar === 'r') verdict = 'red';
+  else if (g === 4 || (g === 3 && y === 1)) verdict = 'green';
+  return { verdict, label:VERDICT_LABEL[verdict], levels };
+}
+/* Defensive: strips code fences, tolerates prose around the JSON, clamps numbers to >= 0.
+   Returns null when it can't be read, {is_food:false} for non-food, else the cleaned meal. */
+function parseMealJSON(text) {
+  const t = String(text == null ? '' : text).replace(/```json|```/gi, '').trim();
+  let obj = null;
+  try { obj = JSON.parse(t); } catch (e) {
+    const a = t.indexOf('{'), b = t.lastIndexOf('}');
+    if (a >= 0 && b > a) { try { obj = JSON.parse(t.slice(a, b + 1)); } catch (e2) { obj = null; } }
+  }
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
+  if (obj.is_food === false) return { is_food:false };
+  const nums = ['protein_g', 'added_sugar_g', 'fiber_g', 'sat_fat_g'];
+  if (obj.is_food === undefined && nums.every(k => obj[k] == null)) return null;   // valid JSON, but not a meal answer
+  const num = v => { const n = +v; return isFinite(n) && n > 0 ? round1(Math.min(n, 5000)) : 0; };
+  return {
+    is_food:true,
+    meal_name:String(obj.meal_name || 'Meal').trim().slice(0, 60) || 'Meal',
+    items:Array.isArray(obj.items) ? obj.items.slice(0, 12).map(i => ({ name:String(i && i.name || '').slice(0, 40), amount:String(i && i.amount || '').slice(0, 30) })) : [],
+    protein_g:num(obj.protein_g), added_sugar_g:num(obj.added_sugar_g), fiber_g:num(obj.fiber_g), sat_fat_g:num(obj.sat_fat_g),
+    calories:Math.round(num(obj.calories)),
+    confidence:['low', 'medium', 'high'].indexOf(obj.confidence) >= 0 ? obj.confidence : 'medium',
+    assumptions:String(obj.assumptions || '').slice(0, 200),
+    swap:String(obj.swap || '').trim().slice(0, 120),
+  };
+}
+
+/* One browser-side call to the Anthropic Messages API, shared by the Protein estimate and Meal Check.
+   Never throws: returns { text } or { err: 'nokey' | 'offline' | 'network' | 'auth' | 'http' | 'badreply' | 'empty', status }. */
+async function callClaude(opts) {
+  const key = localStorage.getItem('gh_ai_key');
+  if (!key) return { err:'nokey' };
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return { err:'offline' };
+  let resp;
+  try {
+    resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{ 'content-type':'application/json', 'x-api-key':key, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+      body:JSON.stringify({ model:MEAL_MODEL, max_tokens:opts.max_tokens || 300, system:opts.system, messages:[{ role:'user', content:opts.content }] }),
+    });
+  } catch (e) { return { err:'network' }; }
+  if (!resp.ok) return { err:resp.status === 401 ? 'auth' : 'http', status:resp.status };
+  let data; try { data = await resp.json(); } catch (e) { return { err:'badreply' }; }
+  const block = ((data && data.content) || []).find(b => b && b.type === 'text');
+  return block && typeof block.text === 'string' ? { text:block.text } : { err:'empty' };
+}
+function aiErrText(r) {
+  return ({ nokey:'Add your Anthropic API key below first.', offline:'Needs a connection.', network:'Network problem — check your connection and try again.',
+    auth:'API key rejected — check it below.', http:`Request failed (${r.status}). Try again.`, badreply:'No answer came back — try again.', empty:'No answer came back — try again.' })[r.err] || 'Something went wrong — try again.';
+}
+
+/* Checks you've logged feed today's fiber and saturated-fat totals (display only). Never stored as a running total. */
+function mealTotalOn(dk, field) { return round1(S.mealChecks.filter(c => c.date === dk && c.logged).reduce((a, c) => a + (+c[field] || 0), 0)); }
+function mealFiberOn(dk) { return mealTotalOn(dk, 'fiber_g'); }
+function mealSatFatOn(dk) { return mealTotalOn(dk, 'sat_fat_g'); }
+function pruneMealChecks() { const cut = addDays(todayKey(), -365); S.mealChecks = S.mealChecks.filter(c => c && c.date >= cut); }
+function recordMealCheck(m) {
+  const c = { id:uid(), date:todayKey(), ts:Date.now(), mealName:m.meal_name, verdict:mealVerdict(m).verdict,
+    protein_g:m.protein_g, added_sugar_g:m.added_sugar_g, fiber_g:m.fiber_g, sat_fat_g:m.sat_fat_g, logged:false };
+  S.mealChecks.push(c); pruneMealChecks(); save(); return c;
+}
+/* Log it: protein + added sugar go into today's food list (same shape as every other AI-labelled entry); fiber and sat fat
+   stay on the check. The food entry remembers its check so deleting the entry also un-logs the fiber / sat fat. */
+function logMealCheck(id) {
+  const c = S.mealChecks.find(x => x.id === id);
+  if (!c || c.logged) return false;
+  if (!addFood(todayKey(), { label:c.mealName, protein:c.protein_g, sugar:c.added_sugar_g, src:'check', mc:c.id })) return false;
+  c.logged = true; save(); refresh(); return true;
+}
+
+/* Saved meals: re-showing one is free (cached result, no API call). */
+function savedMealsSorted() {
+  return S.savedMeals.slice().sort((a, b) => ((b.uses || 0) - (a.uses || 0)) || ((b.lastUsed || 0) - (a.lastUsed || 0)) || String(a.name).localeCompare(String(b.name)));
+}
+function saveMealResult(m) {
+  const name = m.meal_name.slice(0, 40), ex = S.savedMeals.find(x => String(x.name).toLowerCase() === name.toLowerCase());
+  if (ex) { ex.result = m; save(); return ex; }
+  const s = { id:uid(), name, result:m, uses:0, lastUsed:null };
+  S.savedMeals.push(s); save(); return s;
+}
+function useSavedMeal(id) { const s = S.savedMeals.find(x => x.id === id); if (!s) return null; s.uses = (s.uses || 0) + 1; s.lastUsed = Date.now(); save(); return s; }
+function renameSavedMeal(id, name) {
+  const s = S.savedMeals.find(x => x.id === id); name = String(name || '').trim().slice(0, 40);
+  if (!s || !name) return false; s.name = name; save(); return true;
+}
+function deleteSavedMeal(id) { const n = S.savedMeals.length; S.savedMeals = S.savedMeals.filter(x => x.id !== id); if (S.savedMeals.length !== n) save(); return S.savedMeals.length !== n; }
+function setNutritionGoals(fiber, satFat) {
+  fiber = Math.round(+fiber); satFat = Math.round(+satFat);
+  if (!(fiber >= 10 && fiber <= 80)) return 'Fiber goal should be between 10 and 80 g';
+  if (!(satFat >= 3 && satFat <= 40)) return 'Saturated fat limit should be between 3 and 40 g';
+  S.settings.fiberGoal = fiber; S.settings.satFatGoal = satFat; save(); return null;
+}
+
 /*@@ENGINE2*/
 /* ── UI helpers ── */
 const $ = id => document.getElementById(id);
@@ -953,7 +1128,7 @@ function openSheet(inner, inPlace) {
   if (sh) { sh.innerHTML = `<div class="grab"></div>${inner}`; return; }
   root.innerHTML = `<div class="scrim" onclick="closeSheet()"></div><div class="sheet"><div class="grab"></div>${inner}</div>`;
 }
-function closeSheet() { SH = null; $('sheetRoot').innerHTML = ''; }
+function closeSheet() { SH = null; if (typeof MC !== 'undefined') MC = null; $('sheetRoot').innerHTML = ''; }
 function daySeg(dk, fn) {
   const t = todayKey(), y = addDays(t, -1), yok = canLog(y);
   return `<div class="seg"><button class="${dk === t ? 'on' : ''}" onclick="${fn}('${t}')">Today</button><button class="${dk === y ? 'on' : ''}" ${yok ? '' : 'disabled'} onclick="${fn}('${y}')">Yesterday${yok ? '' : ' · locked'}</button></div>`;
@@ -1075,6 +1250,7 @@ function proteinOverHTML() {
       <label class="btn primary" style="margin:0">Snap meal<input type="file" accept="image/*" id="snapFile" style="display:none" onchange="onSnap(event)"></label>
       <button class="btn primary" style="margin:0" onclick="onSayIt()">Say it</button>
     </div>
+    <button class="btn" onclick="onCheckMeal()">${hasKey() ? 'Check a meal' : 'Add your API key in settings'}</button>
     ${aiMode ? `<div class="card" style="margin-top:10px">
       ${aiPhoto ? `<img src="${aiPhoto.url}" alt="" style="width:100%;max-height:150px;object-fit:cover;border-radius:12px;margin-bottom:8px">` : ''}
       <textarea class="field" id="aiText" placeholder="Say or type what you ate. Tip: tap the mic on your keyboard to dictate."></textarea>
@@ -1118,7 +1294,7 @@ function delFoodFromSheet() { const id = SH.id; closeSheet(); delFood(id); }
 /* AI meal estimate: photo and/or description -> Claude Haiku with the user's own key.
    It only fills the fields for review; it never adds anything on its own. */
 function onSayIt() { aiMode = 'say'; renderProteinOver(); setTimeout(() => { const t = $('aiText'); if (t) t.focus(); }, 60); }
-function fileToJpeg(file, max) {
+function fileToJpeg(file, max, quality) {
   return new Promise((resolve, reject) => {
     const fr = new FileReader();
     fr.onerror = reject;
@@ -1129,7 +1305,7 @@ function fileToJpeg(file, max) {
         const sc = Math.min(1, (max || 1280) / Math.max(img.width, img.height));
         const c = document.createElement('canvas'); c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
         c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-        const url = c.toDataURL('image/jpeg', .82);
+        const url = c.toDataURL('image/jpeg', quality || .82);
         resolve({ b64:url.split(',')[1], type:'image/jpeg', url });
       };
       img.src = fr.result;
@@ -1144,35 +1320,186 @@ async function onSnap(ev) {
 }
 const AI_SYSTEM = 'You are a nutrition estimator inside a habit tracking app. Given a text description and/or photo of a food or meal, estimate its protein in grams and its ADDED sugar in grams (the FDA nutrition-label "Added Sugars" line: sugar or syrup added during processing, NOT total sugars; naturally occurring sugar such as lactose in plain milk or yogurt and fructose in whole fruit counts as 0 unless the product is also sweetened). Respond ONLY with a JSON object, no markdown fences, no other text: {"food":"short name","grams_protein":number,"added_sugar_g":number,"confidence":"low"|"medium"|"high"}. If several items are shown, sum them and name the meal generically.';
 async function analyzeMeal() {
-  const key = localStorage.getItem('gh_ai_key'), st = $('aiStatus'), btn = $('aiBtn');
-  if (!key) { st.textContent = 'Add your Anthropic API key below first.'; return; }
+  const st = $('aiStatus'), btn = $('aiBtn');
+  if (!localStorage.getItem('gh_ai_key')) { st.textContent = 'Add your Anthropic API key below first.'; return; }
   const desc = ($('aiText').value || '').trim();
   if (!desc && !aiPhoto) { st.textContent = 'Say or type what you ate, or snap a photo first.'; return; }
   btn.disabled = true; st.textContent = 'Estimating…';
-  try {
-    const content = [];
-    if (aiPhoto) content.push({ type:'image', source:{ type:'base64', media_type:aiPhoto.type, data:aiPhoto.b64 } });
-    content.push({ type:'text', text:desc ? `Food description: ${desc}` : 'Estimate the protein and added sugar of the food in this photo.' });
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{ 'content-type':'application/json', 'x-api-key':key, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
-      body:JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:300, system:AI_SYSTEM, messages:[{ role:'user', content }] }),
-    });
-    if (!resp.ok) { st.textContent = resp.status === 401 ? 'API key rejected — check it below.' : `Request failed (${resp.status}). Try again.`; btn.disabled = false; return; }
-    const data = await resp.json();
-    const block = (data.content || []).find(b => b.type === 'text');
-    if (!block) { st.textContent = 'No answer came back — try again.'; btn.disabled = false; return; }
-    let parsed; try { parsed = JSON.parse(block.text.replace(/```json|```/g, '').trim()); } catch (e) { st.textContent = "Couldn't read that estimate — try rephrasing."; btn.disabled = false; return; }
-    const prot = round1(+parsed.grams_protein || 0);
-    if (!(prot > 0)) { st.textContent = "Couldn't estimate protein for that — add more detail."; btn.disabled = false; return; }
-    $('fLabel').value = String(parsed.food || '').slice(0, 60);
-    $('fProt').value = prot;
-    $('fSugar').value = round1(Math.max(0, +parsed.added_sugar_g || 0));
-    st.textContent = `Estimate (${parsed.confidence || 'medium'} confidence). Check the numbers below, then tap Add.`;
-    btn.disabled = false;
-  } catch (e) {
-    st.textContent = 'Network problem — check your connection and try again.'; btn.disabled = false;
+  const content = [];
+  if (aiPhoto) content.push({ type:'image', source:{ type:'base64', media_type:aiPhoto.type, data:aiPhoto.b64 } });
+  content.push({ type:'text', text:desc ? `Food description: ${desc}` : 'Estimate the protein and added sugar of the food in this photo.' });
+  const r = await callClaude({ system:AI_SYSTEM, content, max_tokens:300 });
+  btn.disabled = false;
+  if (r.err) { st.textContent = aiErrText(r); return; }
+  let parsed; try { parsed = JSON.parse(r.text.replace(/```json|```/g, '').trim()); } catch (e) { st.textContent = "Couldn't read that estimate — try rephrasing."; return; }
+  const prot = round1(+parsed.grams_protein || 0);
+  if (!(prot > 0)) { st.textContent = "Couldn't estimate protein for that — add more detail."; return; }
+  $('fLabel').value = String(parsed.food || '').slice(0, 60);
+  $('fProt').value = prot;
+  $('fSugar').value = round1(Math.max(0, +parsed.added_sugar_g || 0));
+  st.textContent = `Estimate (${parsed.confidence || 'medium'} confidence). Check the numbers below, then tap Add.`;
+}
+
+/* ── Meal Check UI (lives inside the Protein page; nothing on Today) ── */
+let MC = null, _mcTimer = null, _mcLong = false;
+const hasKey = () => !!localStorage.getItem('gh_ai_key');
+const PORTIONS = ['Small', 'Normal', 'Large'];
+function onCheckMeal() {
+  if (!hasKey()) {                       // no key: send them to the key card instead of opening the sheet
+    keyOpen = true; renderProteinOver();
+    setTimeout(() => { const k = $('keyInput'); if (k) { if (k.scrollIntoView) k.scrollIntoView({ block:'center' }); k.focus(); } }, 80);
+    return;
   }
+  MC = { view:'choose', source:null, text:'', desc:'', photo:null, portion:'Normal', result:null, checkId:null, savedId:null, saved:false, details:false, busy:false, note:'', errKind:null, manageId:null };
+  renderMealSheet(false);
+}
+function mcShow(view) { if (!MC || MC.busy) return; MC.view = view; MC.note = ''; renderMealSheet(true); }
+function mcOffline() { return typeof navigator !== 'undefined' && navigator.onLine === false; }
+function mcPickPhoto() {
+  if (!MC || MC.busy) return;
+  if (mcOffline()) { MC.note = 'Needs a connection.'; renderMealSheet(true); return; }
+  const f = $('mcFile'); if (f) f.click();
+}
+async function mcPhotoPicked(ev) {
+  const file = ev.target.files && ev.target.files[0]; if (!file || !MC) return;
+  const me = MC;
+  try { const ph = await fileToJpeg(file, 1024, .8); if (MC !== me) return; MC.photo = ph; MC.source = 'photo'; MC.view = 'photo'; MC.note = ''; renderMealSheet(true); }
+  catch (e) { if (MC === me) { MC.note = "Couldn't read that photo"; renderMealSheet(true); } }
+}
+function mcPortion(i) { if (MC) { MC.portion = PORTIONS[i]; renderMealSheet(true); } }
+function mcTypeIt() { if (!MC || MC.busy) return; if (mcOffline()) { MC.note = 'Needs a connection.'; renderMealSheet(true); return; } MC.source = 'text'; mcShow('text'); setTimeout(() => { const t = $('mcText'); if (t) t.focus(); }, 60); }
+function mcCheckText() {
+  if (!MC || MC.busy) return;
+  const t = $('mcText'); if (t) MC.text = t.value;
+  if (!(MC.text || '').trim()) { MC.note = 'Type what you ate first.'; renderMealSheet(true); return; }
+  MC.source = 'text'; mcRun();
+}
+async function mcRun() {
+  const me = MC; if (!me || me.busy) return;                      // double taps while a request is in flight do nothing
+  let content;
+  if (me.source === 'photo' && me.photo) content = [{ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:me.photo.b64 } }, { type:'text', text:`Portion size: ${me.portion}. Estimate this meal.` }];
+  else content = [{ type:'text', text:`Meal: ${(me.source === 'saved' ? me.desc : me.text).trim()}` }];
+  me.busy = true; me.view = 'loading'; renderMealSheet(true);
+  const r = await callClaude({ system:MEAL_SYSTEM, content, max_tokens:600 });
+  if (MC !== me) return;                                          // sheet was closed while waiting
+  me.busy = false;
+  if (r.err) { me.view = 'error'; me.errKind = r.err; renderMealSheet(true); return; }
+  const m = parseMealJSON(r.text);
+  if (!m) { me.view = 'error'; me.errKind = 'parse'; renderMealSheet(true); return; }
+  if (!m.is_food) { me.view = 'notfood'; renderMealSheet(true); return; }
+  me.photo = null;                                                // photos are never kept: gone as soon as the call succeeds
+  me.result = m; me.checkId = recordMealCheck(m).id; me.details = false;
+  if (me.savedId) { const sv = S.savedMeals.find(x => x.id === me.savedId); if (sv) { sv.result = m; useSavedMeal(sv.id); } }
+  me.view = 'result'; renderMealSheet(true);
+}
+function mcRetry() { if (MC && !MC.busy) mcRun(); }
+/* Saved meals: a tap re-shows the stored result with no API call. An unscored one (the seeded breakfast) is scored once, then cached. */
+function mcSavedTap(id) {
+  if (_mcLong) { _mcLong = false; return; }
+  if (!MC || MC.busy) return;
+  const sv = S.savedMeals.find(x => x.id === id); if (!sv) return;
+  MC.savedId = id; MC.saved = true;
+  if (sv.result) { useSavedMeal(id); MC.result = sv.result; MC.checkId = recordMealCheck(sv.result).id; MC.details = false; MC.view = 'result'; renderMealSheet(true); }
+  else { if (mcOffline()) { MC.note = 'Needs a connection to score this one the first time.'; renderMealSheet(true); return; } MC.source = 'saved'; MC.desc = sv.desc || sv.name; mcRun(); }
+}
+function mcPressStart(id) { _mcLong = false; clearTimeout(_mcTimer); _mcTimer = setTimeout(() => { _mcLong = true; if (MC && !MC.busy) { MC.manageId = id; mcShow('manage'); } }, 550); }
+function mcPressEnd() { clearTimeout(_mcTimer); }
+function mcRename() { const n = $('mcName') ? $('mcName').value : ''; if (renameSavedMeal(MC.manageId, n)) { toast('Renamed'); mcShow('saved'); } else toast('Give it a name'); }
+function mcDelete() { if (deleteSavedMeal(MC.manageId)) toast('Meal deleted'); mcShow('saved'); }
+function mcDetails() { if (MC) { MC.details = !MC.details; renderMealSheet(true); } }
+function mcLogIt() {
+  if (!MC || MC.busy || !MC.checkId) return;
+  const name = MC.result.meal_name;
+  if (logMealCheck(MC.checkId)) { toast(`Logged ${name}${earnedTxt()}`); renderMealSheet(true); }
+}
+function mcSaveMeal() { if (!MC || !MC.result || MC.saved) return; saveMealResult(MC.result); MC.saved = true; toast('Meal saved'); renderMealSheet(true); }
+
+function mealResultHTML() {
+  const m = MC.result, v = mealVerdict(m), g = nutritionGoals(), t = mealThresholds(g), today = todayKey();
+  const c = S.mealChecks.find(x => x.id === MC.checkId), logged = !!(c && c.logged), dot = { g:'vg', y:'vy', r:'vr' };
+  const rows = [
+    ['Protein', 'protein', m.protein_g, proteinOn(today), g.protein, `${t.protein.g} g or more`],
+    ['Added sugar', 'sugar', m.added_sugar_g, sugarOn(today), g.sugar, `${t.sugar.g} g or less`],
+    ['Fiber', 'fiber', m.fiber_g, mealFiberOn(today), g.fiber, `${t.fiber.g} g or more`],
+    ['Sat fat', 'satFat', m.sat_fat_g, mealSatFatOn(today), g.satFat, `${t.satFat.g} g or less`],
+  ];
+  return `<div class="mc-top"><div style="min-width:0"><div class="mc-name">${esc(m.meal_name)}</div>${m.confidence === 'low' ? '<div class="small muted">Rough estimate</div>' : ''}</div>
+      <div class="mc-verdict"><i class="vdot ${{ green:'vg', yellow:'vy', red:'vr' }[v.verdict]}"></i>${v.label}</div></div>
+    ${rows.map(r => `<div class="mc-row"><i class="vdot sm ${dot[v.levels[r[1]]]}"></i><div class="mc-l"><b>${r[0]}</b><span>good at ${r[5]} · today ${r[3]} of ${r[4]} g</span></div><div class="mc-n num">${r[2]}<small> g</small></div></div>`).join('')}
+    ${m.swap ? `<div class="mc-swap">${esc(m.swap)}</div>` : ''}
+    <button class="linkbtn" onclick="mcDetails()">${MC.details ? 'Hide details' : 'Details'}</button>
+    ${MC.details ? `<div class="small muted" style="margin:-4px 0 6px;line-height:1.45">${m.items.length ? esc(m.items.map(i => (i.amount ? i.amount + ' ' : '') + i.name).join(', ')) + '. ' : ''}${esc(m.assumptions)} Confidence: ${m.confidence}. About ${m.calories} calories.</div>` : ''}
+    <div class="mc-btns"><button class="btn primary" ${logged ? 'disabled' : ''} onclick="mcLogIt()">${logged ? 'Logged ✓' : 'Log it'}</button>
+      <button class="btn" ${MC.saved ? 'disabled' : ''} onclick="mcSaveMeal()">${MC.saved ? 'Saved ✓' : 'Save meal'}</button>
+      <button class="btn quiet" onclick="closeSheet()">Done</button></div>`;
+}
+function renderMealSheet(inPlace) {
+  if (!MC) return;
+  const note = MC.note ? `<p class="small" style="color:var(--bad);margin:10px 0 0">${esc(MC.note)}</p>` : '';
+  let h = '';
+  switch (MC.view) {
+    case 'choose':
+      h = `<h2>Check a meal</h2><p class="hint">Does it fit your protein, sugar, fiber and saturated-fat goals?</p>
+        <button class="btn primary" onclick="mcPickPhoto()">Photo</button>
+        <input type="file" id="mcFile" accept="image/*" capture="environment" style="display:none" onchange="mcPhotoPicked(event)">
+        <button class="btn" onclick="mcShow('saved')">Saved meals</button>
+        <button class="btn quiet" onclick="mcTypeIt()">Type it</button>${note}`; break;
+    case 'photo':
+      h = `<h2>Check this photo</h2>
+        ${MC.photo ? `<img src="${MC.photo.url}" alt="" style="width:100%;max-height:210px;object-fit:cover;border-radius:14px;margin-top:6px">` : ''}
+        <div class="q">Portion</div>${chipsHTML(PORTIONS, MC.portion, 'mcPortion')}
+        <button class="btn primary" onclick="mcRun()">Check this meal</button>
+        <button class="btn quiet" onclick="mcShow('choose')">Back</button>${note}`; break;
+    case 'text':
+      h = `<h2>Type it</h2><p class="hint">Tap the mic on your keyboard to dictate.</p>
+        <textarea class="field" id="mcText" placeholder="e.g. 2 eggs, toast with peanut butter, black coffee" oninput="MC.text=this.value">${esc(MC.text)}</textarea>
+        <button class="btn primary" onclick="mcCheckText()">Check it</button>
+        <button class="btn quiet" onclick="mcShow('choose')">Back</button>${note}`; break;
+    case 'saved': {
+      const list = savedMealsSorted();
+      h = `<h2>Saved meals</h2>${list.length ? '<p class="hint">Tap to re-check with no wait. Press and hold to rename or delete.</p>' : '<p class="hint">Nothing saved yet. Check a meal, then tap Save meal.</p>'}
+        ${list.map(s => { const v = s.result ? mealVerdict(s.result) : null; return `<button class="mc-saved" style="margin-bottom:8px" onpointerdown="mcPressStart('${s.id}')" onpointerup="mcPressEnd()" onpointerleave="mcPressEnd()" oncontextmenu="return false" onclick="mcSavedTap('${s.id}')">
+          <i class="vdot sm ${v ? { green:'vg', yellow:'vy', red:'vr' }[v.verdict] : ''}" style="${v ? '' : 'background:var(--track)'}"></i>
+          <span style="flex:1;min-width:0"><b style="display:block;font-size:16px">${esc(s.name)}</b><span class="small muted">${s.result ? 'used ' + (s.uses || 0) + (s.uses === 1 ? ' time' : ' times') : 'Not scored yet · first tap checks it'}</span></span></button>`; }).join('')}
+        <button class="btn quiet" onclick="mcShow('choose')">Back</button>${note}`; break; }
+    case 'manage': {
+      const s = S.savedMeals.find(x => x.id === MC.manageId);
+      h = `<h2>${s ? esc(s.name) : 'Saved meal'}</h2>
+        <div class="q">Name</div><input class="field" id="mcName" maxlength="40" value="${s ? esc(s.name) : ''}">
+        <button class="btn primary" onclick="mcRename()">Rename</button>
+        <button class="btn danger" onclick="mcDelete()">Delete meal</button>
+        <button class="btn quiet" onclick="mcShow('saved')">Cancel</button>`; break; }
+    case 'loading':
+      h = `<div style="display:flex;flex-direction:column;align-items:center;padding:36px 0 30px"><div class="spin"></div><h2 style="margin:18px 0 4px">Checking your meal…</h2><p class="hint" style="margin:0">Usually a few seconds</p></div>`; break;
+    case 'error': {
+      const msg = ({ offline:'Needs a connection.', auth:'API key rejected — check it on the Protein page.', nokey:'Add your API key in settings first.' })[MC.errKind] || "Couldn't read that meal — try again or type it";
+      h = `<h2>Hmm</h2><p class="hint" style="font-size:15px;color:var(--text)">${msg}</p>
+        <button class="btn primary" onclick="mcRetry()">Try again</button>
+        <button class="btn" onclick="mcTypeIt()">Type it instead</button>
+        <button class="btn quiet" onclick="closeSheet()">Close</button>`; break; }
+    case 'notfood':
+      h = `<h2>That doesn't look like food</h2><p class="hint">Try another photo, or type what you ate.</p>
+        <button class="btn primary" onclick="mcShow('choose')">Try again</button><button class="btn quiet" onclick="closeSheet()">Close</button>`; break;
+    case 'result': h = mealResultHTML(); break;
+  }
+  openSheet(h, inPlace);
+}
+
+/* ── Meal Check goals: the second page (Weight). Fiber and sat fat are editable; protein and sugar are the money rules. ── */
+function goalsCardHTML() {
+  const g = nutritionGoals(), t = mealThresholds(g);
+  return `<div class="card"><h3>Meal Check goals</h3>
+    <p class="small muted" style="margin:0 0 8px">Protein ${g.protein} g and added sugar ${g.sugar} g are your money rules, so they stay fixed. Fiber and saturated fat only feed Meal Check — they pay nothing.</p>
+    <div class="row2"><div><div class="small muted" style="margin-bottom:4px">Fiber goal (g)</div><input class="field num" id="gFiber" type="number" inputmode="numeric" value="${g.fiber}"></div>
+      <div><div class="small muted" style="margin-bottom:4px">Sat fat limit (g)</div><input class="field num" id="gSat" type="number" inputmode="numeric" value="${g.satFat}"></div></div>
+    <button class="btn" style="width:100%;margin-top:10px" onclick="saveGoals()">Save goals</button>
+    <div class="small" id="goalMsg" style="margin-top:6px;min-height:16px"></div>
+    <p class="small muted" style="margin:6px 0 0">A meal is green at protein ${t.protein.g}+ g, sugar ${t.sugar.g} g or less, fiber ${t.fiber.g}+ g, sat fat ${t.satFat.g} g or less.</p></div>`;
+}
+function saveGoals() {
+  const e = setNutritionGoals($('gFiber').value, $('gSat').value);
+  if (e) { $('goalMsg').textContent = e; $('goalMsg').style.color = 'var(--bad)'; return; }
+  toast('Goals saved'); refresh();
 }
 
 /* Stubs filled in by later steps. */
@@ -1301,6 +1628,7 @@ function weightHTML() {
     <div class="card" style="margin-top:6px"><h3>Last 12 weeks</h3>${weightChartHTML()}</div>
     <div class="card"><h3>Monthly averages</h3>${months.length ? months.map((m, i) => { const prev = months[i + 1], d = prev ? round1(m.avg - prev.avg) : null;
       return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-top:${i ? '1px solid var(--line)' : '0'}"><span>${monthName(m.ym)}</span><span class="num"><b>${m.avg}</b> ${u}${d != null ? ` <span class="muted small">${d > 0 ? '+' : ''}${d}</span>` : ''} <span class="muted small">· ${m.n} weigh-in${m.n === 1 ? '' : 's'}</span></span></div>`; }).join('') : '<p class="muted small">Nothing yet.</p>'}</div>
+    ${goalsCardHTML()}
     <p class="small muted" style="text-align:center;margin:0 0 14px">Weight never earns or costs anything. It's just a number.</p>
   </section>`;
 }
