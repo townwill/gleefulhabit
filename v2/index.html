@@ -132,6 +132,17 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 .sheet .mc-btns .btn{margin:0;width:100%}
 .linkbtn{min-height:44px;color:var(--muted);font-size:13px;font-weight:600;padding:0 2px}
 .mc-saved{display:flex;align-items:center;gap:10px;min-height:56px;padding:6px 12px;border-radius:14px;background:#fafafb;border:1px solid var(--line);width:100%;text-align:left;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.mc-acts{display:grid;grid-template-columns:1.2fr 1fr;gap:8px;margin-top:8px}
+.sheet .mc-acts .btn{margin:0;width:100%;font-size:14px;padding:0 6px}
+.mc-shop{display:flex;align-items:center;border-top:1px solid var(--line)}
+.mc-shop-t{flex:1;min-width:0;display:flex;align-items:center;gap:12px;min-height:56px;text-align:left}
+.mc-shop-t b{display:block;font-size:16px;font-weight:600}
+.mc-shop-t small{display:block;font-size:12px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mc-shop-t.done b{text-decoration:line-through;color:var(--muted)}
+.mc-chk{width:26px;height:26px;border-radius:50%;border:2px solid var(--g2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mc-chk.on{background:var(--green);border-color:var(--green)}
+.mc-chk svg{width:14px;height:14px}
+.mc-del{width:44px;height:44px;color:var(--muted);font-size:16px;flex-shrink:0}
 .spin{width:36px;height:36px;border:4px solid var(--track);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .seg{display:flex;background:#f1f1f3;border-radius:11px;padding:3px;gap:3px}
@@ -194,7 +205,7 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 const SCHEMA = 2;
 const STORE_KEY = 'gh2';
 const V1_KEY = 'habitflow';
-const APP_VERSION = '2026-10-26.0759';
+const APP_VERSION = '2026-10-26.1445';
 const HABITS = ['workout','protein','wind','sugar'];
 const HABIT_META = {
   workout:{name:'Workout',icon:'🏋️'},
@@ -242,6 +253,7 @@ function blankState() {
     spends: [],      // { id, dk, cents, cat }
     wins: [],        // { id, dk, label, other }
     savedMeals: seedMeals(),   // Meal Check: { id, name, desc?, result|null, uses, lastUsed }
+    shoppingList: [], // Meal Check shopping list: { id, text, meal, added, done }
     mealChecks: [],  // Meal Check history (last 365 days): { id, date, ts, mealName, verdict, protein_g, added_sugar_g, fiber_g, sat_fat_g, logged }
     weight: { unit:'lbs', goal:null, logs:{} },
     months: {},      // 'YYYY-MM' -> frozen month-close snapshot
@@ -272,6 +284,7 @@ function migrateState(raw) {
     : seedMeals();                                   // an old save gets the seeded meal; a deliberately emptied list stays empty
   s.savedMeals.forEach(m => { m.uses = +m.uses || 0; if (m.result === undefined) m.result = null; });
   if (!Array.isArray(s.mealChecks)) s.mealChecks = [];
+  s.shoppingList = (Array.isArray(s.shoppingList) ? s.shoppingList : []).filter(x => x && typeof x === 'object' && x.id && typeof x.text === 'string' && x.text.trim()).map(x => ({ id:String(x.id), text:x.text.slice(0, 60), meal:typeof x.meal === 'string' ? x.meal.slice(0, 40) : '', added:+x.added || 0, done:!!x.done })).slice(-100);
   { const cut = addDays(todayKey(), -365); s.mealChecks = s.mealChecks.filter(c => c && typeof c === 'object' && c.date >= cut); }
   for (const dk of Object.keys(s.days)) {
     const d = s.days[dk];
@@ -847,7 +860,7 @@ The user's goals: high protein, low added sugar, high fiber (especially soluble:
 Give ONE practical swap or add-on that most improves the weakest goal, using common pantry or freezer foods. Max 15 words.
 If the image is not food, set is_food to false.
 Response schema:
-{"is_food":true,"meal_name":"short name","items":[{"name":"item","amount":"portion"}],"protein_g":0,"added_sugar_g":0,"fiber_g":0,"sat_fat_g":0,"calories":0,"confidence":"low|medium|high","assumptions":"one short sentence","swap":"max 15 words"}`;
+{"is_food":true,"meal_name":"short name","items":[{"name":"item","amount":"portion"}],"protein_g":0,"added_sugar_g":0,"fiber_g":0,"sat_fat_g":0,"calories":0,"confidence":"low|medium|high","assumptions":"one short sentence","swap":"max 15 words","swap_items":["1 to 3 short grocery names needed for the swap"]}`;
 const VERDICT_LABEL = { green:'Great fit', yellow:'Okay', red:'Rethink' };
 
 /* Daily goals. Protein and sugar are the money rules (they also drive the daily drip), so only fiber and
@@ -909,6 +922,7 @@ function parseMealJSON(text) {
     confidence:['low', 'medium', 'high'].indexOf(obj.confidence) >= 0 ? obj.confidence : 'medium',
     assumptions:String(obj.assumptions || '').slice(0, 200),
     swap:String(obj.swap || '').trim().slice(0, 120),
+    swap_items:cleanSwapItems(obj.swap_items),
   };
 }
 
@@ -976,6 +990,71 @@ function setNutritionGoals(fiber, satFat) {
   if (!(fiber >= 10 && fiber <= 80)) return 'Fiber goal should be between 10 and 80 g';
   if (!(satFat >= 3 && satFat <= 40)) return 'Saturated fat limit should be between 3 and 40 g';
   S.settings.fiberGoal = fiber; S.settings.satFatGoal = satFat; save(); return null;
+}
+
+/* ── Meal Check extras: "Another idea" and the shopping list. Neither pays anything. ── */
+const SWAP_SYSTEM = `You suggest ONE alternative swap or add-on for a meal the user just checked.
+The user's goals: high protein, low added sugar, high fiber (especially soluble: oats, beans, chia, psyllium), low saturated fat, healthy fats from olive oil, nuts, seeds, avocado.
+Pick a DIFFERENT idea than any already suggested, aimed at the weakest goal, using common pantry or freezer foods. Max 15 words.
+Return ONLY JSON, no prose: {"swap":"the suggestion","swap_items":["1 to 3 short grocery names needed for it"]}`;
+/* -> { swap, items } or null. Same defensive parsing as the meal itself. */
+function parseSwapJSON(text) {
+  const t = String(text == null ? '' : text).replace(/```json|```/gi, '').trim();
+  let obj = null;
+  try { obj = JSON.parse(t); } catch (e) {
+    const a = t.indexOf('{'), b = t.lastIndexOf('}');
+    if (a >= 0 && b > a) { try { obj = JSON.parse(t.slice(a, b + 1)); } catch (e2) { obj = null; } }
+  }
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
+  const swap = String(obj.swap == null ? '' : obj.swap).trim().slice(0, 120);
+  if (!swap) return null;
+  return { swap, items:cleanSwapItems(obj.swap_items) };
+}
+function cleanSwapItems(a) {
+  return Array.isArray(a) ? a.map(x => String(x == null ? '' : x).trim().replace(/\s+/g, ' ').slice(0, 40)).filter(Boolean).slice(0, 3) : [];
+}
+/* Asks for a different swap for the same meal. `avoid` = swaps already shown. Never throws: { swap, items } or { err }. */
+async function requestAltSwap(m, avoid) {
+  const items = (m.items || []).map(i => (i.amount ? i.amount + ' ' : '') + i.name).join(', ');
+  const text = `Meal: ${m.meal_name}. ${items ? 'Items: ' + items + '. ' : ''}Per meal: protein ${m.protein_g} g, added sugar ${m.added_sugar_g} g, fiber ${m.fiber_g} g, saturated fat ${m.sat_fat_g} g.\nAlready suggested (do not repeat): ${avoid.join(' | ') || 'none'}`;
+  const r = await callClaude({ system:SWAP_SYSTEM, content:[{ type:'text', text }], max_tokens:150 });
+  if (r.err) return r;
+  const p = parseSwapJSON(r.text);
+  return p || { err:'parse' };
+}
+
+/* Shopping list: top-level S.shoppingList [{ id, text, meal, added, done }]. */
+const SHOP_MAX = 100;
+const capFirst = s => s.charAt(0).toUpperCase() + s.slice(1);
+/* The groceries for a swap; falls back to the swap sentence for meals checked before this existed. */
+function swapShopItems(m) {
+  const it = cleanSwapItems(m && m.swap_items);
+  return it.length ? it : (m && m.swap ? [m.swap] : []);
+}
+/* Returns { added, already }. An unchecked duplicate (case-insensitive) is not added twice. */
+function addToShoppingList(items, meal) {
+  const have = new Set(S.shoppingList.filter(x => !x.done).map(x => x.text.toLowerCase()));
+  let added = 0, already = 0;
+  for (const raw of items || []) {
+    const text = capFirst(String(raw == null ? '' : raw).trim().replace(/\s+/g, ' ').slice(0, 60));
+    if (!text) continue;
+    if (have.has(text.toLowerCase())) { already++; continue; }
+    have.add(text.toLowerCase());
+    S.shoppingList.push({ id:uid(), text, meal:String(meal || '').slice(0, 40), added:Date.now(), done:false });
+    added++;
+  }
+  if (S.shoppingList.length > SHOP_MAX) S.shoppingList = S.shoppingList.slice(-SHOP_MAX);
+  if (added) save();
+  return { added, already };
+}
+function toggleShopItem(id) { const x = S.shoppingList.find(i => i.id === id); if (!x) return false; x.done = !x.done; save(); return true; }
+function deleteShopItem(id) { const n = S.shoppingList.length; S.shoppingList = S.shoppingList.filter(i => i.id !== id); if (S.shoppingList.length !== n) save(); return S.shoppingList.length !== n; }
+function clearCheckedShop() { const n = S.shoppingList.length; S.shoppingList = S.shoppingList.filter(i => !i.done); if (S.shoppingList.length !== n) save(); return n - S.shoppingList.length; }
+function shopOpenCount() { return S.shoppingList.filter(i => !i.done).length; }
+/* Plain text for Notes / Reminders / Messages: only what's still to buy. */
+function shoppingText() {
+  const open = S.shoppingList.filter(i => !i.done);
+  return open.length ? 'Shopping list\n' + open.map(i => '• ' + i.text).join('\n') : '';
 }
 
 /*@@ENGINE2*/
@@ -1388,10 +1467,41 @@ async function mcRun() {
   if (!m) { me.view = 'error'; me.errKind = 'parse'; renderMealSheet(true); return; }
   if (!m.is_food) { me.view = 'notfood'; renderMealSheet(true); return; }
   me.photo = null;                                                // photos are never kept: gone as soon as the call succeeds
-  me.result = m; me.checkId = recordMealCheck(m).id; me.details = false;
+  mcSetResult(me, m); me.checkId = recordMealCheck(m).id;
   if (me.savedId) { const sv = S.savedMeals.find(x => x.id === me.savedId); if (sv) { sv.result = m; useSavedMeal(sv.id); } }
   me.view = 'result'; renderMealSheet(true);
 }
+function mcSetResult(me, m) { me.result = m; me.details = false; me.swaps = m.swap ? [m.swap] : []; me.listed = false; me.altBusy = false; me.altNote = ''; }
+/* Another idea: asks for a different swap for the same meal. Only the swap line changes; the verdict and numbers stay. */
+async function mcAlt() {
+  const me = MC; if (!me || !me.result || me.busy || me.altBusy) return;
+  if (!hasKey()) { me.altNote = 'Add your API key in settings.'; renderMealSheet(true); return; }
+  if (mcOffline()) { me.altNote = 'Needs a connection.'; renderMealSheet(true); return; }
+  me.altBusy = true; me.altNote = ''; renderMealSheet(true);
+  const avoid = me.swaps.slice();
+  const r = await requestAltSwap(me.result, avoid);
+  if (MC !== me) return;                                          // sheet closed while waiting
+  me.altBusy = false;
+  if (r.err) { me.altNote = r.err === 'offline' ? 'Needs a connection.' : r.err === 'auth' ? 'API key rejected — check it on the Protein page.' : "Couldn't get another idea — try again."; renderMealSheet(true); return; }
+  if (avoid.some(x => x.toLowerCase() === r.swap.toLowerCase())) { me.altNote = 'Same idea again — tap once more.'; renderMealSheet(true); return; }
+  me.result.swap = r.swap; me.result.swap_items = r.items; me.swaps.push(r.swap); me.listed = false;
+  save(); renderMealSheet(true);                                  // result is shared with a saved meal, so its cached swap updates too
+}
+function mcAddList() {
+  if (!MC || !MC.result || MC.altBusy) return;
+  const r = addToShoppingList(swapShopItems(MC.result), MC.result.meal_name);
+  MC.listed = true;
+  toast(r.added ? `On your list: ${swapShopItems(MC.result).map(x => capFirst(String(x).trim())).join(', ')}` : 'Already on your list');
+  renderMealSheet(true);
+}
+async function mcShareList() {
+  const text = shoppingText(); if (!text) return;
+  try { if (navigator.share) { await navigator.share({ title:'Shopping list', text }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(text); toast('List copied'); } catch (e) { toast("Couldn't copy the list"); }
+}
+function mcShopToggle(id) { if (toggleShopItem(id)) renderMealSheet(true); }
+function mcShopDel(id) { if (deleteShopItem(id)) renderMealSheet(true); }
+function mcShopClear() { const n = clearCheckedShop(); if (n) { toast(`Cleared ${n}`); renderMealSheet(true); } }
 function mcRetry() { if (MC && !MC.busy) mcRun(); }
 /* Saved meals: a tap re-shows the stored result with no API call. An unscored one (the seeded breakfast) is scored once, then cached. */
 function mcSavedTap(id) {
@@ -1399,7 +1509,7 @@ function mcSavedTap(id) {
   if (!MC || MC.busy) return;
   const sv = S.savedMeals.find(x => x.id === id); if (!sv) return;
   MC.savedId = id; MC.saved = true;
-  if (sv.result) { useSavedMeal(id); MC.result = sv.result; MC.checkId = recordMealCheck(sv.result).id; MC.details = false; MC.view = 'result'; renderMealSheet(true); }
+  if (sv.result) { useSavedMeal(id); mcSetResult(MC, sv.result); MC.checkId = recordMealCheck(sv.result).id; MC.view = 'result'; renderMealSheet(true); }
   else { if (mcOffline()) { MC.note = 'Needs a connection to score this one the first time.'; renderMealSheet(true); return; } MC.source = 'saved'; MC.desc = sv.desc || sv.name; mcRun(); }
 }
 function mcPressStart(id) { _mcLong = false; clearTimeout(_mcTimer); _mcTimer = setTimeout(() => { _mcLong = true; if (MC && !MC.busy) { MC.manageId = id; mcShow('manage'); } }, 550); }
@@ -1426,7 +1536,11 @@ function mealResultHTML() {
   return `<div class="mc-top"><div style="min-width:0"><div class="mc-name">${esc(m.meal_name)}</div>${m.confidence === 'low' ? '<div class="small muted">Rough estimate</div>' : ''}</div>
       <div class="mc-verdict"><i class="vdot ${{ green:'vg', yellow:'vy', red:'vr' }[v.verdict]}"></i>${v.label}</div></div>
     ${rows.map(r => `<div class="mc-row"><i class="vdot sm ${dot[v.levels[r[1]]]}"></i><div class="mc-l"><b>${r[0]}</b><span>good at ${r[5]} · today ${r[3]} of ${r[4]} g</span></div><div class="mc-n num">${r[2]}<small> g</small></div></div>`).join('')}
-    ${m.swap ? `<div class="mc-swap">${esc(m.swap)}</div>` : ''}
+    ${m.swap ? `${MC.altBusy ? '<div class="mc-swap" style="color:var(--muted)">Thinking of another idea…</div>' : `<div class="mc-swap">${esc(m.swap)}</div>`}
+    <div class="mc-acts">
+      ${MC.listed ? `<button class="btn" onclick="mcShow('list')">View list (${shopOpenCount()})</button>` : `<button class="btn" ${MC.altBusy || !swapShopItems(m).length ? 'disabled' : ''} onclick="mcAddList()">Add to shopping list</button>`}
+      <button class="btn quiet" ${MC.altBusy ? 'disabled' : ''} onclick="mcAlt()">${MC.altBusy ? 'Thinking…' : 'Another idea'}</button></div>
+    ${MC.altNote ? `<div class="small" style="color:var(--bad);margin-top:6px">${esc(MC.altNote)}</div>` : ''}` : ''}
     <button class="linkbtn" onclick="mcDetails()">${MC.details ? 'Hide details' : 'Details'}</button>
     ${MC.details ? `<div class="small muted" style="margin:-4px 0 6px;line-height:1.45">${m.items.length ? esc(m.items.map(i => (i.amount ? i.amount + ' ' : '') + i.name).join(', ')) + '. ' : ''}${esc(m.assumptions)} Confidence: ${m.confidence}. About ${m.calories} calories.</div>` : ''}
     <div class="mc-btns"><button class="btn primary" ${logged ? 'disabled' : ''} onclick="mcLogIt()">${logged ? 'Logged ✓' : 'Log it'}</button>
@@ -1443,7 +1557,16 @@ function renderMealSheet(inPlace) {
         <button class="btn primary" onclick="mcPickPhoto()">Photo</button>
         <input type="file" id="mcFile" accept="image/*" capture="environment" style="display:none" onchange="mcPhotoPicked(event)">
         <button class="btn" onclick="mcShow('saved')">Saved meals</button>
-        <button class="btn quiet" onclick="mcTypeIt()">Type it</button>${note}`; break;
+        <button class="btn quiet" onclick="mcTypeIt()">Type it</button>
+        <button class="btn quiet" style="margin-top:22px" onclick="mcShow('list')">Shopping list${shopOpenCount() ? ' · ' + shopOpenCount() : ''}</button>${note}`; break;
+    case 'list': {
+      const list = S.shoppingList, anyDone = list.some(i => i.done);
+      h = `<h2>Shopping list</h2>${list.length ? '<p class="hint">Tap an item to check it off.</p>' : '<p class="hint">Nothing here yet. After a check, tap <b>Add to shopping list</b> on the swap idea.</p>'}
+        ${list.map(i => `<div class="mc-shop"><button class="mc-shop-t ${i.done ? 'done' : ''}" onclick="mcShopToggle('${i.id}')"><span class="mc-chk ${i.done ? 'on' : ''}">${i.done ? ICON_CHECK : ''}</span><span style="min-width:0"><b>${esc(i.text)}</b>${i.meal ? `<small>for ${esc(i.meal)}</small>` : ''}</span></button>
+          <button class="mc-del" aria-label="Remove ${esc(i.text)}" onclick="mcShopDel('${i.id}')">✕</button></div>`).join('')}
+        ${shopOpenCount() ? '<button class="btn primary" onclick="mcShareList()">Share list</button>' : ''}
+        ${anyDone ? '<button class="btn" onclick="mcShopClear()">Clear checked</button>' : ''}
+        <button class="btn quiet" onclick="${MC.result ? "mcShow('result')" : "mcShow('choose')"}">Back</button>`; break; }
     case 'photo':
       h = `<h2>Check this photo</h2>
         ${MC.photo ? `<img src="${MC.photo.url}" alt="" style="width:100%;max-height:210px;object-fit:cover;border-radius:14px;margin-top:6px">` : ''}
