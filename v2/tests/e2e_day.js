@@ -14,7 +14,7 @@ const IDEAS = ['A cup of lentil soup with seeded toast for about 15 g fiber', 'C
 (async () => {
   const today = ago(0), yday = ago(1);
   const seed = {
-    schema: 2, startDate: ago(10), settings: { monthly: 200, drip: 100, pool: 50, proteinGoal: 150, sugarBudget: 25, workoutWeek: 3, freeDaysPerYear: 10, fiberGoal: 30, satFatGoal: 13 },
+    schema: 2, startDate: ago(10), settings: { monthly: 200, drip: 100, pool: 50, proteinGoal: 150, sugarBudget: 25, workoutWeek: 3, freeDaysPerYear: 10, fiberGoal: 30, satFatGoal: 18, satFatV: 1 },
     days: {
       [today]: { workout: null, windDown: null, foods: [{ id: 'a', label: 'Grilled chicken', protein: 90, sugar: 2, src: 'ai' }, { id: 'b', label: 'Yogurt bowl', protein: 60, sugar: 9, src: 'check', mc: 'mc-today' }] },
       [yday]: { workout: null, windDown: null, foods: [{ id: 'c', label: 'Big day', protein: 152, sugar: 10, src: 'check', mc: 'mc-yday' }] },
@@ -64,9 +64,9 @@ const IDEAS = ['A cup of lentil soup with seeded toast for about 15 g fiber', 'C
   check('tapping the chip jumps to the day card', await page.evaluate(() => { const r = document.getElementById('dayCard').getBoundingClientRect(); return r.top < 300 && r.top > -50; }));
 
   // ===== the card =====
-  check('the day card has the four readings with their values and goals', await page.evaluate(() => { const t = document.getElementById('dayCard').textContent; return ['Protein', 'Added sugar', 'Fiber', 'Sat fat'].every(x => t.includes(x)) && t.includes('150 / 150 g') && t.includes('11 / 25 g') && t.includes('12 / 30 g') && t.includes('5 / 13 g'); }));
+  check('the day card has the four readings with their values and goals', await page.evaluate(() => { const t = document.getElementById('dayCard').textContent; return ['Protein', 'Added sugar', 'Fiber', 'Sat fat'].every(x => t.includes(x)) && t.includes('150 / 150 g') && t.includes('11 / 25 g') && t.includes('12 / 30 g') && t.includes('5 / 18 g'); }));
   check('dots: protein green, sugar green, fiber RED, sat fat green', await page.evaluate(() => { const c = [...document.querySelectorAll('#dayCard .drow .vdot')].map(e => getComputedStyle(e).backgroundColor); return c[0] === 'rgb(31, 95, 58)' && c[1] === 'rgb(31, 95, 58)' && c[2] === 'rgb(179, 64, 47)' && c[3] === 'rgb(31, 95, 58)'; }));
-  check('each reading says what is left: "Goal met", "14 g left", "18 g to go"', await page.evaluate(() => { const t = document.getElementById('dayCard').textContent; return t.includes('Goal met') && t.includes('14 g left') && t.includes('18 g to go') && t.includes('8 g left'); }));
+  check('each reading says what is left: "Goal met", "14 g left", "18 g to go"', await page.evaluate(() => { const t = document.getElementById('dayCard').textContent; return t.includes('Goal met') && t.includes('14 g left') && t.includes('18 g to go') && t.includes('13 g left'); }));
   check('it is honest about coverage: fiber and sat fat are on 1 of 2 entries', (await page.textContent('#dayCard')).includes('Fiber and sat fat are on 1 of 2 entries'));
   check('the Suggest button is a 44px tap target', (await page.locator('#dayCard button:has-text("Suggest something")').boundingBox()).height >= 44);
   await page.screenshot({ path: `${dir}/day_2_card.png` });
@@ -165,14 +165,14 @@ const IDEAS = ['A cup of lentil soup with seeded toast for about 15 g fiber', 'C
   await p3.goto(URL); await p3.waitForTimeout(400);
   await p3.click('.hrow:has-text("Protein")'); await p3.waitForTimeout(350);
   const dots3 = await p3.$$eval('#dayCard .drow .vdot', els => els.map(e => e.className.match(/v[gyr]\b/)[0]));
-  check('at 1:40pm 106 g protein is green (on pace), fiber yellow (behind but the day is open), nothing is red', dots3.join(',') === 'vg,vg,vy,vy', dots3);
+  check('at 1:40pm 106 g protein is green (on pace), fiber yellow (behind but the day is open), sat fat 14.5 of 18 green, nothing is red', dots3.join(',') === 'vg,vg,vy,vg', dots3);
   check('the protein row says it is on pace', (await p3.textContent('#dayCard .drow >> nth=0')).includes('On pace · 44 g to go'));
   await p3.click('#dayCard button:has-text("Suggest something")'); await p3.waitForTimeout(300);
   check('the suggestion says protein is on pace', (await p3.textContent('#dayCard')).includes('Your protein is on pace'));
   await p3.clock.setFixedTime(atHour(22)); await p3.reload(); await p3.waitForTimeout(400);
   await p3.click('.hrow:has-text("Protein")'); await p3.waitForTimeout(350);
   const dots4 = await p3.$$eval('#dayCard .drow .vdot', els => els.map(e => e.className.match(/v[gyr]\b/)[0]));
-  check('the same numbers at 10pm are judged against the full-day goals (protein and fiber red)', dots4.join(',') === 'vr,vg,vr,vy', dots4);
+  check('the same numbers at 10pm are judged against the full-day goals (protein and fiber red)', dots4.join(',') === 'vr,vg,vr,vg', dots4);
 
   // ===== everything else on the page still works =====
   await page.evaluate(() => { protDaySet(todayKey()); }); await page.waitForTimeout(300);

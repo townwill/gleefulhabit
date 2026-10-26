@@ -166,10 +166,10 @@ const noScroll = async page => page.evaluate(() => { const p = document.querySel
   // ===== F. History, free days, export, import =====
   await page.click('.icon-btn[aria-label="History"]'); await page.waitForTimeout(400);
   check('History opens on the current month', (await page.textContent('.over h3')).includes(await page.evaluate(() => monthName(ymOf(todayKey())))));
-  await page.fill('#freeIn', await page.evaluate(() => todayKey())); await page.click('button:has-text("Add")'); await page.waitForTimeout(250);
+  await page.fill('#freeIn', await page.evaluate(() => todayKey())); await page.click('button[onclick="histAddFree()"]'); await page.waitForTimeout(250);
   check('a free day for today is refused in the UI', (await page.textContent('.over')).includes('in advance'));
   const tomorrow = await page.evaluate(() => addDays(todayKey(), 1));
-  await page.fill('#freeIn', tomorrow); await page.click('button:has-text("Add")'); await page.waitForTimeout(250);
+  await page.fill('#freeIn', tomorrow); await page.click('button[onclick="histAddFree()"]'); await page.waitForTimeout(250);
   check('tomorrow is accepted and listed', (await page.evaluate(t => S.freeDays.includes(t), tomorrow)) && (await page.textContent('.over')).includes('Remove'));
   const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 8000 }), page.click('button:has-text("Export")')]);
   const exported = JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));

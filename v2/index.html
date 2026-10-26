@@ -135,6 +135,14 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 .mc-saved{display:flex;align-items:center;gap:10px;min-height:56px;padding:6px 12px;border-radius:14px;background:#fafafb;border:1px solid var(--line);width:100%;text-align:left;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .mc-acts{display:grid;grid-template-columns:1.2fr 1fr;gap:8px;margin-top:8px}
 .sheet .mc-acts .btn{margin:0;width:100%;font-size:14px;padding:0 6px}
+.g-aisle{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 0}
+.g-x{color:var(--green);font-weight:700;font-size:14px}
+.g-add{display:flex;gap:8px;margin:12px 0 10px}.g-add .field{flex:1;min-width:0;margin:0}.g-add .btn{margin:0;width:auto;padding:0 18px}
+.idea{border:1px solid var(--line);border-radius:16px;padding:12px;margin:10px 0;background:#fafafb}
+.idea-n{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:4px 0 6px}.idea-n div{display:flex;flex-direction:column;align-items:flex-start;gap:1px}.idea-n b{font-size:22px;font-weight:700;letter-spacing:-.5px;line-height:1.1}.idea-n small{font-size:11px;color:var(--muted)}
+.idea-h{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 2px}
+.idea-l{margin:0 0 6px;padding-left:20px;font-size:14px;line-height:1.4}
+.idea .mc-btns{margin-top:10px}
 .mc-shop{display:flex;align-items:center;border-top:1px solid var(--line)}
 .mc-shop-t{flex:1;min-width:0;display:flex;align-items:center;gap:12px;min-height:56px;text-align:left}
 .mc-shop-t b{display:block;font-size:16px;font-weight:600}
@@ -219,7 +227,7 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 const SCHEMA = 2;
 const STORE_KEY = 'gh2';
 const V1_KEY = 'habitflow';
-const APP_VERSION = '2026-10-26.2044';
+const APP_VERSION = '2026-10-26.2101';
 const HABITS = ['workout','protein','wind','sugar'];
 const HABIT_META = {
   workout:{name:'Workout',icon:'🏋️'},
@@ -252,6 +260,11 @@ function canLog(dk) {
 }
 
 /* ── State ── */
+/* Grocery aisles (store order). Defined up here because migrateState runs before the rest of the script. */
+const AISLES = ['Produce', 'Protein', 'Dairy', 'Grains & bread', 'Canned & dry', 'Frozen', 'Other'];
+const GROCERY_MAX = 150;
+let _groceryDirty = false;   // the list changed inside a sheet: redraw the Weight page card when the sheet closes
+function cleanAisle(a) { const x = String(a == null ? '' : a).trim().toLowerCase(); return AISLES.find(n => n.toLowerCase() === x) || null; }
 /* The seeded saved meal starts unscored (result:null); the first tap scores it once and caches it. */
 function seedMeals() {
   return [{ id:'seed-breakfast', name:'Usual breakfast', desc:'2 eggs, ½ cup egg whites, 2 tbsp cottage cheese, scrambled with olive oil spray', result:null, uses:0, lastUsed:null }];
@@ -260,14 +273,15 @@ function blankState() {
   return {
     schema: SCHEMA,
     startDate: null,
-    settings: { monthly:200, drip:100, pool:50, proteinGoal:150, sugarBudget:25, workoutWeek:3, freeDaysPerYear:10, fiberGoal:30, satFatGoal:13 },
+    settings: { monthly:200, drip:100, pool:50, proteinGoal:150, sugarBudget:25, workoutWeek:3, freeDaysPerYear:10, fiberGoal:30, satFatGoal:18, satFatV:1 },
     days: {},        // dk -> { workout, windDown, foods:[] }
     pauses: [],      // { id, habit, from, to|null, why, expect, planned, back, sick, sickId }
     freeDays: [],    // ['YYYY-MM-DD', ...] set in advance only
     spends: [],      // { id, dk, cents, cat }
     wins: [],        // { id, dk, label, other }
     savedMeals: seedMeals(),   // Meal Check: { id, name, desc?, result|null, uses, lastUsed }
-    shoppingList: [], // Meal Check shopping list: { id, text, meal, added, done }
+    groceryList: [],  // { id, item, amount, aisle, count, checked, addedTs } (Weight page + Meal Check + Meal ideas)
+    recentSuggestions: [],   // Meal ideas shown in the last 7 days: { name, ts }
     mealChecks: [],  // Meal Check history (last 365 days): { id, date, ts, mealName, verdict, protein_g, added_sugar_g, fiber_g, sat_fat_g, logged }
     weight: { unit:'lbs', goal:null, logs:{} },
     months: {},      // 'YYYY-MM' -> frozen month-close snapshot
@@ -294,11 +308,16 @@ function migrateState(raw) {
   if (s.comeback === undefined) s.comeback = null;
   if (s.imported === undefined) s.imported = null;
   for (const k of ['fiberGoal', 'satFatGoal']) if (!(+s.settings[k] > 0)) s.settings[k] = blankState().settings[k];
+  if (!(raw.settings && raw.settings.satFatV)) { if (+s.settings.satFatGoal === 13) s.settings.satFatGoal = 18; s.settings.satFatV = 1; }   // the old 13 g default became 18 g, once; a limit you set yourself is kept
   s.savedMeals = Array.isArray(raw.savedMeals) ? raw.savedMeals.filter(m => m && typeof m === 'object' && m.id && typeof m.name === 'string')
     : seedMeals();                                   // an old save gets the seeded meal; a deliberately emptied list stays empty
   s.savedMeals.forEach(m => { m.uses = +m.uses || 0; if (m.result === undefined) m.result = null; });
   if (!Array.isArray(s.mealChecks)) s.mealChecks = [];
-  s.shoppingList = (Array.isArray(s.shoppingList) ? s.shoppingList : []).filter(x => x && typeof x === 'object' && x.id && typeof x.text === 'string' && x.text.trim()).map(x => ({ id:String(x.id), text:x.text.slice(0, 60), meal:typeof x.meal === 'string' ? x.meal.slice(0, 40) : '', added:+x.added || 0, done:!!x.done })).slice(-100);
+  if (!Array.isArray(raw.groceryList) && Array.isArray(raw.shoppingList)) s.groceryList = raw.shoppingList.map(x => x && typeof x === 'object' && x.id && typeof x.text === 'string' ? { id:x.id, item:x.text, amount:'', aisle:'Other', count:1, checked:!!x.done, addedTs:+x.added || 0 } : null);   // the first flat list becomes the aisle list
+  delete s.shoppingList;
+  s.groceryList = (Array.isArray(s.groceryList) ? s.groceryList : []).filter(x => x && typeof x === 'object' && x.id && typeof x.item === 'string' && x.item.trim())
+    .map(x => ({ id:String(x.id), item:x.item.trim().slice(0, 60), amount:typeof x.amount === 'string' ? x.amount.slice(0, 30) : '', aisle:cleanAisle(x.aisle) || 'Other', count:Math.min(99, Math.max(1, Math.round(+x.count) || 1)), checked:!!x.checked, addedTs:+x.addedTs || 0 })).slice(-GROCERY_MAX);
+  { const cut = Date.now() - 7 * 864e5; s.recentSuggestions = (Array.isArray(s.recentSuggestions) ? s.recentSuggestions : []).filter(x => x && typeof x.name === 'string' && x.name && +x.ts >= cut).map(x => ({ name:x.name.slice(0, 60), ts:+x.ts })).slice(-60); }
   { const cut = addDays(todayKey(), -365); s.mealChecks = s.mealChecks.filter(c => c && typeof c === 'object' && c.date >= cut); }
   for (const dk of Object.keys(s.days)) {
     const d = s.days[dk];
@@ -909,7 +928,7 @@ function nutritionGoals() {
 }
 /* Per-meal bands are the table in the spec at the default goals, scaled proportionally when a goal is edited
    (computed every time, never stored). g = green edge, y = yellow edge. */
-const NUTRI_DEFAULT = { protein:{ goal:150, g:35, y:20 }, sugar:{ goal:25, g:8, y:15 }, fiber:{ goal:30, g:8, y:4 }, satFat:{ goal:13, g:4, y:7 } };
+const NUTRI_DEFAULT = { protein:{ goal:150, g:35, y:20 }, sugar:{ goal:25, g:8, y:15 }, fiber:{ goal:30, g:8, y:4 }, satFat:{ goal:18, g:5, y:9 } };
 function mealThresholds(goals) {
   const t = {};
   for (const k of Object.keys(NUTRI_DEFAULT)) {
@@ -1061,38 +1080,121 @@ async function requestAltSwap(m, avoid) {
   return p || { err:'parse' };
 }
 
-/* Shopping list: top-level S.shoppingList [{ id, text, meal, added, done }]. */
-const SHOP_MAX = 100;
+/* Grocery list: top-level S.groceryList [{ id, item, amount, aisle, count, checked, addedTs }], grouped by aisle. */
 const capFirst = s => s.charAt(0).toUpperCase() + s.slice(1);
 /* The groceries for a swap; falls back to the swap sentence for meals checked before this existed. */
 function swapShopItems(m) {
   const it = cleanSwapItems(m && m.swap_items);
   return it.length ? it : (m && m.swap ? [m.swap] : []);
 }
-/* Returns { added, already }. An unchecked duplicate (case-insensitive) is not added twice. */
-function addToShoppingList(items, meal) {
-  const have = new Set(S.shoppingList.filter(x => !x.done).map(x => x.text.toLowerCase()));
-  let added = 0, already = 0;
-  for (const raw of items || []) {
-    const text = capFirst(String(raw == null ? '' : raw).trim().replace(/\s+/g, ' ').slice(0, 60));
-    if (!text) continue;
-    if (have.has(text.toLowerCase())) { already++; continue; }
-    have.add(text.toLowerCase());
-    S.shoppingList.push({ id:uid(), text, meal:String(meal || '').slice(0, 40), added:Date.now(), done:false });
+const AISLE_WORDS = [
+  ['Frozen', /\b(frozen|ice cream|popsicle)(?:s|es)?\b/],
+  ['Produce', /\b(apple|banana|berr(y|ies)|orange|lemon|lime|avocado|tomato|spinach|kale|lettuce|salad|cucumber|pepper|onion|garlic|carrot|broccoli|celery|mushroom|zucchini|potato|sweet potato|cauliflower|cabbage|herb|cilantro|parsley|basil|mango|grape|pear|peach|fruit|veg(etable)?s?|greens|corn|cherry tomato)(?:s|es)?\b/],
+  ['Dairy', /\b(milk|yogurt|yoghurt|cheese|cottage|butter|cream|kefir|egg|eggs|feta|parmesan|mozzarella)(?:s|es)?\b/],
+  ['Protein', /\b(chicken|turkey|beef|steak|pork|bacon|sausage|salmon|tuna|fish|shrimp|tofu|tempeh|ham|jerky|ground|deli|lean)(?:s|es)?\b/],
+  ['Grains & bread', /\b(bread|toast|tortilla|wrap|bagel|bun|roll|pita|oat|oats|oatmeal|rice|pasta|noodle|cereal|granola|quinoa|couscous|cracker|english muffin|muffin|barley|farro)(?:s|es)?\b/],
+  ['Canned & dry', /\b(bean|beans|lentil|lentils|chickpea|chickpeas|hummus|can|canned|salsa|nut|nuts|almond|walnut|pecan|peanut|seed|seeds|chia|flax|psyllium|olive oil|oil|vinegar|broth|stock|sauce|spice|salt|honey|syrup|jam|dried|protein powder|powder|tahini|nut butter|peanut butter)(?:s|es)?\b/],
+];
+function guessAisle(name) {
+  const t = String(name || '').toLowerCase();
+  for (const [aisle, re] of AISLE_WORDS) if (re.test(t)) return aisle;
+  return 'Other';
+}
+/* Entries are a plain name or { item, amount, aisle }. The same item (case-insensitive) is never listed twice: it bumps the count (shown as x2).
+   Buying something and then needing it again starts it over unchecked. Returns { added, bumped }. */
+function addToGrocery(entries, meal) {
+  let added = 0, bumped = 0;
+  for (const e of entries || []) {
+    const o = e && typeof e === 'object' ? e : { item:e };
+    const item = capFirst(String(o.item == null ? '' : o.item).trim().replace(/\s+/g, ' ').slice(0, 60));
+    if (!item) continue;
+    const amount = String(o.amount == null ? '' : o.amount).trim().slice(0, 30);
+    const ex = S.groceryList.find(x => x.item.toLowerCase() === item.toLowerCase());
+    if (ex) {
+      if (ex.checked) { ex.checked = false; ex.count = 1; if (amount) ex.amount = amount; ex.addedTs = Date.now(); added++; }
+      else { ex.count = Math.min(99, ex.count + 1); bumped++; }
+      continue;
+    }
+    S.groceryList.push({ id:uid(), item, amount, aisle:cleanAisle(o.aisle) || guessAisle(item), count:1, checked:false, addedTs:Date.now() });
     added++;
   }
-  if (S.shoppingList.length > SHOP_MAX) S.shoppingList = S.shoppingList.slice(-SHOP_MAX);
-  if (added) save();
-  return { added, already };
+  if (S.groceryList.length > GROCERY_MAX) S.groceryList = S.groceryList.slice(-GROCERY_MAX);
+  if (added || bumped) { _groceryDirty = true; save(); }
+  return { added, bumped };
 }
-function toggleShopItem(id) { const x = S.shoppingList.find(i => i.id === id); if (!x) return false; x.done = !x.done; save(); return true; }
-function deleteShopItem(id) { const n = S.shoppingList.length; S.shoppingList = S.shoppingList.filter(i => i.id !== id); if (S.shoppingList.length !== n) save(); return S.shoppingList.length !== n; }
-function clearCheckedShop() { const n = S.shoppingList.length; S.shoppingList = S.shoppingList.filter(i => !i.done); if (S.shoppingList.length !== n) save(); return n - S.shoppingList.length; }
-function shopOpenCount() { return S.shoppingList.filter(i => !i.done).length; }
-/* Plain text for Notes / Reminders / Messages: only what's still to buy. */
-function shoppingText() {
-  const open = S.shoppingList.filter(i => !i.done);
-  return open.length ? 'Shopping list\n' + open.map(i => '• ' + i.text).join('\n') : '';
+function toggleGrocery(id) { const x = S.groceryList.find(i => i.id === id); if (!x) return false; x.checked = !x.checked; _groceryDirty = true; save(); return true; }
+function deleteGrocery(id) { const n = S.groceryList.length; S.groceryList = S.groceryList.filter(i => i.id !== id); if (S.groceryList.length !== n) { _groceryDirty = true; save(); } return S.groceryList.length !== n; }
+function clearCheckedGrocery() { const n = S.groceryList.length; S.groceryList = S.groceryList.filter(i => !i.checked); if (S.groceryList.length !== n) { _groceryDirty = true; save(); } return n - S.groceryList.length; }
+function groceryOpenCount() { return S.groceryList.filter(i => !i.checked).length; }
+/* [{ aisle, items }] in store order, empty aisles left out. */
+function groceryGroups() { return AISLES.map(a => ({ aisle:a, items:S.groceryList.filter(i => i.aisle === a) })).filter(g => g.items.length); }
+const groceryLabel = i => i.item + (i.amount ? ' (' + i.amount + ')' : '') + (i.count > 1 ? ' ×' + i.count : '');
+/* Plain text for Notes / Messages: only what's still to buy, in store order. */
+function groceryText() {
+  const out = [];
+  for (const g of groceryGroups()) { const open = g.items.filter(i => !i.checked); if (open.length) out.push(g.aisle + '\n' + open.map(i => '• ' + groceryLabel(i)).join('\n')); }
+  return out.length ? 'Grocery list\n\n' + out.join('\n\n') : '';
+}
+
+/* ── Meal ideas: pick Breakfast / Lunch / Dinner / Snack and get 3 meals that fit what's left of today. Pays nothing. ── */
+const IDEA_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+const IDEAS_SYSTEM = `You suggest 3 different meals for the meal type the user asks for, fitted to what is left in their day.
+The user's goals: high protein, low added sugar, high fiber (especially soluble: oats, beans, chia, psyllium), low saturated fat, healthy fats from olive oil, nuts, seeds, avocado.
+Use common grocery-store foods: the user's pantry is not stocked yet, so list everything needed. Favor family-friendly meals. Prep under 20 minutes for breakfast, lunch and snacks. Estimate the numbers for ONE adult serving.
+Do not suggest anything on the "recent" list. Count only ADDED sugar in added_sugar_g (not fruit or milk sugar). Each aisle is one of: Produce, Protein, Dairy, Grains & bread, Canned & dry, Frozen, Other. Steps: at most 4, each short.
+Return ONLY JSON, no prose: {"options":[{"meal_name":"","ingredients":[{"item":"","amount":"","aisle":""}],"steps":[""],"protein_g":0,"added_sugar_g":0,"fiber_g":0,"sat_fat_g":0,"calories":0}]}`;
+/* Defensive like parseMealJSON: fences, prose around the JSON, junk entries dropped, numbers clamped >= 0. Returns up to 3 options or null. */
+function parseIdeasJSON(text) {
+  const t = String(text == null ? '' : text).replace(/```json|```/gi, '').trim();
+  let obj = null;
+  try { obj = JSON.parse(t); } catch (e) {
+    const a = t.indexOf('{'), b = t.lastIndexOf('}');
+    if (a >= 0 && b > a) { try { obj = JSON.parse(t.slice(a, b + 1)); } catch (e2) { obj = null; } }
+  }
+  if (!obj || typeof obj !== 'object' || !Array.isArray(obj.options)) return null;
+  const num = v => { const n = +v; return isFinite(n) && n > 0 ? round1(Math.min(n, 5000)) : 0; };
+  const out = [];
+  for (const o of obj.options) {
+    if (!o || typeof o !== 'object') continue;
+    const name = String(o.meal_name == null ? '' : o.meal_name).trim().slice(0, 60);
+    const ing = (Array.isArray(o.ingredients) ? o.ingredients : []).map(i => {
+      const x = i && typeof i === 'object' ? i : { item:i }, item = String(x.item == null ? '' : x.item).trim().replace(/\s+/g, ' ').slice(0, 50);
+      return item ? { item, amount:String(x.amount == null ? '' : x.amount).trim().slice(0, 30), aisle:cleanAisle(x.aisle) || guessAisle(item) } : null;
+    }).filter(Boolean).slice(0, 14);
+    if (!name || !ing.length) continue;
+    out.push({ meal_name:name, ingredients:ing, steps:(Array.isArray(o.steps) ? o.steps : []).map(x => String(x == null ? '' : x).trim().slice(0, 140)).filter(Boolean).slice(0, 4),
+      protein_g:num(o.protein_g), added_sugar_g:num(o.added_sugar_g), fiber_g:num(o.fiber_g), sat_fat_g:num(o.sat_fat_g), calories:Math.round(num(o.calories)) });
+    if (out.length === 3) break;
+  }
+  return out.length ? out : null;
+}
+/* What is left of today, from what has been logged. Fiber / sat fat are "unknown" when nothing logged carries them. */
+function dayRemaining(dk) {
+  const g = nutritionGoals(), fi = macroTotal(dk, foodFiber), sf = macroTotal(dk, foodSatFat);
+  return { protein:Math.max(0, round1(g.protein - proteinOn(dk))), sugar:round1(g.sugar - sugarOn(dk)),
+    fiber:fi.known ? Math.max(0, round1(g.fiber - fi.sum)) : null, satFat:sf.known ? round1(g.satFat - sf.sum) : null };
+}
+function recentIdeaNames() { const cut = Date.now() - 7 * 864e5; return S.recentSuggestions.filter(x => x.ts >= cut).map(x => x.name); }
+function rememberIdeas(opts) {
+  const now = Date.now(), cut = now - 7 * 864e5;
+  S.recentSuggestions = S.recentSuggestions.filter(x => x.ts >= cut).concat(opts.map(o => ({ name:o.meal_name, ts:now }))).slice(-60);
+  save();
+}
+/* Never throws: { options } or { err }. `extraAvoid` = what the current screen already shows (Shuffle never repeats it). */
+async function requestIdeas(type, extraAvoid) {
+  const dk = todayKey(), r0 = dayRemaining(dk), avoid = recentIdeaNames().concat(extraAvoid || []);
+  const left = [`protein still needed: ${r0.protein} g`, `added sugar remaining: ${r0.sugar >= 0 ? r0.sugar + ' g' : 'none (already over)'}`,
+    r0.fiber === null ? 'fiber still needed: unknown' : `fiber still needed: ${r0.fiber} g`, r0.satFat === null ? 'saturated fat remaining: unknown' : `saturated fat remaining: ${r0.satFat >= 0 ? r0.satFat + ' g' : 'none (already over)'}`];
+  const text = `Meal type: ${type}.\nLeft in today's budget: ${left.join('; ')}.\nRecent (do not suggest): ${avoid.join(' | ') || 'none'}`;
+  const r = await callClaude({ system:IDEAS_SYSTEM, content:[{ type:'text', text }], max_tokens:1800 });
+  if (r.err) return r;
+  const options = parseIdeasJSON(r.text);
+  return options ? { options } : { err:'parse' };
+}
+/* An idea as a normal meal result, so scoring, Log it and Save meal all work the same way. */
+function ideaAsMeal(o) {
+  return { is_food:true, meal_name:o.meal_name, items:o.ingredients.map(i => ({ name:i.item, amount:i.amount })), protein_g:o.protein_g, added_sugar_g:o.added_sugar_g,
+    fiber_g:o.fiber_g, sat_fat_g:o.sat_fat_g, calories:o.calories, confidence:'medium', assumptions:'Suggested meal, one serving.', swap:'', swap_items:[] };
 }
 
 /* ── Day check: the same dots and verdict as a meal, judged against the DAILY goals. Derived only; stores nothing. ──
@@ -1329,8 +1431,10 @@ function todayHTML() {
 }
 let OV = null;   // which full-screen page is open: 'protein' | 'history' | null
 function render() {
+  const wp = document.querySelector('.page.weight'), wTop = wp ? wp.scrollTop : 0;      // ticking a grocery item must not jump the page
   $('app').innerHTML = `<div id="pagerWrap"><div id="pager" style="transform:translateX(${curPage === 1 ? -50 : 0}%)">${weightHTML()}${todayHTML()}</div></div><div class="dots" id="dots"></div>`;
   renderDots();
+  if (wTop) { const nw = document.querySelector('.page.weight'); if (nw) nw.scrollTop = wTop; }
 }
 function refresh() {
   closeMonths();
@@ -1354,7 +1458,7 @@ function openSheet(inner, inPlace) {
   if (sh) { sh.innerHTML = `<div class="grab"></div>${inner}`; return; }
   root.innerHTML = `<div class="scrim" onclick="closeSheet()"></div><div class="sheet"><div class="grab"></div>${inner}</div>`;
 }
-function closeSheet() { SH = null; if (typeof MC !== 'undefined') MC = null; $('sheetRoot').innerHTML = ''; }
+function closeSheet() { SH = null; if (typeof MC !== 'undefined') MC = null; $('sheetRoot').innerHTML = ''; if (_groceryDirty) { _groceryDirty = false; render(); } }
 function daySeg(dk, fn) {
   const t = todayKey(), y = addDays(t, -1), yok = canLog(y);
   return `<div class="seg"><button class="${dk === t ? 'on' : ''}" onclick="${fn}('${t}')">Today</button><button class="${dk === y ? 'on' : ''}" ${yok ? '' : 'disabled'} onclick="${fn}('${y}')">Yesterday${yok ? '' : ' · locked'}</button></div>`;
@@ -1536,7 +1640,7 @@ function proteinOverHTML() {
       <label class="btn primary" style="margin:0">Snap meal<input type="file" accept="image/*" id="snapFile" style="display:none" onchange="onSnap(event)"></label>
       <button class="btn primary" style="margin:0" onclick="onSayIt()">Say it</button>
     </div>
-    <button class="btn" onclick="onCheckMeal()">${hasKey() ? 'Check a meal' : 'Add your API key in settings'}</button>
+    ${hasKey() ? `<div class="row2" style="margin-top:8px"><button class="btn" style="margin:0" onclick="onCheckMeal()">Check a meal</button><button class="btn" style="margin:0" onclick="onMealIdeas()">Meal ideas</button></div>` : `<button class="btn" onclick="onCheckMeal()">Add your API key in settings</button>`}
     ${aiMode ? `<div class="card" style="margin-top:10px">
       ${aiPhoto ? `<img src="${aiPhoto.url}" alt="" style="width:100%;max-height:150px;object-fit:cover;border-radius:12px;margin-bottom:8px">` : ''}
       <textarea class="field" id="aiText" placeholder="Say or type what you ate. Tip: tap the mic on your keyboard to dictate."></textarea>
@@ -1703,19 +1807,28 @@ async function mcAlt() {
 }
 function mcAddList() {
   if (!MC || !MC.result || MC.altBusy) return;
-  const r = addToShoppingList(swapShopItems(MC.result), MC.result.meal_name);
+  const items = swapShopItems(MC.result);
+  addToGrocery(items, MC.result.meal_name);
   MC.listed = true;
-  toast(r.added ? `On your list: ${swapShopItems(MC.result).map(x => capFirst(String(x).trim())).join(', ')}` : 'Already on your list');
+  toast(`On your grocery list: ${items.map(x => capFirst(String(x).trim())).join(', ')}`);
   renderMealSheet(true);
 }
-async function mcShareList() {
-  const text = shoppingText(); if (!text) return;
-  try { if (navigator.share) { await navigator.share({ title:'Shopping list', text }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+/* The grocery list is one list shown in two places (Weight page and the Meal Check / Meal ideas sheet); both redraw from the same data. */
+function grocRedraw() { if (MC && MC.view === 'list') renderMealSheet(true); else refresh(); }
+function gToggle(id) { if (toggleGrocery(id)) grocRedraw(); }
+function gDel(id) { if (deleteGrocery(id)) grocRedraw(); }
+function gClear() { const n = clearCheckedGrocery(); if (n) { toast(`Cleared ${n}`); grocRedraw(); } }
+async function gShare() {
+  const text = groceryText(); if (!text) return;
+  try { if (navigator.share) { await navigator.share({ title:'Grocery list', text }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
   try { await navigator.clipboard.writeText(text); toast('List copied'); } catch (e) { toast("Couldn't copy the list"); }
 }
-function mcShopToggle(id) { if (toggleShopItem(id)) renderMealSheet(true); }
-function mcShopDel(id) { if (deleteShopItem(id)) renderMealSheet(true); }
-function mcShopClear() { const n = clearCheckedShop(); if (n) { toast(`Cleared ${n}`); renderMealSheet(true); } }
+function gManual(where) {
+  const el = $('gMan' + where), t = el ? String(el.value || '').trim() : '';
+  if (!t) { toast('Type what to add'); return; }
+  addToGrocery([t], ''); grocRedraw();
+}
+function mcOpenList(back) { if (!MC || MC.busy) return; MC.back = back; mcShow('list'); }
 function mcRetry() { if (MC && !MC.busy) mcRun(); }
 /* Saved meals: a tap re-shows the stored result with no API call. An unscored one (the seeded breakfast) is scored once, then cached. */
 function mcSavedTap(id) {
@@ -1752,7 +1865,7 @@ function mealResultHTML() {
     ${rows.map(r => `<div class="mc-row"><i class="vdot sm ${dot[v.levels[r[1]]]}"></i><div class="mc-l"><b>${r[0]}</b><span>good at ${r[5]} · today ${r[3]} of ${r[4]} g</span></div><div class="mc-n num">${r[2]}<small> g</small></div></div>`).join('')}
     ${m.swap ? `${MC.altBusy ? '<div class="mc-swap" style="color:var(--muted)">Thinking of another idea…</div>' : `<div class="mc-swap">${esc(m.swap)}</div>`}
     <div class="mc-acts">
-      ${MC.listed ? `<button class="btn" onclick="mcShow('list')">View list (${shopOpenCount()})</button>` : `<button class="btn" ${MC.altBusy || !swapShopItems(m).length ? 'disabled' : ''} onclick="mcAddList()">Add to shopping list</button>`}
+      ${MC.listed ? `<button class="btn" onclick="mcOpenList('result')">View list (${groceryOpenCount()})</button>` : `<button class="btn" ${MC.altBusy || !swapShopItems(m).length ? 'disabled' : ''} onclick="mcAddList()">Add to grocery list</button>`}
       <button class="btn quiet" ${MC.altBusy ? 'disabled' : ''} onclick="mcAlt()">${MC.altBusy ? 'Thinking…' : 'Another idea'}</button></div>
     ${MC.altNote ? `<div class="small" style="color:var(--bad);margin-top:6px">${esc(MC.altNote)}</div>` : ''}` : ''}
     <button class="linkbtn" onclick="mcDetails()">${MC.details ? 'Hide details' : 'Details'}</button>
@@ -1760,6 +1873,69 @@ function mealResultHTML() {
     <div class="mc-btns"><button class="btn primary" ${logged ? 'disabled' : ''} onclick="mcLogIt()">${logged ? 'Logged ✓' : 'Log it'}</button>
       <button class="btn" ${MC.saved ? 'disabled' : ''} onclick="mcSaveMeal()">${MC.saved ? 'Saved ✓' : 'Save meal'}</button>
       <button class="btn quiet" onclick="closeSheet()">Done</button></div>`;
+}
+/* The grocery checklist body, used by the Weight page card (where = 'P') and the sheet (where = 'S'). */
+function groceryListHTML(where) {
+  const open = groceryOpenCount(), anyDone = S.groceryList.some(i => i.checked);
+  const rows = groceryGroups().map(g => `<div class="g-aisle">${esc(g.aisle)}</div>` + g.items.map(i => `<div class="mc-shop"><button class="mc-shop-t ${i.checked ? 'done' : ''}" onclick="gToggle('${i.id}')"><span class="mc-chk ${i.checked ? 'on' : ''}">${i.checked ? ICON_CHECK : ''}</span><span style="min-width:0"><b>${esc(i.item)}${i.count > 1 ? ` <span class="g-x">×${i.count}</span>` : ''}</b>${i.amount ? `<small>${esc(i.amount)}</small>` : ''}</span></button>
+    <button class="mc-del" aria-label="Remove ${esc(i.item)}" onclick="gDel('${i.id}')">✕</button></div>`).join('')).join('');
+  return `${S.groceryList.length ? '<p class="hint" style="margin-bottom:2px">Tap an item to check it off.</p>' : '<p class="hint">Nothing here yet. Add the swap idea after a meal check, or the ingredients from Meal ideas.</p>'}${rows}
+    <div class="g-add"><input class="field" id="gMan${where}" placeholder="Add something else" maxlength="60" onkeydown="if(event.key==='Enter')gManual('${where}')"><button class="btn" onclick="gManual('${where}')">Add</button></div>
+    ${open ? '<button class="btn primary" style="width:100%" onclick="gShare()">Share list</button>' : ''}${anyDone ? '<button class="btn" style="width:100%" onclick="gClear()">Clear checked</button>' : ''}`;
+}
+function groceryCardHTML() {
+  const open = groceryOpenCount();
+  return `<div class="card" id="groceryCard"><h3>Grocery list${open ? ` · ${open}` : ''}</h3>${groceryListHTML('P')}</div>`;
+}
+
+/* Meal ideas (inside the same sheet as Check a meal). */
+function onMealIdeas() {
+  if (!hasKey()) {
+    keyOpen = true; renderProteinOver();
+    setTimeout(() => { const k = $('keyInput'); if (k) { if (k.scrollIntoView) k.scrollIntoView({ block:'center' }); k.focus(); } }, 80);
+    return;
+  }
+  MC = { view:'ideaPick', itype:null, opts:[], ist:[], busy:false, note:'', errKind:null, back:null, result:null };
+  renderMealSheet(false);
+}
+function mcIdeaPick(i) { if (!MC || MC.busy) return; MC.itype = IDEA_TYPES[i]; MC.opts = []; mcIdeaRun(); }
+function mcIdeaShuffle() { if (MC && !MC.busy) mcIdeaRun(); }
+async function mcIdeaRun() {
+  const me = MC; if (!me || me.busy) return;
+  if (mcOffline()) { me.note = 'Needs a connection.'; me.view = 'ideaPick'; renderMealSheet(true); return; }
+  const prev = me.opts.map(o => o.meal_name);
+  me.busy = true; me.view = 'ideaLoad'; me.note = ''; renderMealSheet(true);
+  const r = await requestIdeas(me.itype, prev);
+  if (MC !== me) return;                                          // sheet was closed while waiting
+  me.busy = false;
+  if (r.err) { me.view = 'ideaErr'; me.errKind = r.err; renderMealSheet(true); return; }
+  me.opts = r.options; me.ist = r.options.map(() => ({ listed:false, checkId:null, saved:false }));
+  rememberIdeas(r.options);
+  me.view = 'ideaOpts'; renderMealSheet(true);
+}
+function mcIdeaList(i) {
+  const o = MC && MC.opts[i]; if (!o || MC.busy) return;
+  addToGrocery(o.ingredients, o.meal_name); MC.ist[i].listed = true;
+  toast(`${o.ingredients.length} item${o.ingredients.length === 1 ? '' : 's'} on your grocery list`); renderMealSheet(true);
+}
+function mcIdeaLog(i) {
+  const o = MC && MC.opts[i], st = MC && MC.ist[i]; if (!o || MC.busy) return;
+  if (!st.checkId) st.checkId = recordMealCheck(ideaAsMeal(o)).id;
+  if (logMealCheck(st.checkId)) { toast(`Logged ${o.meal_name}${earnedTxt()}`); renderMealSheet(true); }
+}
+function mcIdeaSave(i) { const o = MC && MC.opts[i], st = MC && MC.ist[i]; if (!o || st.saved) return; saveMealResult(ideaAsMeal(o)); st.saved = true; toast('Meal saved'); renderMealSheet(true); }
+function ideaCardHTML(o, i) {
+  const v = mealVerdict(ideaAsMeal(o)), st = MC.ist[i], dot = { g:'vg', y:'vy', r:'vr' };
+  const c = st.checkId && S.mealChecks.find(x => x.id === st.checkId), logged = !!(c && c.logged);
+  const nums = [['Protein', 'protein', o.protein_g], ['Sugar', 'sugar', o.added_sugar_g], ['Fiber', 'fiber', o.fiber_g], ['Sat fat', 'satFat', o.sat_fat_g]];
+  return `<div class="idea"><div class="mc-top"><div class="mc-name" style="font-size:18px;min-width:0">${esc(o.meal_name)}</div>
+      <div class="mc-verdict" style="font-size:14px"><i class="vdot sm ${{ green:'vg', yellow:'vy', red:'vr' }[v.verdict]}"></i>${v.label}</div></div>
+    <div class="idea-n">${nums.map(n => `<div><i class="vdot sm ${dot[v.levels[n[1]]]}"></i><b class="num">${n[2]}</b><small>${n[0]} g</small></div>`).join('')}</div>
+    <div class="idea-h">Ingredients</div><ul class="idea-l">${o.ingredients.map(x => `<li>${esc((x.amount ? x.amount + ' ' : '') + x.item)}</li>`).join('')}</ul>
+    ${o.steps.length ? `<div class="idea-h">Steps</div><ol class="idea-l">${o.steps.map(x => `<li>${esc(x)}</li>`).join('')}</ol>` : ''}
+    <div class="mc-btns"><button class="btn" ${st.listed ? 'disabled' : ''} onclick="mcIdeaList(${i})">${st.listed ? 'On list ✓' : 'Add to list'}</button>
+      <button class="btn primary" ${logged ? 'disabled' : ''} onclick="mcIdeaLog(${i})">${logged ? 'Logged ✓' : 'Log it'}</button>
+      <button class="btn" ${st.saved ? 'disabled' : ''} onclick="mcIdeaSave(${i})">${st.saved ? 'Saved ✓' : 'Save meal'}</button></div></div>`;
 }
 function renderMealSheet(inPlace) {
   if (!MC) return;
@@ -1772,15 +1948,29 @@ function renderMealSheet(inPlace) {
         <input type="file" id="mcFile" accept="image/*" capture="environment" style="display:none" onchange="mcPhotoPicked(event)">
         <button class="btn" onclick="mcShow('saved')">Saved meals</button>
         <button class="btn quiet" onclick="mcTypeIt()">Type it</button>
-        <button class="btn quiet" style="margin-top:22px" onclick="mcShow('list')">Shopping list${shopOpenCount() ? ' · ' + shopOpenCount() : ''}</button>${note}`; break;
-    case 'list': {
-      const list = S.shoppingList, anyDone = list.some(i => i.done);
-      h = `<h2>Shopping list</h2>${list.length ? '<p class="hint">Tap an item to check it off.</p>' : '<p class="hint">Nothing here yet. After a check, tap <b>Add to shopping list</b> on the swap idea.</p>'}
-        ${list.map(i => `<div class="mc-shop"><button class="mc-shop-t ${i.done ? 'done' : ''}" onclick="mcShopToggle('${i.id}')"><span class="mc-chk ${i.done ? 'on' : ''}">${i.done ? ICON_CHECK : ''}</span><span style="min-width:0"><b>${esc(i.text)}</b>${i.meal ? `<small>for ${esc(i.meal)}</small>` : ''}</span></button>
-          <button class="mc-del" aria-label="Remove ${esc(i.text)}" onclick="mcShopDel('${i.id}')">✕</button></div>`).join('')}
-        ${shopOpenCount() ? '<button class="btn primary" onclick="mcShareList()">Share list</button>' : ''}
-        ${anyDone ? '<button class="btn" onclick="mcShopClear()">Clear checked</button>' : ''}
-        <button class="btn quiet" onclick="${MC.result ? "mcShow('result')" : "mcShow('choose')"}">Back</button>`; break; }
+        <button class="btn quiet" style="margin-top:22px" onclick="mcOpenList('choose')">Grocery list${groceryOpenCount() ? ' · ' + groceryOpenCount() : ''}</button>${note}`; break;
+    case 'list':
+      h = `<h2>Grocery list</h2>${groceryListHTML('S')}
+        <button class="btn quiet" onclick="mcShow('${MC.back || (MC.result ? 'result' : 'choose')}')">Back</button>`; break;
+    case 'ideaPick': {
+      const r = dayRemaining(todayKey());
+      h = `<h2>Meal ideas</h2><p class="hint">Pick a meal and get 3 ideas that fit what's left today: ${r.protein} g protein to go${r.sugar >= 0 ? `, ${r.sugar} g sugar left` : ', over on sugar'}.</p>
+        <div class="row2">${IDEA_TYPES.slice(0, 2).map((t, i) => `<button class="btn primary" style="margin:0 0 8px" onclick="mcIdeaPick(${i})">${t}</button>`).join('')}</div>
+        <div class="row2">${IDEA_TYPES.slice(2).map((t, i) => `<button class="btn primary" style="margin:0 0 8px" onclick="mcIdeaPick(${i + 2})">${t}</button>`).join('')}</div>
+        <button class="btn quiet" style="margin-top:14px" onclick="mcOpenList('ideaPick')">Grocery list${groceryOpenCount() ? ' · ' + groceryOpenCount() : ''}</button>${note}`; break; }
+    case 'ideaLoad':
+      h = `<div style="display:flex;flex-direction:column;align-items:center;padding:36px 0 30px"><div class="spin"></div><h2 style="margin:18px 0 4px">Finding ${esc(String(MC.itype || 'meal').toLowerCase())} ideas…</h2><p class="hint" style="margin:0">A few seconds</p></div>`; break;
+    case 'ideaErr': {
+      const msg = ({ offline:'Needs a connection.', auth:'API key rejected — check it on the Protein page.', nokey:'Add your API key in settings first.' })[MC.errKind] || "Couldn't read those ideas — try again";
+      h = `<h2>Hmm</h2><p class="hint" style="font-size:15px;color:var(--text)">${msg}</p>
+        <button class="btn primary" onclick="mcIdeaRun()">Try again</button>
+        <button class="btn quiet" onclick="mcShow('ideaPick')">Back</button>`; break; }
+    case 'ideaOpts':
+      h = `<h2>${esc(MC.itype)} ideas</h2><p class="hint" style="margin-bottom:4px">One adult serving each. Scored against your goals like any meal.</p>
+        ${MC.opts.map((o, i) => ideaCardHTML(o, i)).join('')}
+        <button class="btn primary" onclick="mcIdeaShuffle()">Shuffle</button>
+        <div class="mc-btns" style="grid-template-columns:1fr 1fr"><button class="btn" onclick="mcOpenList('ideaOpts')">Grocery list${groceryOpenCount() ? ' · ' + groceryOpenCount() : ''}</button><button class="btn quiet" onclick="mcShow('ideaPick')">Change meal</button></div>
+        <button class="btn quiet" onclick="closeSheet()">Done</button>`; break;
     case 'photo':
       h = `<h2>Check this photo</h2>
         ${MC.photo ? `<img src="${MC.photo.url}" alt="" style="width:100%;max-height:210px;object-fit:cover;border-radius:14px;margin-top:6px">` : ''}
@@ -1965,6 +2155,7 @@ function weightHTML() {
     <div class="card" style="margin-top:6px"><h3>Last 12 weeks</h3>${weightChartHTML()}</div>
     <div class="card"><h3>Monthly averages</h3>${months.length ? months.map((m, i) => { const prev = months[i + 1], d = prev ? round1(m.avg - prev.avg) : null;
       return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-top:${i ? '1px solid var(--line)' : '0'}"><span>${monthName(m.ym)}</span><span class="num"><b>${m.avg}</b> ${u}${d != null ? ` <span class="muted small">${d > 0 ? '+' : ''}${d}</span>` : ''} <span class="muted small">· ${m.n} weigh-in${m.n === 1 ? '' : 's'}</span></span></div>`; }).join('') : '<p class="muted small">Nothing yet.</p>'}</div>
+    ${groceryCardHTML()}
     ${goalsCardHTML()}
     <p class="small muted" style="text-align:center;margin:0 0 14px">Weight never earns or costs anything. It's just a number.</p>
   </section>`;

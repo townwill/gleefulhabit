@@ -16,10 +16,10 @@ const lastBody = () => calls[calls.length - 1].body;
   // ================= State + migration =================
   world();
   const b = blankState();
-  ok('new fields exist on a fresh state: goals, seeded saved meal, empty history', b.settings.fiberGoal === 30 && b.settings.satFatGoal === 13 && b.savedMeals.length === 1 && b.savedMeals[0].name === 'Usual breakfast' && b.savedMeals[0].result === null && Array.isArray(b.mealChecks) && b.mealChecks.length === 0);
+  ok('new fields exist on a fresh state: goals, seeded saved meal, empty history', b.settings.fiberGoal === 30 && b.settings.satFatGoal === 18 && b.savedMeals.length === 1 && b.savedMeals[0].name === 'Usual breakfast' && b.savedMeals[0].result === null && Array.isArray(b.mealChecks) && b.mealChecks.length === 0);
   ok('the seeded breakfast is the usual one', /2 eggs.*½ cup egg whites.*2 tbsp cottage cheese.*olive oil spray/.test(b.savedMeals[0].desc));
   let m = migrateState({ schema: 2, days: {} });
-  ok('OLD SAVE (no Meal Check fields) loads with everything defaulted + the seed', m.settings.fiberGoal === 30 && m.settings.satFatGoal === 13 && m.savedMeals.length === 1 && m.savedMeals[0].id === 'seed-breakfast' && m.mealChecks.length === 0);
+  ok('OLD SAVE (no Meal Check fields) loads with everything defaulted + the seed', m.settings.fiberGoal === 30 && m.settings.satFatGoal === 18 && m.savedMeals.length === 1 && m.savedMeals[0].id === 'seed-breakfast' && m.mealChecks.length === 0);
   m = migrateState({ schema: 2, settings: { drip: 100, proteinGoal: 150, sugarBudget: 25 } });
   ok('...existing protein and sugar goals are reused untouched', m.settings.proteinGoal === 150 && m.settings.sugarBudget === 25 && nutritionGoals.call(null) !== undefined);
   m = migrateState({ schema: 2, savedMeals: [] });
@@ -27,12 +27,22 @@ const lastBody = () => calls[calls.length - 1].body;
   m = migrateState({ schema: 2, savedMeals: [null, 5, { id: 'x' }, { id: 'ok', name: 'Keep me', uses: '3' }] });
   ok('garbage saved-meal entries are dropped; the rest are normalised', m.savedMeals.length === 1 && m.savedMeals[0].uses === 3 && m.savedMeals[0].result === null);
   m = migrateState({ schema: 2, settings: { fiberGoal: 0, satFatGoal: 'x' } });
-  ok('nonsense goals fall back to defaults', m.settings.fiberGoal === 30 && m.settings.satFatGoal === 13);
+  ok('nonsense goals fall back to defaults', m.settings.fiberGoal === 30 && m.settings.satFatGoal === 18);
   const old = addDays(todayKey(), -400), recent = addDays(todayKey(), -10);
   m = migrateState({ schema: 2, mealChecks: [{ id: 'a', date: old }, { id: 'b', date: recent }, null] });
   ok('mealChecks older than 365 days are pruned on load', m.mealChecks.length === 1 && m.mealChecks[0].id === 'b');
   const r = applyBackup({ schema: 2 });
   ok('IMPORTED BACKUP from before Meal Check also loads with the new fields defaulted', r.ok && S.savedMeals.length === 1 && S.settings.fiberGoal === 30 && Array.isArray(S.mealChecks));
+
+  // sat fat default moved 13 -> 18 g: an untouched old default is upgraded once; a limit you set yourself is kept
+  m = migrateState({ schema: 2, settings: { satFatGoal: 13 } });
+  ok('an old save still on the old 13 g default moves to 18 g (once)', m.settings.satFatGoal === 18 && m.settings.satFatV === 1);
+  m = migrateState({ schema: 2, settings: { satFatGoal: 13, satFatV: 1 } });
+  ok('...but a 13 g you chose after that is kept', m.settings.satFatGoal === 13);
+  m = migrateState({ schema: 2, settings: { satFatGoal: 10 } });
+  ok('a custom limit (10 g) is never touched', m.settings.satFatGoal === 10 && m.settings.satFatV === 1);
+  m = migrateState(JSON.parse(JSON.stringify(migrateState({ schema: 2, settings: { satFatGoal: 13 } }))));
+  ok('migrating twice changes nothing', m.settings.satFatGoal === 18);
 
   // ================= Placement: no new habit, nothing on Today =================
   world();
@@ -49,18 +59,18 @@ const lastBody = () => calls[calls.length - 1].body;
 
   // ================= Thresholds + verdict =================
   const t = mealThresholds(nutritionGoals());
-  ok('per-meal bands at the default goals are exactly the spec table', JSON.stringify(t) === JSON.stringify({ protein: { g: 35, y: 20 }, sugar: { g: 8, y: 15 }, fiber: { g: 8, y: 4 }, satFat: { g: 4, y: 7 } }));
+  ok('per-meal bands at the default goals are exactly the spec table', JSON.stringify(t) === JSON.stringify({ protein: { g: 35, y: 20 }, sugar: { g: 8, y: 15 }, fiber: { g: 8, y: 4 }, satFat: { g: 5, y: 9 } }));
   const lv = (k, v) => readingLevel(k, v, t);
   ok('protein: >=35 green, 20-34 yellow, <20 red', lv('protein', 35) === 'g' && lv('protein', 34.9) === 'y' && lv('protein', 20) === 'y' && lv('protein', 19.9) === 'r');
   ok('added sugar: <=8 green, 9-15 yellow, >15 red', lv('sugar', 8) === 'g' && lv('sugar', 8.5) === 'y' && lv('sugar', 15) === 'y' && lv('sugar', 15.1) === 'r');
   ok('fiber: >=8 green, 4-7 yellow, <4 red', lv('fiber', 8) === 'g' && lv('fiber', 7.9) === 'y' && lv('fiber', 4) === 'y' && lv('fiber', 3.9) === 'r');
-  ok('sat fat: <=4 green, 5-7 yellow, >7 red', lv('satFat', 4) === 'g' && lv('satFat', 4.5) === 'y' && lv('satFat', 7) === 'y' && lv('satFat', 7.1) === 'r');
+  ok('sat fat: <=5 green, 6-9 yellow, >9 red', lv('satFat', 5) === 'g' && lv('satFat', 5.5) === 'y' && lv('satFat', 9) === 'y' && lv('satFat', 9.1) === 'r');
   const mk = (p, s, f, sf) => ({ protein_g: p, added_sugar_g: s, fiber_g: f, sat_fat_g: sf });
   ok('all four green -> GREEN, "Great fit"', mealVerdict(mk(40, 2, 10, 2)).verdict === 'green' && mealVerdict(mk(40, 2, 10, 2)).label === 'Great fit');
   ok('three green + one yellow -> GREEN', mealVerdict(mk(30, 2, 10, 2)).verdict === 'green' && mealVerdict(mk(40, 2, 5, 2)).verdict === 'green');
   ok('three green + one RED protein/fiber (not sugar/sat fat) -> YELLOW', mealVerdict(mk(10, 2, 10, 2)).verdict === 'yellow' && mealVerdict(mk(40, 2, 1, 2)).verdict === 'yellow');
   ok('two yellow, two green -> YELLOW, "Okay"', mealVerdict(mk(30, 12, 10, 2)).verdict === 'yellow' && mealVerdict(mk(30, 12, 10, 2)).label === 'Okay');
-  ok('sat fat red -> RED even if everything else is green ("Rethink")', mealVerdict(mk(60, 0, 20, 9)).verdict === 'red' && mealVerdict(mk(60, 0, 20, 9)).label === 'Rethink');
+  ok('sat fat red -> RED even if everything else is green ("Rethink")', mealVerdict(mk(60, 0, 20, 11)).verdict === 'red' && mealVerdict(mk(60, 0, 20, 11)).label === 'Rethink');
   ok('added sugar red -> RED even if everything else is green', mealVerdict(mk(60, 20, 20, 0)).verdict === 'red');
   const bv = mealVerdict(BREAKFAST);
   ok('usual breakfast (29 g, 0 sugar, 0 fiber, 3.5 sat fat) -> YELLOW', bv.verdict === 'yellow' && bv.levels.protein === 'y' && bv.levels.sugar === 'g' && bv.levels.fiber === 'r' && bv.levels.satFat === 'g');
@@ -69,8 +79,8 @@ const lastBody = () => calls[calls.length - 1].body;
   ok('editing the fiber goal re-computes the bands (24 g -> green at 6 g, yellow from 3 g)', t2.fiber.g === 6 && t2.fiber.y === 3 && t2.protein.g === 35);
   ok('...so the same meal (30 g protein, 6 g fiber) turns green at a 24 g goal and stays yellow at 30 g', mealVerdict(mk(30, 2, 6, 2), nutritionGoals()).verdict === 'green' && (S.settings.fiberGoal = 30, mealVerdict(mk(30, 2, 6, 2), nutritionGoals()).verdict === 'yellow'));
   ok('bands are never stored in state', !/threshold|"g":35/.test(JSON.stringify(S)));
-  ok('goal edits are validated and never touch the money rules', setNutritionGoals(5, 13) !== null && setNutritionGoals(30, 100) !== null && S.settings.fiberGoal === 30 && setNutritionGoals(28, 12) === null && S.settings.fiberGoal === 28 && S.settings.satFatGoal === 12 && S.settings.proteinGoal === 150 && S.settings.sugarBudget === 25);
-  setNutritionGoals(30, 13);
+  ok('goal edits are validated and never touch the money rules', setNutritionGoals(5, 18) !== null && setNutritionGoals(30, 100) !== null && S.settings.fiberGoal === 30 && setNutritionGoals(28, 12) === null && S.settings.fiberGoal === 28 && S.settings.satFatGoal === 12 && S.settings.proteinGoal === 150 && S.settings.sugarBudget === 25);
+  setNutritionGoals(30, 18);
 
   // ================= Parser =================
   ok('fenced JSON parses', parseMealJSON('```json\n' + JSON.stringify(BREAKFAST) + '\n```').protein_g === 29);
@@ -103,7 +113,7 @@ const lastBody = () => calls[calls.length - 1].body;
   ok('the card has Log it, Save meal, Done and a collapsed Details', sheet().includes('>Log it<') && sheet().includes('>Save meal<') && sheet().includes('>Done<') && sheet().includes('>Details<') && !sheet().includes('Standard large eggs'));
   mcDetails();
   ok('Details opens the assumptions, items, confidence and calories', sheet().includes('Standard large eggs') && sheet().includes('Confidence: medium') && sheet().includes('260 calories') && sheet().includes('2 large whole eggs'));
-  ok('the card shows today\'s running totals for all four goals', /today 0 of 150 g/.test(sheet()) && /today 0 of 25 g/.test(sheet()) && /today 0 of 30 g/.test(sheet()) && /today 0 of 13 g/.test(sheet()));
+  ok('the card shows today\'s running totals for all four goals', /today 0 of 150 g/.test(sheet()) && /today 0 of 25 g/.test(sheet()) && /today 0 of 30 g/.test(sheet()) && /today 0 of 18 g/.test(sheet()));
   ok('the check is recorded, not yet logged', S.mealChecks.length === 1 && S.mealChecks[0].verdict === 'yellow' && S.mealChecks[0].logged === false && S.mealChecks[0].mealName === BREAKFAST.meal_name && S.mealChecks[0].fiber_g === 0 && S.mealChecks[0].sat_fat_g === 3.5);
   ok('checking a meal pays NOTHING by itself (money unchanged)', canonMoney() === before);
   ok('no photo/base64 anywhere in state after a text check', !/base64|"data":/.test(JSON.stringify(S)));
@@ -117,7 +127,7 @@ const lastBody = () => calls[calls.length - 1].body;
   ok('...so it counts toward Protein and Less sugar like any other entry', proteinOn(todayKey()) === 29 && habitState('sugar', todayKey()).logged);
   ok('...and fiber / sat fat go to the daily totals computed from logged checks', S.mealChecks[0].logged === true && mealFiberOn(todayKey()) === 0 && mealSatFatOn(todayKey()) === 3.5);
   ok('the button becomes "Logged ✓" and a second tap does nothing', sheet().includes('Logged ✓') && (mcLogIt(), foodsOn(todayKey()).length === foodsBefore + 1));
-  ok('the card now shows the new running totals', /today 29 of 150 g/.test(sheet()) && /today 3.5 of 13 g/.test(sheet()));
+  ok('the card now shows the new running totals', /today 29 of 150 g/.test(sheet()) && /today 3.5 of 18 g/.test(sheet()));
   closeSheet();
   ok('Done closes the sheet and drops the Meal Check session', sheet() === '' && MC === null);
   deleteFood(todayKey(), f.id);
@@ -135,8 +145,8 @@ const lastBody = () => calls[calls.length - 1].body;
 
   // ================= Verdict colours through the UI =================
   world(); localStorage.setItem('gh_ai_key', 'sk-test'); onCheckMeal();
-  reply = Object.assign({}, GREAT, { sat_fat_g: 9 }); mcTypeIt(); setText('cheese pizza'); mcCheckText(); await new Promise(r => setTimeout(r, 20));
-  ok('9 g sat fat -> RED "Rethink" regardless of the other readings', sheet().includes('Rethink') && S.mealChecks[0].verdict === 'red');
+  reply = Object.assign({}, GREAT, { sat_fat_g: 11 }); mcTypeIt(); setText('cheese pizza'); mcCheckText(); await new Promise(r => setTimeout(r, 20));
+  ok('11 g sat fat -> RED "Rethink" regardless of the other readings', sheet().includes('Rethink') && S.mealChecks[0].verdict === 'red');
   closeSheet(); onCheckMeal(); reply = GREAT; mcTypeIt(); setText('oats'); mcCheckText(); await new Promise(r => setTimeout(r, 20));
   ok('a great meal -> GREEN "Great fit"', sheet().includes('Great fit') && S.mealChecks[1].verdict === 'green');
   closeSheet(); onCheckMeal(); reply = Object.assign({}, BREAKFAST, { confidence: 'low' }); mcTypeIt(); setText('something'); mcCheckText(); await new Promise(r => setTimeout(r, 20));
@@ -240,7 +250,7 @@ const lastBody = () => calls[calls.length - 1].body;
   ok('BACKUP EXPORT has no API key and no photo data', !exp.includes('SECRET') && !exp.includes('sk-') && !/base64|AAAA/.test(exp));
   ok('...but it does carry saved meals, checks and goals', exp.includes('"savedMeals"') && exp.includes('"mealChecks"') && exp.includes('fiberGoal') && exp.includes('Soup'));
   const snap = JSON.stringify(S); S = blankState(); applyBackup(JSON.parse(exp));
-  ok('...and they round-trip through import', S.savedMeals.some(s => s.name === 'Soup') && S.mealChecks.length === 1 && S.settings.satFatGoal === 13);
+  ok('...and they round-trip through import', S.savedMeals.some(s => s.name === 'Soup') && S.mealChecks.length === 1 && S.settings.satFatGoal === 18);
 
   // ================= The Protein page estimate still works on the shared helper =================
   world(); localStorage.setItem('gh_ai_key', 'sk-test'); calls = [];
@@ -254,7 +264,7 @@ const lastBody = () => calls[calls.length - 1].body;
 
   // ================= Goals card on the second page =================
   world();
-  ok('the Weight page (second page) has the Meal Check goals card with the current values', weightHTML().includes('Meal Check goals') && weightHTML().includes('id="gFiber"') && weightHTML().includes('value="30"') && weightHTML().includes('value="13"'));
+  ok('the Weight page (second page) has the Meal Check goals card with the current values', weightHTML().includes('Meal Check goals') && weightHTML().includes('id="gFiber"') && weightHTML().includes('value="30"') && weightHTML().includes('value="18"'));
   document.getElementById('gFiber').value = '32'; document.getElementById('gSat').value = '12'; saveGoals();
   ok('saving the goals updates settings', S.settings.fiberGoal === 32 && S.settings.satFatGoal === 12);
   ok('the card explains protein and sugar are fixed money rules', weightHTML().includes('money rules'));

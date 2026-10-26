@@ -1,5 +1,5 @@
-// Meal Check: "Another idea" + shopping list in a real browser. Serve the repo root first:  python3 -m http.server 9001
-// then:  node v2/tests/e2e_shop.js   (APP_URL / OUT_DIR env vars override the defaults)
+// Meal Check: "Another idea" + grocery list in a real browser. Serve the repo root first:  python3 -m http.server 9001
+// then:  node v2/tests/e2e_grocery.js   (APP_URL / OUT_DIR env vars override the defaults)
 let chromium; try { ({ chromium } = require('playwright')); } catch (e) { ({ chromium } = require('/opt/node22/lib/node_modules/playwright')); }
 const dir = process.env.OUT_DIR || require('os').tmpdir();
 const URL = process.env.APP_URL || 'http://localhost:9001/v2/index.html';
@@ -40,21 +40,21 @@ const ALT = [
   // ===== get to a result =====
   await page.click('.hrow:has-text("Protein")'); await page.waitForTimeout(300);
   await page.click('button:has-text("Check a meal")'); await page.waitForTimeout(250);
-  check('the first screen has a Shopping list entry', (await page.locator('.sheet button:has-text("Shopping list")').count()) === 1 && !(await page.textContent('.sheet')).includes('Shopping list ·'));
+  check('the first screen has a Grocery list entry', (await page.locator('.sheet button:has-text("Grocery list")').count()) === 1 && !(await page.textContent('.sheet')).includes('Grocery list ·'));
   await page.click('.sheet button:has-text("Type it")'); await page.fill('.sheet textarea', '2 eggs and cottage cheese');
   await page.click('.sheet button:has-text("Check it")'); await page.waitForSelector('.mc-top', { timeout: 6000 });
-  check('the swap line has "Add to shopping list" and "Another idea" under it', (await swapText()).includes('black beans and salsa') && (await page.locator('.mc-acts button').count()) === 2 && (await page.locator('.mc-acts button:has-text("Add to shopping list")').count()) === 1 && (await page.locator('.mc-acts button:has-text("Another idea")').count()) === 1);
+  check('the swap line has "Add to grocery list" and "Another idea" under it', (await swapText()).includes('black beans and salsa') && (await page.locator('.mc-acts button').count()) === 2 && (await page.locator('.mc-acts button:has-text("Add to grocery list")').count()) === 1 && (await page.locator('.mc-acts button:has-text("Another idea")').count()) === 1);
   check('both buttons are at least 44px tall', await page.evaluate(() => [...document.querySelectorAll('.mc-acts button')].every(b => b.getBoundingClientRect().height >= 43.5)));
   check('the three original buttons are still there', (await page.locator('.mc-btns button').count()) === 3);
   let f = await fits();
   check('THE RESULT CARD STILL FITS ONE SCREEN at 390x760', f.ok, f);
-  await page.screenshot({ path: `${dir}/shop_1_result.png` });
+  await page.screenshot({ path: `${dir}/groc_1_result.png` });
 
   // ===== Another idea =====
   delay = 800; const nBefore = requests.length;
   await page.click('.mc-acts button:has-text("Another idea")'); await page.waitForTimeout(250);
   check('while it thinks: "Thinking…", Another idea disabled', (await page.textContent('.mc-swap')).includes('Thinking of another idea') && (await page.locator('.mc-acts button:has-text("Thinking…")').isDisabled()));
-  await page.screenshot({ path: `${dir}/shop_2_thinking.png` });
+  await page.screenshot({ path: `${dir}/groc_2_thinking.png` });
   await page.dblclick('.mc-acts button:has-text("Thinking…")', { force: true }).catch(() => {});
   await page.waitForFunction(() => document.querySelector('.mc-swap') && !document.querySelector('.mc-swap').textContent.includes('Thinking'), null, { timeout: 6000 });
   delay = 0;
@@ -66,11 +66,11 @@ const ALT = [
   check('...and the request listed BOTH earlier ideas to avoid', /black beans and salsa/.test(requests[requests.length - 1].messages[0].content[0].text) && /chia seeds/.test(requests[requests.length - 1].messages[0].content[0].text));
   f = await fits(); check('card fits after changing ideas', f.ok, f);
 
-  // ===== Add to shopping list =====
-  await page.click('.mc-acts button:has-text("Add to shopping list")'); await page.waitForTimeout(300);
+  // ===== Add to grocery list =====
+  await page.click('.mc-acts button:has-text("Add to grocery list")'); await page.waitForTimeout(300);
   check('the button becomes "View list (1)"', (await page.locator('.mc-acts button:has-text("View list (1)")').count()) === 1);
   check('a toast says what went on the list', (await page.textContent('#toast')).includes('Sprouted grain bread'));
-  await page.screenshot({ path: `${dir}/shop_3_added.png` });
+  await page.screenshot({ path: `${dir}/groc_3_added.png` });
   // go back to an earlier-style idea and add its groceries too
   await page.click('.mc-acts button:has-text("Another idea")'); await page.waitForTimeout(400);   // (mock repeats the last idea; engine says so and keeps it)
   check('a repeated idea is refused politely and the card keeps the current one', (await page.textContent('.sheet')).includes('Same idea again') && (await swapText()) === ALT[1].swap);
@@ -80,7 +80,7 @@ const ALT = [
   // failure note
   mode = '500'; await page.click('.mc-acts button:has-text("Another idea")'); await page.waitForTimeout(400);
   check('a failed request shows a calm note, keeps the idea, still fits', (await page.textContent('.sheet')).includes('get another idea') && (await swapText()) === ALT[1].swap && (await fits()).ok);
-  await page.screenshot({ path: `${dir}/shop_4_fail.png` });
+  await page.screenshot({ path: `${dir}/groc_4_fail.png` });
   mode = 'ok';
   await ctx.setOffline(true); await page.waitForTimeout(150);
   await page.click('.mc-acts button:has-text("Another idea")'); await page.waitForTimeout(250);
@@ -89,18 +89,18 @@ const ALT = [
 
   // ===== The list =====
   await page.click('.mc-acts button:has-text("View list (1)")'); await page.waitForTimeout(250);
-  check('the list shows the item and the meal it is for', (await page.textContent('.sheet')).includes('Sprouted grain bread') && (await page.textContent('.sheet')).includes('for Scrambled eggs with cottage cheese'));
-  await page.screenshot({ path: `${dir}/shop_5_list.png` });
+  check('the list shows the item under its aisle', (await page.textContent('.sheet')).includes('Sprouted grain bread') && (await page.textContent('.sheet')).includes('Grains & bread'));
+  await page.screenshot({ path: `${dir}/groc_5_list.png` });
   // add more via the engine so the list has a few items
-  await page.evaluate(() => { addToShoppingList(['black beans', 'salsa', 'chia seeds'], 'Scrambled eggs with cottage cheese'); renderMealSheet(true); });
+  await page.evaluate(() => { addToGrocery(['black beans', 'salsa', 'chia seeds']); renderMealSheet(true); });
   check('every row control is at least 44px tall', await page.evaluate(() => [...document.querySelectorAll('.mc-shop button, .sheet > .btn')].every(b => b.getBoundingClientRect().height >= 43.5)));
   await page.click('.mc-shop-t:has-text("Black beans")'); await page.waitForTimeout(150);
   check('tapping an item checks it off, struck through', await page.evaluate(() => { const b = [...document.querySelectorAll('.mc-shop-t.done b')]; return b.length === 1 && b[0].textContent === 'Black beans' && getComputedStyle(b[0]).textDecorationLine === 'line-through'; }));
   check('"Clear checked" appears', (await page.locator('.sheet button:has-text("Clear checked")').count()) === 1);
-  await page.screenshot({ path: `${dir}/shop_6_list_checked.png` });
+  await page.screenshot({ path: `${dir}/groc_6_list_checked.png` });
   await page.click('.sheet button:has-text("Share list")'); await page.waitForTimeout(300);
   const clip = await page.evaluate(() => navigator.clipboard.readText());
-  check('Share list copies (no share sheet on desktop) only what is still to buy', clip === 'Shopping list\n• Sprouted grain bread\n• Salsa\n• Chia seeds', clip);
+  check('Share list copies (no share sheet on desktop) only what is still to buy', clip === 'Grocery list\n\nGrains & bread\n• Sprouted grain bread\n\nCanned & dry\n• Salsa\n• Chia seeds', clip);
   check('...and says so', (await page.textContent('#toast')).includes('List copied'));
   await page.click('.sheet button:has-text("Clear checked")'); await page.waitForTimeout(200);
   check('Clear checked removes it', !(await page.textContent('.sheet')).includes('Black beans') && (await page.locator('.mc-shop').count()) === 3);
@@ -114,14 +114,15 @@ const ALT = [
   await page.reload(); await page.waitForTimeout(400);
   await page.click('.hrow:has-text("Protein")'); await page.waitForTimeout(300);
   await page.click('button:has-text("Check a meal")'); await page.waitForTimeout(250);
-  check('after a reload the first screen shows the count', (await page.textContent('.sheet')).includes('Shopping list · 2'));
-  await page.click('.sheet button:has-text("Shopping list")'); await page.waitForTimeout(200);
-  check('...and the list is still there', (await page.locator('.mc-shop').count()) === 2);
+  check('after a reload the first screen shows the count', (await page.textContent('.sheet')).includes('Grocery list · 2'));
+  await page.click('.sheet button:has-text("Grocery list")'); await page.waitForTimeout(200);
+  check('...and the list is still there', (await page.locator('.sheet .mc-shop').count()) === 2);
   await page.click('.sheet button:has-text("Back")'); await page.waitForTimeout(200);
   check('Back from the list (no meal open) returns to the first screen', (await page.textContent('.sheet')).includes('Saved meals'));
   const saved = await page.evaluate(() => JSON.stringify(exportObject()));
-  check('the list is in the backup, the key is not', saved.includes('"shoppingList"') && saved.includes('Salsa') && saved.includes('Chia seeds') && !saved.includes('sk-test'));
+  check('the list is in the backup, the key is not', saved.includes('"groceryList"') && saved.includes('Salsa') && saved.includes('Chia seeds') && !saved.includes('sk-test'));
   await page.evaluate(() => closeSheet()); await page.evaluate(() => closeOver()); await page.waitForTimeout(200);
+  check('the Weight page grocery card shows what the sheet did (no stale list after closing)', (await page.textContent('#groceryCard')).includes('Salsa') && !(await page.textContent('#groceryCard')).includes('Black beans'));
   check('Today still has exactly 4 habits and nothing about shopping', (await page.locator('.today .hrow').count()) === 4 && !(await page.textContent('.today')).match(/shopping|Another idea/i));
 
   // ===== A shorter phone =====
@@ -135,7 +136,7 @@ const ALT = [
   await p2.evaluate(() => { MC.altNote = 'Same idea again — tap once more.'; renderMealSheet(true); });
   const f2 = await p2.evaluate(() => { const s = document.querySelector('.sheet'); return { ok: s.scrollHeight <= s.clientHeight + 1, sh: s.scrollHeight, ch: s.clientHeight, vh: innerHeight }; });
   check('even on a 390x667 phone, with "Rough estimate" and a note showing, the card fits without scrolling', f2.ok, f2);
-  await p2.screenshot({ path: `${dir}/shop_7_667.png` });
+  await p2.screenshot({ path: `${dir}/groc_7_667.png` });
 
   check('no console errors or page errors', errors.length === 0, errors);
   console.log(`\n${pass} passed, ${fail} failed`);

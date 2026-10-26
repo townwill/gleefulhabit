@@ -105,7 +105,7 @@ function jpegSize(buf) {                       // read width/height from a JPEG'
   await page.click('.sheet button:has-text("Log it")'); await page.waitForTimeout(400);
   check('Log it adds the meal to today\'s protein', (await page.evaluate(() => proteinOn(todayKey()))) === 29 && (await page.evaluate(() => foodsOn(todayKey()).map(f => f.label + '|' + f.protein + '|' + f.sugar + '|' + f.src).join())) === `${BREAKFAST.meal_name}|29|0|check`);
   check('the button flips to "Logged ✓" and is disabled (double tap safe)', (await page.locator('.sheet button:has-text("Logged ✓")').isDisabled()));
-  check('the card\'s running totals update (protein 29 of 150; sat fat 3.5 of 13)', (await page.textContent('.sheet')).includes('today 29 of 150 g') && (await page.textContent('.sheet')).includes('today 3.5 of 13 g'));
+  check('the card\'s running totals update (protein 29 of 150; sat fat 3.5 of 18)', (await page.textContent('.sheet')).includes('today 29 of 150 g') && (await page.textContent('.sheet')).includes('today 3.5 of 18 g'));
   await page.click('.sheet button:has-text("Save meal")'); await page.waitForTimeout(250);
   check('Save meal saves it', (await page.locator('.sheet button:has-text("Saved ✓")').count()) === 1 && (await page.evaluate(() => S.savedMeals.some(s => s.name === 'Scrambled eggs with cottage cheese'))));
   await page.click('.sheet button:has-text("Done")'); await page.waitForTimeout(300);
@@ -193,7 +193,7 @@ function jpegSize(buf) {                       // read width/height from a JPEG'
   // ===== Goals on the second page =====
   await page.evaluate(() => closeOver()); await page.waitForTimeout(200);
   await page.click('.dots button:first-child'); await page.waitForTimeout(450);
-  check('the second page has the Meal Check goals card', (await page.textContent('.weight')).includes('Meal Check goals') && (await page.inputValue('#gFiber')) === '30' && (await page.inputValue('#gSat')) === '13');
+  check('the second page has the Meal Check goals card', (await page.textContent('.weight')).includes('Meal Check goals') && (await page.inputValue('#gFiber')) === '30' && (await page.inputValue('#gSat')) === '18');
   await page.fill('#gFiber', '24'); await page.fill('#gSat', '11'); await page.click('.weight button:has-text("Save goals")'); await page.waitForTimeout(300);
   check('saving updates the goals and the per-meal bands (fiber green at 6 g)', (await page.evaluate(() => S.settings.fiberGoal === 24 && S.settings.satFatGoal === 11)) && (await page.textContent('.weight')).includes('fiber 6+ g'));
   await page.fill('#gFiber', '5'); await page.click('.weight button:has-text("Save goals")'); await page.waitForTimeout(200);
