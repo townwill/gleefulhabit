@@ -33,13 +33,15 @@ const IDEAS = ['A cup of lentil soup with seeded toast for about 15 g fiber', 'C
   const page = await ctx.newPage();
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push('console: ' + m.text()); });
-  const requests = []; let mode = 'ok', delay = 0, n = 0;
+  const requests = []; let mode = 'ok', delay = 0, n = 0, estimate = { food: 'Lentil soup', grams_protein: 18, added_sugar_g: 1, fiber_g: 15, sat_fat_g: 0.8, confidence: 'medium' };
   await page.route('https://api.anthropic.com/**', async route => {
     const h = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' };
     if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: h });
     requests.push(route.request().postDataJSON());
     if (mode === '500') return route.fulfill({ status: 500, headers: h, body: 'x' });
     if (delay) await new Promise(r => setTimeout(r, delay));
+    const sys = (route.request().postDataJSON() || {}).system || '';
+    if (/nutrition estimator/.test(sys)) return route.fulfill({ status: 200, headers: h, contentType: 'application/json', body: JSON.stringify({ content: [{ type: 'text', text: JSON.stringify(estimate) }] }) });
     return route.fulfill({ status: 200, headers: h, contentType: 'application/json', body: JSON.stringify({ content: [{ type: 'text', text: JSON.stringify({ idea: IDEAS[Math.min(n++, IDEAS.length - 1)] }) }] }) });
   });
   await page.addInitScript(s => { if (!localStorage.getItem('gh2')) localStorage.setItem('gh2', JSON.stringify(s)); localStorage.setItem('gh_ai_key', 'sk-test'); }, seed);
@@ -63,7 +65,7 @@ const IDEAS = ['A cup of lentil soup with seeded toast for about 15 g fiber', 'C
   check('the day card has the four readings with their values and goals', await page.evaluate(() => { const t = document.getElementById('dayCard').textContent; return ['Protein', 'Added sugar', 'Fiber', 'Sat fat'].every(x => t.includes(x)) && t.includes('150 / 150 g') && t.includes('11 / 25 g') && t.includes('12 / 30 g') && t.includes('5 / 13 g'); }));
   check('dots: protein green, sugar green, fiber RED, sat fat green', await page.evaluate(() => { const c = [...document.querySelectorAll('#dayCard .drow .vdot')].map(e => getComputedStyle(e).backgroundColor); return c[0] === 'rgb(31, 95, 58)' && c[1] === 'rgb(31, 95, 58)' && c[2] === 'rgb(179, 64, 47)' && c[3] === 'rgb(31, 95, 58)'; }));
   check('each reading says what is left: "Goal met", "14 g left", "18 g to go"', await page.evaluate(() => { const t = document.getElementById('dayCard').textContent; return t.includes('Goal met') && t.includes('14 g left') && t.includes('18 g to go') && t.includes('8 g left'); }));
-  check('it is honest that fiber and sat fat only count Meal Check meals (1 of 2 entries)', (await page.textContent('#dayCard')).includes('count 1 of 2 entries'));
+  check('it is honest about coverage: fiber and sat fat are on 1 of 2 entries', (await page.textContent('#dayCard')).includes('Fiber and sat fat are on 1 of 2 entries'));
   check('the Suggest button is a 44px tap target', (await page.locator('#dayCard button:has-text("Suggest something")').boundingBox()).height >= 44);
   await page.screenshot({ path: `${dir}/day_2_card.png` });
 
@@ -129,7 +131,27 @@ const IDEAS = ['A cup of lentil soup with seeded toast for about 15 g fiber', 'C
   await p2.click('#dayCard button:has-text("Suggest something")'); await p2.waitForTimeout(300);
   check('an empty day still gives a friendly nudge', (await p2.textContent('#dayCard')).includes('start with protein and a high-fiber food'));
   await p2.fill('#fProt', '150'); await p2.fill('#fSugar', '3'); await p2.click('.over .body > .btn.primary:has-text("Add")'); await p2.waitForTimeout(400);
-  check('with only protein+sugar logged (fiber untracked) a perfect-looking day is held at "Okay", with the reason shown', (await p2.textContent('.daychip')).includes('Okay so far') && (await p2.textContent('#dayCard')).includes('only count meals logged with Check a meal') && (await p2.textContent('#dayCard')).includes('—'));
+  check('with only protein+sugar logged (fiber untracked) a perfect-looking day is held at "Okay", with the reason shown', (await p2.textContent('.daychip')).includes('Okay so far') && (await p2.textContent('#dayCard')).includes("aren't tracked yet") && (await p2.textContent('#dayCard')).includes('—'));
+
+  // ===== Say it reads fiber and sat fat, and the day card picks them up =====
+  await p2.route('https://api.anthropic.com/**', async route => {
+    const h = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' };
+    if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: h });
+    return route.fulfill({ status: 200, headers: h, contentType: 'application/json', body: JSON.stringify({ content: [{ type: 'text', text: JSON.stringify(estimate) }] }) });
+  });
+  await p2.click('.over button:has-text("Say it")'); await p2.waitForTimeout(200);
+  check('the add form has optional Fiber g / Sat fat g boxes', (await p2.locator('#fFiber').count()) === 1 && (await p2.locator('#fSat').count()) === 1);
+  await p2.fill('#aiText', 'a big bowl of lentil soup'); await p2.click('#aiBtn'); await p2.waitForTimeout(500);
+  check('Say it fills fiber and sat fat (and still only fills)', (await p2.inputValue('#fFiber')) === '15' && (await p2.inputValue('#fSat')) === '0.8' && (await p2.inputValue('#fProt')) === '18');
+  await p2.click('.over .body > .btn.primary:has-text("Add")'); await p2.waitForTimeout(400);
+  const txt = await p2.textContent('#dayCard');
+  check('the entry row shows its fiber and sat fat', (await p2.textContent('.over .body')).includes('15 g fiber') && (await p2.textContent('.over .body')).includes('0.8 g sat fat'));
+  check('the day card now shows fiber and sat fat, with partial coverage noted', /Fiber[\s\S]*15/.test(txt) && /Fiber and sat fat are on 1 of 2 entries/.test(txt));
+  estimate = { food: 'Mystery stew', grams_protein: 20, added_sugar_g: 0, fiber_g: null, confidence: 'low' };
+  await p2.fill('#aiText', 'stew'); await p2.click('#aiBtn'); await p2.waitForTimeout(500);
+  check('when the model cannot tell, the boxes stay blank (unknown, not 0)', (await p2.inputValue('#fFiber')) === '' && (await p2.inputValue('#fSat')) === '');
+  check('the Protein page does not scroll sideways with the new boxes', await p2.evaluate(() => { const b = document.querySelector('.over .body'); return b.scrollWidth <= b.clientWidth + 1; }));
+  check('the new boxes are at least 44px tall', await p2.evaluate(() => ['fFiber', 'fSat'].every(i => document.getElementById(i).getBoundingClientRect().height >= 43.5)));
 
   // ===== everything else on the page still works =====
   await page.evaluate(() => { protDaySet(todayKey()); }); await page.waitForTimeout(300);

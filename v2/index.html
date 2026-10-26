@@ -218,7 +218,7 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 const SCHEMA = 2;
 const STORE_KEY = 'gh2';
 const V1_KEY = 'habitflow';
-const APP_VERSION = '2026-10-26.1721';
+const APP_VERSION = '2026-10-26.1737';
 const HABITS = ['workout','protein','wind','sugar'];
 const HABIT_META = {
   workout:{name:'Workout',icon:'🏋️'},
@@ -302,6 +302,7 @@ function migrateState(raw) {
   for (const dk of Object.keys(s.days)) {
     const d = s.days[dk];
     if (!Array.isArray(d.foods)) d.foods = [];
+    for (const f of d.foods) if (f && typeof f === 'object') for (const k of ['fiber', 'satFat']) if (k in f && !(typeof f[k] === 'number' && isFinite(f[k]) && f[k] >= 0)) delete f[k];
     if (d.workout === undefined) d.workout = null;
     if (d.windDown === undefined) d.windDown = null;
   }
@@ -417,6 +418,26 @@ function isFree(dk) { return S.freeDays.indexOf(dk) >= 0; }
 function foodsOn(dk) { const d = S.days[dk]; return d ? d.foods : []; }
 function proteinOn(dk) { return round1(foodsOn(dk).reduce((a, f) => a + (+f.protein || 0), 0)); }
 function sugarOn(dk) { return round1(foodsOn(dk).reduce((a, f) => a + (+f.sugar || 0), 0)); }
+/* An optional gram amount: a real number >= 0 (0 is a real answer), or undefined = unknown. Blank and junk are unknown, never 0. */
+function optNum(v) { return (v === '' || v == null || typeof v === 'boolean' || !isFinite(+v) || +v < 0) ? undefined : round1(+v); }
+/* Fiber / sat fat of one entry. Entries logged through Meal Check before entries carried their own numbers
+   still count through their link (once; an entry with its own number never also adds the check's). */
+function foodFiber(f) {
+  if (typeof f.fiber === 'number' && isFinite(f.fiber)) return f.fiber;
+  const c = f.mc && S.mealChecks.find(x => x.id === f.mc && x.logged);
+  return c && typeof c.fiber_g === 'number' ? c.fiber_g : undefined;
+}
+function foodSatFat(f) {
+  if (typeof f.satFat === 'number' && isFinite(f.satFat)) return f.satFat;
+  const c = f.mc && S.mealChecks.find(x => x.id === f.mc && x.logged);
+  return c && typeof c.sat_fat_g === 'number' ? c.sat_fat_g : undefined;
+}
+/* { sum, known, total }: sum of the entries that have the number, how many do, out of how many were logged. */
+function macroTotal(dk, pick) {
+  let sum = 0, known = 0; const foods = foodsOn(dk);
+  for (const f of foods) { const v = pick(f); if (typeof v === 'number' && isFinite(v)) { sum += v; known++; } }
+  return { sum:round1(sum), known, total:foods.length };
+}
 function smallAt() { return Math.ceil(S.settings.proteinGoal * 0.75); }   // 113 g for a 150 g goal
 function weekWorkouts(dk) {
   return weekDays(dk).filter(d => { const w = S.days[d] && S.days[d].workout; return w && w.kind === 'workout'; }).length;
@@ -516,6 +537,9 @@ function addFood(dk, f) {
   resumeIfPaused('protein', dk);
   const entry = { id:uid(), label:String(f.label || 'Manual entry').slice(0, 60), protein, sugar, src:f.src || 'manual', at:Date.now() };
   if (f.mc) entry.mc = f.mc;
+  const fiber = optNum(f.fiber), satFat = optNum(f.satFat);
+  if (fiber !== undefined) entry.fiber = fiber;
+  if (satFat !== undefined) entry.satFat = satFat;
   dayOf(dk).foods.push(entry);
   afterLog(dk, b0); return true;
 }
@@ -525,6 +549,7 @@ function updateFood(dk, id, patch) {
   if (patch.label != null) f.label = String(patch.label).slice(0, 60) || f.label;
   if (patch.protein != null) f.protein = round1(Math.max(0, +patch.protein || 0));
   if (patch.sugar != null) f.sugar = round1(Math.max(0, +patch.sugar || 0));
+  for (const [k, key] of [['fiber', 'fiber'], ['satFat', 'satFat']]) if (k in patch) { const v = optNum(patch[k]); if (v === undefined) delete f[key]; else f[key] = v; }   // blank clears it back to unknown
   save(); refresh(); return true;
 }
 function deleteFood(dk, id) {
@@ -542,7 +567,7 @@ function quickChips(max) {
     if (f.imp || /^(manual entry|imported total)$/i.test(f.label)) continue;
     const k = f.label.trim().toLowerCase();
     const e = map[k] || (map[k] = { label:f.label, n:0, protein:0, sugar:0 });
-    e.n++; e.label = f.label; e.protein = f.protein; e.sugar = f.sugar || 0;
+    e.n++; e.label = f.label; e.protein = f.protein; e.sugar = f.sugar || 0; e.fiber = foodFiber(f); e.satFat = foodSatFat(f);
   }
   return Object.values(map).sort((a, b) => b.n - a.n).slice(0, max || 8);
 }
@@ -963,10 +988,9 @@ function aiErrText(r) {
     auth:'API key rejected — check it below.', http:`Request failed (${r.status}). Try again.`, badreply:'No answer came back — try again.', empty:'No answer came back — try again.' })[r.err] || 'Something went wrong — try again.';
 }
 
-/* Checks you've logged feed today's fiber and saturated-fat totals (display only). Never stored as a running total. */
-function mealTotalOn(dk, field) { return round1(S.mealChecks.filter(c => c.date === dk && c.logged).reduce((a, c) => a + (+c[field] || 0), 0)); }
-function mealFiberOn(dk) { return mealTotalOn(dk, 'fiber_g'); }
-function mealSatFatOn(dk) { return mealTotalOn(dk, 'sat_fat_g'); }
+/* Today's fiber and saturated-fat totals are summed from the food list, never stored as a running total. */
+function mealFiberOn(dk) { return macroTotal(dk, foodFiber).sum; }       // every logged entry that knows its fiber: Snap meal, Say it, chips, Check a meal
+function mealSatFatOn(dk) { return macroTotal(dk, foodSatFat).sum; }
 function pruneMealChecks() { const cut = addDays(todayKey(), -365); S.mealChecks = S.mealChecks.filter(c => c && c.date >= cut); }
 function recordMealCheck(m) {
   const c = { id:uid(), date:todayKey(), ts:Date.now(), mealName:m.meal_name, verdict:mealVerdict(m).verdict,
@@ -978,7 +1002,7 @@ function recordMealCheck(m) {
 function logMealCheck(id) {
   const c = S.mealChecks.find(x => x.id === id);
   if (!c || c.logged) return false;
-  if (!addFood(todayKey(), { label:c.mealName, protein:c.protein_g, sugar:c.added_sugar_g, src:'check', mc:c.id })) return false;
+  if (!addFood(todayKey(), { label:c.mealName, protein:c.protein_g, sugar:c.added_sugar_g, fiber:c.fiber_g, satFat:c.sat_fat_g, src:'check', mc:c.id })) return false;
   c.logged = true; save(); refresh(); return true;
 }
 
@@ -1076,9 +1100,10 @@ function shoppingText() {
 const DAY_LABEL = { green:'Good', yellow:'Okay', red:'Rough' };
 function dayReadings(dk) {
   const goals = nutritionGoals(), foods = foodsOn(dk);
-  const checks = S.mealChecks.filter(c => c.date === dk && c.logged).length;
-  return { goals, foods:foods.length, checks, tracked:checks > 0,
-    vals:{ protein:proteinOn(dk), sugar:sugarOn(dk), fiber:mealFiberOn(dk), satFat:mealSatFatOn(dk) } };
+  const fi = macroTotal(dk, foodFiber), sf = macroTotal(dk, foodSatFat);
+  return { goals, foods:foods.length, fiberKnown:fi.known, satKnown:sf.known, fiberTracked:fi.known > 0, satTracked:sf.known > 0,
+    tracked:fi.known > 0 && sf.known > 0,
+    vals:{ protein:proteinOn(dk), sugar:sugarOn(dk), fiber:fi.sum, satFat:sf.sum } };
 }
 /* Goals (protein, fiber): met = green, at least 75% = yellow. Limits (sugar, sat fat): within = green, up to 25% over = yellow. */
 function dayReadingLevel(k, v, goal) {
@@ -1086,11 +1111,11 @@ function dayReadingLevel(k, v, goal) {
   return v <= goal ? 'g' : v <= goal * 1.25 ? 'y' : 'r';
 }
 /* Same shape of rule as a meal: red if sugar or sat fat is red; green if everything is green (or four known and one yellow, but never a
-   limit that is already over); otherwise yellow. Unknown readings are left out, and a day can't be Good while fiber / sat fat are unknown. */
+   limit that is already over); otherwise yellow. A reading with no data is unknown (left out), and a day can't be Good while one is. */
 function dayCheck(dk) {
   const r = dayReadings(dk), g = r.goals, v = r.vals;
   const levels = { protein:dayReadingLevel('protein', v.protein, g.protein), sugar:dayReadingLevel('sugar', v.sugar, g.sugar),
-    fiber:r.tracked ? dayReadingLevel('fiber', v.fiber, g.fiber) : null, satFat:r.tracked ? dayReadingLevel('satFat', v.satFat, g.satFat) : null };
+    fiber:r.fiberTracked ? dayReadingLevel('fiber', v.fiber, g.fiber) : null, satFat:r.satTracked ? dayReadingLevel('satFat', v.satFat, g.satFat) : null };
   if (!r.foods) return Object.assign({}, r, { levels, verdict:null, label:'Nothing logged yet', capped:false });
   const known = Object.values(levels).filter(Boolean), n = x => known.filter(l => l === x).length;
   let verdict = 'yellow';
@@ -1108,18 +1133,19 @@ function daySuggestion(dk) {
   if (!c.foods) return { headline:'Nothing logged yet — start with protein and a high-fiber food.', lines, treat:false, sugarLeft:g.sugar };
   const good = [], need = [];
   if (v.protein >= g.protein) good.push('protein'); else need.push({ name:'protein', left:round1(g.protein - v.protein) });
-  if (c.tracked) { if (v.fiber >= g.fiber) good.push('fiber'); else need.push({ name:'fiber', left:round1(g.fiber - v.fiber) }); }
+  if (c.fiberTracked) { if (v.fiber >= g.fiber) good.push('fiber'); else need.push({ name:'fiber', left:round1(g.fiber - v.fiber) }); }
   let headline;
   if (good.length && need.length) headline = `Your ${joinList(good)} ${good.length > 1 ? 'are' : 'is'} good, but you need more ${joinList(need.map(x => x.name))}.`;
   else if (need.length) headline = `You still need more ${joinList(need.map(x => x.name))}.`;
   else headline = `You're on target for ${joinList(good)}.`;
   need.forEach(x => lines.push(`${capFirst(x.name)}: ${x.left} g to go.`));
-  if (!c.tracked) lines.push("Fiber and sat fat aren't tracked yet today — log a meal with Check a meal to see them.");
+  const missing = []; if (!c.fiberTracked) missing.push('fiber'); if (!c.satTracked) missing.push('sat fat');
+  if (missing.length) lines.push(`${capFirst(joinList(missing))} ${missing.length > 1 ? "aren't" : "isn't"} tracked yet today — Snap meal, Say it or Check a meal will read ${missing.length > 1 ? 'them' : 'it'}.`);
   const sugarLeft = round1(g.sugar - v.sugar);
   if (sugarLeft >= 5) lines.push(`You have ${sugarLeft} g of added sugar left — treat yo self.`);
   else if (sugarLeft >= 0) lines.push(`Only ${sugarLeft} g of added sugar left — save it for something you'll love.`);
   else lines.push(`You're ${round1(-sugarLeft)} g over on added sugar — keep it easy for the rest of the day.`);
-  if (c.tracked) {
+  if (c.satTracked) {
     const satLeft = round1(g.satFat - v.satFat);
     if (satLeft < 0) lines.push('Sat fat is over — lean on olive oil, nuts and beans next.');
     else if (satLeft < 4) lines.push(`Only ${satLeft} g of sat fat left.`);
@@ -1150,7 +1176,7 @@ function parseIdeaJSON(text) {
 async function requestDayIdea(dk, avoid) {
   const c = dayCheck(dk), g = c.goals, v = c.vals, s = daySuggestion(dk);
   const parts = [`protein ${v.protein} of ${g.protein} g`, `added sugar ${v.sugar} of ${g.sugar} g (${s.sugarLeft >= 0 ? s.sugarLeft + ' g left' : 'over'})`];
-  parts.push(c.tracked ? `fiber ${v.fiber} of ${g.fiber} g` : 'fiber unknown', c.tracked ? `saturated fat ${v.satFat} of ${g.satFat} g` : 'saturated fat unknown');
+  parts.push(c.fiberTracked ? `fiber ${v.fiber} of ${g.fiber} g` : 'fiber unknown', c.satTracked ? `saturated fat ${v.satFat} of ${g.satFat} g` : 'saturated fat unknown');
   const text = `Today so far: ${parts.join('; ')}. ${c.foods} thing${c.foods === 1 ? '' : 's'} logged.\nAlready suggested (do not repeat): ${avoid.join(' | ') || 'none'}`;
   const r = await callClaude({ system:DAY_IDEA_SYSTEM, content:[{ type:'text', text }], max_tokens:120 });
   if (r.err) return r;
@@ -1391,7 +1417,7 @@ function foodRowHTML(f) {
   return `<div class="frow"><div class="fa"><button class="fab e" onclick="openFoodEdit('${f.id}')">Edit</button><button class="fab d" onclick="delFood('${f.id}')">Delete</button></div>
     <div class="fc" ontouchstart="fsStart(event)" ontouchmove="fsMove(event)" ontouchend="fsEnd(event,this)" onclick="fsTap(this,'${f.id}')">
       <div class="fl"><div class="fn">${esc(f.label)}</div>${tag}</div>
-      <div class="fv num"><b>${f.protein} g</b> protein<span> · ${f.sugar || 0} g added sugar</span></div></div></div>`;
+      <div class="fv num"><b>${f.protein} g</b> protein<span> · ${f.sugar || 0} g added sugar${foodFiber(f) !== undefined ? ` · ${foodFiber(f)} g fiber` : ''}${foodSatFat(f) !== undefined ? ` · ${foodSatFat(f)} g sat fat` : ''}</span></div></div></div>`;
 }
 let _fsx = 0, _fsMoved = false;
 function fsStart(e) { _fsx = e.touches[0].clientX; _fsMoved = false; }
@@ -1411,7 +1437,7 @@ function clearKey() { localStorage.removeItem('gh_ai_key'); renderProteinOver();
 /* ── Day check card (Protein page) ── */
 let DC = { open:false, idea:null, ideas:[], busy:false, note:'', sig:'' };
 const dcFresh = () => ({ open:false, idea:null, ideas:[], busy:false, note:'', sig:'' });
-const dcSig = dk => { const r = dayReadings(dk); return dk + '|' + JSON.stringify(r.vals) + '|' + r.checks + '|' + r.foods; };
+const dcSig = dk => { const r = dayReadings(dk); return dk + '|' + JSON.stringify(r.vals) + '|' + r.fiberKnown + ',' + r.satKnown + '|' + r.foods; };
 function dayCardInner() {
   const dk = protDay, c = dayCheck(dk), g = c.goals, v = c.vals, isToday = dk === todayKey();
   if (DC.sig && DC.sig !== dcSig(dk)) DC = dcFresh();                    // what you've logged changed: the old suggestion is stale
@@ -1425,7 +1451,8 @@ function dayCardInner() {
     return `<div class="drow"><i class="vdot sm ${unknown ? 'vn' : dot[lv]}"></i><div class="dl"><b>${name}</b><span>${sub}</span></div><div class="dn num">${unknown ? '—' : val}<small> / ${goal} g</small></div></div>`;
   };
   const verdictChip = c.verdict ? `<span class="dverdict"><i class="vdot sm ${{ green:'vg', yellow:'vy', red:'vr' }[c.verdict]}"></i>${c.label}</span>` : `<span class="small muted">${c.label}</span>`;
-  const cover = c.foods && (!c.tracked ? 'Fiber and sat fat only count meals logged with Check a meal.' : c.checks < c.foods ? `Fiber and sat fat count ${c.checks} of ${c.foods} entries (Check a meal only).` : '');
+  const cover = !c.foods ? '' : (!c.fiberTracked && !c.satTracked) ? "Fiber and sat fat aren't tracked yet — Snap meal, Say it and Check a meal read them."
+    : (c.fiberKnown < c.foods || c.satKnown < c.foods) ? (c.fiberKnown === c.satKnown ? `Fiber and sat fat are on ${c.fiberKnown} of ${c.foods} entries.` : `Fiber is on ${c.fiberKnown} of ${c.foods} entries, sat fat on ${c.satKnown}.`) : '';
   let panel = '';
   if (DC.open && isToday) {
     const s = daySuggestion(dk);
@@ -1493,12 +1520,14 @@ function proteinOverHTML() {
     ${aiMode ? `<div class="card" style="margin-top:10px">
       ${aiPhoto ? `<img src="${aiPhoto.url}" alt="" style="width:100%;max-height:150px;object-fit:cover;border-radius:12px;margin-bottom:8px">` : ''}
       <textarea class="field" id="aiText" placeholder="Say or type what you ate. Tip: tap the mic on your keyboard to dictate."></textarea>
-      <button class="btn primary" id="aiBtn" onclick="analyzeMeal()">Estimate protein + sugar</button>
+      <button class="btn primary" id="aiBtn" onclick="analyzeMeal()">Estimate nutrition</button>
       <div class="small muted" id="aiStatus" style="margin-top:8px;min-height:16px"></div></div>` : ''}
     <div class="q" style="font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 7px">Add</div>
     ${chips.length ? `<div class="chips" style="margin-bottom:10px">${chips.map((c, i) => `<button class="chip sm" onclick="quickAdd(${i})">${esc(c.label)} · ${c.protein}g</button>`).join('')}</div>` : ''}
     <input class="field" id="fLabel" placeholder="What was it? (optional)" style="margin-bottom:8px">
     <div class="row2"><input class="field num" id="fProt" type="number" inputmode="decimal" placeholder="Protein g"><input class="field num" id="fSugar" type="number" inputmode="decimal" placeholder="Added sugar g"></div>
+    <div class="row2" style="margin-top:8px"><input class="field num" id="fFiber" type="number" inputmode="decimal" placeholder="Fiber g"><input class="field num" id="fSat" type="number" inputmode="decimal" placeholder="Sat fat g"></div>
+    <p class="small muted" style="margin:6px 0 0">Fiber and sat fat are optional — Snap meal and Say it fill them in. Blank means unknown, not zero.</p>
     <button class="btn primary" onclick="manualAdd()">Add</button>` : `<p class="muted small" style="text-align:center">This day is locked.</p>`}
     <div class="card" id="dayCard" style="margin-top:18px">${dayCardInner()}</div>
     <div class="q" style="font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:18px 0 6px">Food ${dk === todayKey() ? 'today' : 'yesterday'}</div>
@@ -1507,11 +1536,11 @@ function proteinOverHTML() {
   </div>`;
 }
 function renderProteinOver(first) { setOver(proteinOverHTML(), first); }
-function quickAdd(i) { const c = quickChips(8)[i]; if (c && addFood(protDay, { label:c.label, protein:c.protein, sugar:c.sugar, src:'chip' })) toast(`+${c.protein} g · ${c.label}${earnedTxt()}`); }
+function quickAdd(i) { const c = quickChips(8)[i]; if (c && addFood(protDay, { label:c.label, protein:c.protein, sugar:c.sugar, fiber:c.fiber, satFat:c.satFat, src:'chip' })) toast(`+${c.protein} g · ${c.label}${earnedTxt()}`); }
 function manualAdd() {
   const p = parseFloat($('fProt').value), sg = parseFloat($('fSugar').value) || 0;
   if (!(p > 0)) { toast('Enter the protein grams'); return; }
-  if (addFood(protDay, { label:$('fLabel').value.trim() || 'Manual entry', protein:p, sugar:sg, src:'manual' })) toast(`+${p} g protein${earnedTxt()}`);
+  if (addFood(protDay, { label:$('fLabel').value.trim() || 'Manual entry', protein:p, sugar:sg, fiber:$('fFiber').value, satFat:$('fSat').value, src:'manual' })) toast(`+${p} g protein${earnedTxt()}`);
 }
 function delFood(id) { if (deleteFood(protDay, id)) toast('Entry deleted'); }
 function openFoodEdit(id) {
@@ -1521,13 +1550,15 @@ function openFoodEdit(id) {
     <div class="q">Name</div><input class="field" id="eLabel" value="${esc(f.label)}">
     <div class="row2"><div><div class="q">Protein g</div><input class="field num" id="eProt" type="number" inputmode="decimal" value="${f.protein}"></div>
     <div><div class="q">Added sugar g</div><input class="field num" id="eSugar" type="number" inputmode="decimal" value="${f.sugar || 0}"></div></div>
+    <div class="row2"><div><div class="q">Fiber g <span style="text-transform:none;font-weight:500">· optional</span></div><input class="field num" id="eFiber" type="number" inputmode="decimal" value="${foodFiber(f) !== undefined ? foodFiber(f) : ''}"></div>
+    <div><div class="q">Sat fat g <span style="text-transform:none;font-weight:500">· optional</span></div><input class="field num" id="eSat" type="number" inputmode="decimal" value="${foodSatFat(f) !== undefined ? foodSatFat(f) : ''}"></div></div>
     <button class="btn primary" onclick="saveFoodEdit()">Save</button>
     <button class="btn danger" onclick="delFoodFromSheet()">Delete entry</button>`);
 }
 function saveFoodEdit() {
-  const p = parseFloat($('eProt').value);
-  if (!(p > 0)) { toast('Protein must be above 0'); return; }
-  if (updateFood(protDay, SH.id, { label:$('eLabel').value.trim(), protein:p, sugar:parseFloat($('eSugar').value) || 0 })) { closeSheet(); toast('Saved'); }
+  const p = parseFloat($('eProt').value), f = foodsOn(protDay).find(x => x.id === SH.id);
+  if (!(p > 0) && !(p === 0 && f && f.src === 'check')) { toast('Protein must be above 0'); return; }   // a Check-a-meal entry (fruit, black coffee) may be 0 g
+  if (updateFood(protDay, SH.id, { label:$('eLabel').value.trim(), protein:p, sugar:parseFloat($('eSugar').value) || 0, fiber:$('eFiber').value, satFat:$('eSat').value })) { closeSheet(); toast('Saved'); }
 }
 function delFoodFromSheet() { const id = SH.id; closeSheet(); delFood(id); }
 
@@ -1558,7 +1589,7 @@ async function onSnap(ev) {
   try { aiPhoto = await fileToJpeg(file, 1280); aiMode = 'snap'; renderProteinOver(); }
   catch (e) { toast("Couldn't read that photo"); }
 }
-const AI_SYSTEM = 'You are a nutrition estimator inside a habit tracking app. Given a text description and/or photo of a food or meal, estimate its protein in grams and its ADDED sugar in grams (the FDA nutrition-label "Added Sugars" line: sugar or syrup added during processing, NOT total sugars; naturally occurring sugar such as lactose in plain milk or yogurt and fructose in whole fruit counts as 0 unless the product is also sweetened). Respond ONLY with a JSON object, no markdown fences, no other text: {"food":"short name","grams_protein":number,"added_sugar_g":number,"confidence":"low"|"medium"|"high"}. If several items are shown, sum them and name the meal generically.';
+const AI_SYSTEM = 'You are a nutrition estimator inside a habit tracking app. Given a text description and/or photo of a food or meal, estimate its protein in grams, its ADDED sugar in grams (the FDA nutrition-label "Added Sugars" line: sugar or syrup added during processing, NOT total sugars; naturally occurring sugar such as lactose in plain milk or yogurt and fructose in whole fruit counts as 0 unless the product is also sweetened), its dietary fiber in grams, and its saturated fat in grams. Respond ONLY with a JSON object, no markdown fences, no other text: {"food":"short name","grams_protein":number,"added_sugar_g":number,"fiber_g":number,"sat_fat_g":number,"confidence":"low"|"medium"|"high"}. If you cannot estimate fiber or saturated fat, use null for that field rather than 0. If several items are shown, sum them and name the meal generically.';
 async function analyzeMeal() {
   const st = $('aiStatus'), btn = $('aiBtn');
   if (!localStorage.getItem('gh_ai_key')) { st.textContent = 'Add your Anthropic API key below first.'; return; }
@@ -1567,7 +1598,7 @@ async function analyzeMeal() {
   btn.disabled = true; st.textContent = 'Estimating…';
   const content = [];
   if (aiPhoto) content.push({ type:'image', source:{ type:'base64', media_type:aiPhoto.type, data:aiPhoto.b64 } });
-  content.push({ type:'text', text:desc ? `Food description: ${desc}` : 'Estimate the protein and added sugar of the food in this photo.' });
+  content.push({ type:'text', text:desc ? `Food description: ${desc}` : 'Estimate the protein, added sugar, fiber and saturated fat of the food in this photo.' });
   const r = await callClaude({ system:AI_SYSTEM, content, max_tokens:300 });
   btn.disabled = false;
   if (r.err) { st.textContent = aiErrText(r); return; }
@@ -1577,6 +1608,8 @@ async function analyzeMeal() {
   $('fLabel').value = String(parsed.food || '').slice(0, 60);
   $('fProt').value = prot;
   $('fSugar').value = round1(Math.max(0, +parsed.added_sugar_g || 0));
+  const fb = optNum(parsed.fiber_g), sf = optNum(parsed.sat_fat_g);   // null / missing stays blank = unknown, never 0
+  $('fFiber').value = fb === undefined ? '' : fb; $('fSat').value = sf === undefined ? '' : sf;
   st.textContent = `Estimate (${parsed.confidence || 'medium'} confidence). Check the numbers below, then tap Add.`;
 }
 

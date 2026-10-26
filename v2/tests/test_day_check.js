@@ -3,13 +3,17 @@ const ok = (name, cond) => console.log(name + ':', !!cond);
 const tick = () => new Promise(r => setTimeout(r, 20));
 const T = () => todayKey();
 function world(now) { localStorage.clear(); _setFakeNow(new Date(now || '2026-10-26T15:00:00').getTime()); S = blankState(); S.startDate = '2026-10-01'; closeSheet(); OV = null; keyOpen = false; DC = dcFresh(); localStorage.setItem('gh_ai_key', 'sk-test'); navigator.onLine = true; }
-/* put today's food on the board; optional Meal Check numbers make fiber / sat fat known */
+/* put today's food on the board; optional fiber / sat fat sit on the first entry (blank = unknown) */
 function day(dk, { p = 0, s = 0, fiber = null, sat = null, entries = 1 } = {}) {
   const foods = [];
-  for (let i = 0; i < entries; i++) foods.push({ id: 'f' + i, label: 'food ' + i, protein: i === 0 ? p : 0, sugar: i === 0 ? s : 0, src: 'manual' });
+  for (let i = 0; i < entries; i++) {
+    const f = { id: 'f' + i, label: 'food ' + i, protein: i === 0 ? p : 0, sugar: i === 0 ? s : 0, src: 'manual' };
+    if (i === 0 && fiber !== null) f.fiber = fiber;
+    if (i === 0 && sat !== null) f.satFat = sat;
+    foods.push(f);
+  }
   S.days[dk] = { workout: null, windDown: null, foods };
   S.mealChecks = S.mealChecks.filter(c => c.date !== dk);
-  if (fiber !== null || sat !== null) S.mealChecks.push({ id: 'c' + dk, date: dk, ts: 1, mealName: 'm', verdict: 'green', protein_g: 0, added_sugar_g: 0, fiber_g: fiber || 0, sat_fat_g: sat || 0, logged: true });
 }
 let calls = [], reply = null;
 const resp = body => ({ ok: true, status: 200, json: async () => ({ content: [{ type: 'text', text: typeof body === 'string' ? body : JSON.stringify(body) }] }), text: async () => '' });
@@ -26,9 +30,19 @@ fetch = async (url, opts) => { calls.push({ url, body: JSON.parse(opts.body) });
   ok('with no Meal Check meal, fiber and sat fat are UNKNOWN (null), not 0', c.levels.fiber === null && c.levels.satFat === null && c.tracked === false);
   day(T(), { p: 100, s: 12, fiber: 18, sat: 5 });
   c = dayCheck(T());
-  ok('with a logged Meal Check meal they become known', c.tracked === true && c.vals.fiber === 18 && c.vals.satFat === 5 && c.levels.fiber === 'r' && c.levels.satFat === 'g');
-  ok('a meal that was checked but NOT logged does not count', (S.mealChecks[0].logged = false, dayCheck(T()).tracked === false && dayCheck(T()).vals.fiber === 0));
-  S.mealChecks[0].logged = true;
+  ok('with fiber and sat fat on an entry they become known', c.tracked === true && c.vals.fiber === 18 && c.vals.satFat === 5 && c.levels.fiber === 'r' && c.levels.satFat === 'g');
+  S.mealChecks = [{ id: 'cx', date: T(), ts: 1, mealName: 'm', verdict: 'green', protein_g: 0, added_sugar_g: 0, fiber_g: 9, sat_fat_g: 9, logged: false }];
+  ok('a meal that was checked but NOT logged does not count', dayCheck(T()).vals.fiber === 18 && dayCheck(T()).vals.satFat === 5);
+  S.mealChecks = [];
+  // legacy: an older Check-a-meal entry with no numbers of its own reads them from its linked check, exactly once
+  S.days[T()] = { workout: null, windDown: null, foods: [{ id: 'g1', label: 'old', protein: 10, sugar: 1, src: 'check', mc: 'c9' }] };
+  S.mealChecks = [{ id: 'c9', date: T(), ts: 1, mealName: 'm', verdict: 'green', protein_g: 10, added_sugar_g: 1, fiber_g: 7, sat_fat_g: 3, logged: true }];
+  ok('legacy mc-linked entry still counts via its check, once', dayCheck(T()).vals.fiber === 7 && dayCheck(T()).vals.satFat === 3 && dayCheck(T()).tracked === true);
+  S.days[T()].foods[0].fiber = 7; S.days[T()].foods[0].satFat = 3;
+  ok('...and no double count once the entry carries its own numbers', dayCheck(T()).vals.fiber === 7 && dayCheck(T()).vals.satFat === 3);
+  S.mealChecks = [];
+  day(T(), { p: 100, s: 12, fiber: 0, sat: 0 });
+  ok('a real 0 is KNOWN (not unknown)', dayCheck(T()).tracked === true && dayCheck(T()).levels.fiber === 'r' && dayCheck(T()).levels.satFat === 'g');
 
   // ================= Verdict =================
   const verdict = (o) => { day(T(), o); return dayCheck(T()); };
@@ -69,7 +83,7 @@ fetch = async (url, opts) => { calls.push({ url, body: JSON.parse(opts.body) });
   ok('sat fat nearly used up is flagged', daySuggestion(T()).lines.includes('Only 2 g of sat fat left.'));
   day(T(), { p: 100, s: 3 });
   sg = daySuggestion(T());
-  ok('fiber untracked: it says so instead of guessing, and does not pretend fiber is the gap', /Check a meal/.test(sg.lines.join(' ')) && sg.headline === 'You still need more protein.');
+  ok('fiber untracked: it says so instead of guessing, and does not pretend fiber is the gap', /Snap meal, Say it or Check a meal/.test(sg.lines.join(' ')) && sg.headline === 'You still need more protein.');
   ok('...and protein good + fiber untracked reads sensibly', (day(T(), { p: 150, s: 3 }), daySuggestion(T()).headline === "You're on target for protein."));
   delete S.days[T()];
   ok('nothing logged: a friendly nudge', daySuggestion(T()).headline.startsWith('Nothing logged yet') && daySuggestion(T()).lines.length === 0);
