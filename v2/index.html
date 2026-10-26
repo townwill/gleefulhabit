@@ -107,6 +107,7 @@ input,textarea{font:inherit;color:inherit}
 .sheet .grab{width:38px;height:5px;border-radius:3px;background:var(--track);margin:0 auto 10px}
 .sheet h2{margin:0 0 4px;font-size:21px;letter-spacing:-.3px}
 .sheet .hint{font-size:13px;color:var(--muted);margin:0 0 10px}
+.flab{display:block;font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px 2px}
 .sheet .q{font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 7px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{min-height:44px;padding:0 14px;border-radius:22px;background:#f4f4f6;font-size:15px;font-weight:500;display:flex;align-items:center;justify-content:center}
@@ -218,7 +219,7 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 const SCHEMA = 2;
 const STORE_KEY = 'gh2';
 const V1_KEY = 'habitflow';
-const APP_VERSION = '2026-10-26.1737';
+const APP_VERSION = '2026-10-26.1918';
 const HABITS = ['workout','protein','wind','sugar'];
 const HABIT_META = {
   workout:{name:'Workout',icon:'🏋️'},
@@ -1525,8 +1526,8 @@ function proteinOverHTML() {
     <div class="q" style="font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 7px">Add</div>
     ${chips.length ? `<div class="chips" style="margin-bottom:10px">${chips.map((c, i) => `<button class="chip sm" onclick="quickAdd(${i})">${esc(c.label)} · ${c.protein}g</button>`).join('')}</div>` : ''}
     <input class="field" id="fLabel" placeholder="What was it? (optional)" style="margin-bottom:8px">
-    <div class="row2"><input class="field num" id="fProt" type="number" inputmode="decimal" placeholder="Protein g"><input class="field num" id="fSugar" type="number" inputmode="decimal" placeholder="Added sugar g"></div>
-    <div class="row2" style="margin-top:8px"><input class="field num" id="fFiber" type="number" inputmode="decimal" placeholder="Fiber g"><input class="field num" id="fSat" type="number" inputmode="decimal" placeholder="Sat fat g"></div>
+    <div class="row2"><div><label class="flab" for="fProt">Protein g</label><input class="field num" id="fProt" type="number" inputmode="decimal" placeholder="Protein g"></div><div><label class="flab" for="fSugar">Added sugar g</label><input class="field num" id="fSugar" type="number" inputmode="decimal" placeholder="Added sugar g"></div></div>
+    <div class="row2" style="margin-top:8px"><div><label class="flab" for="fFiber">Fiber g</label><input class="field num" id="fFiber" type="number" inputmode="decimal" placeholder="Fiber g"></div><div><label class="flab" for="fSat">Sat fat g</label><input class="field num" id="fSat" type="number" inputmode="decimal" placeholder="Sat fat g"></div></div>
     <p class="small muted" style="margin:6px 0 0">Fiber and sat fat are optional — Snap meal and Say it fill them in. Blank means unknown, not zero.</p>
     <button class="btn primary" onclick="manualAdd()">Add</button>` : `<p class="muted small" style="text-align:center">This day is locked.</p>`}
     <div class="card" id="dayCard" style="margin-top:18px">${dayCardInner()}</div>
