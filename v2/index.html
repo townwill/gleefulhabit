@@ -219,7 +219,7 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 const SCHEMA = 2;
 const STORE_KEY = 'gh2';
 const V1_KEY = 'habitflow';
-const APP_VERSION = '2026-10-26.1918';
+const APP_VERSION = '2026-10-26.2044';
 const HABITS = ['workout','protein','wind','sugar'];
 const HABIT_META = {
   workout:{name:'Workout',icon:'🏋️'},
@@ -1106,18 +1106,35 @@ function dayReadings(dk) {
     tracked:fi.known > 0 && sf.known > 0,
     vals:{ protein:proteinOn(dk), sugar:sugarOn(dk), fiber:fi.sum, satFat:sf.sum } };
 }
-/* Goals (protein, fiber): met = green, at least 75% = yellow. Limits (sugar, sat fat): within = green, up to 25% over = yellow. */
-function dayReadingLevel(k, v, goal) {
-  if (k === 'protein' || k === 'fiber') return v >= goal ? 'g' : v >= Math.ceil(goal * 0.75) ? 'y' : 'r';
+/* How far through the eating day it is (0-1), so lunchtime isn't judged against the whole day's goal. Past days are 1. */
+const PACE_POINTS = [[6, 0], [9, 0.2], [13, 0.5], [18, 0.8], [21, 1]];   // clock hour -> share of the day's protein / fiber you'd have had by then
+function dayPace(dk) {
+  if (dk !== todayKey()) return 1;
+  const now = new Date(), h = now.getHours() + now.getMinutes() / 60;
+  if (h <= PACE_POINTS[0][0]) return 0;
+  for (let i = 1; i < PACE_POINTS.length; i++) {
+    const [h1, p1] = PACE_POINTS[i], [h0, p0] = PACE_POINTS[i - 1];
+    if (h <= h1) return round1((p0 + (p1 - p0) * (h - h0) / (h1 - h0)) * 100) / 100;
+  }
+  return 1;
+}
+/* Goals (protein, fiber): met (or, on a day still in progress, on pace for the time of day) = green; at least 75% = yellow; below = red.
+   While the day is open a goal is never red: you can't have missed it yet. Limits (sugar, sat fat): within = green, up to 25% over = yellow. */
+function dayReadingLevel(k, v, goal, pace) {
+  pace = pace == null ? 1 : pace;
+  if (k === 'protein' || k === 'fiber') {
+    if (v >= goal || (pace < 1 && v >= goal * pace)) return 'g';
+    return pace < 1 || v >= Math.ceil(goal * 0.75) ? 'y' : 'r';
+  }
   return v <= goal ? 'g' : v <= goal * 1.25 ? 'y' : 'r';
 }
 /* Same shape of rule as a meal: red if sugar or sat fat is red; green if everything is green (or four known and one yellow, but never a
    limit that is already over); otherwise yellow. A reading with no data is unknown (left out), and a day can't be Good while one is. */
 function dayCheck(dk) {
-  const r = dayReadings(dk), g = r.goals, v = r.vals;
-  const levels = { protein:dayReadingLevel('protein', v.protein, g.protein), sugar:dayReadingLevel('sugar', v.sugar, g.sugar),
-    fiber:r.fiberTracked ? dayReadingLevel('fiber', v.fiber, g.fiber) : null, satFat:r.satTracked ? dayReadingLevel('satFat', v.satFat, g.satFat) : null };
-  if (!r.foods) return Object.assign({}, r, { levels, verdict:null, label:'Nothing logged yet', capped:false });
+  const r = dayReadings(dk), g = r.goals, v = r.vals, pace = dayPace(dk);
+  const levels = { protein:dayReadingLevel('protein', v.protein, g.protein, pace), sugar:dayReadingLevel('sugar', v.sugar, g.sugar),
+    fiber:r.fiberTracked ? dayReadingLevel('fiber', v.fiber, g.fiber, pace) : null, satFat:r.satTracked ? dayReadingLevel('satFat', v.satFat, g.satFat) : null };
+  if (!r.foods) return Object.assign({}, r, { levels, pace, verdict:null, label:'Nothing logged yet', capped:false });
   const known = Object.values(levels).filter(Boolean), n = x => known.filter(l => l === x).length;
   let verdict = 'yellow';
   if (levels.sugar === 'r' || levels.satFat === 'r') verdict = 'red';
@@ -1125,7 +1142,7 @@ function dayCheck(dk) {
   const capped = verdict === 'green' && !r.tracked;
   if (capped) verdict = 'yellow';
   const label = DAY_LABEL[verdict] + (dk === todayKey() ? ' so far' : '');
-  return Object.assign({}, r, { levels, verdict, label, capped });
+  return Object.assign({}, r, { levels, pace, verdict, label, capped });
 }
 const joinList = a => a.length <= 1 ? (a[0] || '') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
 /* The instant, no-network suggestion: what's good, what's missing, what's left to enjoy. */
@@ -1133,12 +1150,13 @@ function daySuggestion(dk) {
   const c = dayCheck(dk), g = c.goals, v = c.vals, lines = [];
   if (!c.foods) return { headline:'Nothing logged yet — start with protein and a high-fiber food.', lines, treat:false, sugarLeft:g.sugar };
   const good = [], need = [];
-  if (v.protein >= g.protein) good.push('protein'); else need.push({ name:'protein', left:round1(g.protein - v.protein) });
-  if (c.fiberTracked) { if (v.fiber >= g.fiber) good.push('fiber'); else need.push({ name:'fiber', left:round1(g.fiber - v.fiber) }); }
+  let onPaceOnly = false;                                              // good because it's on pace for the time of day, not because the goal is already met
+  if (c.levels.protein === 'g') { good.push('protein'); if (v.protein < g.protein) onPaceOnly = true; } else need.push({ name:'protein', left:round1(g.protein - v.protein) });
+  if (c.fiberTracked) { if (c.levels.fiber === 'g') { good.push('fiber'); if (v.fiber < g.fiber) onPaceOnly = true; } else need.push({ name:'fiber', left:round1(g.fiber - v.fiber) }); }
   let headline;
-  if (good.length && need.length) headline = `Your ${joinList(good)} ${good.length > 1 ? 'are' : 'is'} good, but you need more ${joinList(need.map(x => x.name))}.`;
+  if (good.length && need.length) headline = `Your ${joinList(good)} ${good.length > 1 ? 'are' : 'is'} ${onPaceOnly ? 'on pace' : 'good'}, but you need more ${joinList(need.map(x => x.name))}.`;
   else if (need.length) headline = `You still need more ${joinList(need.map(x => x.name))}.`;
-  else headline = `You're on target for ${joinList(good)}.`;
+  else headline = onPaceOnly ? `You're on pace for ${joinList(good)}.` : `You're on target for ${joinList(good)}.`;
   need.forEach(x => lines.push(`${capFirst(x.name)}: ${x.left} g to go.`));
   const missing = []; if (!c.fiberTracked) missing.push('fiber'); if (!c.satTracked) missing.push('sat fat');
   if (missing.length) lines.push(`${capFirst(joinList(missing))} ${missing.length > 1 ? "aren't" : "isn't"} tracked yet today — Snap meal, Say it or Check a meal will read ${missing.length > 1 ? 'them' : 'it'}.`);
@@ -1174,11 +1192,12 @@ function parseIdeaJSON(text) {
   const idea = String(o.idea == null ? '' : o.idea).trim().slice(0, 140);
   return idea || null;
 }
+function timeOfDayText() { const n = new Date(); return n.getHours() % 12 === 0 && n.getMinutes() === 0 ? (n.getHours() ? 'noon' : 'midnight') : `${n.getHours() % 12 || 12}:${String(n.getMinutes()).padStart(2, '0')} ${n.getHours() < 12 ? 'am' : 'pm'}`; }
 async function requestDayIdea(dk, avoid) {
   const c = dayCheck(dk), g = c.goals, v = c.vals, s = daySuggestion(dk);
   const parts = [`protein ${v.protein} of ${g.protein} g`, `added sugar ${v.sugar} of ${g.sugar} g (${s.sugarLeft >= 0 ? s.sugarLeft + ' g left' : 'over'})`];
   parts.push(c.fiberTracked ? `fiber ${v.fiber} of ${g.fiber} g` : 'fiber unknown', c.satTracked ? `saturated fat ${v.satFat} of ${g.satFat} g` : 'saturated fat unknown');
-  const text = `Today so far: ${parts.join('; ')}. ${c.foods} thing${c.foods === 1 ? '' : 's'} logged.\nAlready suggested (do not repeat): ${avoid.join(' | ') || 'none'}`;
+  const text = `Today so far (${timeOfDayText()}): ${parts.join('; ')}. ${c.foods} thing${c.foods === 1 ? '' : 's'} logged.\nAlready suggested (do not repeat): ${avoid.join(' | ') || 'none'}`;
   const r = await callClaude({ system:DAY_IDEA_SYSTEM, content:[{ type:'text', text }], max_tokens:120 });
   if (r.err) return r;
   const idea = parseIdeaJSON(r.text);
@@ -1448,7 +1467,7 @@ function dayCardInner() {
     let sub;
     if (unknown) sub = 'Not tracked yet';
     else if (isLimit) sub = val <= goal ? `${round1(goal - val)} g left` : `${round1(val - goal)} g over`;
-    else sub = val >= goal ? 'Goal met' : `${round1(goal - val)} g to go`;
+    else sub = val >= goal ? 'Goal met' : `${lv === 'g' ? 'On pace · ' : ''}${round1(goal - val)} g to go`;
     return `<div class="drow"><i class="vdot sm ${unknown ? 'vn' : dot[lv]}"></i><div class="dl"><b>${name}</b><span>${sub}</span></div><div class="dn num">${unknown ? '—' : val}<small> / ${goal} g</small></div></div>`;
   };
   const verdictChip = c.verdict ? `<span class="dverdict"><i class="vdot sm ${{ green:'vg', yellow:'vy', red:'vr' }[c.verdict]}"></i>${c.label}</span>` : `<span class="small muted">${c.label}</span>`;

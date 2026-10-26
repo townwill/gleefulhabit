@@ -2,7 +2,7 @@
 const ok = (name, cond) => console.log(name + ':', !!cond);
 const tick = () => new Promise(r => setTimeout(r, 20));
 const T = () => todayKey();
-function world(now) { localStorage.clear(); _setFakeNow(new Date(now || '2026-10-26T15:00:00').getTime()); S = blankState(); S.startDate = '2026-10-01'; closeSheet(); OV = null; keyOpen = false; DC = dcFresh(); localStorage.setItem('gh_ai_key', 'sk-test'); navigator.onLine = true; }
+function world(now) { localStorage.clear(); _setFakeNow(new Date(now || '2026-10-26T22:00:00').getTime()); S = blankState(); S.startDate = '2026-10-01'; closeSheet(); OV = null; keyOpen = false; DC = dcFresh(); localStorage.setItem('gh_ai_key', 'sk-test'); navigator.onLine = true; }
 /* put today's food on the board; optional fiber / sat fat sit on the first entry (blank = unknown) */
 function day(dk, { p = 0, s = 0, fiber = null, sat = null, entries = 1 } = {}) {
   const foods = [];
@@ -60,6 +60,32 @@ fetch = async (url, opts) => { calls.push({ url, body: JSON.parse(opts.body) });
   ok('a PAST day has no "so far" and reads as final', (day('2026-10-25', { p: 150, s: 10, fiber: 30, sat: 8 }), dayCheck('2026-10-25').label === 'Good'));
   S.settings.fiberGoal = 24; S.settings.satFatGoal = 10;
   ok('editing the fiber / sat-fat goals moves the day bands too', verdict({ p: 150, s: 10, fiber: 24, sat: 8 }).verdict === 'green' && (S.settings.satFatGoal = 7, dayCheck(T()).levels.satFat === 'y'));
+  world();
+
+  // ================= Pace: a day still in progress is judged against the time of day =================
+  const at = (h, m) => { world('2026-10-26T' + String(h).padStart(2, '0') + ':' + String(m || 0).padStart(2, '0') + ':00'); };
+  at(13, 40); ok('dayPace: 1:40pm is a little past half the day', dayPace(T()) > 0.5 && dayPace(T()) < 0.6);
+  ok('dayPace: before 6am nothing is expected, from 9pm all of it, past days always 1', (at(5), dayPace(T()) === 0) && (at(21), dayPace(T()) === 1) && (at(23), dayPace(T()) === 1) && dayPace('2026-10-25') === 1);
+  ok('dayReadingLevel with pace: on pace = green, behind = yellow, never red while the day is open', dayReadingLevel('protein', 100, 150, 0.5) === 'g' && dayReadingLevel('protein', 60, 150, 0.5) === 'y' && dayReadingLevel('fiber', 1, 30, 0.9) === 'y' && dayReadingLevel('protein', 60, 150, 1) === 'r');
+  at(13, 40); day(T(), { p: 106, s: 1, fiber: 7, sat: 14.5 });
+  c = dayCheck(T());
+  ok("YOUR 1:40pm DAY: protein green (106 g is ahead of pace), sugar green, fiber yellow, sat fat yellow", c.levels.protein === 'g' && c.levels.sugar === 'g' && c.levels.fiber === 'y' && c.levels.satFat === 'y' && c.verdict === 'yellow');
+  at(22); day(T(), { p: 106, s: 1, fiber: 7, sat: 14.5 });
+  c = dayCheck(T());
+  ok('the same numbers at 10pm are judged against the full goals: protein and fiber red', c.levels.protein === 'r' && c.levels.fiber === 'r');
+  at(13, 40); day(T(), { p: 90, s: 5, fiber: 18, sat: 6 });
+  ok('on pace for everything and limits fine -> GREEN "Good so far" at lunchtime', dayCheck(T()).verdict === 'green' && dayCheck(T()).label === 'Good so far');
+  day(T(), { p: 106, s: 1, fiber: 7, sat: 5 });
+  const sgp = daySuggestion(T());
+  ok('suggestion calls on-pace protein "on pace", not "good" and not a gap', sgp.headline === 'Your protein is on pace, but you need more fiber.' && !sgp.lines.some(l => /^Protein/.test(l)));
+  day(T(), { p: 106, s: 1 });
+  ok('with fiber unknown, protein on pace reads "on pace"', daySuggestion(T()).headline === "You're on pace for protein.");
+  ok('the card row says "On pace · 44 g to go"', (protDay = T(), /On pace · 44 g to go/.test(dayCardInner())));
+  at(22); day(T(), { p: 106, s: 1 });
+  ok('...and at night the same protein is just "44 g to go", a gap', !/On pace/.test(dayCardInner()) && daySuggestion(T()).headline === 'You still need more protein.');
+  at(13, 40); day(T(), { p: 90, s: 5, fiber: 18, sat: 6 }); reply = { idea: 'x' }; calls = [];
+  await requestDayIdea(T(), []);
+  ok('the AI idea is told what time it is', /Today so far \(1:40 pm\)/.test(calls[0].body.messages[0].content[0].text));
   world();
 
   // ================= The Suggest text (your example, word for word) =================

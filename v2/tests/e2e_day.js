@@ -44,6 +44,8 @@ const IDEAS = ['A cup of lentil soup with seeded toast for about 15 g fiber', 'C
     if (/nutrition estimator/.test(sys)) return route.fulfill({ status: 200, headers: h, contentType: 'application/json', body: JSON.stringify({ content: [{ type: 'text', text: JSON.stringify(estimate) }] }) });
     return route.fulfill({ status: 200, headers: h, contentType: 'application/json', body: JSON.stringify({ content: [{ type: 'text', text: JSON.stringify({ idea: IDEAS[Math.min(n++, IDEAS.length - 1)] }) }] }) });
   });
+  const atHour = (h, m) => { const d = new Date(); d.setHours(h, m || 0, 0, 0); return d; };
+  await page.clock.setFixedTime(atHour(22));   // the day is over: full-day goals apply (deterministic whatever the real time is)
   await page.addInitScript(s => { if (!localStorage.getItem('gh2')) localStorage.setItem('gh2', JSON.stringify(s)); localStorage.setItem('gh_ai_key', 'sk-test'); }, seed);
   await page.goto(URL); await page.waitForTimeout(500);
 
@@ -152,6 +154,25 @@ const IDEAS = ['A cup of lentil soup with seeded toast for about 15 g fiber', 'C
   check('when the model cannot tell, the boxes stay blank (unknown, not 0)', (await p2.inputValue('#fFiber')) === '' && (await p2.inputValue('#fSat')) === '');
   check('the Protein page does not scroll sideways with the new boxes', await p2.evaluate(() => { const b = document.querySelector('.over .body'); return b.scrollWidth <= b.clientWidth + 1; }));
   check('the new boxes are at least 44px tall', await p2.evaluate(() => ['fFiber', 'fSat'].every(i => document.getElementById(i).getBoundingClientRect().height >= 43.5)));
+
+  // ===== a day still in progress is judged against the time of day =====
+  const seed3 = JSON.parse(JSON.stringify(seed)); seed3.mealChecks = [];
+  seed3.days[today].foods = [{ id: 'q', label: 'Bean burrito', protein: 106, sugar: 1, fiber: 7, satFat: 14.5, src: 'ai' }];
+  const p3 = await (await browser.newContext({ viewport: { width: 390, height: 760 }, hasTouch: true })).newPage();
+  p3.on('pageerror', e => errors.push('pageerror: ' + e.message));
+  await p3.clock.setFixedTime(atHour(13, 40));
+  await p3.addInitScript(s => { localStorage.setItem('gh2', JSON.stringify(s)); localStorage.setItem('gh_ai_key', 'sk-test'); }, seed3);
+  await p3.goto(URL); await p3.waitForTimeout(400);
+  await p3.click('.hrow:has-text("Protein")'); await p3.waitForTimeout(350);
+  const dots3 = await p3.$$eval('#dayCard .drow .vdot', els => els.map(e => e.className.match(/v[gyr]\b/)[0]));
+  check('at 1:40pm 106 g protein is green (on pace), fiber yellow (behind but the day is open), nothing is red', dots3.join(',') === 'vg,vg,vy,vy', dots3);
+  check('the protein row says it is on pace', (await p3.textContent('#dayCard .drow >> nth=0')).includes('On pace · 44 g to go'));
+  await p3.click('#dayCard button:has-text("Suggest something")'); await p3.waitForTimeout(300);
+  check('the suggestion says protein is on pace', (await p3.textContent('#dayCard')).includes('Your protein is on pace'));
+  await p3.clock.setFixedTime(atHour(22)); await p3.reload(); await p3.waitForTimeout(400);
+  await p3.click('.hrow:has-text("Protein")'); await p3.waitForTimeout(350);
+  const dots4 = await p3.$$eval('#dayCard .drow .vdot', els => els.map(e => e.className.match(/v[gyr]\b/)[0]));
+  check('the same numbers at 10pm are judged against the full-day goals (protein and fiber red)', dots4.join(',') === 'vr,vg,vr,vy', dots4);
 
   // ===== everything else on the page still works =====
   await page.evaluate(() => { protDaySet(todayKey()); }); await page.waitForTimeout(300);
