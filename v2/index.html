@@ -143,6 +143,19 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 .mc-chk.on{background:var(--green);border-color:var(--green)}
 .mc-chk svg{width:14px;height:14px}
 .mc-del{width:44px;height:44px;color:var(--muted);font-size:16px;flex-shrink:0}
+.vdot.vn{background:var(--track)}
+.daychip{min-height:44px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;margin-top:2px}
+.daychip .muted{font-weight:500}
+.dhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;font-size:16px}
+.dverdict{display:flex;align-items:center;gap:7px;font-weight:700;font-size:15px}
+.drow{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--line)}
+.dl{flex:1;min-width:0}.dl b{display:block;font-size:15px;line-height:1.2}.dl span{font-size:12px;color:var(--muted)}
+.dn{font-size:22px;font-weight:700;letter-spacing:-.5px;white-space:nowrap}.dn small{font-size:13px;color:var(--muted);font-weight:600;letter-spacing:0}
+.dsug{background:var(--tint);border-radius:14px;padding:12px 14px;margin-top:10px}
+.dsug-h{font-weight:700;color:var(--green);font-size:15px;line-height:1.35}
+.dsug-l{font-size:14px;margin-top:6px;line-height:1.35}
+.dsug-i{font-size:14px;margin-top:10px;padding-top:10px;border-top:1px solid #d9e6dd;line-height:1.35}
+.dsug .btn{margin-top:10px;background:#fff}
 .spin{width:36px;height:36px;border:4px solid var(--track);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .seg{display:flex;background:#f1f1f3;border-radius:11px;padding:3px;gap:3px}
@@ -205,7 +218,7 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 const SCHEMA = 2;
 const STORE_KEY = 'gh2';
 const V1_KEY = 'habitflow';
-const APP_VERSION = '2026-10-26.1445';
+const APP_VERSION = '2026-10-26.1721';
 const HABITS = ['workout','protein','wind','sugar'];
 const HABIT_META = {
   workout:{name:'Workout',icon:'🏋️'},
@@ -1057,6 +1070,94 @@ function shoppingText() {
   return open.length ? 'Shopping list\n' + open.map(i => '• ' + i.text).join('\n') : '';
 }
 
+/* ── Day check: the same dots and verdict as a meal, judged against the DAILY goals. Derived only; stores nothing. ──
+   Protein and added sugar come from everything logged. Fiber and sat fat only exist for meals logged through
+   Meal Check (that's how they're tracked), so when none were, they're "unknown" - never counted as 0. */
+const DAY_LABEL = { green:'Good', yellow:'Okay', red:'Rough' };
+function dayReadings(dk) {
+  const goals = nutritionGoals(), foods = foodsOn(dk);
+  const checks = S.mealChecks.filter(c => c.date === dk && c.logged).length;
+  return { goals, foods:foods.length, checks, tracked:checks > 0,
+    vals:{ protein:proteinOn(dk), sugar:sugarOn(dk), fiber:mealFiberOn(dk), satFat:mealSatFatOn(dk) } };
+}
+/* Goals (protein, fiber): met = green, at least 75% = yellow. Limits (sugar, sat fat): within = green, up to 25% over = yellow. */
+function dayReadingLevel(k, v, goal) {
+  if (k === 'protein' || k === 'fiber') return v >= goal ? 'g' : v >= Math.ceil(goal * 0.75) ? 'y' : 'r';
+  return v <= goal ? 'g' : v <= goal * 1.25 ? 'y' : 'r';
+}
+/* Same shape of rule as a meal: red if sugar or sat fat is red; green if everything is green (or four known and one yellow, but never a
+   limit that is already over); otherwise yellow. Unknown readings are left out, and a day can't be Good while fiber / sat fat are unknown. */
+function dayCheck(dk) {
+  const r = dayReadings(dk), g = r.goals, v = r.vals;
+  const levels = { protein:dayReadingLevel('protein', v.protein, g.protein), sugar:dayReadingLevel('sugar', v.sugar, g.sugar),
+    fiber:r.tracked ? dayReadingLevel('fiber', v.fiber, g.fiber) : null, satFat:r.tracked ? dayReadingLevel('satFat', v.satFat, g.satFat) : null };
+  if (!r.foods) return Object.assign({}, r, { levels, verdict:null, label:'Nothing logged yet', capped:false });
+  const known = Object.values(levels).filter(Boolean), n = x => known.filter(l => l === x).length;
+  let verdict = 'yellow';
+  if (levels.sugar === 'r' || levels.satFat === 'r') verdict = 'red';
+  else if (levels.sugar === 'g' && levels.satFat !== 'y' && (n('g') === known.length || (known.length === 4 && n('g') === 3 && n('y') === 1))) verdict = 'green';   // a limit that is already over can't be part of a Good day
+  const capped = verdict === 'green' && !r.tracked;
+  if (capped) verdict = 'yellow';
+  const label = DAY_LABEL[verdict] + (dk === todayKey() ? ' so far' : '');
+  return Object.assign({}, r, { levels, verdict, label, capped });
+}
+const joinList = a => a.length <= 1 ? (a[0] || '') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
+/* The instant, no-network suggestion: what's good, what's missing, what's left to enjoy. */
+function daySuggestion(dk) {
+  const c = dayCheck(dk), g = c.goals, v = c.vals, lines = [];
+  if (!c.foods) return { headline:'Nothing logged yet — start with protein and a high-fiber food.', lines, treat:false, sugarLeft:g.sugar };
+  const good = [], need = [];
+  if (v.protein >= g.protein) good.push('protein'); else need.push({ name:'protein', left:round1(g.protein - v.protein) });
+  if (c.tracked) { if (v.fiber >= g.fiber) good.push('fiber'); else need.push({ name:'fiber', left:round1(g.fiber - v.fiber) }); }
+  let headline;
+  if (good.length && need.length) headline = `Your ${joinList(good)} ${good.length > 1 ? 'are' : 'is'} good, but you need more ${joinList(need.map(x => x.name))}.`;
+  else if (need.length) headline = `You still need more ${joinList(need.map(x => x.name))}.`;
+  else headline = `You're on target for ${joinList(good)}.`;
+  need.forEach(x => lines.push(`${capFirst(x.name)}: ${x.left} g to go.`));
+  if (!c.tracked) lines.push("Fiber and sat fat aren't tracked yet today — log a meal with Check a meal to see them.");
+  const sugarLeft = round1(g.sugar - v.sugar);
+  if (sugarLeft >= 5) lines.push(`You have ${sugarLeft} g of added sugar left — treat yo self.`);
+  else if (sugarLeft >= 0) lines.push(`Only ${sugarLeft} g of added sugar left — save it for something you'll love.`);
+  else lines.push(`You're ${round1(-sugarLeft)} g over on added sugar — keep it easy for the rest of the day.`);
+  if (c.tracked) {
+    const satLeft = round1(g.satFat - v.satFat);
+    if (satLeft < 0) lines.push('Sat fat is over — lean on olive oil, nuts and beans next.');
+    else if (satLeft < 4) lines.push(`Only ${satLeft} g of sat fat left.`);
+  }
+  return { headline, lines, treat:sugarLeft >= 5, sugarLeft };
+}
+
+/* One concrete food idea from the model for what's left of today. Never throws: { idea } or { err }. */
+const DAY_IDEA_SYSTEM = `You suggest ONE specific food or small snack for the rest of the user's day.
+The user's goals: high protein, low added sugar, high fiber (especially soluble: oats, beans, chia, psyllium), low saturated fat, healthy fats from olive oil, nuts, seeds, avocado.
+Close the biggest gap using common pantry or freezer foods. If the user has at least 5 g of added sugar left you may instead suggest ONE small treat that fits inside it.
+Never repeat an idea already suggested. Max 20 words.
+Return ONLY JSON, no prose: {"idea":"the suggestion"}`;
+function looseJSON(text) {
+  const t = String(text == null ? '' : text).replace(/```json|```/gi, '').trim();
+  try { return JSON.parse(t); } catch (e) {
+    const a = t.indexOf('{'), b = t.lastIndexOf('}');
+    if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch (e2) { return null; } }
+  }
+  return null;
+}
+function parseIdeaJSON(text) {
+  const o = looseJSON(text);
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+  const idea = String(o.idea == null ? '' : o.idea).trim().slice(0, 140);
+  return idea || null;
+}
+async function requestDayIdea(dk, avoid) {
+  const c = dayCheck(dk), g = c.goals, v = c.vals, s = daySuggestion(dk);
+  const parts = [`protein ${v.protein} of ${g.protein} g`, `added sugar ${v.sugar} of ${g.sugar} g (${s.sugarLeft >= 0 ? s.sugarLeft + ' g left' : 'over'})`];
+  parts.push(c.tracked ? `fiber ${v.fiber} of ${g.fiber} g` : 'fiber unknown', c.tracked ? `saturated fat ${v.satFat} of ${g.satFat} g` : 'saturated fat unknown');
+  const text = `Today so far: ${parts.join('; ')}. ${c.foods} thing${c.foods === 1 ? '' : 's'} logged.\nAlready suggested (do not repeat): ${avoid.join(' | ') || 'none'}`;
+  const r = await callClaude({ system:DAY_IDEA_SYSTEM, content:[{ type:'text', text }], max_tokens:120 });
+  if (r.err) return r;
+  const idea = parseIdeaJSON(r.text);
+  return idea ? { idea } : { err:'parse' };
+}
+
 /*@@ENGINE2*/
 /* ── UI helpers ── */
 const $ = id => document.getElementById(id);
@@ -1276,7 +1377,7 @@ function wdRemove() { clearWind(SH.dk); closeSheet(); }
 
 /* ── Protein page ── */
 let protDay = null, aiMode = null, aiPhoto = null, keyOpen = false;
-function openProtein() { OV = 'protein'; protDay = todayKey(); aiMode = null; aiPhoto = null; renderProteinOver(true); }
+function openProtein() { OV = 'protein'; protDay = todayKey(); aiMode = null; aiPhoto = null; DC = dcFresh(); renderProteinOver(true); }
 function closeOver() { OV = null; $('overRoot').innerHTML = ''; }
 function setOver(html, first) {
   const q = sel => document.querySelector ? document.querySelector(sel) : null;
@@ -1307,6 +1408,64 @@ function keyCardHTML() {
 function toggleKey() { keyOpen = !keyOpen; renderProteinOver(); }
 function saveKey() { const v = ($('keyInput').value || '').trim(); if (!v) return; localStorage.setItem('gh_ai_key', v); keyOpen = false; renderProteinOver(); toast('Key saved'); }
 function clearKey() { localStorage.removeItem('gh_ai_key'); renderProteinOver(); toast('Key removed'); }
+/* ── Day check card (Protein page) ── */
+let DC = { open:false, idea:null, ideas:[], busy:false, note:'', sig:'' };
+const dcFresh = () => ({ open:false, idea:null, ideas:[], busy:false, note:'', sig:'' });
+const dcSig = dk => { const r = dayReadings(dk); return dk + '|' + JSON.stringify(r.vals) + '|' + r.checks + '|' + r.foods; };
+function dayCardInner() {
+  const dk = protDay, c = dayCheck(dk), g = c.goals, v = c.vals, isToday = dk === todayKey();
+  if (DC.sig && DC.sig !== dcSig(dk)) DC = dcFresh();                    // what you've logged changed: the old suggestion is stale
+  const dot = { g:'vg', y:'vy', r:'vr' };
+  const row = (k, name, val, goal, isLimit) => {
+    const lv = c.levels[k], unknown = lv === null;
+    let sub;
+    if (unknown) sub = 'Not tracked yet';
+    else if (isLimit) sub = val <= goal ? `${round1(goal - val)} g left` : `${round1(val - goal)} g over`;
+    else sub = val >= goal ? 'Goal met' : `${round1(goal - val)} g to go`;
+    return `<div class="drow"><i class="vdot sm ${unknown ? 'vn' : dot[lv]}"></i><div class="dl"><b>${name}</b><span>${sub}</span></div><div class="dn num">${unknown ? '—' : val}<small> / ${goal} g</small></div></div>`;
+  };
+  const verdictChip = c.verdict ? `<span class="dverdict"><i class="vdot sm ${{ green:'vg', yellow:'vy', red:'vr' }[c.verdict]}"></i>${c.label}</span>` : `<span class="small muted">${c.label}</span>`;
+  const cover = c.foods && (!c.tracked ? 'Fiber and sat fat only count meals logged with Check a meal.' : c.checks < c.foods ? `Fiber and sat fat count ${c.checks} of ${c.foods} entries (Check a meal only).` : '');
+  let panel = '';
+  if (DC.open && isToday) {
+    const s = daySuggestion(dk);
+    panel = `<div class="dsug"><div class="dsug-h">${esc(s.headline)}</div>${s.lines.map(l => `<div class="dsug-l">${esc(l)}</div>`).join('')}
+      ${DC.busy ? '<div class="dsug-i muted">Thinking of something to eat…</div>' : DC.idea ? `<div class="dsug-i"><b>Try:</b> ${esc(DC.idea)}</div>` : ''}
+      ${DC.note ? `<div class="small muted" style="margin-top:6px">${esc(DC.note)}</div>` : ''}
+      ${DC.idea || (DC.note && hasKey()) ? `<button class="btn" ${DC.busy ? 'disabled' : ''} onclick="onDayAnother()">${DC.busy ? 'Thinking…' : 'Another idea'}</button>` : ''}</div>`;
+  }
+  return `<div class="dhead"><b>Your day</b>${verdictChip}</div>
+    ${row('protein', 'Protein', v.protein, g.protein, false)}${row('sugar', 'Added sugar', v.sugar, g.sugar, true)}${row('fiber', 'Fiber', v.fiber, g.fiber, false)}${row('satFat', 'Sat fat', v.satFat, g.satFat, true)}
+    ${cover ? `<p class="small muted" style="margin:8px 0 0">${cover}</p>` : ''}
+    ${isToday ? `<button class="btn" onclick="onDaySuggest()">${DC.open ? 'Hide suggestion' : 'Suggest something'}</button>` : ''}${panel}`;
+}
+function dayChipHTML(dk) {
+  const c = dayCheck(dk); if (!c.verdict) return '';
+  return `<button class="daychip" onclick="jumpDay()"><i class="vdot sm ${{ green:'vg', yellow:'vy', red:'vr' }[c.verdict]}"></i>${esc(c.label)}<span class="muted"> · see your day</span></button>`;
+}
+function jumpDay() { const el = $('dayCard'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior:'smooth', block:'start' }); }
+function renderDayCard() { const el = $('dayCard'); if (el) el.innerHTML = dayCardInner(); }
+async function onDaySuggest() {
+  if (protDay !== todayKey()) return;
+  if (DC.open) { DC.open = false; renderDayCard(); return; }
+  DC = dcFresh(); DC.open = true; DC.sig = dcSig(protDay);
+  if (!hasKey()) { DC.note = 'Add your API key below for a food idea too.'; renderDayCard(); return; }
+  await dcFetchIdea();
+}
+function onDayAnother() { if (DC.open && !DC.busy) dcFetchIdea(); }
+async function dcFetchIdea() {
+  const me = DC, dk = protDay;
+  if (mcOffline()) { me.note = 'Needs a connection for a food idea.'; renderDayCard(); return; }
+  me.busy = true; me.note = ''; renderDayCard();
+  const r = await requestDayIdea(dk, me.ideas.slice());
+  if (DC !== me) return;                                          // you logged something (or closed the page) while it thought
+  me.busy = false;
+  if (r.err) me.note = r.err === 'auth' ? 'API key rejected — check it below.' : r.err === 'offline' ? 'Needs a connection for a food idea.' : "Couldn't get a food idea — try again.";
+  else if (me.ideas.some(x => x.toLowerCase() === r.idea.toLowerCase())) me.note = 'Same idea again — tap once more.';
+  else { me.idea = r.idea; me.ideas.push(r.idea); }
+  renderDayCard();
+}
+
 function proteinOverHTML() {
   const dk = protDay, g = S.settings.proteinGoal, n = proteinOn(dk), st = habitState('protein', dk);
   const sg = sugarOn(dk), b = S.settings.sugarBudget, can = canLog(dk), foods = foodsOn(dk);
@@ -1321,6 +1480,7 @@ function proteinOverHTML() {
       <div style="position:relative;width:176px;height:176px">${ringSVG(Math.min(1, n / g), 176, 15, col, '#E8E8ED')}
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div class="num" style="font-size:46px;font-weight:700;color:var(--green);line-height:1">${n}</div><div class="muted small">of ${g} g</div></div></div>
       <div class="small muted" style="margin-top:6px">${note}</div>
+      ${dayChipHTML(dk)}
     </div>
     <div class="card" style="padding:10px 14px"><div style="display:flex;justify-content:space-between" class="small"><b>Added sugar</b><span class="num" style="color:${sg > b ? 'var(--bad)' : 'var(--muted)'}">${sg} / ${b} g</span></div>
       <div class="track" style="margin-top:6px"><i style="width:${Math.min(100, sg / b * 100)}%;background:${sg > b ? 'var(--bad)' : 'var(--g2)'}"></i></div></div>
@@ -1340,6 +1500,7 @@ function proteinOverHTML() {
     <input class="field" id="fLabel" placeholder="What was it? (optional)" style="margin-bottom:8px">
     <div class="row2"><input class="field num" id="fProt" type="number" inputmode="decimal" placeholder="Protein g"><input class="field num" id="fSugar" type="number" inputmode="decimal" placeholder="Added sugar g"></div>
     <button class="btn primary" onclick="manualAdd()">Add</button>` : `<p class="muted small" style="text-align:center">This day is locked.</p>`}
+    <div class="card" id="dayCard" style="margin-top:18px">${dayCardInner()}</div>
     <div class="q" style="font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:18px 0 6px">Food ${dk === todayKey() ? 'today' : 'yesterday'}</div>
     ${foods.length ? foods.map(foodRowHTML).join('') : `<p class="muted small">Nothing logged yet.</p>`}
     <div style="height:14px"></div>${keyCardHTML()}
