@@ -135,6 +135,15 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 .mc-saved{display:flex;align-items:center;gap:10px;min-height:56px;padding:6px 12px;border-radius:14px;background:#fafafb;border:1px solid var(--line);width:100%;text-align:left;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .mc-acts{display:grid;grid-template-columns:1.2fr 1fr;gap:8px;margin-top:8px}
 .sheet .mc-acts .btn{margin:0;width:100%;font-size:14px;padding:0 6px}
+.why{margin-top:8px;padding:0}
+.why-h{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:48px;padding:8px 14px;text-align:left;font-size:14px;line-height:1.3}
+.why-h span{min-width:0}.why-h b{color:var(--bad);font-weight:700}.why-h i{font-style:normal;font-size:22px;color:var(--muted);transition:transform .15s}.why-h i.on{transform:rotate(90deg)}
+.why-b{padding:0 14px 12px;border-top:1px solid var(--line)}
+.why-l{font-size:14px;line-height:1.4;padding:8px 0;border-bottom:1px solid var(--line)}
+.why-h2,.why-f{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px}.why-f{text-transform:none;font-weight:500;font-size:13px}
+.why-fix{display:block;width:100%;text-align:left;font-size:14px;line-height:1.4;padding:8px 0;color:var(--text)}
+.why-fix.tap{min-height:44px;color:var(--green);font-weight:600}.why-fix.tap span{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-top:2px}
+.why-chk{display:block;width:100%;min-height:48px;text-align:left;padding:8px 10px;margin:8px 0 0;border-radius:12px;background:#fdf4e3;font-size:14px}.why-chk b{display:block}.why-chk span{font-size:12.5px;color:var(--muted)}
 .g-aisle{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 0}
 .g-x{color:var(--green);font-weight:700;font-size:14px}
 .g-add{display:flex;gap:8px;margin:12px 0 10px}.g-add .field{flex:1;min-width:0;margin:0}.g-add .btn{margin:0;width:auto;padding:0 18px}
@@ -227,8 +236,9 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 const SCHEMA = 2;
 const STORE_KEY = 'gh2';
 const V1_KEY = 'habitflow';
-const APP_VERSION = '2026-10-26.2131';
+const APP_VERSION = '2026-10-27.1503';
 const HABITS = ['workout','protein','wind','sugar'];
+const SUGAR_CUTOFF_HOUR = 22;   // Less sugar settles (shows checked, pays) at 10pm instead of waiting for midnight
 const HABIT_META = {
   workout:{name:'Workout',icon:'🏋️'},
   protein:{name:'Protein',icon:'🍗'},
@@ -264,6 +274,18 @@ function canLog(dk) {
 const AISLES = ['Produce', 'Protein', 'Dairy', 'Grains & bread', 'Canned & dry', 'Frozen', 'Other'];
 const GROCERY_MAX = 150;
 let _groceryDirty = false;   // the list changed inside a sheet: redraw the Weight page card when the sheet closes
+/* Cached "Why rough?" fixes: only valid dates from the last 14 days, text trimmed, at most 2 fixes a day. */
+function cleanInsights(raw) {
+  const out = {}; if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+  const cut = addDays(todayKey(), -14);
+  for (const dk of Object.keys(raw)) {
+    const e = raw[dk];
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dk) || dk < cut || !e || typeof e !== 'object' || !Array.isArray(e.fixes)) continue;
+    const fixes = e.fixes.map(f => f && typeof f === 'object' && typeof f.text === 'string' && f.text.trim() ? { text:f.text.trim().slice(0, 160), savedMealId:typeof f.savedMealId === 'string' && f.savedMealId ? f.savedMealId.slice(0, 40) : null } : null).filter(Boolean).slice(0, 2);
+    if (fixes.length) out[dk] = { fixes, generatedAt:+e.generatedAt || 0 };
+  }
+  return out;
+}
 function cleanAisle(a) { const x = String(a == null ? '' : a).trim().toLowerCase(); return AISLES.find(n => n.toLowerCase() === x) || null; }
 /* The seeded saved meal starts unscored (result:null); the first tap scores it once and caches it. */
 function seedMeals() {
@@ -282,6 +304,7 @@ function blankState() {
     savedMeals: seedMeals(),   // Meal Check: { id, name, desc?, result|null, uses, lastUsed }
     groceryList: [],  // { id, item, amount, aisle, count, checked, addedTs } (Weight page + Meal Check + Meal ideas)
     recentSuggestions: [],   // Meal ideas shown in the last 7 days: { name, ts }
+    dayInsights: {},         // 'Why was my day rough?' fixes cached per day (last 14 days): { 'YYYY-MM-DD': { fixes:[{text, savedMealId|null}], generatedAt } }
     mealChecks: [],  // Meal Check history (last 365 days): { id, date, ts, mealName, verdict, protein_g, added_sugar_g, fiber_g, sat_fat_g, logged }
     weight: { unit:'lbs', goal:null, logs:{} },
     months: {},      // 'YYYY-MM' -> frozen month-close snapshot
@@ -318,6 +341,7 @@ function migrateState(raw) {
   s.groceryList = (Array.isArray(s.groceryList) ? s.groceryList : []).filter(x => x && typeof x === 'object' && x.id && typeof x.item === 'string' && x.item.trim())
     .map(x => ({ id:String(x.id), item:x.item.trim().slice(0, 60), amount:typeof x.amount === 'string' ? x.amount.slice(0, 30) : '', aisle:cleanAisle(x.aisle) || 'Other', count:Math.min(99, Math.max(1, Math.round(+x.count) || 1)), checked:!!x.checked, addedTs:+x.addedTs || 0 })).slice(-GROCERY_MAX);
   { const cut = Date.now() - 7 * 864e5; s.recentSuggestions = (Array.isArray(s.recentSuggestions) ? s.recentSuggestions : []).filter(x => x && typeof x.name === 'string' && x.name && +x.ts >= cut).map(x => ({ name:x.name.slice(0, 60), ts:+x.ts })).slice(-60); }
+  s.dayInsights = cleanInsights(s.dayInsights);
   { const cut = addDays(todayKey(), -365); s.mealChecks = s.mealChecks.filter(c => c && typeof c === 'object' && c.date >= cut); }
   for (const dk of Object.keys(s.days)) {
     const d = s.days[dk];
@@ -489,7 +513,7 @@ function habitState(h, dk) {
     const logged = foodsOn(dk).length > 0, n = sugarOn(dk), b = S.settings.sugarBudget;
     if (!logged) return { st:'none', logged:false, share:0, pct:0, val:0 };
     if (n > b) return { st:'over', logged:true, share:0, pct:Math.min(1, n / b), val:n };
-    return dk < today ? { st:'done', logged:true, share:1, pct:n / b, val:n } : { st:'ok', logged:true, share:0, pct:n / b, val:n };
+    return dk < today || new Date().getHours() >= SUGAR_CUTOFF_HOUR ? { st:'done', logged:true, share:1, pct:n / b, val:n } : { st:'ok', logged:true, share:0, pct:n / b, val:n };
   }
   return { st:'none', logged:false, share:0, pct:0 };
 }
@@ -1358,7 +1382,7 @@ function subFor(id, s, dk) {
     if (s.st === 'free') return 'Free day · budget off';
     if (s.st === 'none') return `${b} g budget · nothing logged`;
     if (s.st === 'over') return `${round1(s.val - b)} g over budget`;
-    return `${round1(b - s.val)} g left today`;
+    return dk === todayKey() ? (s.st === 'done' ? `${round1(b - s.val)} g under · settled at 10pm` : `${round1(b - s.val)} g left · checks at 10pm`) : `${round1(b - s.val)} g left today`;
   }
   return '';
 }
@@ -1563,6 +1587,67 @@ function saveKey() { const v = ($('keyInput').value || '').trim(); if (!v) retur
 function clearKey() { localStorage.removeItem('gh_ai_key'); renderProteinOver(); toast('Key removed'); }
 /* ── Day check card (Protein page) ── */
 let DC = { open:false, idea:null, ideas:[], busy:false, note:'', sig:'' };
+/* ── "Why was my day rough?": which foods did it, what was short, which entries look off, and two fixes. ──
+   The culprits and the entry check are pure JS (no key needed). Only the fixes call the model, once per day, cached in S.dayInsights. */
+const WHY_METRICS = [['sugar', 'Sugar', true], ['satFat', 'Sat fat', true], ['protein', 'Protein', false], ['fiber', 'Fiber', false]];   // [key, name, isLimit]: what you went over first, then what you fell short on
+const foodMacro = { protein:f => +f.protein || 0, sugar:f => +f.sugar || 0, fiber:f => foodFiber(f), satFat:f => foodSatFat(f) };
+const shortName = t => { t = String(t || 'Entry').trim(); return t.length > 24 ? t.slice(0, 23) + '…' : t; };
+const gTxt = n => `${round1(n)} g`;
+/* { reds:[{k, name, isLimit, val, goal, gap}], lines:[{k, text}], summary } - nothing red means no reds and no card. */
+function dayCulprits(dk) {
+  const c = dayCheck(dk), foods = foodsOn(dk), reds = [], lines = [];
+  for (const [k, name, isLimit] of WHY_METRICS) {
+    if (c.levels[k] !== 'r') continue;
+    const val = c.vals[k], goal = c.goals[k], gap = round1(isLimit ? val - goal : goal - val);
+    reds.push({ k, name, isLimit, val, goal, gap });
+    if (isLimit) {
+      const top = foods.map(f => ({ f, v:foodMacro[k](f) })).filter(x => typeof x.v === 'number' && x.v > 0).sort((a, b) => b.v - a.v).slice(0, 3);
+      lines.push({ k, text:`${name}: ${top.length ? top.map(x => `${shortName(x.f.label)} ${gTxt(x.v)}`).join(' · ') : `${gTxt(val)} in total`}` });
+    } else {
+      const low = k === 'protein' ? 5 : 1, zero = foods.filter(f => { const v = foodMacro[k](f); return typeof v === 'number' && v <= low; }).length;
+      lines.push({ k, text:`${name}: ${round1(val)} of ${goal} g${zero ? ` — ${zero} ${zero === 1 ? 'meal had' : 'meals had'} 0–${low} g` : ''}` });
+    }
+  }
+  const summary = reds.map((r, i) => { const n = i ? r.name.toLowerCase() : r.name; return `${n} ${r.isLimit ? '+' : '−'}${gTxt(r.gap)}`; }).join(', ');
+  return { reds, lines, summary };
+}
+/* Entries whose numbers look off: sat fat over 8 g, added sugar over 20 g, protein over 60 g in one entry. */
+function suspectEntries(dk) {
+  const out = [];
+  for (const f of foodsOn(dk)) {
+    const why = [];
+    if ((foodSatFat(f) || 0) > 8) why.push(`${gTxt(foodSatFat(f))} sat fat`);
+    if ((+f.sugar || 0) > 20) why.push(`${gTxt(+f.sugar)} added sugar`);
+    if ((+f.protein || 0) > 60) why.push(`${gTxt(+f.protein)} protein`);
+    if (why.length) out.push({ id:f.id, label:f.label, why:why.join(', ') });
+  }
+  return out;
+}
+const WHY_SYSTEM = `You help someone fix a day that went off their nutrition goals. Give exactly 2 short, concrete fixes for next time.
+Their goals: high protein, low added sugar, high fiber (especially soluble: oats, beans, chia, psyllium), low saturated fat, healthy fats from olive oil, nuts, seeds, avocado.
+Prefer their own saved meals: if a fix uses one, copy its id into savedMealId, otherwise use null. Never invent an id. Each fix is one sentence, max 22 words, using common foods.
+Return ONLY JSON, no prose: {"fixes":[{"text":"","savedMealId":null}]}`;
+/* Defensive: fences / prose tolerated, unknown saved-meal ids become null, at most 2 fixes. Returns [{text, savedMealId}] or null. */
+function parseWhyJSON(text) {
+  const o = looseJSON(text);
+  if (!o || typeof o !== 'object' || !Array.isArray(o.fixes)) return null;
+  const fixes = o.fixes.map(f => {
+    const x = f && typeof f === 'object' ? f : { text:f }, t = String(x.text == null ? '' : x.text).trim().slice(0, 160);
+    const id = typeof x.savedMealId === 'string' && S.savedMeals.some(m => m.id === x.savedMealId) ? x.savedMealId : null;
+    return t ? { text:t, savedMealId:id } : null;
+  }).filter(Boolean).slice(0, 2);
+  return fixes.length ? fixes : null;
+}
+/* Never throws: { fixes } or { err }. */
+async function requestWhyFixes(dk) {
+  const c = dayCheck(dk), cu = dayCulprits(dk), g = c.goals, v = c.vals;
+  const saved = S.savedMeals.slice(0, 15).map(m => m.result ? `${m.id}: ${m.name} (protein ${m.result.protein_g} g, sugar ${m.result.added_sugar_g} g, fiber ${m.result.fiber_g} g, sat fat ${m.result.sat_fat_g} g)` : `${m.id}: ${m.name}`);
+  const text = `Day ${dk}. Totals vs goals: protein ${v.protein} of ${g.protein} g; added sugar ${v.sugar} of ${g.sugar} g (limit); fiber ${c.fiberTracked ? v.fiber : 'unknown'} of ${g.fiber} g; sat fat ${c.satTracked ? v.satFat : 'unknown'} of ${g.satFat} g (limit).\nWhat went wrong:\n${cu.lines.map(l => '- ' + l.text).join('\n')}\nSaved meals (id: name):\n${saved.join('\n') || 'none'}`;
+  const r = await callClaude({ system:WHY_SYSTEM, content:[{ type:'text', text }], max_tokens:300 });
+  if (r.err) return r;
+  const fixes = parseWhyJSON(r.text);
+  return fixes ? { fixes } : { err:'parse' };
+}
 const dcFresh = () => ({ open:false, idea:null, ideas:[], busy:false, note:'', sig:'' });
 const dcSig = dk => { const r = dayReadings(dk); return dk + '|' + JSON.stringify(r.vals) + '|' + r.fiberKnown + ',' + r.satKnown + '|' + r.foods; };
 function dayCardInner() {
@@ -1598,7 +1683,42 @@ function dayChipHTML(dk) {
   return `<button class="daychip" onclick="jumpDay()"><i class="vdot sm ${{ green:'vg', yellow:'vy', red:'vr' }[c.verdict]}"></i>${esc(c.label)}<span class="muted"> · see your day</span></button>`;
 }
 function jumpDay() { const el = $('dayCard'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior:'smooth', block:'start' }); }
-function renderDayCard() { const el = $('dayCard'); if (el) el.innerHTML = dayCardInner(); }
+function renderDayCard() { const el = $('dayCard'); if (el) el.innerHTML = dayCardInner(); renderWhy(); }
+/* The Why card: one line while collapsed; culprits, entry check and fixes when open. Hidden when nothing is red. */
+let WH = { dk:null, open:false, busy:false, failed:false };
+function whyState(dk) { if (WH.dk !== dk) WH = { dk, open:false, busy:false, failed:false }; return WH; }
+function whyCardHTML() {
+  const dk = protDay, cu = dayCulprits(dk); if (!cu.reds.length) return '';
+  const me = whyState(dk), bad = suspectEntries(dk), cached = S.dayInsights[dk], edit = canLog(dk);
+  let body = '';
+  if (me.open) {
+    body = `<div class="why-b">${cu.lines.map(l => `<div class="why-l">${esc(l.text)}</div>`).join('')}
+      ${bad.map(b => edit ? `<button class="why-chk" onclick="openFoodEdit('${b.id}')"><b>Double-check this entry</b><span>${esc(shortName(b.label))} · ${esc(b.why)} · tap to edit</span></button>` : `<div class="why-l"><b>Double-check:</b> ${esc(shortName(b.label))} · ${esc(b.why)}</div>`).join('')}
+      ${me.busy ? '<div class="why-f muted">Thinking of fixes…</div>' : cached ? `<div class="why-h2">Fixes for next time</div>${cached.fixes.map(f => f.savedMealId && S.savedMeals.some(m => m.id === f.savedMealId) ? `<button class="why-fix tap" onclick="whyOpenMeal('${esc(f.savedMealId)}')">${esc(f.text)}<span>Open ${esc(shortName(S.savedMeals.find(m => m.id === f.savedMealId).name))} ›</span></button>` : `<div class="why-fix">${esc(f.text)}</div>`).join('')}<button class="linkbtn" onclick="whyRefresh()">Refresh</button>` : ''}
+    </div>`;
+  }
+  return `<div class="card why" id="whyCard"><button class="why-h" aria-expanded="${me.open}" onclick="whyToggle()"><span>Why rough? <b>${esc(cu.summary)}</b></span><i class="${me.open ? 'on' : ''}">›</i></button>${body}</div>`;
+}
+function renderWhy() { const el = $('whyWrap'); if (el) el.innerHTML = whyCardHTML(); }
+function whyToggle() {
+  const me = whyState(protDay); me.open = !me.open; renderWhy();
+  if (me.open && !S.dayInsights[protDay] && !me.busy && !me.failed) whyFetch();
+}
+function whyRefresh() { const me = whyState(protDay); if (!me.busy) whyFetch(); }
+async function whyFetch() {
+  const me = WH, dk = me.dk;
+  if (!hasKey() || mcOffline()) { me.failed = true; renderWhy(); return; }       // no key / no connection: the fixes section simply isn't there
+  me.busy = true; me.failed = false; renderWhy();
+  const r = await requestWhyFixes(dk);
+  if (WH !== me) return;                                                          // you moved to another day while it thought
+  me.busy = false;
+  if (r.err) me.failed = true;
+  else { S.dayInsights[dk] = { fixes:r.fixes, generatedAt:Date.now() }; S.dayInsights = cleanInsights(S.dayInsights); save(); }
+  renderWhy();
+}
+/* A fix that names a saved meal opens it in Check a meal (a cached meal shows with no call). */
+function whyOpenMeal(id) { if (!S.savedMeals.some(m => m.id === id)) return; onCheckMeal(); if (MC) mcSavedTap(id); }
+
 async function onDaySuggest() {
   if (protDay !== todayKey()) return;
   if (DC.open) { DC.open = false; renderDayCard(); return; }
@@ -1657,6 +1777,7 @@ function proteinOverHTML() {
     <p class="small muted" style="margin:6px 0 0">Fiber and sat fat are optional — Snap meal and Say it fill them in. Blank means unknown, not zero.</p>
     <button class="btn primary" onclick="manualAdd()">Add</button>` : `<p class="muted small" style="text-align:center">This day is locked.</p>`}
     <div class="card" id="dayCard" style="margin-top:18px">${dayCardInner()}</div>
+    <div id="whyWrap">${whyCardHTML()}</div>
     <div class="q" style="font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:18px 0 6px">Food ${dk === todayKey() ? 'today' : 'yesterday'}</div>
     ${foods.length ? foods.map(foodRowHTML).join('') : `<p class="muted small">Nothing logged yet.</p>`}
     <div style="height:14px"></div>${keyCardHTML()}

@@ -147,7 +147,7 @@ const noScroll = async page => page.evaluate(() => { const p = document.querySel
   await page.click('.back'); await page.waitForTimeout(350);
   check('back returns to Today, rows reflect protein', (await page.textContent('.hrow:has-text("Protein") .sb')).includes('/ 150 g'));
   const sugarSub = await page.textContent('.hrow:has-text("Less sugar") .sb');
-  check('Less sugar row shows "X g left today" from the food log', /\d+(\.\d)? g left today/.test(sugarSub), sugarSub);
+  check('Less sugar row shows what is left (or settled after 10pm) from the food log', /\d+(\.\d)? g left · checks at 10pm|\d+(\.\d)? g under · settled at 10pm/.test(sugarSub), sugarSub);
 
   // ===== E. Spend =====
   const bal = await page.evaluate(() => moneyNow().balanceC);
