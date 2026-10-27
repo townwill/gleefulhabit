@@ -105,6 +105,16 @@ fetch = async (url, opts) => { calls.push({ url, body: JSON.parse(opts.body) });
   world(); setDay(Y(), ROUGH()); protDay = Y(); let slow; queue = [() => new Promise(res => { slow = res; })]; whyToggle(); protDay = T(); whyState(T()); slow(resp({ fixes: [{ text: 'Late', savedMealId: null }] })); await tick();
   ok('moving to another day while it thinks: the late answer is dropped, no crash', !S.dayInsights[Y()]);
 
+  // ================= The verdict chip leads here =================
+  world(); setDay(Y(), ROUGH()); protDay = Y(); queue = [{ fixes: [{ text: 'Add beans', savedMealId: null }] }]; calls = [];
+  ok('on a rough day the chip says "see why" and opens the Why card', dayChipHTML(Y()).includes('see why') && dayChipHTML(Y()).includes('jumpWhy()') && !dayChipHTML(Y()).includes('see your day'));
+  OV = 'protein'; document.getElementById('app'); jumpWhy(); await tick();
+  ok('tapping it opens the card (and fetches the fixes once)', WH.open === true && calls.length === 1 && S.dayInsights[Y()]);
+  jumpWhy(); await tick();
+  ok('tapping again keeps it open and makes no second call', WH.open === true && calls.length === 1);
+  world(); setDay(Y(), [food('a', 'Oats bowl', 150, 5, 31, 6)]);
+  ok('on a day with nothing red the chip still says "see your day"', dayChipHTML(Y()).includes('see your day') && dayChipHTML(Y()).includes('jumpDay()'));
+
   // ================= State, migration, backup =================
   world();
   ok('a fresh state has dayInsights = {}', JSON.stringify(blankState().dayInsights) === '{}');

@@ -163,7 +163,7 @@ fetch = async (url, opts) => { calls.push({ url, body: JSON.parse(opts.body) });
   ok('YESTERDAY: the card shows the final verdict (no "so far") and no Suggest button', dayCardInner().includes('Okay') && !dayCardInner().includes('so far') && !dayCardInner().includes('Suggest something'));
   protDay = T(); day(T(), { p: 100, s: 3 });
   ok('the Snap / Say / Check buttons keep their place: the full card sits below the add area, just above the food list', (() => { const h = proteinOverHTML(); return h.indexOf('Snap meal') < h.indexOf('id="dayCard"') && h.indexOf('manualAdd()') < h.indexOf('id="dayCard"') && h.indexOf('id="dayCard"') < h.indexOf('>Food today<'); })());
-  ok('a verdict chip under the ring shows the day at a glance and jumps to the card', (() => { const h = proteinOverHTML(); return h.indexOf('class="daychip"') > h.indexOf('Small at') && h.indexOf('class="daychip"') < h.indexOf('Snap meal') && h.includes('Okay so far') && h.includes('onclick="jumpDay()"'); })());
+  ok('a verdict chip under the ring shows the day at a glance and jumps to the card', (() => { const h = proteinOverHTML(); return h.indexOf('class="daychip"') > h.indexOf('Small at') && h.indexOf('class="daychip"') < h.indexOf('Snap meal') && h.includes('Okay so far') && /onclick="jump(Day|Why)\(\)"/.test(h); })());
   ok('nothing logged -> no chip (nothing to say yet)', (delete S.days[T()], !proteinOverHTML().includes('class="daychip"')));
   day(T(), { p: 100, s: 3 });
   ok('opening the Protein page starts with no suggestion open', (DC.open = true, openProtein(), DC.open === false));

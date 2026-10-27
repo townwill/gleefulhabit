@@ -41,6 +41,7 @@ const IDEAS = ['A cup of lentil soup with seeded toast for about 15 g fiber', 'C
     if (mode === '500') return route.fulfill({ status: 500, headers: h, body: 'x' });
     if (delay) await new Promise(r => setTimeout(r, delay));
     const sys = (route.request().postDataJSON() || {}).system || '';
+    if (/fix a day|off their nutrition goals/.test(sys)) return route.fulfill({ status: 200, headers: h, contentType: 'application/json', body: JSON.stringify({ content: [{ type: 'text', text: JSON.stringify({ fixes: [{ text: 'Add beans to lunch', savedMealId: null }] }) }] }) });
     if (/nutrition estimator/.test(sys)) return route.fulfill({ status: 200, headers: h, contentType: 'application/json', body: JSON.stringify({ content: [{ type: 'text', text: JSON.stringify(estimate) }] }) });
     return route.fulfill({ status: 200, headers: h, contentType: 'application/json', body: JSON.stringify({ content: [{ type: 'text', text: JSON.stringify({ idea: IDEAS[Math.min(n++, IDEAS.length - 1)] }) }] }) });
   });
@@ -55,13 +56,13 @@ const IDEAS = ['A cup of lentil soup with seeded toast for about 15 g fiber', 'C
 
   // ===== Protein page =====
   await page.click('.hrow:has-text("Protein")'); await page.waitForTimeout(400);
-  check('a verdict chip sits under the ring: "Okay so far · see your day"', (await page.textContent('.daychip')).includes('Okay so far') && (await page.textContent('.daychip')).includes('see your day'));
+  check('a verdict chip sits under the ring: "Okay so far · see why" (it is 10pm and fiber is short, so something is red)', (await page.textContent('.daychip')).includes('Okay so far') && (await page.textContent('.daychip')).includes('see why'));
   check('the chip is a 44px tap target and is visible without scrolling', await page.evaluate(() => { const r = document.querySelector('.daychip').getBoundingClientRect(); return r.height >= 43.5 && r.bottom < innerHeight; }));
   const snapTop = (await page.locator('label:has-text("Snap meal")').boundingBox()).y, chipBottom = (await page.locator('.daychip').boundingBox()).y + 44;
   check('Snap meal / Say it / Check a meal keep their place: right below the chip, not pushed down by the card', snapTop >= chipBottom - 4 && snapTop < 560, { snapTop, chipBottom });
   await page.screenshot({ path: `${dir}/day_1_top.png` });
   await page.click('.daychip'); await page.waitForTimeout(700);
-  check('tapping the chip jumps to the day card', await page.evaluate(() => { const r = document.getElementById('dayCard').getBoundingClientRect(); return r.top < 300 && r.top > -50; }));
+  check('tapping the chip jumps to the Why card, directly under the day card', await page.evaluate(() => { const r = document.getElementById('whyCard').getBoundingClientRect(); return r.top < 300 && r.top > -50 && document.getElementById('dayCard').nextElementSibling.id === 'whyWrap'; }));
 
   // ===== the card =====
   check('the day card has the four readings with their values and goals', await page.evaluate(() => { const t = document.getElementById('dayCard').textContent; return ['Protein', 'Added sugar', 'Fiber', 'Sat fat'].every(x => t.includes(x)) && t.includes('150 / 150 g') && t.includes('11 / 25 g') && t.includes('12 / 30 g') && t.includes('5 / 18 g'); }));

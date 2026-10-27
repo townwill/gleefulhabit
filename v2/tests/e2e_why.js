@@ -46,11 +46,15 @@ const food = (id, label, protein, sugar, fiber, satFat) => ({ id, label, protein
   await page.click('.hrow:has-text("Protein")'); await page.waitForTimeout(400);
   check('an all-green TODAY shows no Why card', (await page.locator('#whyCard').count()) === 0);
   await page.click('.over .seg button:has-text("Yesterday")'); await page.waitForTimeout(350);
+  check('the verdict chip under the ring says "Rough · see why"', (await page.textContent('.daychip')).includes('Rough') && (await page.textContent('.daychip')).includes('see why'));
   check('YESTERDAY shows the card, collapsed to one line with both numbers', (await page.locator('#whyCard').count()) === 1 && (await page.textContent('#whyCard .why-h')).includes('Why rough?') && (await page.textContent('#whyCard .why-h')).includes('Sat fat +9.5 g, fiber −19 g') && !(await page.textContent('#whyCard')).includes('Beef stew'));
   check('the one-liner is a 44px+ tap target, one or two lines, no sideways scroll', await page.evaluate(() => { const b = document.querySelector('#whyCard .why-h').getBoundingClientRect(), o = document.querySelector('.over .body'); return b.height >= 43.5 && b.height < 70 && o.scrollWidth <= o.clientWidth + 1; }));
   await page.evaluate(() => document.getElementById('whyCard').scrollIntoView({ block: 'center' }));
   await page.screenshot({ path: `${dir}/why_1_collapsed.png` });
   check('no AI call just for looking', requests.length === 0);
+  await page.click('.daychip'); await page.waitForTimeout(900);
+  check('tapping the chip opens the Why card and brings it into view', await page.evaluate(() => { const c = document.getElementById('whyCard'), r = c.getBoundingClientRect(); return c.querySelector('.why-h').getAttribute('aria-expanded') === 'true' && r.top >= 0 && r.top < innerHeight - 100; }));
+  await page.click('#whyCard .why-h'); await page.waitForTimeout(250);
 
   await page.click('#whyCard .why-h'); await page.waitForTimeout(500);
   check('opening shows the culprit lines with the right foods and numbers', await page.evaluate(() => { const t = document.getElementById('whyCard').textContent; return t.includes('Sat fat: Giant sundae 9.5 g · Beef stew 4 g · Burrito 4 g') && t.includes('Fiber: 11 of 30 g — 4 meals had 0–1 g'); }));

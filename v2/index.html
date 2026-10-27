@@ -236,7 +236,7 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 const SCHEMA = 2;
 const STORE_KEY = 'gh2';
 const V1_KEY = 'habitflow';
-const APP_VERSION = '2026-10-27.1503';
+const APP_VERSION = '2026-10-27.1545';
 const HABITS = ['workout','protein','wind','sugar'];
 const SUGAR_CUTOFF_HOUR = 22;   // Less sugar settles (shows checked, pays) at 10pm instead of waiting for midnight
 const HABIT_META = {
@@ -1680,7 +1680,8 @@ function dayCardInner() {
 }
 function dayChipHTML(dk) {
   const c = dayCheck(dk); if (!c.verdict) return '';
-  return `<button class="daychip" onclick="jumpDay()"><i class="vdot sm ${{ green:'vg', yellow:'vy', red:'vr' }[c.verdict]}"></i>${esc(c.label)}<span class="muted"> · see your day</span></button>`;
+  const why = dayCulprits(dk).reds.length > 0;      // something is red: the chip goes straight to the Why card
+  return `<button class="daychip" onclick="${why ? 'jumpWhy()' : 'jumpDay()'}"><i class="vdot sm ${{ green:'vg', yellow:'vy', red:'vr' }[c.verdict]}"></i>${esc(c.label)}<span class="muted"> · ${why ? 'see why' : 'see your day'}</span></button>`;
 }
 function jumpDay() { const el = $('dayCard'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior:'smooth', block:'start' }); }
 function renderDayCard() { const el = $('dayCard'); if (el) el.innerHTML = dayCardInner(); renderWhy(); }
@@ -1703,6 +1704,12 @@ function renderWhy() { const el = $('whyWrap'); if (el) el.innerHTML = whyCardHT
 function whyToggle() {
   const me = whyState(protDay); me.open = !me.open; renderWhy();
   if (me.open && !S.dayInsights[protDay] && !me.busy && !me.failed) whyFetch();
+}
+/* The verdict chip at the top of the page: open the Why card and scroll to it. */
+function jumpWhy() {
+  const me = whyState(protDay);
+  if (!me.open) whyToggle();
+  const el = $('whyCard'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 function whyRefresh() { const me = whyState(protDay); if (!me.busy) whyFetch(); }
 async function whyFetch() {
