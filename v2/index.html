@@ -144,6 +144,13 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 .why-fix{display:block;width:100%;text-align:left;font-size:14px;line-height:1.4;padding:8px 0;color:var(--text)}
 .why-fix.tap{min-height:44px;color:var(--green);font-weight:600}.why-fix.tap span{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-top:2px}
 .why-chk{display:block;width:100%;min-height:48px;text-align:left;padding:8px 10px;margin:8px 0 0;border-radius:12px;background:#fdf4e3;font-size:14px}.why-chk b{display:block}.why-chk span{font-size:12.5px;color:var(--muted)}
+.it-h{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 2px}
+.it-row,.pn-row{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:56px;padding:6px 0;border-top:1px solid var(--line);text-align:left}
+.it-row:disabled{opacity:1}
+.it-l,.pn-l{display:flex;flex-direction:column;min-width:0}.it-l b,.pn-l b{font-size:15px;font-weight:600;line-height:1.25}.it-l>span,.pn-l>span{font-size:13px;color:var(--muted)}
+.it-as{text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
+.it-tag{font-style:normal;font-size:10.5px;font-weight:700;margin-left:6px;padding:1px 6px;border-radius:8px;vertical-align:middle}.it-tag.p{background:#e6f1ea;color:var(--green)}.it-tag.e{background:#f1f1f3;color:var(--muted)}
+.it-n{display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0}.it-n b{font-size:18px;font-weight:700;line-height:1.1}.it-n small{font-size:11px;color:var(--muted)}
 .g-aisle{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 0}
 .g-x{color:var(--green);font-weight:700;font-size:14px}
 .g-add{display:flex;gap:8px;margin:12px 0 10px}.g-add .field{flex:1;min-width:0;margin:0}.g-add .btn{margin:0;width:auto;padding:0 18px}
@@ -236,7 +243,7 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 const SCHEMA = 2;
 const STORE_KEY = 'gh2';
 const V1_KEY = 'habitflow';
-const APP_VERSION = '2026-10-28.0310';
+const APP_VERSION = '2026-10-28.1921';
 const HABITS = ['workout','protein','wind','sugar'];
 const SUGAR_CUTOFF_HOUR = 22;   // Less sugar settles (shows checked, pays) at 10pm instead of waiting for midnight
 const HABIT_META = {
@@ -274,6 +281,41 @@ function canLog(dk) {
 const AISLES = ['Produce', 'Protein', 'Dairy', 'Grains & bread', 'Canned & dry', 'Frozen', 'Other'];
 const GROCERY_MAX = 150;
 let _groceryDirty = false;   // the list changed inside a sheet: redraw the Weight page card when the sheet closes
+/* My pantry: foods I actually eat, with the numbers off the label. Seeded once; a deliberately emptied pantry stays empty.
+   Defined up here (hoisted) because migrateState runs before the rest of the script. */
+const PANTRY_MAX = 150;
+function seedPantry() {
+  const P = (id, name, brand, servingLabel, protein, addedSugar, fiber, satFat, aliases) => ({ id, name, brand, servingLabel, servingGrams:null, protein, addedSugar, fiber, satFat, aliases });
+  return [
+    P('p-tuna', 'Wild Planet Skipjack Tuna, no salt added', 'Wild Planet', '1 can (5 oz)', 32, 0, 0, 0.5, ['tuna', 'skipjack', 'skipjack tuna', 'canned tuna', 'wild planet']),
+    P('p-gyogurt', 'Kirkland Nonfat Greek Yogurt', 'Kirkland', '2/3 cup', 18, 0, 0, 0, ['greek yogurt', 'yogurt', 'kirkland yogurt', 'nonfat greek yogurt']),
+    P('p-mayo', '365 Organic Light Mayo', '365', '1 tbsp', 0, 0, 0, 0, ['mayo', 'light mayo', 'mayonnaise']),
+    P('p-sausage', 'Jones Golden Brown Turkey Sausage', 'Jones', '4 links', 10, 0, 0, 1.5, ['jones sausage', 'turkey sausage', 'sausage', 'sausages', 'jones farm sausages']),
+    P('p-eggwhites', 'Liquid egg whites', '', '1 cup', 26, 0, 0, 0, ['egg whites', 'egg white', 'liquid egg white']),
+    P('p-egg', 'Whole egg', '', '1 large', 6, 0, 0, 1.5, ['egg', 'eggs', 'whole eggs']),
+    P('p-cottage', 'Low-fat cottage cheese', '', '1/4 cup', 7, 0, 0, 0.5, ['cottage cheese', 'low fat cottage cheese']),
+    P('p-blackberries', 'Blackberries', '', '1 cup', 2, 0, 8, 0, ['blackberry', 'blackberries']),
+    P('p-chili', "Annie's Low-Sodium Chili", "Annie's", '1 can', 29, 0, 14, 2, ['chili', "annie's chili", 'annies chili']),
+    P('p-skyr', 'Icelandic Provisions Vanilla Skyr', 'Icelandic Provisions', '1 cup', 15, 6, 0, 1, ['skyr', 'icelandic skyr', 'vanilla skyr']),
+    P('p-nuttzo', 'NuttZo Mixed Nut & Seed Butter', 'NuttZo', '2 tbsp', 6, 0, 3, 2, ['nuttzo', 'nut butter', 'seed butter', '7 nut butter']),
+    P('p-edamame', 'The Only Bean Roasted Edamame', 'The Only Bean', '1 pack', 12, 0, 5, 1, ['edamame', 'only bean', 'roasted edamame']),
+    P('p-fairlife', 'Fairlife 2% Ultra-Filtered Milk', 'Fairlife', '1 cup', 13, 0, 0, 3, ['fairlife', 'fairlife milk', 'milk']),
+  ];
+}
+function cleanPantry(raw) {
+  const num = v => { const n = +v; return v !== '' && v != null && typeof v !== 'boolean' && isFinite(n) && n >= 0 ? Math.round(Math.min(n, 5000) * 10) / 10 : 0; };
+  const seen = new Set(), out = [];
+  for (const p of Array.isArray(raw) ? raw : []) {
+    if (!p || typeof p !== 'object' || !p.id || typeof p.name !== 'string' || !p.name.trim() || seen.has(String(p.id))) continue;
+    seen.add(String(p.id));
+    out.push({ id:String(p.id).slice(0, 40), name:p.name.trim().slice(0, 60), brand:typeof p.brand === 'string' ? p.brand.trim().slice(0, 40) : '',
+      servingLabel:typeof p.servingLabel === 'string' && p.servingLabel.trim() ? p.servingLabel.trim().slice(0, 40) : '1 serving',
+      servingGrams:+p.servingGrams > 0 && isFinite(+p.servingGrams) ? Math.round(+p.servingGrams * 10) / 10 : null,
+      protein:num(p.protein), addedSugar:num(p.addedSugar), fiber:num(p.fiber), satFat:num(p.satFat),
+      aliases:(Array.isArray(p.aliases) ? p.aliases : []).map(a => String(a == null ? '' : a).trim().toLowerCase().slice(0, 30)).filter(Boolean).slice(0, 8) });
+  }
+  return out.slice(0, PANTRY_MAX);
+}
 /* Cached "Why rough?" fixes: only valid dates from the last 14 days, text trimmed, at most 2 fixes a day. */
 function cleanInsights(raw) {
   const out = {}; if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
@@ -304,6 +346,7 @@ function blankState() {
     savedMeals: seedMeals(),   // Meal Check: { id, name, desc?, result|null, uses, lastUsed }
     groceryList: [],  // { id, item, amount, aisle, count, checked, addedTs } (Weight page + Meal Check + Meal ideas)
     recentSuggestions: [],   // Meal ideas shown in the last 7 days: { name, ts }
+    pantry: seedPantry(),    // My pantry: { id, name, brand, servingLabel, servingGrams|null, protein, addedSugar, fiber, satFat, aliases[] } per serving shown
     dayInsights: {},         // 'Why was my day rough?' fixes cached per day (last 14 days): { 'YYYY-MM-DD': { fixes:[{text, savedMealId|null}], generatedAt } }
     mealChecks: [],  // Meal Check history (last 365 days): { id, date, ts, mealName, verdict, protein_g, added_sugar_g, fiber_g, sat_fat_g, logged }
     weight: { unit:'lbs', goal:null, logs:{} },
@@ -342,6 +385,7 @@ function migrateState(raw) {
     .map(x => ({ id:String(x.id), item:x.item.trim().slice(0, 60), amount:typeof x.amount === 'string' ? x.amount.slice(0, 30) : '', aisle:cleanAisle(x.aisle) || 'Other', count:Math.min(99, Math.max(1, Math.round(+x.count) || 1)), checked:!!x.checked, addedTs:+x.addedTs || 0 })).slice(-GROCERY_MAX);
   { const cut = Date.now() - 7 * 864e5; s.recentSuggestions = (Array.isArray(s.recentSuggestions) ? s.recentSuggestions : []).filter(x => x && typeof x.name === 'string' && x.name && +x.ts >= cut).map(x => ({ name:x.name.slice(0, 60), ts:+x.ts })).slice(-60); }
   s.dayInsights = cleanInsights(s.dayInsights);
+  s.pantry = Array.isArray(raw.pantry) ? cleanPantry(raw.pantry) : seedPantry();     // an old save gets the seed; a deliberately emptied pantry stays empty
   { const cut = addDays(todayKey(), -365); s.mealChecks = s.mealChecks.filter(c => c && typeof c === 'object' && c.date >= cut); }
   for (const dk of Object.keys(s.days)) {
     const d = s.days[dk];
@@ -934,15 +978,137 @@ function windInsights() {
    No points, no money, no XP. It reads protein, added sugar, fiber and saturated fat for one meal,
    scores it against the daily goals, and can log the meal into today's food list. */
 const MEAL_MODEL = 'claude-haiku-4-5-20251001';
-const MEAL_SYSTEM = `You estimate nutrition for one meal from a photo or description.
+const MEAL_SYSTEM = `You estimate nutrition for one meal from a photo or description, as an itemized list.
 Return ONLY JSON matching the schema. No prose outside JSON.
 Estimate typical portions unless a size is given; state assumptions in "assumptions".
-Count only ADDED sugar in added_sugar_g (not fruit or milk sugar).
+Count only ADDED sugar in addedSugar (not fruit or milk sugar).
 The user's goals: high protein, low added sugar, high fiber (especially soluble: oats, beans, chia, psyllium), low saturated fat, healthy fats from olive oil, nuts, seeds, avocado.
+PANTRY RULES: below is the user's pantry (foods they actually eat, numbers per the serving shown). If an ingredient matches a pantry item by name, brand or alias, use the pantry numbers scaled to the amount, set source "pantry" and copy its id into pantryId. Only estimate items not in the pantry (source "estimate", pantryId null). Don't round protein down to be safe. If an amount is missing, assume 1 pantry serving, put that serving in amount, and set assumed true. For a named dish with no ingredients given (e.g. "tuna salad"), build it from the pantry items it most likely contains, with assumed amounts.
 Give ONE practical swap or add-on that most improves the weakest goal, using common pantry or freezer foods. Max 15 words.
 If the image is not food, set is_food to false.
-Response schema:
-{"is_food":true,"meal_name":"short name","items":[{"name":"item","amount":"portion"}],"protein_g":0,"added_sugar_g":0,"fiber_g":0,"sat_fat_g":0,"calories":0,"confidence":"low|medium|high","assumptions":"one short sentence","swap":"max 15 words","swap_items":["1 to 3 short grocery names needed for the swap"]}`;
+Response schema (one entry in items per ingredient or food; totals are the sum of the items):
+{"is_food":true,"meal_name":"short name","items":[{"name":"item","amount":"portion","pantryId":null,"source":"pantry|estimate","assumed":false,"protein":0,"addedSugar":0,"fiber":0,"satFat":0}],"totals":{"protein":0,"addedSugar":0,"fiber":0,"satFat":0},"calories":0,"confidence":"low|medium|high","assumptions":"one short sentence","swap":"max 15 words","swap_items":["1 to 3 short grocery names needed for the swap"]}`;
+/* The prompt for every estimate (Check a meal, Say it, Snap meal): the schema plus the pantry as compact JSON. */
+function pantryPromptBlock() {
+  return JSON.stringify(S.pantry.slice(0, 80).map(p => ({ id:p.id, name:p.name, brand:p.brand || undefined, serving:p.servingLabel, protein:p.protein, addedSugar:p.addedSugar, fiber:p.fiber, satFat:p.satFat, aliases:p.aliases.length ? p.aliases : undefined })));
+}
+function estimateSystem() { return `${MEAL_SYSTEM}\nPANTRY (per serving shown): ${S.pantry.length ? pantryPromptBlock() : 'empty'}`; }
+
+/* ── Amounts: "1/4 cup", "1 can (5 oz)", "2 tbsp", "4 links", "1 large". Used to rescale pantry numbers in JS, never by asking the AI again. ── */
+const QTY_WORDS = { a:1, an:1, one:1, half:.5, two:2, three:3, four:4 };
+const VULGAR = { '½':.5, '¼':.25, '¾':.75, '⅓':1/3, '⅔':2/3, '⅛':.125 };
+const UNIT_ALIAS = { cups:'cup', c:'cup', tablespoon:'tbsp', tablespoons:'tbsp', tbsps:'tbsp', tbs:'tbsp', tbl:'tbsp', teaspoon:'tsp', teaspoons:'tsp', tsps:'tsp', ounce:'oz', ounces:'oz', ozs:'oz', gram:'g', grams:'g', gs:'g', gm:'g', pound:'lb', pounds:'lb', lbs:'lb',
+  cans:'can', packs:'pack', packet:'pack', packets:'pack', pouch:'pack', pouches:'pack', bag:'pack', bags:'pack', links:'link', slices:'slice', scoops:'scoop', servings:'serving', pieces:'piece', eggs:'egg', whites:'egg', patties:'patty', bars:'bar' };
+const EACH_UNITS = new Set(['large', 'medium', 'small', 'egg', 'piece', 'each', 'item', 'whole', 'unit']);
+const VOL_TSP = { tsp:1, tbsp:3, cup:48 }, WT_G = { g:1, oz:28.3495, lb:453.592 };
+const normUnit = u => { u = String(u || '').toLowerCase(); u = UNIT_ALIAS[u] || u; return EACH_UNITS.has(u) ? 'each' : u; };
+/* -> { qty, unit } or null. A bare unit ("can") is 1 of it; a bare number has unit ''. */
+function parseAmount(str) {
+  let t = String(str == null ? '' : str).toLowerCase().trim().replace(/^(about|approx\.?|around|~)\s*/, '').replace(/[½¼¾⅓⅔⅛]/g, m => ' ' + VULGAR[m] + ' ').replace(/\s+/g, ' ').trim();
+  let qty = null, rest = t, m;
+  if ((m = t.match(/^(\d+) (\d+)\s*\/\s*(\d+)\s*(.*)$/))) { qty = +m[1] + m[2] / m[3]; rest = m[4]; }
+  else if ((m = t.match(/^(\d+) (0?\.\d+)\s*(.*)$/))) { qty = +m[1] + +m[2]; rest = m[3]; }
+  else if ((m = t.match(/^(\d+)\s*\/\s*(\d+)\s*(.*)$/))) { if (+m[2]) qty = m[1] / m[2]; rest = m[3]; }
+  else if ((m = t.match(/^(\d*\.?\d+)\s*(?:x\b)?\s*(.*)$/))) { qty = +m[1]; rest = m[2]; }
+  else if ((m = t.match(/^(a|an|one|half|two|three|four)\b\s*(.*)$/))) { qty = QTY_WORDS[m[1]]; rest = m[2]; }
+  const um = rest.replace(/^of\s+/, '').match(/^([a-z]+)/), unit = um ? normUnit(um[1]) : '';
+  if (qty == null) { if (!unit) return null; qty = 1; }
+  if (!(qty > 0) || !isFinite(qty)) return null;
+  return { qty, unit };
+}
+/* The measures a pantry serving is given in: "1 can (5 oz)" -> 1 can and 5 oz, plus servingGrams when known. */
+function servingMeasures(item) {
+  const label = String(item.servingLabel || '').toLowerCase(), out = [], first = parseAmount(label);
+  if (first) out.push(first);
+  for (const m of label.matchAll(/\(([^)]*)\)/g)) { const a = parseAmount(m[1]); if (a) out.push(a); }
+  if (item.servingGrams > 0) out.push({ qty:item.servingGrams, unit:'g' });
+  return out;
+}
+function measureRatio(a, m) {
+  if (a.unit && a.unit === m.unit) return a.qty / m.qty;
+  if (VOL_TSP[a.unit] && VOL_TSP[m.unit]) return (a.qty * VOL_TSP[a.unit]) / (m.qty * VOL_TSP[m.unit]);
+  if (WT_G[a.unit] && WT_G[m.unit]) return (a.qty * WT_G[a.unit]) / (m.qty * WT_G[m.unit]);
+  return null;
+}
+/* How many pantry servings is this amount? null when it can't be worked out (the numbers then stay as they are). */
+function scaleFactor(amount, item) {
+  const a = parseAmount(amount); if (!a) return null;
+  for (const m of servingMeasures(item)) { const f = measureRatio(a, m); if (f != null && isFinite(f)) return f; }
+  return !a.unit || a.unit === 'serving' ? a.qty : null;
+}
+const NUT = ['protein', 'addedSugar', 'fiber', 'satFat'];
+const r1 = n => Math.round((+n || 0) * 10) / 10;
+function scaledNums(item, f) { const o = {}; for (const k of NUT) o[k] = r1(item[k] * f); return o; }
+function pantryById(id) { return id ? S.pantry.find(p => p.id === id) || null : null; }
+/* Name / brand / alias match, longest alias first, used only when the model names a pantry item without its id. */
+function findPantryByName(name) {
+  const t = String(name || '').toLowerCase().trim(); if (!t) return null;
+  let best = null, bl = 0;
+  for (const p of S.pantry) for (const k of [p.name, p.brand].concat(p.aliases)) { const a = String(k || '').toLowerCase(); if (a && a.length > bl && (t === a || t.includes(a))) { best = p; bl = a.length; } }
+  return best;
+}
+/* One itemized row, validated. A pantry row's numbers are recomputed here from the pantry (the model's arithmetic is not trusted);
+   a missing amount means 1 pantry serving, marked assumed. */
+function makeLine(raw) {
+  const x = raw && typeof raw === 'object' ? raw : {};
+  const num = v => { const n = +v; return isFinite(n) && n > 0 ? r1(Math.min(n, 5000)) : 0; };
+  const pick = (a, b) => num(x[a] != null ? x[a] : x[b]);
+  let item = pantryById(typeof x.pantryId === 'string' ? x.pantryId : null);
+  if (!item && x.source === 'pantry') item = findPantryByName(x.name);
+  const line = { name:String(x.name == null ? (item ? item.name : '') : x.name).trim().slice(0, 40) || (item ? item.name : 'Item'), amount:String(x.amount == null ? '' : x.amount).trim().slice(0, 30),
+    pantryId:item ? item.id : null, source:item ? 'pantry' : 'estimate', assumed:!!x.assumed,
+    protein:pick('protein', 'protein_g'), addedSugar:pick('addedSugar', 'added_sugar_g'), fiber:pick('fiber', 'fiber_g'), satFat:pick('satFat', 'sat_fat_g') };
+  if (item) {
+    if (!line.amount) { line.amount = item.servingLabel; line.assumed = true; Object.assign(line, scaledNums(item, 1)); }
+    else { const f = scaleFactor(line.amount, item); if (f != null) Object.assign(line, scaledNums(item, f)); }
+  }
+  return line;
+}
+function sumLines(lines) { const t = { protein:0, addedSugar:0, fiber:0, satFat:0 }; for (const l of lines) for (const k of NUT) t[k] += l[k]; for (const k of NUT) t[k] = r1(t[k]); return t; }
+/* Totals are always the sum of the rows (never trusted from the model, never from another AI call). */
+function applyLines(m) {
+  const t = sumLines(m.lines);
+  m.protein_g = t.protein; m.added_sugar_g = t.addedSugar; m.fiber_g = t.fiber; m.sat_fat_g = t.satFat;
+  m.items = m.lines.map(l => ({ name:l.name, amount:l.amount }));
+  return m;
+}
+/* Defensive: strips code fences, tolerates prose around the JSON, clamps numbers to >= 0.
+   Reads the itemized shape (items with numbers + totals) and the old flat shape (protein_g ...).
+   Returns null when it can't be read, {is_food:false} for non-food, else the cleaned meal. */
+function parseMealJSON(text) {
+  const t = String(text == null ? '' : text).replace(/```json|```/gi, '').trim();
+  let obj = null;
+  try { obj = JSON.parse(t); } catch (e) {
+    const a = t.indexOf('{'), b = t.lastIndexOf('}');
+    if (a >= 0 && b > a) { try { obj = JSON.parse(t.slice(a, b + 1)); } catch (e2) { obj = null; } }
+  }
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
+  if (obj.is_food === false) return { is_food:false };
+  const nums = ['protein_g', 'added_sugar_g', 'fiber_g', 'sat_fat_g'];
+  const itemized = (Array.isArray(obj.items) && obj.items.some(i => i && typeof i === 'object' && NUT.concat(['pantryId', 'source', 'protein_g']).some(k => k in i))) || (obj.totals && typeof obj.totals === 'object');
+  if (!itemized && obj.is_food === undefined && nums.every(k => obj[k] == null)) return null;   // valid JSON, but not a meal answer
+  const num = v => { const n = +v; return isFinite(n) && n > 0 ? round1(Math.min(n, 5000)) : 0; };
+  const m = {
+    is_food:true,
+    meal_name:String(obj.meal_name || obj.food || 'Meal').trim().slice(0, 60) || 'Meal',
+    items:Array.isArray(obj.items) ? obj.items.slice(0, 12).map(i => ({ name:String(i && i.name || '').slice(0, 40), amount:String(i && i.amount || '').slice(0, 30) })) : [],
+    lines:[],
+    protein_g:num(obj.protein_g), added_sugar_g:num(obj.added_sugar_g), fiber_g:num(obj.fiber_g), sat_fat_g:num(obj.sat_fat_g),
+    calories:Math.round(num(obj.calories)),
+    confidence:['low', 'medium', 'high'].indexOf(obj.confidence) >= 0 ? obj.confidence : 'medium',
+    assumptions:String(obj.assumptions || '').slice(0, 200),
+    swap:String(obj.swap || '').trim().slice(0, 120),
+    swap_items:cleanSwapItems(obj.swap_items),
+  };
+  if (itemized) {
+    const lines = (Array.isArray(obj.items) ? obj.items : []).slice(0, 12).filter(i => i && typeof i === 'object').map(makeLine);
+    if (lines.length) { m.lines = lines; m.itemized = true; applyLines(m); }                       // totals = sum of the rows, whatever the model said
+    else if (obj.totals && typeof obj.totals === 'object') {                    // no rows: keep the model's totals as they are
+      const T = obj.totals; m.protein_g = num(T.protein != null ? T.protein : T.protein_g); m.added_sugar_g = num(T.addedSugar != null ? T.addedSugar : T.added_sugar_g); m.fiber_g = num(T.fiber != null ? T.fiber : T.fiber_g); m.sat_fat_g = num(T.satFat != null ? T.satFat : T.sat_fat_g);
+    }
+  }
+  return m;
+}
 const VERDICT_LABEL = { green:'Great fit', yellow:'Okay', red:'Rethink' };
 
 /* Daily goals. Protein and sugar are the money rules (they also drive the daily drip), so only fiber and
@@ -983,32 +1149,6 @@ function mealVerdict(m, goals) {
   if (levels.satFat === 'r' || levels.sugar === 'r') verdict = 'red';
   else if (g === 4 || (g === 3 && y === 1)) verdict = 'green';
   return { verdict, label:VERDICT_LABEL[verdict], levels };
-}
-/* Defensive: strips code fences, tolerates prose around the JSON, clamps numbers to >= 0.
-   Returns null when it can't be read, {is_food:false} for non-food, else the cleaned meal. */
-function parseMealJSON(text) {
-  const t = String(text == null ? '' : text).replace(/```json|```/gi, '').trim();
-  let obj = null;
-  try { obj = JSON.parse(t); } catch (e) {
-    const a = t.indexOf('{'), b = t.lastIndexOf('}');
-    if (a >= 0 && b > a) { try { obj = JSON.parse(t.slice(a, b + 1)); } catch (e2) { obj = null; } }
-  }
-  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
-  if (obj.is_food === false) return { is_food:false };
-  const nums = ['protein_g', 'added_sugar_g', 'fiber_g', 'sat_fat_g'];
-  if (obj.is_food === undefined && nums.every(k => obj[k] == null)) return null;   // valid JSON, but not a meal answer
-  const num = v => { const n = +v; return isFinite(n) && n > 0 ? round1(Math.min(n, 5000)) : 0; };
-  return {
-    is_food:true,
-    meal_name:String(obj.meal_name || 'Meal').trim().slice(0, 60) || 'Meal',
-    items:Array.isArray(obj.items) ? obj.items.slice(0, 12).map(i => ({ name:String(i && i.name || '').slice(0, 40), amount:String(i && i.amount || '').slice(0, 30) })) : [],
-    protein_g:num(obj.protein_g), added_sugar_g:num(obj.added_sugar_g), fiber_g:num(obj.fiber_g), sat_fat_g:num(obj.sat_fat_g),
-    calories:Math.round(num(obj.calories)),
-    confidence:['low', 'medium', 'high'].indexOf(obj.confidence) >= 0 ? obj.confidence : 'medium',
-    assumptions:String(obj.assumptions || '').slice(0, 200),
-    swap:String(obj.swap || '').trim().slice(0, 120),
-    swap_items:cleanSwapItems(obj.swap_items),
-  };
 }
 
 /* One browser-side call to the Anthropic Messages API, shared by the Protein estimate and Meal Check.
@@ -1493,7 +1633,7 @@ function openSheet(inner, inPlace) {
   if (sh) { sh.innerHTML = `<div class="grab"></div>${inner}`; return; }
   root.innerHTML = `<div class="scrim" onclick="closeSheet()"></div><div class="sheet"><div class="grab"></div>${inner}</div>`;
 }
-function closeSheet() { SH = null; if (typeof MC !== 'undefined') MC = null; $('sheetRoot').innerHTML = ''; if (_groceryDirty) { _groceryDirty = false; render(); } }
+function closeSheet() { SH = null; if (typeof MC !== 'undefined') MC = null; if (typeof PN !== 'undefined') PN = null; $('sheetRoot').innerHTML = ''; if (_groceryDirty) { _groceryDirty = false; render(); } }
 function daySeg(dk, fn) {
   const t = todayKey(), y = addDays(t, -1), yok = canLog(y);
   return `<div class="seg"><button class="${dk === t ? 'on' : ''}" onclick="${fn}('${t}')">Today</button><button class="${dk === y ? 'on' : ''}" ${yok ? '' : 'disabled'} onclick="${fn}('${y}')">Yesterday${yok ? '' : ' · locked'}</button></div>`;
@@ -1852,7 +1992,6 @@ async function onSnap(ev) {
   try { aiPhoto = await fileToJpeg(file, 1280); aiMode = 'snap'; renderProteinOver(); }
   catch (e) { toast("Couldn't read that photo"); }
 }
-const AI_SYSTEM = 'You are a nutrition estimator inside a habit tracking app. Given a text description and/or photo of a food or meal, estimate its protein in grams, its ADDED sugar in grams (the FDA nutrition-label "Added Sugars" line: sugar or syrup added during processing, NOT total sugars; naturally occurring sugar such as lactose in plain milk or yogurt and fructose in whole fruit counts as 0 unless the product is also sweetened), its dietary fiber in grams, and its saturated fat in grams. Respond ONLY with a JSON object, no markdown fences, no other text: {"food":"short name","grams_protein":number,"added_sugar_g":number,"fiber_g":number,"sat_fat_g":number,"confidence":"low"|"medium"|"high"}. If you cannot estimate fiber or saturated fat, use null for that field rather than 0. If several items are shown, sum them and name the meal generically.';
 async function analyzeMeal() {
   const st = $('aiStatus'), btn = $('aiBtn');
   if (!localStorage.getItem('gh_ai_key')) { st.textContent = 'Add your Anthropic API key below first.'; return; }
@@ -1862,10 +2001,23 @@ async function analyzeMeal() {
   const content = [];
   if (aiPhoto) content.push({ type:'image', source:{ type:'base64', media_type:aiPhoto.type, data:aiPhoto.b64 } });
   content.push({ type:'text', text:desc ? `Food description: ${desc}` : 'Estimate the protein, added sugar, fiber and saturated fat of the food in this photo.' });
-  const r = await callClaude({ system:AI_SYSTEM, content, max_tokens:300 });
+  const r = await callClaude({ system:estimateSystem(), content, max_tokens:900 });
   btn.disabled = false;
   if (r.err) { st.textContent = aiErrText(r); return; }
-  let parsed; try { parsed = JSON.parse(r.text.replace(/```json|```/g, '').trim()); } catch (e) { st.textContent = "Couldn't read that estimate — try rephrasing."; return; }
+  const raw = r.text.replace(/```json|```/g, '').trim();
+  let parsed = null; try { parsed = JSON.parse(raw); } catch (e) { const a = raw.indexOf('{'), b = raw.lastIndexOf('}'); if (a >= 0 && b > a) { try { parsed = JSON.parse(raw.slice(a, b + 1)); } catch (e2) { parsed = null; } } }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) { st.textContent = "Couldn't read that estimate — try rephrasing."; return; }
+  if (parsed.is_food === false) { st.textContent = "That doesn't look like food — try again."; return; }
+  if (Array.isArray(parsed.items) || parsed.totals) {                              // itemized: the totals are the sum of the rows, pantry foods use your own numbers
+    const m = parseMealJSON(r.text);
+    if (!m) { st.textContent = "Couldn't read that estimate — try rephrasing."; return; }
+    if (m.is_food === false) { st.textContent = "That doesn't look like food — try again."; return; }
+    if (!(m.protein_g > 0)) { st.textContent = "Couldn't estimate protein for that — add more detail."; return; }
+    $('fLabel').value = m.meal_name; $('fProt').value = m.protein_g; $('fSugar').value = m.added_sugar_g; $('fFiber').value = m.fiber_g; $('fSat').value = m.sat_fat_g;
+    const fromPantry = m.lines.filter(l => l.source === 'pantry').length;
+    st.textContent = `Estimate (${m.confidence} confidence)${m.lines.length ? ` · ${fromPantry} of ${m.lines.length} from your pantry: ${m.lines.map(l => `${l.name} ${l.protein} g`).join(', ')}` : ''}. Check the numbers below, then tap Add.`;
+    return;
+  }
   const prot = round1(+parsed.grams_protein || 0);
   if (!(prot > 0)) { st.textContent = "Couldn't estimate protein for that — add more detail."; return; }
   $('fLabel').value = String(parsed.food || '').slice(0, 60);
@@ -1877,7 +2029,7 @@ async function analyzeMeal() {
 }
 
 /* ── Meal Check UI (lives inside the Protein page; nothing on Today) ── */
-let MC = null, _mcTimer = null, _mcLong = false;
+let MC = null, PN = null, _mcTimer = null, _mcLong = false;
 const hasKey = () => !!localStorage.getItem('gh_ai_key');
 const PORTIONS = ['Small', 'Normal', 'Large'];
 function onCheckMeal() {
@@ -1916,7 +2068,7 @@ async function mcRun() {
   if (me.source === 'photo' && me.photo) content = [{ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:me.photo.b64 } }, { type:'text', text:`Portion size: ${me.portion}. Estimate this meal.` }];
   else content = [{ type:'text', text:`Meal: ${(me.source === 'saved' ? me.desc : me.text).trim()}` }];
   me.busy = true; me.view = 'loading'; renderMealSheet(true);
-  const r = await callClaude({ system:MEAL_SYSTEM, content, max_tokens:600 });
+  const r = await callClaude({ system:estimateSystem(), content, max_tokens:900 });
   if (MC !== me) return;                                          // sheet was closed while waiting
   me.busy = false;
   if (r.err) { me.view = 'error'; me.errKind = r.err; renderMealSheet(true); return; }
@@ -2002,6 +2154,7 @@ function mealResultHTML() {
   return `<div class="mc-top"><div style="min-width:0"><div class="mc-name">${esc(m.meal_name)}</div>${m.confidence === 'low' ? '<div class="small muted">Rough estimate</div>' : ''}</div>
       <div class="mc-verdict"><i class="vdot ${{ green:'vg', yellow:'vy', red:'vr' }[v.verdict]}"></i>${v.label}</div></div>
     ${rows.map(r => `<div class="mc-row"><i class="vdot sm ${dot[v.levels[r[1]]]}"></i><div class="mc-l"><b>${r[0]}</b><span>good at ${r[5]} · today ${r[3]} of ${r[4]} g</span></div><div class="mc-n num">${r[2]}<small> g</small></div></div>`).join('')}
+    ${rowsHTML(m, logged)}
     ${m.swap ? `${MC.altBusy ? '<div class="mc-swap" style="color:var(--muted)">Thinking of another idea…</div>' : `<div class="mc-swap">${esc(m.swap)}</div>`}
     <div class="mc-acts">
       ${MC.listed ? `<button class="btn" onclick="mcOpenList('result')">View list (${groceryOpenCount()})</button>` : `<button class="btn" ${MC.altBusy || !swapShopItems(m).length ? 'disabled' : ''} onclick="mcAddList()">Add to grocery list</button>`}
@@ -2110,6 +2263,7 @@ function renderMealSheet(inPlace) {
         <button class="btn primary" onclick="mcIdeaShuffle()">Shuffle</button>
         <div class="mc-btns" style="grid-template-columns:1fr 1fr"><button class="btn" onclick="mcOpenList('ideaOpts')">Grocery list${groceryOpenCount() ? ' · ' + groceryOpenCount() : ''}</button><button class="btn quiet" onclick="mcShow('ideaPick')">Change meal</button></div>
         <button class="btn quiet" onclick="closeSheet()">Done</button>`; break;
+    case 'rowedit': h = rowEditHTML(); break;
     case 'photo':
       h = `<h2>Check this photo</h2>
         ${MC.photo ? `<img src="${MC.photo.url}" alt="" style="width:100%;max-height:210px;object-fit:cover;border-radius:14px;margin-top:6px">` : ''}
@@ -2147,6 +2301,179 @@ function renderMealSheet(inPlace) {
       h = `<h2>That doesn't look like food</h2><p class="hint">Try another photo, or type what you ate.</p>
         <button class="btn primary" onclick="mcShow('choose')">Try again</button><button class="btn quiet" onclick="closeSheet()">Close</button>`; break;
     case 'result': h = mealResultHTML(); break;
+  }
+  openSheet(h, inPlace);
+}
+
+/* ── Itemized rows on the result card: one per food, tagged pantry / est., amounts you can change. Totals are always recomputed here. ── */
+function rowsHTML(m, logged) {
+  if (!m.itemized) return '';
+  return `<div class="it-h">What's in it${logged ? '' : ' · tap to edit'}</div>${m.lines.map((l, i) => `<button class="it-row" ${logged ? 'disabled' : ''} onclick="mcRowOpen(${i})"><span class="it-l"><b>${esc(l.name)}<i class="it-tag ${l.source === 'pantry' ? 'p' : 'e'}">${l.source === 'pantry' ? 'pantry' : 'est.'}</i></b><span class="${l.assumed ? 'it-as' : ''}">${esc(l.amount || '—')}</span></span>
+    <span class="it-n num"><b>${l.protein} g</b><small>${l.fiber} fiber · ${l.satFat} sat · ${l.addedSugar} sugar</small></span></button>`).join('')}${logged ? '<div class="small muted" style="margin:4px 0 0">Logged — delete the food entry to change it.</div>' : '<button class="linkbtn" onclick="mcRowOpen(-1)">+ Add item</button>'}`;
+}
+const blankLine = () => ({ name:'', amount:'', pantryId:null, source:'estimate', assumed:false, protein:0, addedSugar:0, fiber:0, satFat:0 });
+function mcRowOpen(i) {
+  if (!MC || MC.busy || !MC.result || !MC.result.itemized) return;
+  const c = S.mealChecks.find(x => x.id === MC.checkId); if (c && c.logged) return;
+  const l = i >= 0 ? MC.result.lines[i] : blankLine(); if (!l) return;
+  MC.re = { i, orig:Object.assign({}, l), confirm:false }; MC.back = 'result'; mcShow('rowedit');
+}
+/* After any row change: totals = sum of rows, the recorded check follows (until logged), the saved meal is the same object so it follows too. */
+function mcRowsChanged() {
+  applyLines(MC.result);
+  const c = S.mealChecks.find(x => x.id === MC.checkId);
+  if (c && !c.logged) { c.protein_g = MC.result.protein_g; c.added_sugar_g = MC.result.added_sugar_g; c.fiber_g = MC.result.fiber_g; c.sat_fat_g = MC.result.sat_fat_g; c.verdict = mealVerdict(MC.result).verdict; }
+  save(); MC.back = null; mcShow('result');
+}
+function mcRowForm() {
+  const v = id => { const e = $(id); return e ? String(e.value == null ? '' : e.value).trim() : ''; }, n = id => { const x = optNum(v(id)); return x === undefined ? 0 : x; };
+  return { name:v('rName').slice(0, 40), amount:v('rAmt').slice(0, 30), pantry:v('rPan') || null, protein:n('rProt'), addedSugar:n('rSug'), fiber:n('rFib'), satFat:n('rSat') };
+}
+function mcRowSave() {
+  if (!MC || !MC.re) return;
+  const f = mcRowForm(), o = MC.re.orig, item = pantryById(f.pantry);
+  const numsChanged = NUT.some(k => r1(f[k]) !== r1(o[k]));
+  let line, note = '';
+  if (item && (f.pantry !== o.pantryId || !numsChanged)) {                    // from the pantry: the numbers follow the amount
+    let amount = f.amount, assumed = !amount || (amount === o.amount && o.assumed), fac = amount ? scaleFactor(amount, item) : 1;
+    if (fac == null) { amount = item.servingLabel; fac = 1; assumed = true; note = "Couldn't read that amount, so I used 1 serving."; }
+    if (!amount) amount = item.servingLabel;
+    line = Object.assign({ name:f.name || item.name, amount, pantryId:item.id, source:'pantry', assumed }, scaledNums(item, fac));
+  } else {                                                                     // typed numbers: an estimate of your own
+    if (!f.name) { toast('Give it a name'); return; }
+    line = { name:f.name, amount:f.amount, pantryId:null, source:'estimate', assumed:false, protein:f.protein, addedSugar:f.addedSugar, fiber:f.fiber, satFat:f.satFat };
+  }
+  if (MC.re.i >= 0) MC.result.lines[MC.re.i] = line; else MC.result.lines.push(line);
+  MC.result.itemized = true; mcRowsChanged(); toast(note || 'Updated');
+}
+function mcRowRemove() {
+  if (!MC || !MC.re || MC.re.i < 0) return;
+  if (!MC.re.confirm) { MC.re.confirm = true; renderMealSheet(true); return; }
+  MC.result.lines.splice(MC.re.i, 1); mcRowsChanged(); toast('Removed');
+}
+/* Save to pantry: the typed numbers become a pantry item (serving = this amount) and the row now points at it. */
+function mcRowToPantry() {
+  if (!MC || !MC.re) return;
+  const f = mcRowForm(); if (!f.name) { toast('Give it a name'); return; }
+  if (S.pantry.length >= PANTRY_MAX) { toast('Your pantry is full'); return; }
+  const item = { id:uid(), name:f.name, brand:'', servingLabel:f.amount || '1 serving', servingGrams:null, protein:f.protein, addedSugar:f.addedSugar, fiber:f.fiber, satFat:f.satFat, aliases:[f.name.toLowerCase().slice(0, 30)] };
+  S.pantry.push(item); _groceryDirty = true;
+  const line = Object.assign({ name:f.name, amount:item.servingLabel, pantryId:item.id, source:'pantry', assumed:false }, scaledNums(item, 1));
+  if (MC.re.i >= 0) MC.result.lines[MC.re.i] = line; else MC.result.lines.push(line);
+  MC.result.itemized = true; mcRowsChanged(); toast('Saved to your pantry');
+}
+function rowEditHTML() {
+  const re = MC.re, o = re.orig, isNew = re.i < 0, pantry = S.pantry.slice().sort((a, b) => a.name.localeCompare(b.name));
+  const fld = (id, label, val) => `<div><label class="flab" for="${id}">${label}</label><input class="field num" id="${id}" type="number" inputmode="decimal" value="${val}"></div>`;
+  return `<h2>${isNew ? 'Add item' : 'Edit item'}</h2>
+    <div class="q">Name</div><input class="field" id="rName" maxlength="40" value="${esc(o.name)}">
+    <div class="q">Amount</div><input class="field" id="rAmt" maxlength="30" placeholder="e.g. 1/4 cup, 2 tbsp, 1 can" value="${esc(o.amount)}">
+    <p class="small muted" style="margin:4px 0 0">${o.source === 'pantry' || pantry.length ? 'From your pantry? Change the amount (or the pantry item) and the numbers rescale — no new AI call.' : ''}</p>
+    <div class="q">Pantry item</div><select class="field" id="rPan"><option value="">Not from my pantry</option>${pantry.map(p => `<option value="${esc(p.id)}" ${p.id === o.pantryId ? 'selected' : ''}>${esc(p.name)} · ${esc(p.servingLabel)}</option>`).join('')}</select>
+    <div class="q">Numbers (g)</div><div class="row2">${fld('rProt', 'Protein', o.protein)}${fld('rSug', 'Added sugar', o.addedSugar)}</div>
+    <div class="row2" style="margin-top:8px">${fld('rFib', 'Fiber', o.fiber)}${fld('rSat', 'Sat fat', o.satFat)}</div>
+    <button class="btn primary" style="margin-top:12px" onclick="mcRowSave()">Save</button>
+    ${o.source !== 'pantry' ? '<button class="btn" onclick="mcRowToPantry()">Save to pantry</button>' : ''}
+    ${isNew ? '' : `<button class="btn danger" onclick="mcRowRemove()">${re.confirm ? 'Tap again to remove' : 'Remove item'}</button>`}
+    <button class="btn quiet" onclick="mcShow('result')">Cancel</button>`;
+}
+
+/* ── My pantry (Weight page card -> sheet): list, search, add, edit, delete, and Snap label. Works without an API key. ── */
+function pantryCardHTML() {
+  return `<div class="card" id="pantryCard"><h3>My pantry · ${S.pantry.length}</h3>
+    <p class="small muted" style="margin:0 0 8px">The foods you actually eat, with the numbers off the label. Estimates use these instead of guessing.</p>
+    <button class="btn" style="width:100%" onclick="openPantry()">Open pantry</button></div>`;
+}
+function openPantry() { PN = { view:'list', q:'', id:null, f:null, busy:false, note:'', del:false }; SH = { kind:'pantry' }; renderPantrySheet(false); }
+const pnAmt = n => `${n}`;
+function pantryListHTML() {
+  const q = PN.q.trim().toLowerCase();
+  const list = S.pantry.filter(p => !q || [p.name, p.brand, p.servingLabel].concat(p.aliases).some(x => String(x || '').toLowerCase().includes(q))).sort((a, b) => a.name.localeCompare(b.name));
+  if (!list.length) return `<p class="hint">${S.pantry.length ? 'Nothing matches that.' : 'Your pantry is empty. Add what you eat, or snap a label.'}</p>`;
+  return list.map(p => `<button class="pn-row" onclick="pnEdit('${esc(p.id)}')"><span class="pn-l"><b>${esc(p.name)}</b><span>${esc(p.servingLabel)}</span></span><span class="it-n num"><b>${p.protein} g</b><small>${p.fiber} fiber · ${p.satFat} sat · ${p.addedSugar} sugar</small></span></button>`).join('');
+}
+function pnFilter(v) { if (!PN) return; PN.q = v; const el = $('pnList'); if (el) el.innerHTML = pantryListHTML(); }
+const blankPantryForm = () => ({ name:'', brand:'', servingLabel:'', servingGrams:'', protein:'', addedSugar:'', fiber:'', satFat:'', aliases:'' });
+function pnAdd() { if (!PN) return; PN.id = null; PN.f = blankPantryForm(); PN.note = ''; PN.del = false; PN.view = 'form'; renderPantrySheet(true); }
+function pnEdit(id) {
+  const p = pantryById(id); if (!p || !PN) return;
+  PN.id = id; PN.f = { name:p.name, brand:p.brand, servingLabel:p.servingLabel, servingGrams:p.servingGrams == null ? '' : p.servingGrams, protein:p.protein, addedSugar:p.addedSugar, fiber:p.fiber, satFat:p.satFat, aliases:p.aliases.join(', ') };
+  PN.note = ''; PN.del = false; PN.view = 'form'; renderPantrySheet(true);
+}
+function pnRead() {
+  const v = id => { const e = $(id); return e ? String(e.value == null ? '' : e.value).trim() : ''; };
+  PN.f = { name:v('pnName'), brand:v('pnBrand'), servingLabel:v('pnServ'), servingGrams:v('pnGrams'), protein:v('pnProt'), addedSugar:v('pnSug'), fiber:v('pnFib'), satFat:v('pnSat'), aliases:v('pnAlias') };
+  return PN.f;
+}
+function pnSave() {
+  if (!PN) return; const f = pnRead();
+  if (!f.name) { PN.note = 'Give it a name.'; renderPantrySheet(true); return; }
+  if (!f.servingLabel) { PN.note = 'What is one serving? e.g. 1 cup, 2 tbsp, 1 can.'; renderPantrySheet(true); return; }
+  const nums = {}; for (const k of NUT) { const x = optNum(f[k]); if (x === undefined) { PN.note = 'Fill in all four numbers (0 is fine).'; renderPantrySheet(true); return; } nums[k] = x; }
+  const g = optNum(f.servingGrams);
+  const item = { id:PN.id || uid(), name:f.name.slice(0, 60), brand:f.brand.slice(0, 40), servingLabel:f.servingLabel.slice(0, 40), servingGrams:g > 0 ? g : null, protein:nums.protein, addedSugar:nums.addedSugar, fiber:nums.fiber, satFat:nums.satFat,
+    aliases:f.aliases.split(',').map(a => a.trim().toLowerCase().slice(0, 30)).filter(Boolean).slice(0, 8) };
+  if (PN.id) S.pantry = S.pantry.map(p => p.id === PN.id ? item : p);
+  else { if (S.pantry.length >= PANTRY_MAX) { PN.note = 'Your pantry is full.'; renderPantrySheet(true); return; } S.pantry.push(item); }
+  _groceryDirty = true; save(); toast(PN.id ? 'Saved' : 'Added to your pantry'); PN.view = 'list'; PN.note = ''; renderPantrySheet(true);
+}
+function pnDelete() {
+  if (!PN || !PN.id) return;
+  if (!PN.del) { PN.del = true; pnRead(); renderPantrySheet(true); return; }
+  S.pantry = S.pantry.filter(p => p.id !== PN.id); _groceryDirty = true; save(); toast('Removed from your pantry'); PN.view = 'list'; PN.del = false; renderPantrySheet(true);
+}
+function pnBack() { if (!PN) return; PN.view = 'list'; PN.note = ''; PN.del = false; renderPantrySheet(true); }
+const LABEL_SYSTEM = `You read a photo of a Nutrition Facts label. Return ONLY JSON, no prose:
+{"name":"product name if visible else null","brand":"brand if visible else null","serving_label":"the serving size exactly as printed, e.g. 2/3 cup (55g)","serving_grams":number or null,"protein_g":number or null,"added_sugar_g":number or null,"fiber_g":number or null,"sat_fat_g":number or null}
+Every number is per ONE serving as printed. Use null for anything you cannot read; never guess. Added sugar is the "Includes Xg Added Sugars" line; if the label has no such line, use 0 only when Total Sugars is 0, otherwise null.`;
+/* -> form values (strings, '' = couldn't read) or null when nothing could be read. */
+function parseLabelJSON(text) {
+  const o = looseJSON(text); if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+  const str = (v, n) => v == null ? '' : String(v).trim().slice(0, n), nm = v => { const x = optNum(v); return x === undefined ? '' : x; };
+  const f = { name:str(o.name, 60), brand:str(o.brand, 40), servingLabel:str(o.serving_label, 40), servingGrams:nm(o.serving_grams), protein:nm(o.protein_g), addedSugar:nm(o.added_sugar_g), fiber:nm(o.fiber_g), satFat:nm(o.sat_fat_g), aliases:'' };
+  return [f.servingLabel, f.protein, f.addedSugar, f.fiber, f.satFat].some(x => x !== '') ? f : null;
+}
+async function pnLabelPicked(ev) {
+  const file = ev.target.files && ev.target.files[0]; if (!file || !PN) return;
+  const me = PN, st = () => $('pnStatus'); pnRead();
+  if (mcOffline()) { me.note = 'Needs a connection to read a label. You can type it in instead.'; renderPantrySheet(true); return; }
+  me.busy = true; if (st()) st().textContent = 'Reading the label…';
+  let ph; try { ph = await fileToJpeg(file, 1280, .85); } catch (e) { if (PN === me) { me.busy = false; me.note = "Couldn't read that photo."; renderPantrySheet(true); } return; }
+  const r = await callClaude({ system:LABEL_SYSTEM, content:[{ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:ph.b64 } }, { type:'text', text:'Read this Nutrition Facts label.' }], max_tokens:300 });
+  if (PN !== me) return;
+  me.busy = false;
+  if (r.err) { me.note = aiErrText(r); renderPantrySheet(true); return; }
+  const f = parseLabelJSON(r.text);
+  if (!f) { me.note = "Couldn't read that label — try a closer, flatter photo, or type it in."; renderPantrySheet(true); return; }
+  const keep = me.f || blankPantryForm();
+  me.f = Object.assign({}, keep, ...Object.keys(f).filter(k => f[k] !== '').map(k => ({ [k]:f[k] })));   // only fill what was read; what you typed stays unless the label gave it
+  me.note = 'Check these against the label, then tap Save.'; renderPantrySheet(true);
+}
+function renderPantrySheet(inPlace) {
+  if (!PN) return;
+  const note = PN.note ? `<p class="small" style="color:${/^Check these/.test(PN.note) ? 'var(--green)' : 'var(--bad)'};margin:10px 0 0">${esc(PN.note)}</p>` : '';
+  let h = '';
+  if (PN.view === 'list') {
+    h = `<h2>My pantry</h2><p class="hint">Tap one to edit it. Estimates use these numbers when you eat them.</p>
+      <input class="field" id="pnQ" type="search" placeholder="Search your pantry" value="${esc(PN.q)}" oninput="pnFilter(this.value)">
+      <div id="pnList" style="margin-top:6px">${pantryListHTML()}</div>
+      <button class="btn primary" style="margin-top:12px" onclick="pnAdd()">Add item</button>
+      <button class="btn quiet" onclick="closeSheet()">Done</button>`;
+  } else {
+    const f = PN.f || blankPantryForm(), fld = (id, label, val, ph) => `<div><label class="flab" for="${id}">${label}</label><input class="field num" id="${id}" type="number" inputmode="decimal" placeholder="${ph || ''}" value="${esc(val)}"></div>`;
+    h = `<h2>${PN.id ? 'Edit pantry item' : 'Add to pantry'}</h2>
+      ${hasKey() ? `<label class="btn primary" style="margin:0 0 6px">Snap label<input type="file" id="pnFile" accept="image/*" capture="environment" style="display:none" onchange="pnLabelPicked(event)"></label>` : `<button class="btn" style="margin:0 0 6px" onclick="PN.note='Add your API key on the Protein page to read labels. You can type the numbers in.';renderPantrySheet(true)">Snap label</button>`}
+      <div class="small muted" id="pnStatus" style="min-height:16px">${PN.busy ? 'Reading the label…' : ''}</div>
+      <div class="q">Name</div><input class="field" id="pnName" maxlength="60" value="${esc(f.name)}" placeholder="e.g. Wild Planet Skipjack Tuna">
+      <div class="q">Brand <span style="text-transform:none;font-weight:500">· optional</span></div><input class="field" id="pnBrand" maxlength="40" value="${esc(f.brand)}">
+      <div class="q">One serving is</div><div class="row2"><div><input class="field" id="pnServ" maxlength="40" value="${esc(f.servingLabel)}" placeholder="e.g. 2/3 cup"></div>${fld('pnGrams', 'Grams (optional)', f.servingGrams, 'g')}</div>
+      <div class="q">Per serving (g)</div><div class="row2">${fld('pnProt', 'Protein', f.protein)}${fld('pnSug', 'Added sugar', f.addedSugar)}</div>
+      <div class="row2" style="margin-top:8px">${fld('pnFib', 'Fiber', f.fiber)}${fld('pnSat', 'Sat fat', f.satFat)}</div>
+      <div class="q">Other names <span style="text-transform:none;font-weight:500">· comma separated</span></div><input class="field" id="pnAlias" maxlength="120" value="${esc(f.aliases)}" placeholder="e.g. tuna, skipjack">
+      ${note}
+      <button class="btn primary" style="margin-top:12px" onclick="pnSave()">Save</button>
+      ${PN.id ? `<button class="btn danger" onclick="pnDelete()">${PN.del ? 'Tap again to delete' : 'Delete'}</button>` : ''}
+      <button class="btn quiet" onclick="pnBack()">Cancel</button>`;
   }
   openSheet(h, inPlace);
 }
@@ -2295,6 +2622,7 @@ function weightHTML() {
     <div class="card"><h3>Monthly averages</h3>${months.length ? months.map((m, i) => { const prev = months[i + 1], d = prev ? round1(m.avg - prev.avg) : null;
       return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-top:${i ? '1px solid var(--line)' : '0'}"><span>${monthName(m.ym)}</span><span class="num"><b>${m.avg}</b> ${u}${d != null ? ` <span class="muted small">${d > 0 ? '+' : ''}${d}</span>` : ''} <span class="muted small">· ${m.n} weigh-in${m.n === 1 ? '' : 's'}</span></span></div>`; }).join('') : '<p class="muted small">Nothing yet.</p>'}</div>
     ${groceryCardHTML()}
+    ${pantryCardHTML()}
     ${goalsCardHTML()}
     <p class="small muted" style="text-align:center;margin:0 0 14px">Weight never earns or costs anything. It's just a number.</p>
   </section>`;

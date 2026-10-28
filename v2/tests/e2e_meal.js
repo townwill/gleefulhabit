@@ -84,7 +84,7 @@ function jpegSize(buf) {                       // read width/height from a JPEG'
   const img = t0.messages[0].content[0];
   const sz = jpegSize(Buffer.from(img.source.data, 'base64'));
   check('the photo was shrunk to at most 1024 px on the long edge before sending (3000x2000 -> 1024x683)', img.type === 'image' && img.source.media_type === 'image/jpeg' && sz && Math.max(sz.w, sz.h) === 1024 && sz.w === 1024, sz);
-  check('the request carries the chosen portion, max_tokens 600 and the Haiku model', /Large/.test(t0.messages[0].content[1].text) && t0.max_tokens === 600 && t0.model === 'claude-haiku-4-5-20251001');
+  check('the request carries the chosen portion, max_tokens 900 and the Haiku model', /Large/.test(t0.messages[0].content[1].text) && t0.max_tokens === 900 && t0.model === 'claude-haiku-4-5-20251001');
   mode = 'ok';
 
   // ===== Result card =====

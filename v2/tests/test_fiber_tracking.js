@@ -64,7 +64,7 @@ const set = (l, p, s, f, sf) => { el('fLabel').value = l; el('fProt').value = p;
   el('aiText').value = 'a bowl of lentil soup';
   reply = { food: 'Lentil soup', grams_protein: 18, added_sugar_g: 1, fiber_g: 15.4, sat_fat_g: 0.8, confidence: 'medium' };
   calls = []; await analyzeMeal();
-  ok('the prompt asks for fiber_g and sat_fat_g and allows null', /fiber_g/.test(calls[0].body.system) && /sat_fat_g/.test(calls[0].body.system) && /null/.test(calls[0].body.system));
+  ok('the prompt asks for itemized fiber and satFat per item and totals, and carries the pantry', /"fiber"/.test(calls[0].body.system) && /"satFat"/.test(calls[0].body.system) && /"totals"/.test(calls[0].body.system) && /PANTRY \(per serving shown\)/.test(calls[0].body.system));
   ok('estimate fills the fiber and sat fat boxes (and still only fills; nothing added)', el('fFiber').value === 15.4 && el('fSat').value === 0.8 && el('fProt').value === 18 && foodsOn(T()).length === 0);
   manualAdd();
   ok('...Add stores them', foodsOn(T()).length === 1 && foodsOn(T())[0].fiber === 15.4 && foodsOn(T())[0].satFat === 0.8);
