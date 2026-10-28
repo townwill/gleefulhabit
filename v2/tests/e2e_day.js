@@ -108,7 +108,7 @@ const IDEAS = ['A cup of lentil soup with seeded toast for about 15 g fiber', 'C
   await page.fill('#fProt', '10'); await page.fill('#fSugar', '15'); await page.click('.over .body > .btn.primary:has-text("Add")'); await page.waitForTimeout(400);
   const t2 = await page.textContent('#dayCard');
   check('after logging 15 g more sugar the stale suggestion is dropped and the numbers update (26 / 25 g)', !t2.includes('treat yo self') && t2.includes('26 / 25 g') && t2.includes('1 g over') && (await page.locator('#dayCard button:has-text("Suggest something")').count()) === 1, t2.slice(0, 200));
-  check('the chip now says Okay (sugar slightly over can never be Good)', (await page.textContent('.daychip')).includes('Okay so far'));
+  check('the chip now says Okay (sugar is a little over and fiber is short at 10pm, so two things are off)', (await page.textContent('.daychip')).includes('Okay so far'));
   await page.click('#dayCard button:has-text("Suggest something")'); await page.waitForTimeout(500);
   check('and a fresh suggestion is honest about the sugar', (await page.textContent('#dayCard')).includes('over on added sugar') && !(await page.textContent('#dayCard')).includes('treat yo self'));
 

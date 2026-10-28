@@ -236,7 +236,7 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 const SCHEMA = 2;
 const STORE_KEY = 'gh2';
 const V1_KEY = 'habitflow';
-const APP_VERSION = '2026-10-27.1545';
+const APP_VERSION = '2026-10-28.0306';
 const HABITS = ['workout','protein','wind','sugar'];
 const SUGAR_CUTOFF_HOUR = 22;   // Less sugar settles (shows checked, pays) at 10pm instead of waiting for midnight
 const HABIT_META = {
@@ -1267,7 +1267,7 @@ function dayCheck(dk) {
   const known = Object.values(levels).filter(Boolean), n = x => known.filter(l => l === x).length;
   let verdict = 'yellow';
   if (levels.sugar === 'r' || levels.satFat === 'r') verdict = 'red';
-  else if (levels.sugar === 'g' && levels.satFat !== 'y' && (n('g') === known.length || (known.length === 4 && n('g') === 3 && n('y') === 1))) verdict = 'green';   // a limit that is already over can't be part of a Good day
+  else if (n('g') === known.length || (known.length === 4 && n('g') === 3 && n('y') === 1)) verdict = 'green';   // same as a meal: three green + one yellow is Good, so a limit a hair over (0.8 g) doesn't spoil the day; red is more than 25% over
   const capped = verdict === 'green' && !r.tracked;
   if (capped) verdict = 'yellow';
   const label = DAY_LABEL[verdict] + (dk === todayKey() ? ' so far' : '');
