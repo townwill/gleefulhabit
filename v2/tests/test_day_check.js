@@ -23,7 +23,7 @@ fetch = async (url, opts) => { calls.push({ url, body: JSON.parse(opts.body) });
   // ================= Readings and levels =================
   world();
   ok('goal readings: met = green, 75% = yellow, below = red (protein 150, fiber 30)', dayReadingLevel('protein', 150, 150) === 'g' && dayReadingLevel('protein', 113, 150) === 'y' && dayReadingLevel('protein', 112, 150) === 'r' && dayReadingLevel('fiber', 30, 30) === 'g' && dayReadingLevel('fiber', 23, 30) === 'y' && dayReadingLevel('fiber', 22, 30) === 'r');
-  ok('limit readings: within = green, up to 25% over = yellow, beyond = red (sugar 25, sat fat 18)', dayReadingLevel('sugar', 25, 25) === 'g' && dayReadingLevel('sugar', 25.1, 25) === 'y' && dayReadingLevel('sugar', 31.25, 25) === 'y' && dayReadingLevel('sugar', 31.3, 25) === 'r' && dayReadingLevel('satFat', 18, 18) === 'g' && dayReadingLevel('satFat', 22.5, 18) === 'y' && dayReadingLevel('satFat', 22.6, 18) === 'r');
+  ok('limit readings: sugar within = green, up to 25% over = yellow, beyond = red; sat fat has wiggle room (10% over green, 35% yellow)', dayReadingLevel('sugar', 25, 25) === 'g' && dayReadingLevel('sugar', 25.1, 25) === 'y' && dayReadingLevel('sugar', 31.25, 25) === 'y' && dayReadingLevel('sugar', 31.3, 25) === 'r' && dayReadingLevel('satFat', 18, 18) === 'g' && dayReadingLevel('satFat', 19.8, 18) === 'g' && dayReadingLevel('satFat', 19.9, 18) === 'y' && dayReadingLevel('satFat', 24.3, 18) === 'y' && dayReadingLevel('satFat', 24.4, 18) === 'r');
   day(T(), { p: 100, s: 12 });
   let c = dayCheck(T());
   ok('totals come from everything logged (protein, sugar)', c.vals.protein === 100 && c.vals.sugar === 12 && c.foods === 1);
@@ -87,6 +87,16 @@ fetch = async (url, opts) => { calls.push({ url, body: JSON.parse(opts.body) });
   at(13, 40); day(T(), { p: 90, s: 5, fiber: 18, sat: 6 }); reply = { idea: 'x' }; calls = [];
   await requestDayIdea(T(), []);
   ok('the AI idea is told what time it is', /Today so far \(1:40 pm\)/.test(calls[0].body.messages[0].content[0].text));
+  world();
+
+  // ================= Wiggle room (fiber and sat fat only; protein and sugar are money rules) =================
+  ok('fiber within 10% of the goal is green (27 of 30), 23 yellow, 22 red once the day is over', dayReadingLevel('fiber', 27, 30) === 'g' && dayReadingLevel('fiber', 26.9, 30) === 'y' && dayReadingLevel('fiber', 23, 30) === 'y' && dayReadingLevel('fiber', 22, 30) === 'r');
+  ok('...and against the time of day too (at half the day, 13.5 of a 30 g goal is green)', dayReadingLevel('fiber', 13.5, 30, 0.5) === 'g' && dayReadingLevel('fiber', 13.4, 30, 0.5) === 'y');
+  ok('protein and sugar get NO wiggle: 149 of 150 g is not green at night, sugar 25.1 is yellow', dayReadingLevel('protein', 149, 150) === 'y' && dayReadingLevel('sugar', 25.1, 25) === 'y' && dayReadingLevel('sugar', 25, 25) === 'g');
+  ok('a day with sat fat 19.8 of 18 and fiber 27 of 30 is all green: Good', verdict({ p: 150, s: 10, fiber: 27, sat: 19.8 }).verdict === 'green' && dayCheck(T()).levels.fiber === 'g' && dayCheck(T()).levels.satFat === 'g');
+  ok('the rows say so honestly: "within wiggle room"', (day(T(), { p: 150, s: 10, fiber: 27, sat: 19.8 }), protDay = T(), /1\.8 g over · within wiggle room/.test(dayCardInner()) && /Within wiggle room · 3 g to go/.test(dayCardInner())));
+  ok('beyond the wiggle it is a plain over / short again (21 of 18 g sat fat is yellow, "3 g over")', (day(T(), { p: 150, s: 10, fiber: 27, sat: 21 }), dayCheck(T()).levels.satFat === 'y' && /3 g over<\/span>/.test(dayCardInner())));
+  ok('the suggestion is kind about a near miss (within wiggle) and still coaches a real one', (day(T(), { p: 150, s: 5, fiber: 31, sat: 19 }), daySuggestion(T()).lines.some(l => /within wiggle room/.test(l)) && !daySuggestion(T()).lines.some(l => /olive oil/.test(l))) && (day(T(), { p: 150, s: 5, fiber: 31, sat: 21 }), daySuggestion(T()).lines.some(l => /olive oil, nuts and beans/.test(l))));
   world();
 
   // ================= The Suggest text (your example, word for word) =================

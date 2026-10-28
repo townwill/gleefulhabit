@@ -236,7 +236,7 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 const SCHEMA = 2;
 const STORE_KEY = 'gh2';
 const V1_KEY = 'habitflow';
-const APP_VERSION = '2026-10-28.0306';
+const APP_VERSION = '2026-10-28.0310';
 const HABITS = ['workout','protein','wind','sugar'];
 const SUGAR_CUTOFF_HOUR = 22;   // Less sugar settles (shows checked, pays) at 10pm instead of waiting for midnight
 const HABIT_META = {
@@ -1235,6 +1235,8 @@ function dayReadings(dk) {
     tracked:fi.known > 0 && sf.known > 0,
     vals:{ protein:proteinOn(dk), sugar:sugarOn(dk), fiber:fi.sum, satFat:sf.sum } };
 }
+/* Day-check wiggle room, so a near miss still reads green. Not applied to protein or sugar: those two are money rules. */
+const WIGGLE_FIBER = 0.9, WIGGLE_SATFAT = 1.1;
 /* How far through the eating day it is (0-1), so lunchtime isn't judged against the whole day's goal. Past days are 1. */
 const PACE_POINTS = [[6, 0], [9, 0.2], [13, 0.5], [18, 0.8], [21, 1]];   // clock hour -> share of the day's protein / fiber you'd have had by then
 function dayPace(dk) {
@@ -1251,11 +1253,16 @@ function dayPace(dk) {
    While the day is open a goal is never red: you can't have missed it yet. Limits (sugar, sat fat): within = green, up to 25% over = yellow. */
 function dayReadingLevel(k, v, goal, pace) {
   pace = pace == null ? 1 : pace;
-  if (k === 'protein' || k === 'fiber') {
+  if (k === 'protein') {
     if (v >= goal || (pace < 1 && v >= goal * pace)) return 'g';
     return pace < 1 || v >= Math.ceil(goal * 0.75) ? 'y' : 'r';
   }
-  return v <= goal ? 'g' : v <= goal * 1.25 ? 'y' : 'r';
+  if (k === 'fiber') {                                                    // wiggle room: within 10% of goal (or of pace) is green
+    if (v >= goal * WIGGLE_FIBER || (pace < 1 && v >= goal * pace * WIGGLE_FIBER)) return 'g';
+    return pace < 1 || v >= Math.ceil(goal * 0.75) ? 'y' : 'r';
+  }
+  if (k === 'satFat') return v <= goal * WIGGLE_SATFAT ? 'g' : v <= goal * 1.35 ? 'y' : 'r';   // up to 10% over is green, up to 35% over yellow
+  return v <= goal ? 'g' : v <= goal * 1.25 ? 'y' : 'r';                 // sugar stays exact: it is the Less sugar money rule
 }
 /* Same shape of rule as a meal: red if sugar or sat fat is red; green if everything is green (or four known and one yellow, but never a
    limit that is already over); otherwise yellow. A reading with no data is unknown (left out), and a day can't be Good while one is. */
@@ -1295,7 +1302,8 @@ function daySuggestion(dk) {
   else lines.push(`You're ${round1(-sugarLeft)} g over on added sugar — keep it easy for the rest of the day.`);
   if (c.satTracked) {
     const satLeft = round1(g.satFat - v.satFat);
-    if (satLeft < 0) lines.push('Sat fat is over — lean on olive oil, nuts and beans next.');
+    if (satLeft < 0 && c.levels.satFat === 'g') lines.push(`Just ${round1(-satLeft)} g over on sat fat — that's within wiggle room, nice work.`);
+    else if (satLeft < 0) lines.push('Sat fat is over — lean on olive oil, nuts and beans next.');
     else if (satLeft < 4) lines.push(`Only ${satLeft} g of sat fat left.`);
   }
   return { headline, lines, treat:sugarLeft >= 5, sugarLeft };
@@ -1658,8 +1666,8 @@ function dayCardInner() {
     const lv = c.levels[k], unknown = lv === null;
     let sub;
     if (unknown) sub = 'Not tracked yet';
-    else if (isLimit) sub = val <= goal ? `${round1(goal - val)} g left` : `${round1(val - goal)} g over`;
-    else sub = val >= goal ? 'Goal met' : `${lv === 'g' ? 'On pace · ' : ''}${round1(goal - val)} g to go`;
+    else if (isLimit) sub = val <= goal ? `${round1(goal - val)} g left` : `${round1(val - goal)} g over${lv === 'g' ? ' · within wiggle room' : ''}`;
+    else sub = val >= goal ? 'Goal met' : `${lv === 'g' ? (c.pace < 1 ? 'On pace · ' : 'Within wiggle room · ') : ''}${round1(goal - val)} g to go`;
     return `<div class="drow"><i class="vdot sm ${unknown ? 'vn' : dot[lv]}"></i><div class="dl"><b>${name}</b><span>${sub}</span></div><div class="dn num">${unknown ? '—' : val}<small> / ${goal} g</small></div></div>`;
   };
   const verdictChip = c.verdict ? `<span class="dverdict"><i class="vdot sm ${{ green:'vg', yellow:'vy', red:'vr' }[c.verdict]}"></i>${c.label}</span>` : `<span class="small muted">${c.label}</span>`;
