@@ -9,7 +9,7 @@ const before = moneyNow();
 ok('a one-tap win is recorded for today', addWin('2026-10-24', WIN_PRESETS[0], false) && S.wins.length === 1 && S.wins[0].dk === '2026-10-24' && S.wins[0].other === false);
 ok('Other with text works and is flagged', addWin('2026-10-24', '  Fixed the fence  ', true) && S.wins[1].label === 'Fixed the fence' && S.wins[1].other === true);
 ok('an empty Other is refused', addWin('2026-10-24', '   ', true) === false && S.wins.length === 2);
-ok('wins pay NOTHING: balance, drip and bonus are untouched', JSON.stringify(moneyNow()) === JSON.stringify(before) && moneyNow().balanceC === 0);
+ok('each little win pays 50¢ from the bonus pool (2 wins = $1.00), nothing else moves', moneyNow().balanceC - before.balanceC === 100 && moneyFor('2026-10').dripC === moneyNow().dripC && moneyFor('2026-10').events.filter(e => e.kind === 'win').length === 2 && moneyFor('2026-10').poolC === 100);
 ok('very long text is capped at 80 characters', (addWin('2026-10-24', 'x'.repeat(200), true), S.wins[2].label.length === 80));
 _setFakeNow(new Date('2026-10-24T09:00:00').getTime());
 ok('yesterday works before noon', addWin('2026-10-23', 'Stayed calm', false));

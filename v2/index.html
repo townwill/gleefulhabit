@@ -243,7 +243,7 @@ textarea.field{height:76px;padding:10px 14px;resize:none}
 const SCHEMA = 2;
 const STORE_KEY = 'gh2';
 const V1_KEY = 'habitflow';
-const APP_VERSION = '2026-10-28.1921';
+const APP_VERSION = '2026-10-29.2343';
 const HABITS = ['workout','protein','wind','sugar'];
 const SUGAR_CUTOFF_HOUR = 22;   // Less sugar settles (shows checked, pays) at 10pm instead of waiting for midnight
 const HABIT_META = {
@@ -666,8 +666,8 @@ function isHPLS(f) { return (+f.protein || 0) >= 20 && (+f.sugar || 0) <= 5; }
    $100 daily drip: pot ÷ days in month ÷ 4 habits per day, full share when done, half when small.
    $50 bonus pool: +$2 fully-logged week, +$3 per workout past 3, welcome-back after a 3+ day pause. Capped per month.
    The other $50 of the $200 stays outside the app. */
-const BONUS = { week:200, extraWorkout:300, wbMin:3, wbCap:500 };
-const KIND_ORDER = { week:0, extra:1, back:2 };
+const BONUS = { week:200, extraWorkout:300, wbMin:3, wbCap:500, win:50, winsPerDay:3 };   // cents; a little win pays 50¢ from the bonus pool, the first 3 each day
+const KIND_ORDER = { week:0, extra:1, back:2, win:3 };
 const SPEND_CATS = ['Cards','LEGO','Eating out','Other'];
 const monthFirst = ym => ym + '-01';
 const monthLast = ym => `${ym}-${pad(dim(ym))}`;
@@ -710,6 +710,12 @@ function bonusEvents() {
       for (const dk of days) { for (const h of HABITS) { const s = habitState(h, dk); if (!s.logged) { all = false; break; } if (s.st !== 'paused' && s.st !== 'free') real++; } if (!all) break; }
       if (all && real > 0) ev.push({ dk:sun, kind:'week', cents:BONUS.week });
     }
+  }
+  const perDay = {};                                                    // little wins: 50¢ each, the first 3 a day (oldest first), only from the start date on
+  for (const w of S.wins.slice().sort((a, b) => (a.at || 0) - (b.at || 0))) {
+    if (w.dk < start || w.dk > today) continue;
+    perDay[w.dk] = (perDay[w.dk] || 0) + 1;
+    if (perDay[w.dk] <= BONUS.winsPerDay) ev.push({ dk:w.dk, kind:'win', cents:BONUS.win });
   }
   const sickGroups = {};
   for (const p of S.pauses) {
@@ -914,7 +920,7 @@ function pauseStats() {
   return { count:units.length, avgLen, returnRate, returned:returned.length, ended:ended.length, reasons, habits, note };
 }
 
-/* ── Little wins: one-tap, free, and they pay nothing. ── */
+/* ── Little wins: one-tap, and each pays 50¢ from the bonus pool (the first 3 a day). ── */
 const WIN_PRESETS = ['Walked the dog','Cooked dinner','Helped at school','Hard conversation handled','Stayed calm','Finished a project','Called a friend','Tidied up','Said no to something','Got outside'];
 function addWin(dk, label, other) {
   if (!canLog(dk)) { toast('That day is locked'); return false; }
@@ -923,6 +929,7 @@ function addWin(dk, label, other) {
   S.wins.push({ id:uid(), dk, label, other:!!other, at:Date.now() });
   save(); refresh(); return true;
 }
+const winPays = dk => S.wins.filter(w => w.dk === dk).length <= BONUS.winsPerDay;       // is the win just added still inside the daily 3?
 function deleteWin(id) { S.wins = S.wins.filter(w => w.id !== id); save(); refresh(); }
 
 /* ── Weight: never tied to money. Weekly averages smooth out day-to-day noise. ── */
@@ -2572,7 +2579,7 @@ function openWin(dk) {
 }
 function renderWinSheet(inPlace) {
   const keep = $('winText') ? $('winText').value : '';
-  openSheet(`<h2>A little win</h2><p class="hint">One tap. Wins pay nothing — they're just worth noticing.</p>
+  openSheet(`<h2>A little win</h2><p class="hint">One tap. Each win adds ${money(BONUS.win)} to your bonus (the first ${BONUS.winsPerDay} a day).</p>
     ${daySeg(SH.dk, 'winDaySet')}
     <div class="q">What happened</div>
     <div class="winsgrid">${WIN_PRESETS.map((w, i) => `<button class="chip" onclick="winPick(${i})">${esc(w)}</button>`).join('')}
@@ -2580,9 +2587,9 @@ function renderWinSheet(inPlace) {
     ${SH.other ? `<input class="field" id="winText" maxlength="80" placeholder="What was it?" style="margin-top:10px" value="${esc(keep)}"><button class="btn primary" onclick="winSaveOther()">Add win</button>` : ''}`, inPlace);
 }
 function winDaySet(dk) { SH.dk = dk; renderWinSheet(true); }
-function winPick(i) { if (addWin(SH.dk, WIN_PRESETS[i], false)) { closeSheet(); toast('Win logged'); } }
+function winPick(i) { const dk = SH.dk; if (addWin(dk, WIN_PRESETS[i], false)) { closeSheet(); toast(winPays(dk) ? `Win logged · +${money(BONUS.win)}` : 'Win logged'); } }
 function winOther() { SH.other = true; renderWinSheet(true); setTimeout(() => { const t = $('winText'); if (t) t.focus(); }, 60); }
-function winSaveOther() { if (addWin(SH.dk, $('winText').value, true)) { closeSheet(); toast('Win logged'); } }
+function winSaveOther() { const dk = SH.dk; if (addWin(dk, $('winText').value, true)) { closeSheet(); toast(winPays(dk) ? `Win logged · +${money(BONUS.win)}` : 'Win logged'); } }
 
 /* ── Weight page (left of Today) ── */
 const fmtShort = dk => parseDk(dk).toLocaleDateString('en-US', { month:'short', day:'numeric' });
