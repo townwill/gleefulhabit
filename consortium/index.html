@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Consortium">
+<meta name="theme-color" content="#0d1016">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<title>Consortium</title>
+<style>
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+html { height: 100%; }
+body { margin: 0; font-size: 14px; }
+.updatebar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 80;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; border-radius: 16px; padding: 10px 18px;
+  background: #ff7448; color: #2b0f05; border: none; box-shadow: 0 12px 30px #000a; }
+.updatebar span { font-weight: 400; font-size: .8rem; }
+.vtag { text-align: center; color: #8b94a8; font-size: .72rem; margin: 6px 0 0; }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;600;700&display=swap">
+<style>
+/* Layout: dark table, playing-card proportions (5:7). Trays row, deck row, 4 columns. Coral = category, mint = where a card can go. Single dark look by choice. */
+:root {
+  --bg: #0d1016;
+  --bg-2: #171c27;
+  --surface: #1b2130;
+  --edge: #2c3447;
+  --text: #eef1f6;
+  --muted: #8b94a8;
+  --card: #fbfbf9;
+  --ink: #141722;
+  --ink-2: #5d6578;
+  --cat: #ff7448;
+  --cat-2: #ff9a62;
+  --cat-ink: #2b0f05;
+  --focus: #5fe3cc;
+  --done: #5ad38f;
+  --back-1: #3b4fd0;
+  --back-2: #1f2a7a;
+  --f-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --f-ui: "Figtree", system-ui, sans-serif;
+  --f-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  --gap: 8px; --cw: 86px; --ch: 120px; --tw: 86px; --th: 120px;
+  color-scheme: dark;
+}
+html, body { background: var(--bg); color: var(--text); }
+body {
+  font-family: var(--f-ui);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px 32px;
+  background-image: radial-gradient(120% 60% at 50% 0%, var(--bg-2), var(--bg) 70%);
+  min-height: 100%;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none; -webkit-user-select: none;
+}
+[hidden] { display: none !important; }
+*, *::before, *::after { box-sizing: border-box; }
+.app { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+
+/* Header */
+header { display: flex; align-items: flex-end; gap: 12px; }
+.brand { flex: 1; min-width: 0; }
+h1 { font-family: var(--f-display); font-weight: 800; font-size: 1.55rem; letter-spacing: -.03em; margin: 0; line-height: 1; }
+.meta { font-size: .78rem; color: var(--muted); margin-top: 5px; }
+.moves { text-align: right; line-height: 1; font-variant-numeric: tabular-nums; }
+.moves b { font-family: var(--f-display); font-weight: 800; font-size: 1.9rem; letter-spacing: -.03em; display: block; }
+.moves span { font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.moves.low b { color: var(--cat); }
+.toolbar { display: flex; gap: 8px; align-items: center; }
+button {
+  font: 600 .85rem var(--f-ui); color: var(--text); background: var(--surface);
+  border: 1px solid var(--edge); border-radius: 999px; padding: 8px 15px; cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+button:hover { border-color: var(--muted); }
+button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+button:disabled { opacity: .35; cursor: default; }
+button.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+.sorted { display: flex; gap: 4px; align-items: center; margin-top: 8px; }
+.toolbar { flex-wrap: wrap; gap: 6px !important; }
+.toolbar > button { padding: 8px 13px; }
+h1 .sort { color: var(--cat); }
+.brand-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.brand-row .sorted { margin-top: 0; }
+.mini-btn { padding: 3px 10px; font-size: .74rem; }
+.seg { display: flex; background: var(--surface); border: 1px solid var(--edge); border-radius: 999px; padding: 3px; margin-right: auto; }
+.seg button { border: none; background: transparent; padding: 5px 13px; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+.nba .mid { font-size: calc(var(--cw) * .14); font-weight: 600; }
+.emo .mid { font: calc(var(--cw) * .42) / 1 var(--f-emoji); }
+.stats { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; margin: 4px 0 14px; text-align: left; }
+.stats th, .stats td { padding: 7px 4px; border-bottom: 1px solid var(--edge); font-size: .88rem; }
+.stats th { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.stats td:not(:first-child), .stats th:not(:first-child) { text-align: right; }
+.stats td:first-child { color: var(--muted); }
+.stats td b { font-family: var(--f-display); font-size: 1.05rem; }
+.toplist { list-style: none; margin: 0 0 16px; padding: 0; text-align: left; display: grid; gap: 6px; }
+.toplist li { display: flex; justify-content: space-between; gap: 8px; font-size: .88rem; }
+.toplist li span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; }
+.panel h3 { font: 700 .7rem var(--f-ui); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; text-align: left; }
+.panel { max-height: calc(100% - 32px); overflow-y: auto; }
+.sorted i { width: 16px; height: 5px; border-radius: 3px; background: var(--edge); transition: background .3s; }
+.sorted i.on { background: var(--done); }
+
+/* Trays */
+.trays { display: flex; gap: var(--gap); }
+.tray {
+  width: var(--tw); height: var(--th); border-radius: calc(var(--tw) * .1);
+  position: relative; flex: none; cursor: pointer; transition: box-shadow .15s, background .15s;
+}
+.tray.empty {
+  border: 1.5px dashed var(--edge); display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: var(--muted); gap: 2px;
+}
+.tray.empty b { font: 500 calc(var(--tw) * .3) / 1 var(--f-display); }
+.tray.empty small { font-size: calc(var(--tw) * .12); letter-spacing: .08em; text-transform: uppercase; }
+.tray.open {
+  background: linear-gradient(165deg, var(--cat-2), var(--cat)); color: var(--cat-ink);
+  box-shadow: 0 6px 18px #ff744833; padding: calc(var(--tw) * .09);
+  display: flex; flex-direction: column; gap: calc(var(--tw) * .05);
+}
+.tname { font: 800 calc(var(--tw) * .15) / 1.05 var(--f-display); letter-spacing: -.02em; overflow-wrap: anywhere; }
+.prog { height: 4px; border-radius: 2px; background: #0000002a; overflow: hidden; }
+.prog i { display: block; height: 100%; background: var(--cat-ink); border-radius: 2px; transition: width .3s; }
+.cnt { font: 700 calc(var(--tw) * .12) var(--f-ui); font-variant-numeric: tabular-nums; opacity: .8; }
+.mini {
+  position: absolute; left: 9%; right: 9%; bottom: 7%; height: 32%;
+  background: var(--card); color: var(--ink); border-radius: calc(var(--tw) * .07);
+  display: grid; place-items: center; text-align: center; padding: 0 4px;
+  font: 700 calc(var(--tw) * .13) / 1 var(--f-display); box-shadow: 0 2px 6px #0003;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.mini.pic { font: calc(var(--tw) * .24) / 1 var(--f-emoji); }
+.stamp {
+  position: absolute; inset: 0; border-radius: inherit; background: var(--done); color: #06210f;
+  display: grid; place-items: center; text-align: center; padding: 6px;
+  font: 800 calc(var(--tw) * .14) / 1.1 var(--f-display); animation: stamp 1s ease forwards; pointer-events: none;
+}
+.stamp::before { content: "✓"; display: block; font-size: 1.8em; }
+@keyframes stamp { 0% { transform: scale(1.12); opacity: 0 } 18% { transform: scale(1); opacity: 1 } 70% { opacity: 1 } 100% { opacity: 0 } }
+
+/* Deck row */
+.deck { display: flex; gap: var(--gap); align-items: center; height: var(--ch); }
+.stock { width: var(--cw); height: var(--ch); position: relative; flex: none; cursor: pointer; border-radius: calc(var(--cw) * .1); }
+.stock .count {
+  position: absolute; right: -6px; top: -6px; z-index: 2; min-width: 22px; height: 22px; padding: 0 6px;
+  border-radius: 11px; background: var(--text); color: var(--bg); font: 700 .72rem/22px var(--f-ui); text-align: center;
+}
+.stock.empty { border: 1.5px dashed var(--edge); display: grid; place-items: center; color: var(--muted); font-size: .75rem; text-align: center; }
+.stock.empty b { display: block; font-size: 1.4rem; font-weight: 500; }
+.waste { width: calc(var(--cw) + 30px); height: var(--ch); position: relative; flex: none; }
+.waste .ph { position: absolute; inset: 0; right: 30px; border: 1.5px dashed var(--edge); border-radius: calc(var(--cw) * .1); opacity: .5; }
+.hint { font-size: .78rem; color: var(--muted); line-height: 1.4; min-width: 0; }
+.hint b { color: var(--text); font-weight: 600; }
+
+/* Cards */
+.card {
+  position: absolute; left: 0; top: 0; width: var(--cw); height: var(--ch);
+  border-radius: calc(var(--cw) * .1); touch-action: none; cursor: grab;
+  box-shadow: 0 1px 1px #0004, 0 4px 12px #0005;
+  transition: transform .14s ease, box-shadow .14s ease;
+}
+.tl {
+  position: absolute; top: calc(var(--cw) * .075); left: calc(var(--cw) * .09); right: calc(var(--cw) * .09);
+  font: 700 calc(var(--cw) * .14) / 1.15 var(--f-display); letter-spacing: -.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mid {
+  position: absolute; inset: 28% 8% 12%; display: grid; place-items: center; text-align: center;
+  font: 500 calc(var(--cw) * .175) / 1.05 var(--f-display); letter-spacing: -.02em; overflow-wrap: anywhere;
+}
+.word, .pic { background: var(--card); color: var(--ink); }
+.word .mid { color: var(--ink-2); }
+.pic .tl { font: calc(var(--cw) * .17) / 1 var(--f-emoji); }
+.pic .mid { font: calc(var(--cw) * .44) / 1 var(--f-emoji); }
+.cat { background: linear-gradient(165deg, var(--cat-2), var(--cat)); color: var(--cat-ink); }
+.cat .mid { font-weight: 800; font-size: calc(var(--cw) * .16); inset: 26% 8% 26%; }
+.pill {
+  position: absolute; left: 50%; bottom: calc(var(--cw) * .09); transform: translateX(-50%);
+  font: 700 calc(var(--cw) * .092) / 1 var(--f-ui); letter-spacing: .07em; text-transform: uppercase; white-space: nowrap;
+  background: #0000001f; padding: 4px 7px; border-radius: 999px;
+}
+.back {
+  background:
+    repeating-linear-gradient(45deg, #ffffff0c 0 2px, transparent 2px 7px),
+    linear-gradient(150deg, var(--back-1), var(--back-2));
+  box-shadow: inset 0 0 0 3px #ffffff22, 0 1px 1px #0004, 0 4px 12px #0005; cursor: default;
+}
+.card.sel { transform: translateY(-7px); box-shadow: 0 0 0 2.5px var(--focus), 0 14px 26px #000a; }
+.card.reveal { animation: reveal .28s ease; }
+@keyframes reveal { from { transform: rotateY(90deg); } to { transform: none; } }
+.lift { box-shadow: 0 0 0 2px var(--focus), 0 22px 40px #000b !important; }
+
+.tableau { display: grid; grid-template-columns: repeat(4, var(--cw)); gap: var(--gap); }
+.col { position: relative; }
+.col.empty::before {
+  content: ""; position: absolute; left: 0; top: 0; width: var(--cw); height: var(--ch);
+  border: 1.5px dashed var(--edge); border-radius: calc(var(--cw) * .1);
+}
+.col.target::after, .tray.target::after {
+  content: ""; position: absolute; inset: -5px; border-radius: calc(var(--cw) * .14);
+  border: 2px solid var(--focus); pointer-events: none; opacity: .7;
+}
+.col.hover::after, .tray.hover::after { opacity: 1; background: #5fe3cc1f; border-width: 3px; }
+
+.col.hover::after, .tray.hover::after {
+  content: ""; position: absolute; inset: -5px; border-radius: calc(var(--cw) * .14);
+  border: 2px solid #ffffff55; background: #ffffff0d; pointer-events: none;
+}
+.shake { animation: shake .38s ease; }
+@keyframes shake { 0%, 100% { transform: none } 20% { transform: translateX(-7px) } 40% { transform: translateX(6px) } 60% { transform: translateX(-4px) } 80% { transform: translateX(2px) } }
+.moves.hit b { animation: hit .5s ease; }
+@keyframes hit { 0% { color: var(--cat); transform: scale(1.25) } 100% { transform: none } }
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 70;
+  transform: translateX(-50%); background: var(--text); color: var(--bg);
+  font: 700 .88rem var(--f-ui); padding: 10px 18px; border-radius: 999px; white-space: nowrap;
+  box-shadow: 0 10px 30px #000a; pointer-events: none;
+}
+.toast.show { animation: toast 1.4s ease forwards; }
+@keyframes toast { 0% { opacity: 0; transform: translate(-50%, 10px) } 12%, 80% { opacity: 1; transform: translate(-50%, 0) } 100% { opacity: 0 } }
+#ghost { position: fixed; pointer-events: none; z-index: 50; }
+#ghost .card { cursor: grabbing; }
+
+.rules { font-size: .82rem; color: var(--muted); line-height: 1.55; margin: 4px 0 0; max-width: 62ch; }
+.rules b { color: var(--text); font-weight: 600; }
+
+.overlay { position: fixed; inset: 0; background: #06080ccc; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: grid; place-items: center; padding: 16px; z-index: 60; }
+.panel { background: var(--surface); border: 1px solid var(--edge); border-radius: 18px; padding: 24px 22px 20px; max-width: 330px; width: 100%; text-align: center; box-shadow: 0 30px 60px #000c; }
+.panel h2 { font-family: var(--f-display); font-weight: 800; letter-spacing: -.03em; margin: 0 0 6px; font-size: 1.6rem; }
+.panel p { margin: 0 0 18px; color: var(--muted); font-size: .92rem; line-height: 1.45; }
+.panel .row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+@media (prefers-reduced-motion: reduce) { .card, .stamp, .card.reveal { animation: none !important; transition: none !important; } }
+</style>
+
+</head>
+<body>
+<div class="app" id="app">
+  <header>
+    <div class="brand">
+      <h1 aria-label="Consortium">Con<span class="sort">sort</span>ium</h1>
+      <div class="meta" id="meta"></div>
+      <div class="brand-row"><div class="sorted" id="sorted" aria-label="Categories sorted"></div><button id="statsbtn" class="mini-btn" type="button">Stats</button></div>
+    </div>
+    <div class="moves" id="moves"></div>
+  </header>
+  <div class="toolbar">
+    <div class="seg" role="group" aria-label="Game mode">
+      <button id="m-classic" type="button" data-mode="classic">Classic</button>
+      <button id="m-nba" type="button" data-mode="nba">NBA</button>
+    </div>
+    <button id="undo" type="button">Undo</button>
+    <button id="newdeal" type="button">New deal</button>
+  </div>
+
+  <div id="board" style="display:flex;flex-direction:column;gap:16px">
+    <section class="trays" id="trays" aria-label="Trays"></section>
+    <section class="deck">
+      <div class="stock" id="stock" data-stock role="button" aria-label="Draw a card"></div>
+      <div class="waste" id="waste"></div>
+      <div class="hint">Drawing is <b>free</b>. Drag a card, or tap it then tap where it goes.</div>
+    </section>
+    <section class="tableau" id="tableau"></section>
+  </div>
+
+
+  <div class="toast" id="toast" role="status" hidden></div>
+  <div class="overlay" id="overlay" hidden>
+    <div class="panel">
+      <h2 id="ovTitle"></h2>
+      <p id="ovText"></p>
+      <div id="ovBody"></div>
+      <div class="row" id="ovBtns"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- Theme pool (g = family; each deal includes two pairs from the same family so they blur together) ---------- */
+const W_ = (g, name, s) => ({ g, name, items: s.split(',') });
+const P_ = (g, name, s) => ({ g, name, pic: true, items: [...s.matchAll(/\S+/g)].map(m => m[0]) });
+const THEMES = [
+  W_('sport', 'Basketball', 'Dunk,Rebound,Dribble,Layup,Alley-oop,Assist,Buzzer,Backcourt'),
+  W_('sport', 'Baseball', 'Bunt,Dugout,Inning,Shortstop,Balk,Mitt,Bullpen,Bat'),
+  W_('sport', 'Football', 'Touchdown,Huddle,Audible,Fumble,Endzone,Punt,Blitz,Safety'),
+  W_('sport', 'Soccer', 'Goalie,Corner,Header,Offside,Nutmeg,Striker,Pitch,Cleats'),
+  W_('sport', 'Golf', 'Birdie,Bogey,Caddie,Fairway,Putter,Mulligan,Divot,Eagle'),
+  W_('build', 'LEGO', 'Brick,Minifig,Stud,Baseplate,Tile,Technic,Slope,Axle'),
+  W_('build', '3D Printing', 'Filament,Nozzle,Slicer,Infill,Raft,Extruder,Spool,Layer'),
+  W_('build', 'Tools', 'Hammer,Wrench,Pliers,Drill,Chisel,Clamp,Saw,Level'),
+  W_('build', 'Video Games', 'Controller,Boss,Joystick,Respawn,Checkpoint,Pixel,Arcade,Combo'),
+  W_('food', 'Breakfast', 'Syrup,Waffle,Pancake,Omelet,Bacon,Cereal,Toast,Grits'),
+  W_('food', 'Kitchen', 'Whisk,Spatula,Ladle,Colander,Skillet,Tongs,Grater,Zester'),
+  W_('food', 'Pizza', 'Pepperoni,Crust,Slice,Mozzarella,Oregano,Calzone,Delivery,Dough'),
+  W_('food', 'Bakery', 'Croissant,Bagel,Muffin,Scone,Baguette,Danish,Eclair,Pretzel'),
+  W_('outdoor', 'Garden', 'Seed,Trowel,Compost,Sprout,Hose,Mulch,Rake,Weed'),
+  W_('outdoor', 'Camping', "Tent,Lantern,S'mores,Campfire,Canteen,Compass,Trail,Cooler"),
+  W_('outdoor', 'Weather', 'Fog,Thunder,Drizzle,Monsoon,Hail,Sleet,Humidity,Forecast'),
+  W_('outdoor', 'Ocean', 'Coral,Tide,Reef,Kelp,Abyss,Current,Lagoon,Plankton'),
+  W_('outdoor', 'Forest', 'Pinecone,Moss,Acorn,Canopy,Fern,Stump,Bark,Timber'),
+  W_('outdoor', 'Beach', 'Sunscreen,Towel,Sandcastle,Seashell,Umbrella,Boardwalk,Flip-flops,Lifeguard'),
+  W_('outdoor', 'Winter', 'Snowman,Sled,Mittens,Icicle,Cocoa,Blizzard,Scarf,Snowflake'),
+  W_('story', 'Pirates', 'Parrot,Doubloon,Plank,Anchor,Cutlass,Galleon,Mutiny,Bounty'),
+  W_('story', 'Knights', 'Armor,Castle,Joust,Moat,Squire,Lance,Chainmail,Drawbridge'),
+  W_('science', 'Space', 'Comet,Orbit,Nebula,Asteroid,Galaxy,Quasar,Crater,Eclipse'),
+  W_('story', 'Wizards', 'Wand,Potion,Spell,Cauldron,Broom,Cloak,Scroll,Owl'),
+  W_('story', 'Superheroes', 'Cape,Sidekick,Villain,Mask,Lair,Gadget,Origin,Rescue'),
+  W_('story', 'Detective', 'Clue,Suspect,Alibi,Motive,Witness,Hunch,Case,Trench coat'),
+  W_('story', 'Halloween', 'Costume,Pumpkin,Candy,Ghost,Skeleton,Haunted,Cobweb,Witch'),
+  W_('life', 'School', 'Recess,Locker,Pencil,Homework,Lunchbox,Bell,Quiz,Eraser'),
+  W_('life', 'Library', 'Shelf,Fiction,Librarian,Bookmark,Overdue,Atlas,Chapter,Shh'),
+  W_('life', 'Movies', 'Popcorn,Trailer,Sequel,Ticket,Director,Premiere,Credits,Stuntman'),
+  W_('arts', 'Theater', 'Curtain,Script,Usher,Rehearsal,Spotlight,Encore,Understudy,Matinee'),
+  W_('life', 'Birthday', 'Candles,Balloon,Wish,Presents,Piñata,Frosting,Confetti,Party hat'),
+  W_('life', 'Office', 'Stapler,Inbox,Meeting,Printer,Memo,Cubicle,Deadline,Lanyard'),
+  W_('life', 'Card Games', 'Deck,Shuffle,Joker,Ace,Dealer,Bluff,Trump,Solitaire'),
+  W_('life', 'Money', 'Coin,Wallet,Savings,Penny,Budget,Allowance,Piggy bank,Receipt'),
+  W_('life', 'Car', 'Engine,Tire,Bumper,Mirror,Brake,Trunk,Wiper,Horn'),
+  W_('arts', 'Music', 'Melody,Chorus,Tempo,Lyrics,Harmony,Encore,Pitch,Crescendo'),
+  W_('science', 'Science', 'Atom,Magnet,Beaker,Fossil,Gravity,Isotope,Catalyst,Hypothesis'),
+  W_('science', 'Planets', 'Mercury,Venus,Mars,Jupiter,Saturn,Neptune,Uranus,Pluto'),
+  W_('science', 'Elements', 'Oxygen,Carbon,Neon,Helium,Iron,Mercury,Gold,Sodium'),
+  W_('science', 'Gems', 'Ruby,Emerald,Sapphire,Topaz,Opal,Garnet,Amethyst,Jade'),
+  W_('science', 'Dinosaurs', 'Raptor,T. rex,Jurassic,Triassic,Pterosaur,Sauropod,Cretaceous,Fossil'),
+  W_('science', 'Bones', 'Femur,Tibia,Skull,Spine,Rib,Pelvis,Patella,Sternum'),
+  W_('world', 'Rivers', 'Nile,Amazon,Thames,Danube,Ganges,Yangtze,Rhine,Volga'),
+  W_('world', 'Capitals', 'Paris,Tokyo,Cairo,Lima,Oslo,Ottawa,Nairobi,Canberra'),
+  W_('world', 'Shapes', 'Hexagon,Rhombus,Trapezoid,Octagon,Ellipse,Pentagon,Prism,Cube'),
+  W_('story', 'Greek Gods', 'Zeus,Athena,Apollo,Hermes,Poseidon,Ares,Hera,Hades'),
+  W_('arts', 'Dances', 'Waltz,Tango,Salsa,Foxtrot,Polka,Ballet,Swing,Tap'),
+  W_('arts', 'Art Class', 'Easel,Canvas,Palette,Sketch,Mural,Fresco,Pastel,Collage'),
+  W_('outdoor', 'Trees', 'Oak,Maple,Willow,Birch,Cedar,Redwood,Aspen,Sequoia'),
+  W_('food', 'Cheese', 'Cheddar,Brie,Gouda,Feta,Parmesan,Swiss,Ricotta,Gruyère'),
+  W_('animal', 'Dogs', 'Leash,Fetch,Puppy,Collar,Kibble,Bark,Wag,Bone'),
+  P_('food', 'Fruit', '🍎 🍌 🍇 🍓 🍍 🥝 🍒 🍉 🍑 🍋'),
+  P_('food', 'Veggies', '🥕 🥦 🌽 🍆 🥔 🧅 🥒 🫑 🥬'),
+  P_('food', 'Sweets', '🍩 🍪 🎂 🧁 🍦 🍫 🍭 🍰'),
+  P_('food', 'Fast Food', '🍔 🍟 🌭 🍕 🌮 🥤 🍗 🌯'),
+  P_('animal', 'Farm', '🐄 🐖 🐑 🐓 🐐 🐴 🦆 🦃'),
+  P_('animal', 'Sea Life', '🐙 🦀 🐠 🐬 🐳 🦈 🦞 🐡'),
+  P_('animal', 'Bugs', '🐝 🐞 🦋 🐜 🐛 🐌 🦗 🕷️'),
+  P_('animal', 'Safari', '🦁 🐘 🦒 🦓 🦏 🐆 🦛 🐊'),
+  P_('animal', 'Pets', '🐶 🐱 🐹 🐰 🐟 🦜 🐢 🐍'),
+  P_('outdoor', 'Sky', '☀️ 🌧️ ⛈️ ❄️ 🌈 🌪️ ⚡ 🌙'),
+  P_('story', 'Outer Space', '🚀 🪐 ⭐ ☄️ 🛸 🌍 👽 🔭'),
+  P_('build', 'Toolbox', '🔨 🔧 🪛 🪚 🔩 🧰 📏 🪜'),
+  P_('life', 'Ride', '🚗 🚌 🚲 🚂 ✈️ 🚁 🛵 🚤'),
+  P_('sport', 'Balls', '⚽ 🏀 🏈 ⚾ 🎾 🏐 🎱 🏉'),
+  P_('life', 'Instruments', '🎸 🎹 🥁 🎺 🎻 🎷 🪗 🪕'),
+  P_('life', 'Closet', '👕 👖 🧦 🧢 👟 🧥 👗 🧤'),
+  P_('life', 'Faces', '😀 😂 😍 😎 😡 😴 🤔 😭'),
+  P_('life', 'Buildings', '🏠 🏰 🏥 🏫 🏦 🏟️ 🗼 🏭'),
+  P_('sport', 'Game Day', '🏆 🥇 🎽 🏅 📣 🧢 🎟️ 🥅'),
+];
+let recentMem = [];
+try { recentMem = JSON.parse(localStorage.getItem('cc-recent')) || []; } catch (e) {}
+
+/* ---------- NBA mode: category = team, cards = players. g = franchise (same-franchise teams get paired to blur). ---------- */
+const N_ = (g, name, s, kind = 'Players') => ({ g, name, kind, items: s.split(',').map(x => x.trim()) });
+const NBA = [
+  N_('chi', "'97 Bulls", 'Michael Jordan|M. Jordan,Scottie Pippen,Dennis Rodman,Toni Kukoc,Ron Harper,Steve Kerr,Luc Longley,Jud Buechler'),
+  N_('sac', "'01 Kings", 'Chris Webber,Vlade Divac,Peja Stojakovic|Peja,Jason Williams,Doug Christie,Bobby Jackson,Hedo Turkoglu|Hedo,Scot Pollard'),
+  N_('gsw', "'15 Warriors", 'Stephen Curry,Klay Thompson,Draymond Green|Draymond,Andre Iguodala|Iguodala,Harrison Barnes,Andrew Bogut,Shaun Livingston,David Lee'),
+  N_('gsw', "'17 Warriors", 'Kevin Durant,Stephen Curry,Klay Thompson,Draymond Green|Draymond,Zaza Pachulia|Zaza,JaVale McGee,David West,Ian Clark'),
+  N_('lal', "'87 Lakers", 'Magic Johnson|Magic,Kareem Abdul-Jabbar|Kareem,James Worthy,Byron Scott,A.C. Green,Michael Cooper,Mychal Thompson,Kurt Rambis'),
+  N_('lal', "'01 Lakers", "Shaquille O'Neal|Shaq,Kobe Bryant,Derek Fisher,Robert Horry,Rick Fox,Horace Grant,Brian Shaw,Ron Harper"),
+  N_('lal', "'10 Lakers", 'Kobe Bryant,Pau Gasol,Lamar Odom,Andrew Bynum,Derek Fisher,Ron Artest,Shannon Brown,Jordan Farmar'),
+  N_('bos', "'86 Celtics", 'Larry Bird,Kevin McHale,Robert Parish,Dennis Johnson,Danny Ainge,Bill Walton,Scott Wedman,Jerry Sichting'),
+  N_('bos', "'08 Celtics", 'Paul Pierce,Kevin Garnett,Ray Allen,Rajon Rondo,Kendrick Perkins,James Posey,Eddie House,Leon Powe'),
+  N_('bos', "'24 Celtics", 'Jayson Tatum,Jaylen Brown,Jrue Holiday,Derrick White,Kristaps Porzingis|Porzingis,Al Horford,Payton Pritchard,Sam Hauser'),
+  N_('mia', "'13 Heat", 'LeBron James,Dwyane Wade,Chris Bosh,Ray Allen,Shane Battier,Mario Chalmers,Udonis Haslem,Mike Miller'),
+  N_('sas', "'14 Spurs", 'Tim Duncan,Tony Parker,Manu Ginobili|Manu,Kawhi Leonard,Danny Green,Boris Diaw,Patty Mills,Tiago Splitter'),
+  N_('cle', "'16 Cavaliers", 'LeBron James,Kyrie Irving,Kevin Love,Tristan Thompson,J.R. Smith,Iman Shumpert,Richard Jefferson,Matthew Dellavedova|Delly'),
+  N_('det', "'89 Pistons", 'Isiah Thomas,Joe Dumars,Bill Laimbeer,Dennis Rodman,Vinnie Johnson,Mark Aguirre,John Salley,Rick Mahorn'),
+  N_('det', "'04 Pistons", 'Chauncey Billups,Richard Hamilton,Ben Wallace|Big Ben,Rasheed Wallace|Sheed,Tayshaun Prince,Mehmet Okur,Lindsey Hunter,Elden Campbell'),
+  N_('dal', "'11 Mavericks", 'Dirk Nowitzki|Dirk,Jason Kidd,Jason Terry,Tyson Chandler,Shawn Marion,J.J. Barea,Peja Stojakovic|Peja,DeShawn Stevenson'),
+  N_('hou', "'95 Rockets", 'Hakeem Olajuwon|Hakeem,Clyde Drexler,Robert Horry,Kenny Smith,Sam Cassell,Mario Elie,Pete Chilcutt,Chucky Brown'),
+  N_('tor', "'19 Raptors", 'Kawhi Leonard,Kyle Lowry,Pascal Siakam,Marc Gasol,Danny Green,Serge Ibaka,Fred VanVleet,Norman Powell'),
+  N_('mil', "'21 Bucks", 'Giannis Antetokounmpo|Giannis,Khris Middleton,Jrue Holiday,Brook Lopez,Bobby Portis,P.J. Tucker,Pat Connaughton,Bryn Forbes'),
+  N_('den', "'23 Nuggets", 'Nikola Jokic,Jamal Murray,Michael Porter Jr.|MPJ,Aaron Gordon,Kentavious Caldwell-Pope|KCP,Bruce Brown,Christian Braun,Jeff Green'),
+  N_('okc', "'12 Thunder", 'Kevin Durant,Russell Westbrook,James Harden,Serge Ibaka,Kendrick Perkins,Thabo Sefolosha,Nick Collison,Derek Fisher'),
+  N_('okc', "'25 Thunder", 'Shai Gilgeous-Alexander|SGA,Jalen Williams,Chet Holmgren,Lu Dort,Isaiah Hartenstein|Hartenstein,Alex Caruso,Cason Wallace,Aaron Wiggins'),
+  N_('phx', "'07 Suns", "Steve Nash,Amar'e Stoudemire|Amar'e,Shawn Marion,Raja Bell,Leandro Barbosa,Boris Diaw,Kurt Thomas,James Jones"),
+  N_('phi', "'01 76ers", 'Allen Iverson,Dikembe Mutombo|Mutombo,Aaron McKie,Eric Snow,Tyrone Hill,George Lynch,Todd MacCulloch,Jumaine Jones'),
+  N_('lac', "'14 Clippers", 'Chris Paul,Blake Griffin,DeAndre Jordan,J.J. Redick,Jamal Crawford,Matt Barnes,Darren Collison,Jared Dudley'),
+  N_('uta', "'98 Jazz", 'Karl Malone,John Stockton,Jeff Hornacek,Bryon Russell,Greg Ostertag,Howard Eisley,Antoine Carr,Shandon Anderson'),
+  N_('nyk', "'73 Knicks", 'Walt Frazier,Willis Reed,Dave DeBusschere|DeBusschere,Bill Bradley,Earl Monroe,Jerry Lucas,Phil Jackson,Dean Meminger'),
+  // This season (2026-27 rosters)
+  N_('gsw', 'Warriors (now)', "Stephen Curry,Draymond Green|Draymond,Al Horford,Brandin Podziemski|Podziemski,Gary Payton II,De'Anthony Melton,Georges Niang,Gui Santos"),
+  N_('sac', 'Kings (now)', 'Domantas Sabonis|Sabonis,Zach LaVine,Keegan Murray,Malik Monk,De\'Andre Hunter,Precious Achiuwa,Nique Clifford,Darius Acuff Jr.'),
+  N_('lal', 'Lakers (now)', 'Luka Doncic|Luka,Austin Reaves,Quentin Grimes,Walker Kessler,Collin Sexton,Kevon Looney,Bronny James|Bronny,Jarred Vanderbilt'),
+  N_('okc', 'Thunder (now)', 'Shai Gilgeous-Alexander|SGA,Jalen Williams,Chet Holmgren,Alex Caruso,Isaiah Hartenstein|Hartenstein,Cason Wallace,Jared McCain,Ajay Mitchell'),
+  N_('bos', 'Celtics (now)', 'Jayson Tatum,Paul George,Derrick White,Payton Pritchard,Sam Hauser,Mike Conley,Mitchell Robinson,Neemias Queta'),
+  N_('den', 'Nuggets (now)', 'Nikola Jokic,Jamal Murray,Aaron Gordon,Christian Braun,DeMar DeRozan,Cameron Johnson,Tyus Jones,Cam Whitmore'),
+  N_('nyk', 'Knicks (now)', 'Jalen Brunson,Karl-Anthony Towns|KAT,OG Anunoby,Mikal Bridges,Josh Hart,Miles McBride,Jordan Clarkson,Andre Drummond'),
+  N_('sas', 'Spurs (now)', "Victor Wembanyama|Wemby,De'Aaron Fox,Stephon Castle,Dylan Harper,Devin Vassell,Keldon Johnson,Harrison Barnes,Julian Champagnie"),
+  N_('atl', 'Hawks (now)', 'Jalen Johnson,Dyson Daniels,Onyeka Okongwu|Okongwu,C.J. McCollum,Nickeil Alexander-Walker|NAW,Corey Kispert,Dorian Finney-Smith|DFS,Lu Dort'),
+  N_('bkn', 'Nets (now)', 'Michael Porter Jr.|MPJ,Julius Randle,Egor Demin,Noah Clowney,Day\'Ron Sharpe,Moritz Wagner,Nolan Traoré,Drake Powell'),
+  N_('cha', 'Hornets (now)', 'Brandon Miller,Naz Reid,Grayson Allen,Royce O\'Neale,Dennis Schroder,Moussa Diabate,Ryan Kalkbrenner|Kalkbrenner,Tidjane Salaün'),
+  N_('chi', 'Bulls (now)', 'Josh Giddey,Matas Buzelis,Norman Powell,Buddy Hield,Isaac Okoro,Tre Jones,Zach Collins,Caleb Wilson'),
+  N_('cle', 'Cavaliers (now)', 'Donovan Mitchell,James Harden,Evan Mobley,Jarrett Allen,Sam Merrill,Jaylon Tyson,Peyton Watson,Mario Hezonja'),
+  N_('dal', 'Mavericks (now)', 'Cooper Flagg,Kyrie Irving,P.J. Washington,Daniel Gafford,Naji Marshall,Max Christie,Zaccharie Risacher|Risacher,Marcus Sasser'),
+  N_('det', 'Pistons (now)', 'Cade Cunningham|Cade,Jalen Duren,Ausar Thompson,John Collins,Kevin Huerter,Duncan Robinson,Isaiah Joe,Ron Holland II'),
+  N_('hou', 'Rockets (now)', 'Kevin Durant,Alperen Sengun,Amen Thompson,Fred VanVleet,Jabari Smith Jr.,Tari Eason,Steven Adams,Clint Capela'),
+  N_('ind', 'Pacers (now)', 'Tyrese Haliburton|Haliburton,Pascal Siakam,Andrew Nembhard,Aaron Nesmith,Ivica Zubac,Obi Toppin,Kelly Oubre Jr.,Jarace Walker'),
+  N_('lac', 'Clippers (now)', 'Darius Garland,Rui Hachimura,Brook Lopez,Gradey Dick,Kris Dunn,Derrick Jones Jr.,Isaiah Jackson,Kobe Sanders'),
+  N_('mem', 'Grizzlies (now)', 'Cameron Boozer,Jerami Grant,Zach Edey,Ty Jerome,Jaylen Wells,Isaiah Stewart,Scotty Pippen Jr.,Cedric Coward'),
+  N_('mia', 'Heat (now)', 'Giannis Antetokounmpo|Giannis,Bam Adebayo,Klay Thompson,Andrew Wiggins,Tim Hardaway Jr.,Bobby Portis,Davion Mitchell,Nikola Jovic'),
+  N_('mil', 'Bucks (now)', 'Tyler Herro,Myles Turner,Kyle Kuzma,Jaime Jaquez Jr.,Kel\'el Ware,Ryan Rollins,A.J. Green,Kasparas Jakucionis|Jakucionis'),
+  N_('min', 'Timberwolves (now)', 'Anthony Edwards,LaMelo Ball,Rudy Gobert,Jaden McDaniels,Jonathan Kuminga,Ayo Dosunmu,Bones Hyland,Trey Lyles'),
+  N_('nop', 'Pelicans (now)', 'Zion Williamson|Zion,Trey Murphy III,Herbert Jones,Dejounte Murray,Jordan Poole,Bennedict Mathurin,Saddiq Bey,Derik Queen'),
+  N_('orl', 'Magic (now)', 'Paolo Banchero,Franz Wagner,Desmond Bane,Jalen Suggs,Wendell Carter Jr.,Nikola Vucevic,Anthony Black,Tristan da Silva'),
+  N_('phi', '76ers (now)', 'Joel Embiid,Tyrese Maxey,LeBron James,Jaylen Brown,VJ Edgecombe,Kentavious Caldwell-Pope|KCP,Anfernee Simons,Dean Wade'),
+  N_('phx', 'Suns (now)', 'Devin Booker,Jalen Green,Dillon Brooks,Miles Bridges,Collin Gillespie,Ryan Dunn,Luke Kennard,Khaman Maluach'),
+  N_('por', 'Trail Blazers (now)', 'Damian Lillard|Dame,Ja Morant,Jrue Holiday,Deni Avdija,Scoot Henderson,Donovan Clingan,Toumani Camara,Robert Williams III'),
+  N_('tor', 'Raptors (now)', "Kawhi Leonard,Scottie Barnes,RJ Barrett,Immanuel Quickley,Jakob Poeltl,Collin Murray-Boyles|CMB,Ja'Kobe Walter,Kyle Anderson"),
+  N_('uta', 'Jazz (now)', 'Lauri Markkanen,Jaren Jackson Jr.|JJJ,Keyonte George,Ace Bailey,Isaiah Collier,Kyle Filipowski,Darryn Peterson,Brice Sensabaugh'),
+  N_('was', 'Wizards (now)', 'Trae Young,Anthony Davis,Alex Sarr,Bilal Coulibaly,Deandre Ayton,Khris Middleton,Kyshawn George,Bub Carrington'),
+  // Divisions (cards are teams; animal mascots show their emoji)
+  N_('div', 'Atlantic', 'Celtics,Nets,Knicks,76ers,Raptors||🦖', 'Teams'),
+  N_('div', 'Central', 'Bulls||🐂,Cavaliers,Pistons,Pacers,Bucks||🦌', 'Teams'),
+  N_('div', 'Southeast', 'Hawks||🦅,Hornets||🐝,Heat,Magic,Wizards', 'Teams'),
+  N_('div', 'Northwest', 'Nuggets,Timberwolves||🐺,Thunder,Trail Blazers,Jazz', 'Teams'),
+  N_('div', 'Pacific', 'Warriors,Clippers,Lakers,Suns,Kings', 'Teams'),
+  N_('div', 'Southwest', 'Mavericks,Rockets,Grizzlies||🐻,Pelicans,Spurs', 'Teams'),
+  // What the team is named after
+  N_('names', 'Named for Animals', 'Bulls,Bucks,Hawks,Raptors,Grizzlies,Timberwolves,Hornets,Pelicans', 'Teams'),
+  N_('names', 'Named for People', 'Celtics,Knicks,Kings,Warriors,76ers,Trail Blazers,Wizards,Cavaliers,Mavericks', 'Teams'),
+  N_('names', 'Sky & Weather', 'Heat,Thunder,Suns,Rockets', 'Teams'),
+  // Colleges
+  N_('college', 'Duke', 'Kyrie Irving,Jayson Tatum,Zion Williamson|Zion,Grant Hill,Christian Laettner|Laettner,Paolo Banchero,Cooper Flagg,Brandon Ingram'),
+  N_('college', 'Kentucky', "Anthony Davis,Devin Booker,De'Aaron Fox,Karl-Anthony Towns|KAT,Bam Adebayo,Tyler Herro,Jamal Murray,John Wall"),
+  N_('college', 'UCLA', 'Kareem Abdul-Jabbar|Kareem,Bill Walton,Russell Westbrook,Kevin Love,Reggie Miller,Zach LaVine,Jrue Holiday'),
+  N_('college', 'North Carolina', 'Michael Jordan|M. Jordan,Vince Carter,James Worthy,Rasheed Wallace|Sheed,Harrison Barnes,Danny Green'),
+  N_('college', 'Kansas', 'Wilt Chamberlain|Wilt,Paul Pierce,Joel Embiid,Andrew Wiggins,Kelly Oubre Jr.,Mario Chalmers,Danny Manning'),
+  N_('college', 'Gonzaga', 'John Stockton,Domantas Sabonis|Sabonis,Rui Hachimura,Chet Holmgren,Jalen Suggs,Andrew Nembhard,Kelly Olynyk'),
+  N_('college', 'Michigan State', 'Magic Johnson|Magic,Draymond Green|Draymond,Jaren Jackson Jr.|JJJ,Miles Bridges,Steve Smith,Zach Randolph'),
+  N_('college', 'Texas', 'Kevin Durant,LaMarcus Aldridge,Jarrett Allen,Myles Turner,Avery Bradley,Tristan Thompson'),
+  // Nicknames
+  N_('nick', 'Classic Nicknames', 'The Mailman,The Answer,The Dream,The Admiral,The Glove,Dr. J,Black Mamba,The Big Fundamental,Air Jordan,The Worm,Mr. Big Shot,Penny', 'Nicknames'),
+  N_('nick', 'Modern Nicknames', 'Chef Curry,The Greek Freak,King James,The Joker,The Beard,The Claw,Spida,Slim Reaper,The Process,Brodie,Ant-Man', 'Nicknames'),
+  // Jersey numbers
+  N_('jersey', '#23', 'Michael Jordan|M. Jordan,LeBron James,Anthony Davis,Draymond Green|Draymond,Fred VanVleet'),
+  N_('jersey', '#33', 'Larry Bird,Kareem Abdul-Jabbar|Kareem,Patrick Ewing,Scottie Pippen,Alonzo Mourning,Grant Hill'),
+  N_('jersey', '#32', "Magic Johnson|Magic,Karl Malone,Kevin McHale,Shaquille O'Neal|Shaq,Bill Walton,Blake Griffin,Karl-Anthony Towns|KAT"),
+  N_('jersey', '#30', 'Stephen Curry,Dell Curry,Julius Randle,Bernard King,Terry Porter'),
+  N_('jersey', '#34', 'Hakeem Olajuwon|Hakeem,Giannis Antetokounmpo|Giannis,Paul Pierce,Charles Barkley,Ray Allen'),
+  N_('jersey', '#6', 'Bill Russell,Julius Erving|Dr. J,Kristaps Porzingis|Porzingis,LeBron James'),
+];
+function shortName(full) {
+  const parts = full.split(' ').filter(w => !/^(Jr\.|II|III)$/.test(w));
+  return parts.length < 2 ? full : parts[0][0] + '. ' + parts.at(-1);
+}
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+let MODE = store.get('cc-mode', 'classic');
+const blankStats = () => ({ wins: 0, losses: 0, streak: 0, bestStreak: 0, bestLevel: 1, bestSpare: 0, cleared: {} });
+let STATS = store.get('cc-stats', null) || { classic: blankStats(), nba: blankStats() };
+function saveStats() { store.set('cc-stats', STATS); }
+let LEVEL = { classic: store.get('cc-level-classic', 1), nba: store.get('cc-level-nba', 1) };
+/* Difficulty ramps with level: more categories per tray, bigger groups, deeper columns, tighter move limit, more look-alike pairs. */
+function tuning(L) {
+  return {
+    extra: L <= 2 ? 2 : L <= 8 ? 3 : 4,
+    maxItems: L <= 3 ? 5 : 6,
+    colMin: L <= 2 ? 2 : L <= 9 ? 3 : 4,
+    pairs: L <= 2 ? 1 : L <= 8 ? 2 : 3,
+    slack: L <= 2 ? 1.25 : L <= 5 ? 1.15 : L <= 10 ? 1.1 : 1.05,
+    pad: L <= 5 ? 4 : 3,
+  };
+}
+
+
+/* ---------- Helpers ---------- */
+const rand = n => Math.floor(Math.random() * n);
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rand(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const clone = o => JSON.parse(JSON.stringify(o));
+const $ = id => document.getElementById(id);
+
+let D;           // current deal: { trays, cats, CARD, cols, stock, limit }
+let S;           // live state
+let history = [];
+let stampAt = null, revealIds = new Set();
+let CH = 120;
+
+/* ---------- Deal + rules ---------- */
+function makeDeal(T) {
+  const SRC = MODE === 'nba' ? NBA : THEMES;
+  const trays = 3 + rand(3);
+  const nCats = trays + T.extra;
+  const recent = new Set(recentMem);
+  let pool = SRC.map((_, i) => i).filter(i => !recent.has(SRC[i].name));
+  if (pool.length < nCats + 6) pool = SRC.map((_, i) => i);
+  const fam = {};
+  pool.forEach(i => (fam[SRC[i].g] ||= []).push(i));
+  const picks = [];
+  shuffle(Object.keys(fam).filter(g => fam[g].length >= 2)).slice(0, T.pairs)
+    .forEach(g => picks.push(...shuffle(fam[g]).slice(0, 2)));
+  // NBA: keep team rosters to about half the deal so divisions, colleges, nicknames and jerseys show up
+  const TRIVIA = ['div', 'names', 'college', 'nick', 'jersey'];
+  const isRoster = i => MODE === 'nba' && !TRIVIA.includes(SRC[i].g);
+  const cap = MODE === 'nba' ? Math.ceil(nCats / 2) : Infinity;
+  shuffle(pool).forEach(i => {
+    if (picks.length >= nCats || picks.includes(i)) return;
+    if (isRoster(i) && picks.filter(isRoster).length >= cap) return;
+    picks.push(i);
+  });
+  shuffle(picks);
+  const CARD = {}, cats = {}, deck = [];
+  const key = w => w.split('|')[0];
+  const keysOf = ti => new Set(SRC[ti].items.map(key));
+  const allKeys = picks.map(keysOf);
+  for (let a = 0; a < picks.length; a++) {
+    const t = SRC[picks[a]], cid = 'c' + picks[a];
+    // drop anything that could also belong to another category in this deal
+    const ok = t.items.filter(w => !allKeys.some((ks, b) => b !== a && ks.has(key(w))));
+    if (ok.length < 3) return null;
+    const items = shuffle(ok).slice(0, 4 + rand(T.maxItems - 3));
+    const k = items.length;
+    cats[cid] = { name: t.name, pic: !!t.pic, total: k, kind: MODE === 'nba' ? (t.kind || 'Players') : t.pic ? 'Pictures' : 'Words' };
+    CARD[cid + '#'] = { type: 'cat', cat: cid };
+    deck.push(cid + '#');
+    items.forEach((w, j) => {
+      const id = cid + ':' + j;
+      const [full, sh, emo] = w.split('|');
+      CARD[id] = MODE === 'nba'
+        ? { type: 'word', cat: cid, text: full, short: sh || (t.kind === 'Players' ? shortName(full) : full), emo: emo || '', nba: true }
+        : { type: 'word', cat: cid, text: w, pic: !!t.pic };
+      deck.push(id);
+    });
+  }
+  // Spread each category out: never deal two cards from the same category within a few cards of each other.
+  const byCat = {};
+  deck.forEach(id => (byCat[CARD[id].cat] ||= []).push(id));
+  Object.values(byCat).forEach(shuffle);
+  const order = [], lastCats = [], gap = Math.min(Object.keys(byCat).length - 2, 4);
+  while (order.length < deck.length) {
+    let g = gap, pool;
+    do {
+      const avoid = g > 0 ? lastCats.slice(-g) : [];
+      pool = Object.keys(byCat).filter(c => byCat[c].length && !avoid.includes(c));
+      g--;
+    } while (!pool.length && g >= 0);
+    let r = Math.random() * pool.reduce((a, c) => a + byCat[c].length, 0), pick = pool[0];
+    for (const c of pool) { r -= byCat[c].length; if (r < 0) { pick = c; break; } }
+    order.push(byCat[pick].pop()); lastCats.push(pick);
+  }
+  deck.length = 0; deck.push(...order);
+  const cols = [0, 1, 2, 3].map(() => deck.splice(0, T.colMin + rand(4)));
+  return { trays, cats, CARD, cols, stock: deck };
+}
+function initState(d, limit) {
+  return {
+    cols: d.cols.map(c => c.map((id, i) => ({ id, up: i === c.length - 1 }))),
+    stock: [...d.stock], waste: [], slots: Array(d.trays).fill(null), done: [], moves: limit, sel: null,
+  };
+}
+function runAt(st, i, idx) {
+  const col = st.cols[i];
+  if (!col || !col[idx] || !col[idx].up) return null;
+  const cat = D.CARD[col[idx].id].cat;
+  for (let k = idx; k < col.length; k++) {
+    const c = col[k];
+    if (!c.up || D.CARD[c.id].cat !== cat) return null;
+    if (k > idx && D.CARD[c.id].type === 'cat') return null;
+  }
+  return col.slice(idx).map(c => c.id);
+}
+function getRun(st, src) {
+  if (!src) return [];
+  if (src.from === 'waste') return st.waste.length ? [st.waste.at(-1)] : [];
+  return runAt(st, src.i, src.idx) || [];
+}
+function canDrop(st, src, d) {
+  const run = getRun(st, src);
+  if (!run.length || !d) return false;
+  const first = D.CARD[run[0]];
+  if (d.t === 'slot') {
+    const s = st.slots[d.i];
+    if (!s) return first.type === 'cat' && run.every((id, k) => k === 0 || (D.CARD[id].type === 'word' && D.CARD[id].cat === first.cat));
+    return run.every(id => D.CARD[id].type === 'word' && D.CARD[id].cat === s.cat);
+  }
+  if (src.from === 'col' && src.i === d.i) return false;
+  const col = st.cols[d.i];
+  if (!col.length) return !(src.from === 'col' && src.idx === 0);
+  const top = D.CARD[col.at(-1).id];
+  return first.type === 'word' && top.cat === first.cat;
+}
+function apply(st, src, d) {
+  const run = getRun(st, src);
+  const out = { revealed: null, completed: null };
+  if (src.from === 'waste') st.waste.pop();
+  else {
+    const col = st.cols[src.i];
+    col.splice(src.idx);
+    if (col.length && !col.at(-1).up) { col.at(-1).up = true; out.revealed = col.at(-1).id; }
+  }
+  if (d.t === 'slot') {
+    if (!st.slots[d.i]) st.slots[d.i] = { cat: D.CARD[run[0]].cat, items: [] };
+    const s = st.slots[d.i];
+    run.forEach(id => { if (D.CARD[id].type === 'word') s.items.push(id); });
+    if (s.items.length === D.cats[s.cat].total) {
+      st.done.push(s.cat); st.slots[d.i] = null; out.completed = { i: d.i, cat: s.cat };
+    }
+  } else run.forEach(id => st.cols[d.i].push({ id, up: true }));
+  st.moves--;
+  return out;
+}
+function drawCard(st) {
+  if (st.stock.length) { st.waste.push(st.stock.shift()); return true; }
+  if (st.waste.length) { st.stock = st.waste; st.waste = []; return true; }
+  return false;
+}
+
+/* ---------- Solver: proves a deal is winnable and sets the move limit ---------- */
+function sources(st) {
+  const out = [];
+  st.cols.forEach((col, i) => {
+    if (!col.length) return;
+    let s = col.length - 1;
+    while (s > 0 && runAt(st, i, s - 1)) s--;
+    if (!runAt(st, i, s)) return;
+    out.push({ src: { from: 'col', i, idx: s }, full: true, below: s > 0 });
+    if (s !== col.length - 1) out.push({ src: { from: 'col', i, idx: col.length - 1 }, full: false });
+  });
+  if (st.waste.length) out.push({ src: { from: 'waste' }, waste: true });
+  return out;
+}
+function pickMove(st) {
+  const g1 = [], g2 = [], g3 = [], g4 = [];
+  for (const c of sources(st)) {
+    st.slots.forEach((s, i) => {
+      const d = { t: 'slot', i };
+      if (canDrop(st, c.src, d)) (s ? g1 : g2).push([c.src, d]);
+    });
+    st.cols.forEach((col, i) => {
+      const d = { t: 'col', i };
+      if (!canDrop(st, c.src, d)) return;
+      if (c.waste) { (col.length ? g3 : g4).push([c.src, d]); return; }
+      if (c.full && c.below) g3.push([c.src, d]);
+    });
+  }
+  for (const g of [g1, g2, g3]) if (g.length) return g[rand(g.length)];
+  if (g4.length && Math.random() < .5) return g4[rand(g4.length)];
+  return null;
+}
+function solve(st0, nCats) {
+  const st = clone(st0);
+  let moves = 0, idle = 0;
+  for (let guard = 0; guard < 3000; guard++) {
+    if (st.done.length === nCats) return moves;
+    const m = pickMove(st);
+    if (m) { apply(st, m[0], m[1]); moves++; idle = 0; continue; }
+    if (!drawCard(st)) return -1;
+    if (++idle > st.stock.length + st.waste.length + 2) return -1;
+  }
+  return -1;
+}
+function generate() {
+  for (let t = 0; t < 300; t++) {
+    const T = tuning(LEVEL[MODE]);
+    const d = makeDeal(T);
+    if (!d) continue;
+    d.level = LEVEL[MODE]; d.mode = MODE;
+    D = d;
+    const st0 = initState(d, 999), n = Object.keys(d.cats).length;
+    let best = Infinity;
+    for (let a = 0; a < 16; a++) { const m = solve(st0, n); if (m > 0 && m < best) best = m; }
+    if (best < Infinity) {
+      d.limit = Math.ceil(best * T.slack) + T.pad;
+      recentMem = [...Object.values(d.cats).map(c => c.name), ...recentMem].slice(0, 16);
+      try { localStorage.setItem('cc-recent', JSON.stringify(recentMem)); } catch (e) {}
+      return d;
+    }
+  }
+  return D;
+}
+
+/* ---------- Game actions ---------- */
+function snap() { history.push(JSON.stringify({ ...S, sel: null })); }
+function doMove(d) {
+  snap();
+  const r = apply(S, S.sel, d);
+  if (r.revealed) revealIds.add(r.revealed);
+  if (r.completed) {
+    const nm = D.cats[r.completed.cat].name;
+    stampAt = { i: r.completed.i, name: nm, t: Date.now() };
+    const cl = STATS[D.mode].cleared; cl[nm] = (cl[nm] || 0) + 1; saveStats();
+  }
+  S.sel = null;
+  render();
+  checkEnd();
+}
+function auto() {
+  for (let i = 0; i < S.slots.length; i++) if (S.slots[i] && canDrop(S, S.sel, { t: 'slot', i })) return doMove({ t: 'slot', i });
+  for (let i = 0; i < S.slots.length; i++) if (!S.slots[i] && canDrop(S, S.sel, { t: 'slot', i })) return doMove({ t: 'slot', i });
+  miss(null);
+}
+/* A wrong guess costs a move. Nothing on the board ever shows where a card belongs. */
+function isPointless(d) {
+  return d.t === 'col' && S.sel.from === 'col' && (d.i === S.sel.i || (!S.cols[d.i].length && S.sel.idx === 0));
+}
+let toastT;
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.hidden = false;
+  t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 1400);
+}
+function miss(d) {
+  snap();
+  S.moves--; S.sel = null;
+  render();
+  if (d) document.querySelector(d.t === 'slot' ? `.tray[data-slot="${d.i}"]` : `.col[data-col="${d.i}"]`)?.classList.add('shake');
+  $('moves').classList.remove('hit'); void $('moves').offsetWidth; $('moves').classList.add('hit');
+  toast('Not a match  ·  −1 move');
+  checkEnd();
+}
+function tap(info) {
+  if (info.kind === 'stock') { snap(); S.sel = null; if (!drawCard(S)) history.pop(); return render(); }
+  if (info.kind === 'waste') {
+    if (!S.waste.length) { S.sel = null; return render(); }
+    if (S.sel && S.sel.from === 'waste') return auto();
+    S.sel = { from: 'waste' }; return render();
+  }
+  if (info.kind === 'slot') {
+    if (!S.sel) return;
+    const d = { t: 'slot', i: info.i };
+    return canDrop(S, S.sel, d) ? doMove(d) : miss(d);
+  }
+  if (info.kind === 'col') {
+    const { i, idx } = info;
+    if (S.sel) {
+      if (S.sel.from === 'col' && S.sel.i === i) {
+        if (idx === S.sel.idx) return auto();
+        S.sel = idx != null && runAt(S, i, idx) ? { from: 'col', i, idx } : null;
+        return render();
+      }
+      const d = { t: 'col', i };
+      if (canDrop(S, S.sel, d)) return doMove(d);
+      if (!isPointless(d)) return miss(d);
+    }
+    S.sel = idx != null && runAt(S, i, idx) ? { from: 'col', i, idx } : null;
+    render();
+  }
+}
+function checkEnd() {
+  const n = Object.keys(D.cats).length;
+  if (S.done.length === n) {
+    if (LEVEL[D.mode] === D.level) { LEVEL[D.mode] = D.level + 1; store.set('cc-level-' + D.mode, LEVEL[D.mode]); }
+    const st = STATS[D.mode];
+    st.wins++; st.streak++; st.bestStreak = Math.max(st.bestStreak, st.streak);
+    st.bestLevel = Math.max(st.bestLevel, LEVEL[D.mode]); st.bestSpare = Math.max(st.bestSpare, S.moves);
+    saveStats();
+    setTimeout(() => showOverlay(`Level ${D.level} cleared`,
+      `${n} categories with ${S.moves} moves to spare. Level ${D.level + 1} gets a little tougher.`,
+      [[`Play level ${D.level + 1}`, newDeal, true]]), 800);
+  } else if (S.moves <= 0) {
+    if (!D.lost) { D.lost = true; const st = STATS[D.mode]; st.losses++; st.streak = 0; saveStats(); }
+    showOverlay('Out of moves', `You sorted ${S.done.length} of ${n} categories.`,
+      [['Undo', () => { hideOverlay(); undo(); }], ['Retry deal', retry], ['New deal', newDeal, true]]);
+  }
+}
+function showOverlay(t, p, btns, body = '') {
+  $('ovTitle').textContent = t; $('ovText').textContent = p; $('ovBtns').innerHTML = '';
+  $('ovText').hidden = !p; $('ovBody').innerHTML = body;
+  btns.forEach(([label, fn, primary]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+    if (primary) b.className = 'primary'; b.onclick = fn; $('ovBtns').append(b);
+  });
+  $('overlay').hidden = false;
+}
+function hideOverlay() { $('overlay').hidden = true; }
+function undo() { if (!history.length) return; S = JSON.parse(history.pop()); stampAt = null; render(); }
+function retry() { hideOverlay(); S = initState(D, D.limit); history = []; stampAt = null; layout(); }
+function newDeal() { hideOverlay(); D = generate(); S = initState(D, D.limit); history = []; stampAt = null; layout(); }
+
+/* ---------- Rendering ---------- */
+function cardHTML(id, cls = '', attrs = '') {
+  const c = D.CARD[id];
+  if (c.type === 'cat') {
+    const k = D.cats[c.cat];
+    return `<div class="card cat ${cls}" data-id="${id}" ${attrs}><div class="tl">${k.name}</div><div class="mid">${k.name}</div><div class="pill">${k.kind} · ${k.total}</div></div>`;
+  }
+  return `<div class="card ${c.pic ? 'pic' : 'word'} ${c.nba ? 'nba' : ''} ${c.emo ? 'emo' : ''} ${cls}" data-id="${id}" ${attrs}><div class="tl">${c.short || c.text}</div><div class="mid">${c.emo || c.text}</div></div>`;
+}
+function captureRects() {
+  const m = {};
+  $('board').querySelectorAll('[data-id]').forEach(el => m[el.dataset.id] = el.getBoundingClientRect());
+  const g = $('ghost');
+  if (g) g.querySelectorAll('[data-id]').forEach(el => m[el.dataset.id] = el.getBoundingClientRect());
+  return m;
+}
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function flip(before) {
+  if (reduce) return;
+  $('board').querySelectorAll('[data-id]').forEach(el => {
+    const b = before[el.dataset.id]; if (!b) return;
+    const a = el.getBoundingClientRect();
+    const dx = b.left - a.left, dy = b.top - a.top;
+    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+    el.style.zIndex = 5;
+    el.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'translate(0,0)' }],
+      { duration: 240, easing: 'cubic-bezier(.2,.8,.2,1)' }).onfinish = () => el.style.zIndex = '';
+  });
+}
+function render() {
+  if (P && P.dragging) return;   // never rebuild the board under a finger mid-drag
+  const before = captureRects();
+  const n = Object.keys(D.cats).length;
+  const sel = S.sel;
+
+  $('meta').textContent = `Level ${D.level} · ${D.trays} trays · ${n} categories`;
+  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === MODE)));
+  $('moves').innerHTML = `<b>${S.moves}</b><span>moves left</span>`;
+  $('moves').classList.toggle('low', S.moves <= 6);
+  $('undo').disabled = !history.length;
+  $('sorted').innerHTML = Object.keys(D.cats).map(k => `<i class="${S.done.includes(k) ? 'on' : ''}" title="${S.done.includes(k) ? D.cats[k].name : 'Not sorted yet'}"></i>`).join('');
+
+  const fresh = stampAt && Date.now() - stampAt.t < 950;
+  $('trays').innerHTML = S.slots.map((s, i) => {
+    const tgt = '';
+    const stamp = fresh && stampAt.i === i ? `<div class="stamp">${stampAt.name}</div>` : '';
+    if (!s) return `<div class="tray empty ${tgt}" data-slot="${i}"><b>+</b><small>Category</small>${stamp}</div>`;
+    const k = D.cats[s.cat], c = s.items.length;
+    const lc = c ? D.CARD[s.items.at(-1)] : null;
+    const last = c ? `<div class="mini ${k.pic ? 'pic' : ''}" data-id="${s.items.at(-1)}">${lc.short || lc.text}</div>` : '';
+    return `<div class="tray open ${tgt}" data-slot="${i}"><div class="tname">${k.name}</div><div class="prog"><i style="width:${c / k.total * 100}%"></i></div><div class="cnt">${c} of ${k.total}</div>${last}</div>`;
+  }).join('');
+  if (fresh) { const t = stampAt; setTimeout(() => { if (stampAt === t) { stampAt = null; render(); } }, 980); }
+
+  const st = $('stock');
+  st.className = 'stock' + (S.stock.length ? '' : ' empty');
+  st.innerHTML = S.stock.length
+    ? `<div class="card back" data-id="${S.stock[0]}" data-stock></div><span class="count">${S.stock.length}</span>`
+    : (S.waste.length ? '<div><b>↻</b>Flip deck</div>' : '');
+
+  const w = S.waste;
+  let wh = w.length ? '' : '<div class="ph"></div>';
+  const show = w.slice(-3);
+  show.forEach((id, k) => {
+    const top = k === show.length - 1;
+    wh += cardHTML(id, top && sel && sel.from === 'waste' ? 'sel' : '', `style="left:${k * 15}px"${top ? ' data-waste' : ''}`);
+  });
+  $('waste').innerHTML = wh;
+
+  const UP = Math.round(CH * .27), DOWN = Math.round(CH * .085);
+  $('tableau').innerHTML = S.cols.map((col, i) => {
+    let top = 0, html = '';
+    col.forEach((c, idx) => {
+      const isSel = sel && sel.from === 'col' && sel.i === i && idx >= sel.idx;
+      const attrs = `data-col="${i}" data-idx="${idx}" style="top:${top}px"`;
+      html += c.up
+        ? cardHTML(c.id, (isSel ? 'sel ' : '') + (revealIds.has(c.id) ? 'reveal' : ''), attrs)
+        : `<div class="card back" ${attrs}></div>`;
+      if (idx < col.length - 1) top += c.up ? UP : DOWN;
+    });
+    const tgt = '';
+    return `<div class="col ${col.length ? '' : 'empty'} ${tgt}" data-col="${i}" style="height:${top + CH}px">${html}</div>`;
+  }).join('');
+  revealIds.clear();
+  flip(before);
+}
+function layout() {
+  const W = $('app').clientWidth;
+  const gap = W < 420 ? 8 : 12;
+  const cw = Math.floor(Math.min(112, (W - 3 * gap) / 4));
+  const n = D.trays;
+  const tw = Math.floor(Math.min(cw, (W - (n - 1) * gap) / n));
+  CH = Math.round(cw * 1.4);
+  const r = document.documentElement.style;
+  r.setProperty('--gap', gap + 'px'); r.setProperty('--cw', cw + 'px'); r.setProperty('--ch', CH + 'px');
+  r.setProperty('--tw', tw + 'px'); r.setProperty('--th', Math.round(tw * 1.4) + 'px');
+  render();
+}
+
+/* ---------- Pointer: tap + drag ---------- */
+let P = null;
+function infoOf(el) {
+  if (el.hasAttribute('data-stock')) return { kind: 'stock' };
+  if (el.hasAttribute('data-waste')) return { kind: 'waste' };
+  if (el.dataset.slot != null) return { kind: 'slot', i: +el.dataset.slot };
+  return { kind: 'col', i: +el.dataset.col, idx: el.dataset.idx != null ? +el.dataset.idx : null };
+}
+function destAt(x, y) {
+  const el = document.elementFromPoint(x, y)?.closest('[data-slot],[data-col]');
+  if (!el) return null;
+  return el.dataset.slot != null ? { t: 'slot', i: +el.dataset.slot } : { t: 'col', i: +el.dataset.col };
+}
+function markTargets() {}
+function startDrag(e) {
+  P.dragging = true;
+  S.sel = P.src;
+  const els = P.src.from === 'waste'
+    ? [$('waste').querySelector('[data-waste]')]
+    : [...$('tableau').querySelectorAll(`.card[data-col="${P.src.i}"]`)].filter(el => +el.dataset.idx >= P.src.idx);
+  const r0 = els[0].getBoundingClientRect();
+  const g = document.createElement('div');
+  g.id = 'ghost';
+  g.style.cssText = `left:${r0.left}px;top:${r0.top}px;width:${r0.width}px`;
+  els.forEach(el => {
+    const r = el.getBoundingClientRect();
+    const c = el.cloneNode(true);
+    c.classList.remove('sel', 'reveal'); c.classList.add('lift');
+    c.style.top = (r.top - r0.top) + 'px'; c.style.left = '0';
+    g.append(c);
+    el.style.visibility = 'hidden';
+  });
+  document.body.append(g);
+  P.ghost = g;
+  document.querySelectorAll('.card.sel').forEach(el => el.classList.remove('sel'));
+  markTargets();
+}
+function endDrag(p, e) {
+  const d = destAt(e.clientX, e.clientY);
+  if (d && canDrop(S, S.sel, d)) doMove(d);
+  else if (d && !isPointless(d)) miss(d);
+  else { S.sel = null; render(); }
+  p.ghost.remove();
+}
+$('board').addEventListener('pointerdown', e => {
+  if (e.button > 0 || P) return;
+  const el = e.target.closest('[data-stock],[data-waste],[data-slot],[data-col]');
+  if (!el) return;
+  const info = infoOf(el);
+  let src = null;
+  if (info.kind === 'col' && info.idx != null && runAt(S, info.i, info.idx)) src = { from: 'col', i: info.i, idx: info.idx };
+  if (info.kind === 'waste' && S.waste.length) src = { from: 'waste' };
+  P = { pid: e.pointerId, x: e.clientX, y: e.clientY, info, src, dragging: false };
+  try { $('board').setPointerCapture(e.pointerId); } catch (err) {}
+});
+window.addEventListener('pointermove', e => {
+  if (!P || e.pointerId !== P.pid) return;
+  if (!P.dragging) {
+    if (!P.src || Math.hypot(e.clientX - P.x, e.clientY - P.y) < 7) return;
+    startDrag(e);
+  }
+  e.preventDefault();
+  P.ghost.style.transform = `translate(${e.clientX - P.x}px, ${e.clientY - P.y}px)`;
+  const d = destAt(e.clientX, e.clientY);
+  document.querySelectorAll('.hover').forEach(el => el.classList.remove('hover'));
+  if (d && !isPointless(d)) document.querySelector(d.t === 'slot' ? `.tray[data-slot="${d.i}"]` : `.col[data-col="${d.i}"]`)?.classList.add('hover');
+}, { passive: false });
+window.addEventListener('pointerup', e => {
+  if (!P || e.pointerId !== P.pid) return;
+  const p = P; P = null;
+  if (p.dragging) endDrag(p, e); else tap(p.info);
+});
+window.addEventListener('pointercancel', e => {
+  if (!P || e.pointerId !== P.pid) return;
+  const p = P; P = null;
+  if (p.dragging) { S.sel = null; render(); p.ghost.remove(); }
+});
+
+$('undo').addEventListener('click', undo);
+function showStats() {
+  const c = STATS.classic, n = STATS.nba;
+  const pct = s => s.wins + s.losses ? Math.round(100 * s.wins / (s.wins + s.losses)) + '%' : '–';
+  const row = (label, a, b) => `<tr><td>${label}</td><td><b>${a}</b></td><td><b>${b}</b></td></tr>`;
+  const top = Object.entries(n.cleared).sort((x, y) => y[1] - x[1]).slice(0, 5);
+  const body = `<table class="stats"><thead><tr><th></th><th>Classic</th><th>NBA</th></tr></thead><tbody>
+    ${row('Level', LEVEL.classic, LEVEL.nba)}
+    ${row('Best level', Math.max(c.bestLevel, LEVEL.classic), Math.max(n.bestLevel, LEVEL.nba))}
+    ${row('Wins', c.wins, n.wins)}
+    ${row('Losses', c.losses, n.losses)}
+    ${row('Win rate', pct(c), pct(n))}
+    ${row('Streak', c.streak, n.streak)}
+    ${row('Best streak', c.bestStreak, n.bestStreak)}
+    ${row('Most moves to spare', c.bestSpare, n.bestSpare)}
+  </tbody></table>
+  <h3>NBA: most cleared</h3>
+  ${top.length ? `<ol class="toplist">${top.map(([k, v]) => `<li><span>${k}</span><span>${v}×</span></li>`).join('')}</ol>` : '<p style="margin:0 0 16px;text-align:left">Clear an NBA tray to start this list.</p>'}`;
+  showOverlay('Stats', '', [['Close', hideOverlay, true]], body + `<p class="vtag">Consortium · version ${APP_VERSION}</p>`);
+}
+$('statsbtn').addEventListener('click', showStats);
+document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+  if (b.dataset.mode === MODE) return;
+  MODE = b.dataset.mode; store.set('cc-mode', MODE); newDeal();
+}));
+window.addEventListener('pointerdown', e => {
+  if (S && S.sel && !P && !e.target.closest('#board, button, .overlay')) { S.sel = null; render(); }
+});
+$('newdeal').addEventListener('click', newDeal);
+window.addEventListener('resize', () => { if (!P) layout(); });
+
+newDeal();
+
+/* ---------- version + update check (home-screen apps can hold on to an old copy) ---------- */
+const APP_VERSION = '2026-10-29.1200';
+let updateShown = false;
+async function checkForUpdate() {
+  if (updateShown || location.protocol === 'file:') return;
+  try {
+    const resp = await fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' });
+    if (!resp.ok) return;
+    const m = (await resp.text()).match(/const APP_VERSION = '([^']+)'/);
+    if (!m || m[1] <= APP_VERSION) return;
+    updateShown = true;
+    const bar = document.createElement('button');
+    bar.className = 'updatebar'; bar.type = 'button';
+    bar.innerHTML = '<b>New version ready</b><span>Tap to update</span>';
+    bar.onclick = () => location.replace(location.pathname + '?v=' + encodeURIComponent(m[1]));
+    document.body.appendChild(bar);
+  } catch (e) { /* offline: try again next time */ }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkForUpdate(); });
+if (store.get('cc-lastVersion', null) && store.get('cc-lastVersion', null) !== APP_VERSION) toast('Updated to version ' + APP_VERSION);
+store.set('cc-lastVersion', APP_VERSION);
+if (location.search.includes('v=')) history.replaceState(null, '', location.pathname);
+checkForUpdate();
+</script>
+</body>
+</html>
