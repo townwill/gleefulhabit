@@ -156,7 +156,7 @@
 <script>
 (()=>{
 // ---------- constants ----------
-const APP_VERSION = '2026-11-09.2350';
+const APP_VERSION = '2026-11-10.0900';
 const W=360, LH=560, H=700, CS=4, GW=W/CS, GH=LH/CS;
 const EMPTY=0, DIRT=1, ROCK=2;
 const MAXP=600, PR=3.2, HR=6.2;        // particle draw radius, interaction radius
@@ -172,7 +172,7 @@ let np=0;
 let hardMode=false, waterScale=1; try{hardMode=localStorage.getItem('capy_hard')==='1';}catch(e){}
 const HARD_SCALE=/*HARD*/{"First Dig": 0.35, "Around the Rocks": 0.35, "Plug the Leak": 0.55, "Rockslide": 1, "Two Pools": 0.75, "Thirsty Moss": 0.7, "Bucket Gate": 0.6, "Floodgate": 0.65, "Leaf Lever": 0.6, "Spring Garden": 0.75, "Bamboo Bends": 0.45, "Pipe Puzzle": 0.4, "The Leap": 0.5, "Leap and Land": 0.65, "Balancing Act": 1, "Tortoise Crossing": 0.7, "Rush Hour": 0.75, "Tip and Jump": 0.95, "Two Springs": 1, "The Grand Spring": 0.7}/*END*/;
 const lvKey=n=>hardMode?n+' (hard)':n;
-function hardUnlocked(){ return unlockAll||allScores().some(v=>v.level==='The Grand Spring'); }
+function hardUnlocked(){ return unlockAll||allScores().some(v=>v.level==='The Grand Spring')||profiles.some(p=>!!(LS.get('capy_best_'+p.id,{})['The Grand Spring'])); }
 let L=null, levelIdx=0, fill=0, terrainDirty=true, fieldDirty=true, state='play', stateT=0, showLabels=false, frame=0;
 
 // ---------- art ----------
@@ -735,11 +735,11 @@ function initL(){
 let oldSnap=null;
 function sendDown(){ // carry what's in the staging pool down to the next layer
   const D=LEVELS[levelIdx], k=L.tierIdx+1; if(!D.tiers||k>=D.tiers.length||L.shiftT>0)return;
-  const n=Math.min(L.stage.max||9999,L.stageN), got=L.yuzu.filter(y=>y.got);
+  const n=Math.min(L.stage.max||9999,L.stageN), prev=L.yuzu.slice();
   try{ oldSnap=document.createElement('canvas'); oldSnap.width=cv.width; oldSnap.height=cv.height; oldSnap.getContext('2d').drawImage(cv,0,0); }catch(e){oldSnap=null;}
   np=0; pipeQ=[]; falls=[];
   L=D.tiers[k].build(n); L.tierIdx=k; initL(); L.need=D.need; L.name=D.name; L.key=lvKey(D.name); L.hint=D.tiers[k].hint;
-  for(const y of got)L.yuzu.push({x:-999,y:-999,hidden:y.hidden,got:true,pop:99});
+  for(const y of prev)L.yuzu.push({x:-999,y:-999,hidden:y.hidden,got:!!y.got,pop:y.got?99:null,gone:true});
   L.shiftT=48; updateYuzuHud(); SFX.whoosh();
 }
 let hintT=0, lostRecently=0, dropAnim=0, falls=[], ripples=[], timerOn=false, tFrames=0;
@@ -979,7 +979,7 @@ function stepWater(){
   }
   if(L.stage){ const g=L.stage; let c=0; for(let i=0;i<np;i++)if(px[i]>g.x&&px[i]<g.x+g.w&&py[i]>g.y&&py[i]<g.y+g.h)c++; L.stageN=c; }
   // yuzu
-  if(frame%4===0) for(const yz of L.yuzu){ if(yz.got)continue;
+  if(frame%4===0) for(const yz of L.yuzu){ if(yz.got||yz.gone)continue;
     if(yz.hidden){ if(!solidAt(yz.x,yz.y)){yz.got=true;updateYuzuHud();SFX.golden();} continue; } // golden yuzu: dig it out
     for(let i=0;i<np;i++){const dx=px[i]-yz.x,dy=py[i]-yz.y; if(dx*dx+dy*dy<196){yz.got=true;updateYuzuHud();SFX.yuzu();break;}}}
 }
@@ -1217,7 +1217,7 @@ function draw(t){
     ctx.fillStyle='#2b3a2f'; ctx.fillText(tg.full?'full!':(tg.got+'/'+tg.need),tg.x+tg.w/2,tg.y+tg.h+14.5);
   }
   // yuzu
-  for(const y of L.yuzu){
+  for(const y of L.yuzu){ if(y.gone)continue;
     if(y.got){ // quick pop + sparkle when collected
       if(y.pop==null)y.pop=0; if(y.pop<24){y.pop++; const im=PROP_IMG.yuzu_sparkle, k=y.pop/24;
         if(ready(im)){ctx.globalAlpha=1-k; const w=22*(1+k*0.8), h=w*PROP_ART.yuzu_sparkle.h/PROP_ART.yuzu_sparkle.w; ctx.drawImage(im,y.x-w/2,y.y-h/2-k*14,w,h); ctx.globalAlpha=1;}}
@@ -1385,7 +1385,7 @@ function showResult(){
     document.getElementById('resTitle').innerHTML=`<div class="stars">${starHtml(st)}</div>`+(st===4?'Golden bath! A friend came too.':'Ahh, bath time!');
     document.getElementById('resText').innerHTML=`Yuzu ${n} / 4 · Time ${fmtTime(time)}`+
       (isNew&&wasBest!=null?' · <b>New best!</b>':wasBest!=null?` · Best ${fmtTime(Math.min(wasBest,time))}`:'')+
-      (n===3&&!L.yuzu.find(y=>y.hidden).got?'<br><small>A golden yuzu is buried somewhere. Watch for a glint and dig it out.</small>':'');
+      (n===3&&!(L.yuzu.find(y=>y.hidden)||{got:true}).got?'<br><small>A golden yuzu is buried somewhere. Watch for a glint and dig it out.</small>':'');
     document.getElementById('resNext').style.display=levelIdx<LEVELS.length-1?'':'none';
     if(hardNew){ document.getElementById('resText').innerHTML+='<br><b>🔥 Hard mode unlocked!</b> Turn it on in the level menu.'; SFX.golden(); }
     const me=curProfile(), prevRec=recordFor(L.key);
