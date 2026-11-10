@@ -122,7 +122,6 @@
   <p>Finish for ★, grab yuzu for more, dig out the hidden golden one for ★★★★.</p>
   <div id="tabs"></div>
   <div id="lvlList"></div>
-  <div class="wf"><a href="#" id="lnkLabels">Show art labels</a></div>
 </div></div>
 
 <div class="overlay" id="profiles"><div class="card menu">
@@ -156,7 +155,7 @@
 <script>
 (()=>{
 // ---------- constants ----------
-const APP_VERSION = '2026-11-09.2346';
+const APP_VERSION = '2026-11-09.2347';
 const W=360, LH=560, H=700, CS=4, GW=W/CS, GH=LH/CS;
 const EMPTY=0, DIRT=1, ROCK=2;
 const MAXP=600, PR=3.2, HR=6.2;        // particle draw radius, interaction radius
@@ -1534,7 +1533,7 @@ function esc(t){return String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;',
 document.getElementById('btnRestart').onclick=()=>loadLevel(levelIdx);
 document.getElementById('btnSound').textContent=SFX.isOn()?'🔊':'🔇';
 document.getElementById('btnSound').onclick=()=>{document.getElementById('btnSound').textContent=SFX.toggle()?'🔊':'🔇';};
-document.getElementById('lnkLabels').onclick=e=>{e.preventDefault(); showLabels=!showLabels; e.target.textContent=showLabels?'Hide art labels':'Show art labels';};
+
 document.getElementById('resRetry').onclick=()=>loadLevel(levelIdx);
 document.getElementById('resNext').onclick=()=>loadLevel(Math.min(LEVELS.length-1,levelIdx+1));
 
