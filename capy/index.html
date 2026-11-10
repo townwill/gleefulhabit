@@ -120,6 +120,7 @@
   <h2>Capy Springs</h2>
   <div class="who"><span class="av" id="whoAv"></span><b id="whoName"></b><button class="alt sm" id="btnSwitch">Switch</button><button class="sm" id="btnLeader">🏆 Leaderboard</button></div>
   <p>Finish for ★, grab yuzu for more, dig out the hidden golden one for ★★★★.</p>
+  <button id="btnHard" style="display:none;width:100%;margin:0 0 8px;height:38px"></button>
   <div id="tabs"></div>
   <div id="lvlList"></div>
 </div></div>
@@ -155,7 +156,7 @@
 <script>
 (()=>{
 // ---------- constants ----------
-const APP_VERSION = '2026-11-09.2347';
+const APP_VERSION = '2026-11-09.2350';
 const W=360, LH=560, H=700, CS=4, GW=W/CS, GH=LH/CS;
 const EMPTY=0, DIRT=1, ROCK=2;
 const MAXP=600, PR=3.2, HR=6.2;        // particle draw radius, interaction radius
@@ -168,6 +169,10 @@ const tctx=terr.getContext('2d');
 let grid=new Uint8Array(GW*GH);
 const px=new Float32Array(MAXP), py=new Float32Array(MAXP), vx=new Float32Array(MAXP), vy=new Float32Array(MAXP);
 let np=0;
+let hardMode=false, waterScale=1; try{hardMode=localStorage.getItem('capy_hard')==='1';}catch(e){}
+const HARD_SCALE=/*HARD*/{"First Dig": 0.35, "Around the Rocks": 0.35, "Plug the Leak": 0.55, "Rockslide": 1, "Two Pools": 0.75, "Thirsty Moss": 0.7, "Bucket Gate": 0.6, "Floodgate": 0.65, "Leaf Lever": 0.6, "Spring Garden": 0.75, "Bamboo Bends": 0.45, "Pipe Puzzle": 0.4, "The Leap": 0.5, "Leap and Land": 0.65, "Balancing Act": 1, "Tortoise Crossing": 0.7, "Rush Hour": 0.75, "Tip and Jump": 0.95, "Two Springs": 1, "The Grand Spring": 0.7}/*END*/;
+const lvKey=n=>hardMode?n+' (hard)':n;
+function hardUnlocked(){ return unlockAll||allScores().some(v=>v.level==='The Grand Spring'); }
 let L=null, levelIdx=0, fill=0, terrainDirty=true, fieldDirty=true, state='play', stateT=0, showLabels=false, frame=0;
 
 // ---------- art ----------
@@ -259,7 +264,7 @@ function addProfile(name){
   profiles.push(p); LS.set('capy_profiles',profiles); mergeFromDb(); return p;
 }
 function mergeFromDb(){ // every win is in the run history, so rebuild stars/unlocks from it if progress went missing
-  const known=new Set(LEVELS.map(l=>l.name));
+  const known=new Set(LEVELS.flatMap(l=>[l.name,l.name+' (hard)']));
   for(const p of profiles){ const key='capy_best_'+p.id, b=LS.get(key,{}); let changed=false;
     for(const v of allScores()){ if(String(v.player).toLowerCase()!==p.name.toLowerCase()||!known.has(v.level))continue;
       const e=b[v.level]; const st=Math.min(4,Math.max(1,v.stars|0));
@@ -321,7 +326,8 @@ function lake(x0,x1){ // open the bottom edge here: water that falls through lan
 }
 function border(){rect(0,0,W,8,ROCK);rect(0,0,8,LH,ROCK);rect(W-8,0,8,LH,ROCK);rect(0,LH-10,W,10,ROCK);}
 
-function spawnWater(x,yBottom,w,n){
+function spawnWater(x,yBottom,w,n,carried){
+  if(!carried&&waterScale!==1)n=Math.max(1,Math.round(n*waterScale));
   const cols=Math.floor(w/5.6); let k=0;
   for(let r=0;k<n;r++)for(let c=0;c<cols&&k<n;c++,k++){
     if(np>=MAXP)return;
@@ -563,7 +569,7 @@ const LEVELS=[
    yz.push({x:341,y:230,hidden:true});
    spawnWater(66,384,228,170);
    return {intake:it, yuzu:yz, gates:[], boulders:[], moss:[],
-     springs:[{x:180,y:68,total:115,every:3}],
+     springs:[{x:180,y:68,total:115,every:3,mech:true}],
      leaves:[{x:180,y:142,len:100,angA:-0.34,angB:0.34}],
      balances:[{x:180,y:210,half:106,floor:296,need:30,tol:7,door:'flower'}],
      doors:[{id:'flower',x:158,y:388,w:44,h:12,dx:-46,dy:0}]};
@@ -617,7 +623,7 @@ const LEVELS=[
    spawnWater(32,334,134,150);
    return {intake:it, yuzu:yz, gates:[], boulders:[],
      moss:[{x:212,y:524,w:32,h:26,cap:9999,got:0,drain:true}],
-     springs:[{x:180,y:54,total:115,every:3}],
+     springs:[{x:180,y:54,total:115,every:3,mech:true}],
      leaves:[{x:180,y:122,len:100,angA:-0.34,angB:0.34}],
      balances:[{x:180,y:186,half:106,floor:262,need:30,tol:7,door:'flower'}],
      doors:[{id:'flower',x:88,y:336,w:40,h:11,dx:-42,dy:0}]};
@@ -675,7 +681,7 @@ const LEVELS=[
    rect(150,462,10,88,ROCK); rect(14,460,146,8,ROCK); rect(40,460,90,8,EMPTY); rect(22,468,128,82,EMPTY); // staging pool
    const yz=[{x:312,y:346}];
    yz.forEach(p=>circ(p.x,p.y,9,EMPTY));
-   spawnWater(110,108,140,n);
+   spawnWater(110,108,140,n,true);
    return {intake:{x:-99,y:-99,w:0,h:0}, stage:{x:22,y:468,w:128,h:82,max:170}, yuzu:yz, gates:[], boulders:[], moss:[],
      pipes:[{x:160,y:150,kind:'s',r:0,rot:true,slow:5}],
      movers:[{x0:12,x1:348,y:246,speed:0.5,x:20,dir:1},{x0:12,x1:348,y:246,speed:0.5,x:180,dir:1}]};
@@ -692,10 +698,10 @@ const LEVELS=[
    const it=lake(264,340);
    const yz=[{x:64,y:374}];
    yz.forEach(p=>circ(p.x,p.y,9,EMPTY));
-   spawnWater(32,334,134,n);
+   spawnWater(32,334,134,n,true);
    return {intake:it, yuzu:yz, gates:[], boulders:[],
      moss:[{x:212,y:524,w:32,h:26,cap:9999,got:0,drain:true}],
-     springs:[{x:180,y:54,total:115,every:3}],
+     springs:[{x:180,y:54,total:115,every:3,mech:true}],
      leaves:[{x:180,y:122,len:100,angA:-0.34,angB:0.34}],
      balances:[{x:180,y:186,half:106,floor:262,need:30,tol:7,door:'flower'}],
      doors:[{id:'flower',x:88,y:336,w:40,h:11,dx:-42,dy:0}]};
@@ -704,8 +710,11 @@ const LEVELS=[
 
 function loadLevel(i){
   levelIdx=i; np=0; fill=0; state='play'; stateT=0; lostRecently=0; dropAnim=0; falls=[]; ripples=[]; timerOn=false; tFrames=0;
-  const D=LEVELS[i]; L=D.tiers?D.tiers[0].build(0):D.build(); L.tierIdx=0; initL(); L.need=D.need; L.name=D.name; L.hint=D.tiers?D.tiers[0].hint:D.hint;
-  document.getElementById('lvlName').textContent=(i+1)+' · '+L.name;
+  if(hardMode&&!hardUnlocked())hardMode=false;
+  waterScale=hardMode?(HARD_SCALE[LEVELS[i].name]||0.7):1;
+  const D=LEVELS[i]; L=D.tiers?D.tiers[0].build(0):D.build(); L.tierIdx=0; initL(); L.need=D.need; L.name=D.name; L.key=lvKey(D.name); L.hint=D.tiers?D.tiers[0].hint:D.hint;
+  if(hardMode)L.hint='🔥 Hard mode: just enough water, so don\'t waste a drop. '+L.hint;
+  document.getElementById('lvlName').textContent=(i+1)+' · '+L.name+(hardMode?' 🔥':'');
   updateYuzuHud();
   hide('result'); hide('menu');
 }
@@ -717,7 +726,7 @@ function initL(){
   L.pipes=L.pipes||[]; pipeQ=[]; L.pipeUsed=false; L.pipes.forEach(p=>{p.nextT=0;p.turns=p.r||0;p.vis=p.turns;pipeSetup(p);});
   L.balances=L.balances||[]; L.balances.forEach(b=>{b.gL=0;b.gR=0;b.ang=0;b.hold=0;b.done=false;b.wait=0;});
   L.movers=L.movers||[]; L.movers.forEach(m=>{m.drank=0;m.drinkT=0;m.w=52;m.h=28;}); L.why='';
-  L.springs=L.springs||[]; L.springs.forEach(sp=>{sp.left=sp.total;sp.t=0;sp.wasOn=false;});
+  L.springs=L.springs||[]; L.springs.forEach(sp=>{if(waterScale!==1&&!sp.mech)sp.total=Math.max(1,Math.round(sp.total*waterScale)); sp.left=sp.total;sp.t=0;sp.wasOn=false;});
   L.triggers.forEach(t=>{t.got=0;t.full=false;});
   L.doors.forEach(d=>{d.x0=d.x;d.y0=d.y;d.t=0;d.open=false;d.gone=false;});
   L.moss.forEach(m=>{m.flash=0;});
@@ -729,7 +738,7 @@ function sendDown(){ // carry what's in the staging pool down to the next layer
   const n=Math.min(L.stage.max||9999,L.stageN), got=L.yuzu.filter(y=>y.got);
   try{ oldSnap=document.createElement('canvas'); oldSnap.width=cv.width; oldSnap.height=cv.height; oldSnap.getContext('2d').drawImage(cv,0,0); }catch(e){oldSnap=null;}
   np=0; pipeQ=[]; falls=[];
-  L=D.tiers[k].build(n); L.tierIdx=k; initL(); L.need=D.need; L.name=D.name; L.hint=D.tiers[k].hint;
+  L=D.tiers[k].build(n); L.tierIdx=k; initL(); L.need=D.need; L.name=D.name; L.key=lvKey(D.name); L.hint=D.tiers[k].hint;
   for(const y of got)L.yuzu.push({x:-999,y:-999,hidden:y.hidden,got:true,pop:99});
   L.shiftT=48; updateYuzuHud(); SFX.whoosh();
 }
@@ -1371,15 +1380,16 @@ function checkState(){
 }
 function showResult(){
   const n=L.yuzu.filter(y=>y.got).length;
-  if(state==='win'){ const st=starsFor(n), time=tFrames/60, wasBest=(best[L.name]||{}).time, isNew=saveBest(L.name,st,time);
+  if(state==='win'){ const st=starsFor(n), time=tFrames/60, wasBest=(best[L.key]||{}).time, isNew=saveBest(L.key,st,time); const hardNew=!hardMode&&L.name==='The Grand Spring'&&!allScores().some(v=>v.level==='The Grand Spring');
     setResArt(st===4?['sprite:pair']:['sprite:bath']);
     document.getElementById('resTitle').innerHTML=`<div class="stars">${starHtml(st)}</div>`+(st===4?'Golden bath! A friend came too.':'Ahh, bath time!');
     document.getElementById('resText').innerHTML=`Yuzu ${n} / 4 · Time ${fmtTime(time)}`+
       (isNew&&wasBest!=null?' · <b>New best!</b>':wasBest!=null?` · Best ${fmtTime(Math.min(wasBest,time))}`:'')+
       (n===3&&!L.yuzu.find(y=>y.hidden).got?'<br><small>A golden yuzu is buried somewhere. Watch for a glint and dig it out.</small>':'');
     document.getElementById('resNext').style.display=levelIdx<LEVELS.length-1?'':'none';
-    const me=curProfile(), prevRec=recordFor(L.name);
-    lastRun={level:L.name,player:me?me.name:'?',time:Math.round(time*10)/10,stars:st,at:Date.now()};
+    if(hardNew){ document.getElementById('resText').innerHTML+='<br><b>🔥 Hard mode unlocked!</b> Turn it on in the level menu.'; SFX.golden(); }
+    const me=curProfile(), prevRec=recordFor(L.key);
+    lastRun={level:L.key,player:me?me.name:'?',time:Math.round(time*10)/10,stars:st,at:Date.now()};
     saveRun(lastRun);
     if(prevRec&&lastRun.time<prevRec.time&&prevRec.player!==lastRun.player)document.getElementById('resText').innerHTML+=`<br><b>New family record!</b> You beat ${esc(prevRec.player)}.`;
     document.getElementById('board').style.display=''; renderBoard();
@@ -1401,7 +1411,7 @@ function showResult(){
 let lastRun=null;
 function renderBoard(){
   const box=document.getElementById('boardList'); if(!box||!L)return;
-  const rows=playerBests(L.name);
+  const rows=playerBests(L.key);
   box.innerHTML=(rows.length?'<div class="boardHead">Family best times</div>':'')+
     rows.map((v,i)=>`<li class="${lastRun&&v.player===lastRun.player?'me':''}"><span class="rk">${i===0?'👑':i+1}</span><span class="in">${esc(v.player)}</span><span class="st">${'★'.repeat(Math.min(v.stars,4))}</span><span>${fmtTime(v.time)}</span></li>`).join('');
 }
@@ -1443,7 +1453,7 @@ function resetPlayer(p){ // wipe one player's stars, unlocks and times (on this 
   LS.set('capy_best_'+p.id,{}); if(p.id===curId)best={};
   localScores=localScores.filter(v=>(v.player||v.initials)!==p.name); LS.set('capy_scores',localScores);
 }
-function nextLevelFor(){ for(let i=0;i<LEVELS.length;i++)if(!best[LEVELS[i].name])return i; return 0; }
+function nextLevelFor(){ for(let i=0;i<LEVELS.length;i++)if(!best[lvKey(LEVELS[i].name)])return i; return 0; }
 document.getElementById('addProf').onclick=()=>{ const inp=document.getElementById('newName'); const p=addProfile(inp.value); if(!p){inp.focus();return;} inp.value=''; setProfile(p.id); SFX.ensure(); SFX.tap(); loadLevel(0); buildMenu(); };
 document.getElementById('newName').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('addProf').click();});
 document.getElementById('btnSwitch').onclick=buildProfiles;
@@ -1455,7 +1465,7 @@ function buildLeader(){
   const tot={}; names.forEach(n=>tot[n]={stars:0,done:0,first:0});
   let html='<table class="lb"><thead><tr><th style="text-align:left">Level</th>'+names.map(n=>`<th><span class="av" style="background:${colorOf(n)};width:24px;height:24px;font-size:12px">${esc(n[0].toUpperCase())}</span><br>${esc(n)}</th>`).join('')+'</tr></thead><tbody>';
   LEVELS.forEach((lv,i)=>{
-    const pb=playerBests(lv.name), top=pb[0];
+    const pb=playerBests(lvKey(lv.name)), top=pb[0];
     html+=`<tr><td class="lv">${i+1} · ${esc(lv.name)}</td>`+names.map(n=>{
       const e=pb.find(v=>v.player===n); if(!e)return '<td class="dim">–</td>';
       tot[n].stars+=Math.min(e.stars,4); tot[n].done++; if(top&&top.player===n)tot[n].first++;
@@ -1502,7 +1512,7 @@ function setResArt([a,b,mode]){ // 'sprite' = painted bath loop; otherwise one i
 function show(id){document.getElementById(id).classList.add('show')}
 function hide(id){document.getElementById(id).classList.remove('show')}
 let unlockAll=false; try{unlockAll=localStorage.getItem('capy_unlock_all')==='1';}catch(e){}
-function isUnlocked(i){ return unlockAll||i===0||!!best[LEVELS[i-1].name]; }
+function isUnlocked(i){ return unlockAll||i===0||!!best[lvKey(LEVELS[i-1].name)]; }
 let menuTab=0;
 function buildMenu(tab){
   const me=curProfile(); if(!me){buildProfiles();return;}
@@ -1512,12 +1522,17 @@ function buildMenu(tab){
   document.getElementById('whoName').textContent=me.name;
   const tabs=document.getElementById('tabs'); tabs.innerHTML=''; const nt=Math.ceil(LEVELS.length/10);
   for(let k=0;k<nt;k++){ const tb=document.createElement('button'); if(k===menuTab)tb.className='on';
-    let st=0; for(let i=k*10;i<Math.min(LEVELS.length,k*10+10);i++)st+=(best[LEVELS[i].name]||{stars:0}).stars;
+    let st=0; for(let i=k*10;i<Math.min(LEVELS.length,k*10+10);i++)st+=(best[lvKey(LEVELS[i].name)]||{stars:0}).stars;
     tb.innerHTML=`${k*10+1}–${k*10+10}<small>★${st}</small>`; tb.onclick=()=>{SFX.ensure();SFX.tap();buildMenu(k);}; tabs.appendChild(tb); }
   tabs.style.display=nt>1?'':'none';
+  const hb=document.getElementById('btnHard'), hu=hardUnlocked(); hb.style.display=hu?'':'none';
+  hb.textContent=hardMode?'🔥 Hard mode: ON · tap for normal':'🔥 Hard mode: off · tap to turn on';
+  hb.style.background=hardMode?'#c0392b':'#e9e1cf'; hb.style.color=hardMode?'#fff':'#5b5343';
+  hb.onclick=()=>{ SFX.ensure(); SFX.tap(); hardMode=!hardMode; try{localStorage.setItem('capy_hard',hardMode?'1':'0');}catch(e){} buildMenu(Math.floor(nextLevelFor()/10)); };
+  document.querySelector('#menu h2').textContent=hardMode?'Capy Springs 🔥':'Capy Springs';
   const list=document.getElementById('lvlList'); list.innerHTML=''; list.scrollTop=0;
   LEVELS.forEach((lv,i)=>{ if(Math.floor(i/10)!==menuTab)return; const b=document.createElement('button'); b.className='lvl';
-    const bb=best[lv.name], rec=recordFor(lv.name), open=isUnlocked(i);
+    const bb=best[lvKey(lv.name)], rec=recordFor(lvKey(lv.name)), open=isUnlocked(i);
     const meta=!open?'🔒':(bb?`<div class="stars" style="font-size:15px;letter-spacing:1px;margin:0">${starHtml(bb.stars)}</div>`:'new')+
       (rec?`<div>🏆 ${fmtTime(rec.time)} ${esc(rec.player)}</div>`:'');
     if(!open)b.classList.add('locked');
