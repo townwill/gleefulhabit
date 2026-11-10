@@ -156,7 +156,7 @@
 <script>
 (()=>{
 // ---------- constants ----------
-const APP_VERSION = '2026-11-09.2300';
+const APP_VERSION = '2026-11-09.2345';
 const W=360, LH=560, H=700, CS=4, GW=W/CS, GH=LH/CS;
 const EMPTY=0, DIRT=1, ROCK=2;
 const MAXP=600, PR=3.2, HR=6.2;        // particle draw radius, interaction radius
@@ -647,12 +647,71 @@ const LEVELS=[
      triggers:[{x:24,y:346,w:50,h:40,need:40,door:'leaf',zone:[0,176]}],
      doors:[{id:'leaf',x:248,y:130,w:44,h:12,dx:46,dy:0}]};
  }},
+ {name:'The Grand Spring', hint:'Three layers deep. Fill the stone pool at the bottom, then send the water down.', need:75, tiers:[
+  {hint:'Layer 1 of 3: the little pool fills the bucket, the bucket opens the big pool. Gather it all in the stone pool.', build(n){
+   grid.fill(DIRT); border();
+   blob(22,22,108,88,ROCK); blob(32,32,88,68,EMPTY); rect(58,94,36,16,EMPTY);   // small pool, open drain
+   rect(36,214,58,46,EMPTY); rect(28,260,74,10,ROCK);                    // bucket on a shelf
+   blob(166,18,190,136,ROCK); blob(178,28,166,104,EMPTY);                // big pool…
+   rect(236,128,58,26,EMPTY);                                            // …with a gated drain
+   blob(176,330,150,60,ROCK);                                            // rock island
+   rect(150,462,10,88,ROCK); rect(14,460,146,8,ROCK); rect(40,460,90,8,EMPTY); rect(22,468,128,82,EMPTY); // the stone staging pool
+   const yz=[{x:300,y:250}];
+   yz.forEach(p=>circ(p.x,p.y,9,EMPTY));
+   yz.push({x:330,y:520,hidden:true});
+   spawnWater(36,98,80,60); spawnWater(182,128,160,190);
+   return {intake:{x:-99,y:-99,w:0,h:0}, stage:{x:22,y:468,w:128,h:82,max:220}, yuzu:yz, gates:[], boulders:[], moss:[],
+     triggers:[{x:40,y:220,w:50,h:40,need:35,door:'flower'}],
+     doors:[{id:'flower',x:236,y:128,w:58,h:26,dx:-60,dy:0}]};
+  }},
+  {hint:'Layer 2 of 3: two tortoises patrol below. Tap the bamboo to let water through only when the way is clear.', build(n){
+   grid.fill(DIRT); border();
+   blob(100,26,160,84,EMPTY);                                   // your water arrives here
+   rect(8,150,344,40,ROCK);                                     // rock band with one bamboo valve
+   rect(8,190,344,56,EMPTY);                                    // tunnel
+   rect(8,246,344,12,ROCK); rect(164,246,32,12,EMPTY);          // floor with a crack under the valve
+   circ(180,274,14,EMPTY);
+   ledge(196,312,282,334,9,ROCK);
+   ledge(352,362,150,402,11,ROCK);
+   rect(150,462,10,88,ROCK); rect(14,460,146,8,ROCK); rect(40,460,90,8,EMPTY); rect(22,468,128,82,EMPTY); // staging pool
+   const yz=[{x:312,y:346}];
+   yz.forEach(p=>circ(p.x,p.y,9,EMPTY));
+   spawnWater(110,108,140,n);
+   return {intake:{x:-99,y:-99,w:0,h:0}, stage:{x:22,y:468,w:128,h:82,max:170}, yuzu:yz, gates:[], boulders:[], moss:[],
+     pipes:[{x:160,y:150,kind:'s',r:0,rot:true,slow:5}],
+     movers:[{x0:12,x1:348,y:246,speed:0.5,x:20,dir:1},{x0:12,x1:348,y:246,speed:0.5,x:180,dir:1}]};
+  }},
+  {hint:'Layer 3 of 3: dig the slide first. Then balance the gourds to open the pool, and the water leaps to the capybara.', build(n){
+   grid.fill(DIRT); border();
+   blob(150,16,60,44,ROCK); rect(172,50,16,10,EMPTY);           // spring rock
+   rect(40,84,280,178,EMPTY); rect(8,262,344,10,ROCK);          // balance cave
+   rect(14,272,170,76,ROCK); blob(22,278,154,60,EMPTY);         // your water, sealed in rock
+   rect(90,334,36,14,EMPTY);                                    // trapdoor hole
+   rect(184,272,72,74,ROCK);
+   rect(212,346,32,204,EMPTY); rect(196,440,16,120,ROCK); rect(244,346,12,94,ROCK); rect(244,520,12,40,ROCK);
+   rect(244,440,102,95,EMPTY);                                  // landing cave, straight over the pond
+   const it=lake(264,340);
+   const yz=[{x:64,y:374}];
+   yz.forEach(p=>circ(p.x,p.y,9,EMPTY));
+   spawnWater(32,334,134,n);
+   return {intake:it, yuzu:yz, gates:[], boulders:[],
+     moss:[{x:212,y:524,w:32,h:26,cap:9999,got:0,drain:true}],
+     springs:[{x:180,y:54,total:115,every:3}],
+     leaves:[{x:180,y:122,len:100,angA:-0.34,angB:0.34}],
+     balances:[{x:180,y:186,half:106,floor:262,need:30,tol:7,door:'flower'}],
+     doors:[{id:'flower',x:88,y:336,w:40,h:11,dx:-42,dy:0}]};
+  }}]},
 ];
 
 function loadLevel(i){
   levelIdx=i; np=0; fill=0; state='play'; stateT=0; lostRecently=0; dropAnim=0; falls=[]; ripples=[]; timerOn=false; tFrames=0;
-  L=LEVELS[i].build(); L.need=LEVELS[i].need; L.name=LEVELS[i].name; L.hint=LEVELS[i].hint;
-  L.yuzu.forEach(y=>{y.got=false;y.pop=null;});
+  const D=LEVELS[i]; L=D.tiers?D.tiers[0].build(0):D.build(); L.tierIdx=0; initL(); L.need=D.need; L.name=D.name; L.hint=D.tiers?D.tiers[0].hint:D.hint;
+  document.getElementById('lvlName').textContent=(i+1)+' · '+L.name;
+  updateYuzuHud();
+  hide('result'); hide('menu');
+}
+function initL(){
+  L.yuzu.forEach(y=>{y.got=false;y.pop=null;}); L.stageN=0; L.shiftT=0;
   L.logs=L.logs||[]; L.logs.forEach(l=>l.vy=0);
   L.triggers=L.triggers||[]; L.doors=L.doors||[]; L.leaves=L.leaves||[];
   L.leaves.forEach(l=>{l.ang=l.angA;l.flip=false;l.used=false;});
@@ -664,9 +723,16 @@ function loadLevel(i){
   L.doors.forEach(d=>{d.x0=d.x;d.y0=d.y;d.t=0;d.open=false;d.gone=false;});
   L.moss.forEach(m=>{m.flash=0;});
   rebuildField(); fieldDirty=false; terrainDirty=true; hintT=300;
-  document.getElementById('lvlName').textContent=(i+1)+' · '+L.name;
-  updateYuzuHud();
-  hide('result'); hide('menu');
+}
+let oldSnap=null;
+function sendDown(){ // carry what's in the staging pool down to the next layer
+  const D=LEVELS[levelIdx], k=L.tierIdx+1; if(!D.tiers||k>=D.tiers.length||L.shiftT>0)return;
+  const n=Math.min(L.stage.max||9999,L.stageN), got=L.yuzu.filter(y=>y.got);
+  try{ oldSnap=document.createElement('canvas'); oldSnap.width=cv.width; oldSnap.height=cv.height; oldSnap.getContext('2d').drawImage(cv,0,0); }catch(e){oldSnap=null;}
+  np=0; pipeQ=[]; falls=[];
+  L=D.tiers[k].build(n); L.tierIdx=k; initL(); L.need=D.need; L.name=D.name; L.hint=D.tiers[k].hint;
+  for(const y of got)L.yuzu.push({x:-999,y:-999,hidden:y.hidden,got:true,pop:99});
+  L.shiftT=48; updateYuzuHud(); SFX.whoosh();
 }
 let hintT=0, lostRecently=0, dropAnim=0, falls=[], ripples=[], timerOn=false, tFrames=0;
 
@@ -903,6 +969,7 @@ function stepWater(){
     if(gone)continue;
     if(y>LH+20||y<-20||x<-20||x>W+20)removeP(i);
   }
+  if(L.stage){ const g=L.stage; let c=0; for(let i=0;i<np;i++)if(px[i]>g.x&&px[i]<g.x+g.w&&py[i]>g.y&&py[i]<g.y+g.h)c++; L.stageN=c; }
   // yuzu
   if(frame%4===0) for(const yz of L.yuzu){ if(yz.got)continue;
     if(yz.hidden){ if(!solidAt(yz.x,yz.y)){yz.got=true;updateYuzuHud();SFX.golden();} continue; } // golden yuzu: dig it out
@@ -923,6 +990,7 @@ function digAt(x,y){
 cv.addEventListener('pointerdown',e=>{
   e.preventDefault(); cv.setPointerCapture(e.pointerId); SFX.ensure();
   const p=toWorld(e); hintT=0; if(state==='play')timerOn=true;
+  if(L.stage&&state==='play'&&L.stageN>0&&p.y>LH+44&&p.y<LH+100&&p.x<236){ sendDown(); ptr={id:e.pointerId,tap:true}; return; }
   for(const q of L.pipes){ if(q.rot&&p.x>q.x-3&&p.x<q.x+PT+3&&p.y>q.y-3&&p.y<q.y+PT+3){ q.turns++; pipeSetup(q); L.pipeUsed=true; SFX.clack(); ptr={id:e.pointerId,tap:true}; return; } }
   for(const l of L.leaves){ const [kx,ky]=leafKnob(l);
     if(Math.hypot(p.x-kx,p.y-ky)<26||Math.hypot(p.x-l.x,p.y-l.y)<30){ l.flip=!l.flip; l.used=true; SFX.whoosh(); ptr={id:e.pointerId,tap:true}; return; } }
@@ -1269,7 +1337,22 @@ function draw(t){
     ctx.fillStyle='#f4efe4'; ctx.textAlign='center'; ctx.textBaseline='middle';
     lines.forEach((ln,i)=>ctx.fillText(ln,W/2,LH/2-(lines.length-1)*8.5+i*17));
     ctx.textBaseline='alphabetic'; ctx.globalAlpha=1; }
+  if(L.stage){ const g=L.stage; ctx.strokeStyle='rgba(244,239,228,.55)'; ctx.setLineDash([4,4]); ctx.lineWidth=1.5; ctx.strokeRect(g.x+2,g.y+2,g.w-4,g.h-6); ctx.setLineDash([]);
+    ctx.fillStyle='rgba(43,58,47,.8)'; ctx.beginPath(); ctx.roundRect(g.x+g.w/2-38,g.y+g.h-24,76,16,8); ctx.fill();
+    ctx.fillStyle='#f4efe4'; ctx.font='700 10px -apple-system,sans-serif'; ctx.textAlign='center'; ctx.fillText('stone pool · '+L.stageN,g.x+g.w/2,g.y+g.h-12.5); }
   drawDen(t);
+  const D=LEVELS[levelIdx];
+  if(D.tiers){ ctx.fillStyle='rgba(43,58,47,.85)'; ctx.beginPath(); ctx.roundRect(16,LH+16,96,20,10); ctx.fill();
+    ctx.fillStyle='#f4efe4'; ctx.font='700 11px -apple-system,sans-serif'; ctx.textAlign='center'; ctx.fillText('Layer '+(L.tierIdx+1)+' of '+D.tiers.length,64,LH+30); }
+  if(L.stage&&state==='play'){ const on=L.stageN>0, pulse=on?Math.sin(t/9)*2:0;
+    ctx.fillStyle=on?'#e98d2b':'rgba(43,58,47,.55)'; ctx.beginPath(); ctx.roundRect(16-pulse/2,LH+48-pulse/2,216+pulse,46+pulse,14); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='700 15px -apple-system,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(on?'⬇ Send '+Math.min(L.stage.max||9999,L.stageN)+' drops down':'Fill the stone pool',124,LH+76); }
+  if(L.shiftT>0&&oldSnap){ const k=1-L.shiftT/48, e=k*k*(3-2*k), sc=cv.width/W, ph=Math.round(LH*sc);
+    if(!sendDown.tmp)sendDown.tmp=document.createElement('canvas'); const tmp=sendDown.tmp; tmp.width=cv.width; tmp.height=ph;
+    tmp.getContext('2d').drawImage(cv,0,0,cv.width,ph,0,0,cv.width,ph);
+    ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.beginPath(); ctx.rect(0,0,cv.width,ph); ctx.clip(); ctx.fillStyle='#2b3a2f'; ctx.fillRect(0,0,cv.width,ph);
+    ctx.drawImage(oldSnap,0,0,cv.width,ph,0,-e*ph,cv.width,ph); ctx.drawImage(tmp,0,(1-e)*ph); ctx.restore(); }
 }
 
 // ---------- game state ----------
@@ -1311,7 +1394,7 @@ function showResult(){
       : L.why==='bucket'?'Not enough water reached the bucket, so the second spring stayed locked.'
       : tort>0?`The tortoise drank ${tort} drops. Wait until it wanders off.`
       : drank>0?`The moss drank ${drank} drops. Try a route that avoids it.`
-      : sunk>0?`${sunk} drops fell down the sinkhole. Try plugging it first.` : 'The capybara is still dry. Try a different route.';
+      : sunk>0?`${sunk} drops fell down the sinkhole. Try plugging it first.` : (LEVELS[levelIdx].tiers&&L.tierIdx>0&&fill===0)?'Not enough water came down. Let the stone pool fill up before you send it.' : 'The capybara is still dry. Try a different route.';
     document.getElementById('resNext').style.display='none';
   }
   show('result');
@@ -1471,6 +1554,7 @@ function loop(now){
   acc+=Math.min(50,now-last); last=now;
   let steps=0;
   while(acc>=16.67&&steps<3){
+    if(L.shiftT>0){ L.shiftT--; acc-=16.67; steps++; continue; }
     for(let s=0;s<2;s++){stepWater();}
     stepBoulders(); stepLogs(); stepDoors(); stepLeaves(); stepSprings(); stepPipes(); stepBalances(); stepMovers(); frame++; if(timerOn&&state==='play')tFrames++; if(hintT>0)hintT--; if(lostRecently>0)lostRecently--; if(dropAnim>0)dropAnim--;
     checkState();
