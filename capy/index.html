@@ -17,7 +17,7 @@
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#2b2b2b}
   #app{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
     padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-  #hud{width:100%;max-width:520px;display:flex;align-items:center;gap:8px;padding:8px 10px;color:#f4efe4}
+  #hud{position:relative;z-index:3;flex:none;width:100%;max-width:520px;display:flex;align-items:center;gap:8px;padding:8px 10px;color:#f4efe4}
   #hud .title{flex:1;min-width:0}
   #hud .title b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #hud .title span{font-size:11px;opacity:.7}
@@ -44,7 +44,7 @@
   button{font:inherit;border:0;border-radius:12px;padding:0 12px;height:40px;min-width:44px;
     background:#f4efe4;color:#2b3a2f;font-weight:600;font-size:14px}
   button.ghost{background:rgba(244,239,228,.15);color:#f4efe4}
-  #stage{flex:1;width:100%;display:flex;align-items:center;justify-content:center;min-height:0}
+  #stage{flex:1;width:100%;display:flex;align-items:center;justify-content:center;min-height:0;overflow:hidden}
   canvas{touch-action:none;display:block;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.35)}
   .overlay{position:fixed;inset:0;background:rgba(30,40,32,.72);display:none;align-items:center;justify-content:center;z-index:5;
     padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom)}
@@ -156,7 +156,7 @@
 <script>
 (()=>{
 // ---------- constants ----------
-const APP_VERSION = '2026-11-09.2345';
+const APP_VERSION = '2026-11-09.2346';
 const W=360, LH=560, H=700, CS=4, GW=W/CS, GH=LH/CS;
 const EMPTY=0, DIRT=1, ROCK=2;
 const MAXP=600, PR=3.2, HR=6.2;        // particle draw radius, interaction radius
@@ -1541,11 +1541,15 @@ document.getElementById('resNext').onclick=()=>loadLevel(Math.min(LEVELS.length-
 // ---------- sizing ----------
 function resize(){
   const st=document.getElementById('stage'); const aw=st.clientWidth-12, ah=st.clientHeight-8;
-  const sc=Math.min(aw/W, ah/H); const dpr=Math.min(window.devicePixelRatio||1,3);
+  if(aw<=0||ah<=0)return; const sc=Math.min(aw/W, ah/H); const dpr=Math.min(window.devicePixelRatio||1,3);
   cv.style.width=(W*sc)+'px'; cv.style.height=(H*sc)+'px';
   cv.width=Math.round(W*sc*dpr); cv.height=Math.round(H*sc*dpr);
 }
 window.addEventListener('resize',resize);
+// iOS home-screen launch: the safe-area insets land after the first measure and no resize fires, so watch the stage itself
+try{ new ResizeObserver(()=>resize()).observe(document.getElementById('stage')); }catch(e){}
+window.addEventListener('pageshow',()=>{resize(); setTimeout(resize,300);});
+setTimeout(resize,100); setTimeout(resize,600);
 window.addEventListener('orientationchange',()=>setTimeout(resize,200));
 
 // ---------- loop ----------
