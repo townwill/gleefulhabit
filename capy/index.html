@@ -150,13 +150,13 @@
   <div id="board">
     <ol id="boardList"></ol>
   </div>
-  <div class="row"><button class="alt" id="resRetry">Retry</button><button id="resNext">Next</button></div>
+  <div class="row"><button class="alt" id="resMenu">☰ Levels</button><button class="alt" id="resRetry">Retry</button><button id="resNext">Next</button></div>
 </div></div>
 
 <script>
 (()=>{
 // ---------- constants ----------
-const APP_VERSION = '2026-11-10.0900';
+const APP_VERSION = '2026-11-10.0910';
 const W=360, LH=560, H=700, CS=4, GW=W/CS, GH=LH/CS;
 const EMPTY=0, DIRT=1, ROCK=2;
 const MAXP=600, PR=3.2, HR=6.2;        // particle draw radius, interaction radius
@@ -1550,6 +1550,7 @@ document.getElementById('btnSound').textContent=SFX.isOn()?'🔊':'🔇';
 document.getElementById('btnSound').onclick=()=>{document.getElementById('btnSound').textContent=SFX.toggle()?'🔊':'🔇';};
 
 document.getElementById('resRetry').onclick=()=>loadLevel(levelIdx);
+document.getElementById('resMenu').onclick=()=>{ hide('result'); buildMenu(); };
 document.getElementById('resNext').onclick=()=>loadLevel(Math.min(LEVELS.length-1,levelIdx+1));
 
 // ---------- sizing ----------
