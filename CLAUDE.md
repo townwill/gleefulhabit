@@ -15,6 +15,8 @@ Several apps live in this repo, all single-file:
 
 - **Late for Yesterday** (`time/index.html`) — Will's queens-style "flux cells" + 6x6 sudoku "timeline map" puzzle game, 100 levels in `DATA.levels` (`t:'f'` flux: `n`, region rows `r`, solution columns `s`; `t:'s'` map: puzzle `p`, answer `s`), story in `DATA.story`. Moved from a Claude artifact on 2026-11-11. Saves to localStorage `late-for-yesterday-v1` and to Firebase (same `TOWNWILL-CLOUD` module as the Shed, `APP='lfy'`, one doc `apps/lfy/progress/save`); `mergeSaves()` keeps the fewest hints and best times from both, so devices never lose progress. Validate puzzle edits with a uniqueness check (each level must have exactly one solution).
 
+- **NBA Re-Draft Board** (`redraft/index.html`) — re-rank an NBA draft class, tier it with colour bands, and a game mode scored against real career VORP (`VORP`, 1973+). Moved from a Claude artifact on 2026-11-11; localStorage only (`nba-redraft-state-v2`, saved boards via `safeGet/safeSet`). A head script seeds that key once with the board carried over from the artifact (only when the key is empty), so it never overwrites newer work.
+
 ## Hard constraints — do not violate these
 1. **Single-file only.** Everything — HTML, CSS, JS — stays in one self-contained `index.html`. No external dependencies except Google Fonts. No build step, no bundler, no npm packages shipped to the browser.
 2. **No backend.** All persistence is `localStorage`. Two kinds of storage are used, and they're intentionally separate:

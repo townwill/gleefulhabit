@@ -1,0 +1,1386 @@
+<!doctype html><html><head><meta charset=utf8><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Re-Draft"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><script>/* one-time: bring over the board saved in the old Claude artifact (Nov 2026) */try{if(!localStorage.getItem("nba-redraft-state-v2"))localStorage.setItem("nba-redraft-state-v2","{\"players\":{\"p9z860hwlmwcjzv5b\":{\"id\":\"p9z860hwlmwcjzv5b\",\"orig\":1,\"name\":\"Deandre Ayton\"},\"pjp5soi1lmwcjzv5b\":{\"id\":\"pjp5soi1lmwcjzv5b\",\"orig\":2,\"name\":\"Marvin Bagley III\"},\"puv8upfwqmwcjzv5b\":{\"id\":\"puv8upfwqmwcjzv5b\",\"orig\":3,\"name\":\"Luka Don\u010di\u0107\"},\"ppckq7fnmmwcjzv5b\":{\"id\":\"ppckq7fnmmwcjzv5b\",\"orig\":4,\"name\":\"Jaren Jackson Jr.\"},\"po1yk5vqumwcjzv5b\":{\"id\":\"po1yk5vqumwcjzv5b\",\"orig\":5,\"name\":\"Trae Young\"},\"pb17nvn3smwcjzv5b\":{\"id\":\"pb17nvn3smwcjzv5b\",\"orig\":6,\"name\":\"Mo Bamba\"},\"pk0oxf1yomwcjzv5b\":{\"id\":\"pk0oxf1yomwcjzv5b\",\"orig\":7,\"name\":\"Wendell Carter Jr.\"},\"pkhxz4fn2mwcjzv5b\":{\"id\":\"pkhxz4fn2mwcjzv5b\",\"orig\":8,\"name\":\"Collin Sexton\"},\"psyh9oz7nmwcjzv5b\":{\"id\":\"psyh9oz7nmwcjzv5b\",\"orig\":9,\"name\":\"Kevin Knox\"},\"pz5nr0xapmwcjzv5b\":{\"id\":\"pz5nr0xapmwcjzv5b\",\"orig\":10,\"name\":\"Mikal Bridges\"},\"pu8h5gbzfmwcjzv5b\":{\"id\":\"pu8h5gbzfmwcjzv5b\",\"orig\":11,\"name\":\"Shai Gilgeous-Alexander\"},\"pq7cl8hpcmwcjzv5b\":{\"id\":\"pq7cl8hpcmwcjzv5b\",\"orig\":12,\"name\":\"Miles Bridges\"},\"pv5ttsz45mwcjzv5b\":{\"id\":\"pv5ttsz45mwcjzv5b\",\"orig\":13,\"name\":\"Jerome Robinson\"},\"pka1oo6yjmwcjzv5b\":{\"id\":\"pka1oo6yjmwcjzv5b\",\"orig\":14,\"name\":\"Michael Porter Jr.\"},\"ppld1eofcmwcjzv5b\":{\"id\":\"ppld1eofcmwcjzv5b\",\"orig\":15,\"name\":\"Troy Brown Jr.\"},\"px0xvl9x2mwcjzv5b\":{\"id\":\"px0xvl9x2mwcjzv5b\",\"orig\":16,\"name\":\"Zhaire Smith\"},\"pc74s5oinmwcjzv5b\":{\"id\":\"pc74s5oinmwcjzv5b\",\"orig\":17,\"name\":\"Donte DiVincenzo\"},\"p2xlncga6mwcjzv5b\":{\"id\":\"p2xlncga6mwcjzv5b\",\"orig\":18,\"name\":\"Lonnie Walker IV\"},\"pklf1rvwamwcjzv5b\":{\"id\":\"pklf1rvwamwcjzv5b\",\"orig\":19,\"name\":\"Kevin Huerter\"},\"poc8iwellmwcjzv5b\":{\"id\":\"poc8iwellmwcjzv5b\",\"orig\":20,\"name\":\"Josh Okogie\"},\"p8ed3fjtnmwcjzv5b\":{\"id\":\"p8ed3fjtnmwcjzv5b\",\"orig\":21,\"name\":\"Grayson Allen\"},\"ppfsk5j4emwcjzv5b\":{\"id\":\"ppfsk5j4emwcjzv5b\",\"orig\":22,\"name\":\"Chandler Hutchison\"},\"pphfym1phmwcjzv5b\":{\"id\":\"pphfym1phmwcjzv5b\",\"orig\":23,\"name\":\"Aaron Holiday\"},\"ptfs2bwe5mwcjzv5b\":{\"id\":\"ptfs2bwe5mwcjzv5b\",\"orig\":24,\"name\":\"Anfernee Simons\"},\"pxxwzmx0rmwcjzv5b\":{\"id\":\"pxxwzmx0rmwcjzv5b\",\"orig\":25,\"name\":\"Moritz Wagner\"},\"p0zan6gtxmwcjzv5b\":{\"id\":\"p0zan6gtxmwcjzv5b\",\"orig\":26,\"name\":\"Landry Shamet\"},\"peubsg51pmwcjzv5b\":{\"id\":\"peubsg51pmwcjzv5b\",\"orig\":27,\"name\":\"Robert Williams\"},\"p7fvjm3wmmwcjzv5b\":{\"id\":\"p7fvjm3wmmwcjzv5b\",\"orig\":28,\"name\":\"Jacob Evans\"},\"ptwj3djgumwcjzv5b\":{\"id\":\"ptwj3djgumwcjzv5b\",\"orig\":29,\"name\":\"D\u017eanan Musa\"},\"pdpfig2yrmwcjzv5b\":{\"id\":\"pdpfig2yrmwcjzv5b\",\"orig\":30,\"name\":\"Omari Spellman\"},\"pelhngx0imwcjzv5b\":{\"id\":\"pelhngx0imwcjzv5b\",\"orig\":31,\"name\":\"Elie Okobo\"},\"pws29xq1amwcjzv5b\":{\"id\":\"pws29xq1amwcjzv5b\",\"orig\":32,\"name\":\"Jevon Carter\"},\"potm3sykgmwcjzv5b\":{\"id\":\"potm3sykgmwcjzv5b\",\"orig\":33,\"name\":\"Jalen Brunson\"},\"pqt36xqg5mwcjzv5b\":{\"id\":\"pqt36xqg5mwcjzv5b\",\"orig\":34,\"name\":\"Devonte' Graham\"},\"p3jz4u2r7mwcjzv5b\":{\"id\":\"p3jz4u2r7mwcjzv5b\",\"orig\":35,\"name\":\"Melvin Frazier\"},\"p3ocd5fd0mwcjzv5b\":{\"id\":\"p3ocd5fd0mwcjzv5b\",\"orig\":36,\"name\":\"Mitchell Robinson\"},\"pec29bz2bmwcjzv5b\":{\"id\":\"pec29bz2bmwcjzv5b\",\"orig\":37,\"name\":\"Gary Trent Jr.\"},\"psjz86qmnmwcjzv5b\":{\"id\":\"psjz86qmnmwcjzv5b\",\"orig\":38,\"name\":\"Khyri Thomas\"},\"pgmfhwevjmwcjzv5b\":{\"id\":\"pgmfhwevjmwcjzv5b\",\"orig\":39,\"name\":\"Isaac Bonga\"},\"pzmuf1v6wmwcjzv5b\":{\"id\":\"pzmuf1v6wmwcjzv5b\",\"orig\":40,\"name\":\"Rodions Kurucs\"},\"pr74k1pb1mwcjzv5b\":{\"id\":\"pr74k1pb1mwcjzv5b\",\"orig\":41,\"name\":\"Jarred Vanderbilt\"},\"pd4ryloysmwcjzv5b\":{\"id\":\"pd4ryloysmwcjzv5b\",\"orig\":42,\"name\":\"Bruce Brown\"},\"pr96yobi6mwcjzv5b\":{\"id\":\"pr96yobi6mwcjzv5b\",\"orig\":43,\"name\":\"Justin Jackson\"},\"p88f7q7semwcjzv5b\":{\"id\":\"p88f7q7semwcjzv5b\",\"orig\":44,\"name\":\"Issuf Sanon\"},\"psjniq5svmwcjzv5b\":{\"id\":\"psjniq5svmwcjzv5b\",\"orig\":45,\"name\":\"Hamidou Diallo\"},\"pr9jiu7ohmwcjzv5b\":{\"id\":\"pr9jiu7ohmwcjzv5b\",\"orig\":46,\"name\":\"De'Anthony Melton\"},\"p2uabcejrmwcjzv5b\":{\"id\":\"p2uabcejrmwcjzv5b\",\"orig\":47,\"name\":\"Svi Mykhailiuk\"},\"ppi6y1gczmwcjzv5b\":{\"id\":\"ppi6y1gczmwcjzv5b\",\"orig\":48,\"name\":\"Keita Bates-Diop\"},\"pjd75x3ygmwcjzv5b\":{\"id\":\"pjd75x3ygmwcjzv5b\",\"orig\":49,\"name\":\"Chimezie Metu\"},\"p883g29t1mwcjzv5b\":{\"id\":\"p883g29t1mwcjzv5b\",\"orig\":50,\"name\":\"Alize Johnson\"},\"pnikpaqkymwcjzv5b\":{\"id\":\"pnikpaqkymwcjzv5b\",\"orig\":51,\"name\":\"Tony Carr\"},\"p5paa1g3tmwcjzv5b\":{\"id\":\"p5paa1g3tmwcjzv5b\",\"orig\":52,\"name\":\"Vince Edwards\"},\"pn7n1q1j1mwcjzv5b\":{\"id\":\"pn7n1q1j1mwcjzv5b\",\"orig\":53,\"name\":\"Devon Hall\"},\"pte9i16srmwcjzv5b\":{\"id\":\"pte9i16srmwcjzv5b\",\"orig\":54,\"name\":\"Shake Milton\"},\"pkqkjp0kamwcjzv5b\":{\"id\":\"pkqkjp0kamwcjzv5b\",\"orig\":55,\"name\":\"Arnoldas Kulboka\"},\"p5eg1sdxymwcjzv5b\":{\"id\":\"p5eg1sdxymwcjzv5b\",\"orig\":56,\"name\":\"Ray Spalding\"},\"pmw5o5bjsmwcjzv5b\":{\"id\":\"pmw5o5bjsmwcjzv5b\",\"orig\":57,\"name\":\"Kevin Hervey\"},\"psg6i4oq5mwcjzv5b\":{\"id\":\"psg6i4oq5mwcjzv5b\",\"orig\":58,\"name\":\"Thomas Welsh\"},\"pcohuetznmwcjzv5b\":{\"id\":\"pcohuetznmwcjzv5b\",\"orig\":59,\"name\":\"George King\"},\"p9qlf3z2cmwcjzv5b\":{\"id\":\"p9qlf3z2cmwcjzv5b\",\"orig\":60,\"name\":\"Kostas Antetokounmpo\"}},\"pool\":[\"p9z860hwlmwcjzv5b\",\"pjp5soi1lmwcjzv5b\",\"puv8upfwqmwcjzv5b\",\"ppckq7fnmmwcjzv5b\",\"po1yk5vqumwcjzv5b\",\"pb17nvn3smwcjzv5b\",\"pk0oxf1yomwcjzv5b\",\"pkhxz4fn2mwcjzv5b\",\"psyh9oz7nmwcjzv5b\",\"pz5nr0xapmwcjzv5b\",\"pu8h5gbzfmwcjzv5b\",\"pq7cl8hpcmwcjzv5b\",\"pv5ttsz45mwcjzv5b\",\"pka1oo6yjmwcjzv5b\",\"ppld1eofcmwcjzv5b\",\"px0xvl9x2mwcjzv5b\",\"pc74s5oinmwcjzv5b\",\"p2xlncga6mwcjzv5b\",\"pklf1rvwamwcjzv5b\",\"poc8iwellmwcjzv5b\",\"p8ed3fjtnmwcjzv5b\",\"ppfsk5j4emwcjzv5b\",\"pphfym1phmwcjzv5b\",\"ptfs2bwe5mwcjzv5b\",\"pxxwzmx0rmwcjzv5b\",\"p0zan6gtxmwcjzv5b\",\"peubsg51pmwcjzv5b\",\"p7fvjm3wmmwcjzv5b\",\"ptwj3djgumwcjzv5b\",\"pdpfig2yrmwcjzv5b\",\"pelhngx0imwcjzv5b\",\"pws29xq1amwcjzv5b\",\"potm3sykgmwcjzv5b\",\"pqt36xqg5mwcjzv5b\",\"p3jz4u2r7mwcjzv5b\",\"p3ocd5fd0mwcjzv5b\",\"pec29bz2bmwcjzv5b\",\"psjz86qmnmwcjzv5b\",\"pgmfhwevjmwcjzv5b\",\"pzmuf1v6wmwcjzv5b\",\"pr74k1pb1mwcjzv5b\",\"pd4ryloysmwcjzv5b\",\"pr96yobi6mwcjzv5b\",\"p88f7q7semwcjzv5b\",\"psjniq5svmwcjzv5b\",\"pr9jiu7ohmwcjzv5b\",\"p2uabcejrmwcjzv5b\",\"ppi6y1gczmwcjzv5b\",\"pjd75x3ygmwcjzv5b\",\"p883g29t1mwcjzv5b\",\"pnikpaqkymwcjzv5b\",\"p5paa1g3tmwcjzv5b\",\"pn7n1q1j1mwcjzv5b\",\"pte9i16srmwcjzv5b\",\"pkqkjp0kamwcjzv5b\",\"p5eg1sdxymwcjzv5b\",\"pmw5o5bjsmwcjzv5b\",\"psg6i4oq5mwcjzv5b\",\"pcohuetznmwcjzv5b\",\"p9qlf3z2cmwcjzv5b\"],\"redraft\":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],\"tierBounds\":[6,16,44,54],\"year\":2018,\"mode\":\"free\",\"analyzed\":false}")}catch(e){}</script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>NBA Re-Draft Board</title>
+<meta name="description" content="Re-rank any NBA draft class, tier it with color bands, and play game mode: get scored out of 100 against real career VORP.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+
+<style>
+  :root{
+    --bg:#0c0f13;
+    --surface:#151a20;
+    --surface-2:#1c232b;
+    --surface-3:#232b34;
+    --line:#2a323c;
+    --text:#eef2f6;
+    --muted:#8b96a3;
+    --accent:#ff7a1a;
+
+    --tier-0:#3a4451;   /* unranked / empty */
+    --tier-1:#1c6b3f;   /* dark green */
+    --tier-2:#7bc24b;   /* light green */
+    --tier-3:#e8c445;   /* yellow */
+    --tier-4:#e07a2d;   /* orange */
+    --tier-5:#d5495a;   /* red */
+  }
+
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --bg:#f3f1ea;
+      --surface:#ffffff;
+      --surface-2:#f6f4ee;
+      --surface-3:#efece3;
+      --line:#ddd7c8;
+      --text:#20201c;
+      --muted:#6b6558;
+      --accent:#c8500f;
+      --tier-0:#c9c4b6;
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#f3f1ea;
+    --surface:#ffffff;
+    --surface-2:#f6f4ee;
+    --surface-3:#efece3;
+    --line:#ddd7c8;
+    --text:#20201c;
+    --muted:#6b6558;
+    --accent:#c8500f;
+    --tier-0:#c9c4b6;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    padding-inline:16px;
+    padding-block:16px 32px;
+    font-size:13px;
+  }
+  h1,h2,.num{font-family:'Barlow Condensed',system-ui,sans-serif;}
+
+  .wrap{max-width:1180px;margin:0 auto;}
+  @media (min-width: 1000px){
+    .wrap{max-width:1480px;}
+  }
+
+  header.top{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:14px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:12px;
+  }
+  .brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .brand h1{
+    font-size:28px;
+    font-weight:800;
+    letter-spacing:0.3px;
+    margin:0;
+    line-height:1;
+    text-transform:uppercase;
+  }
+  .brand h1 span{color:var(--accent);}
+  .brand .tag{color:var(--muted);font-size:12px;font-weight:500;}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;}
+  button.btn{
+    font-family:'Inter',sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    border:1px solid var(--line);
+    background:var(--surface-2);
+    color:var(--text);
+    padding:7px 12px;
+    border-radius:7px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    transition:border-color .15s, transform .05s, background .15s;
+  }
+  button.btn:hover{border-color:var(--accent);}
+  button.btn:active{transform:translateY(1px);}
+  button.btn.primary{background:var(--accent);border-color:var(--accent);color:#1a0d02;}
+  button.btn.primary:hover{filter:brightness(1.06);}
+  button.btn.ghost{background:transparent;}
+  button.btn.danger:hover{border-color:var(--tier-5);color:var(--tier-5);}
+  button.btn.small{padding:4px 9px;font-size:11.5px;}
+  button.btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  .savebar{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    align-items:center;
+    margin-bottom:12px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:10px 12px;
+  }
+  .savebar .group{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .savebar label{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;}
+  input[type=text], select{
+    font-family:'Inter',sans-serif;
+    font-size:12.5px;
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:7px;
+    padding:7px 9px;
+    min-width:140px;
+  }
+  input[type=text]:focus, select:focus, textarea:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  .spacer{flex:1;}
+
+  /* ---- tier band control ---- */
+  .bands{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 14px;
+    margin-bottom:14px;
+  }
+  .bands-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:9px;
+  }
+  .bands-head h2{
+    margin:0;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    font-weight:700;
+    color:var(--muted);
+  }
+  .band-bar{
+    display:flex;
+    height:10px;
+    border-radius:5px;
+    overflow:hidden;
+    margin-bottom:10px;
+    border:1px solid var(--line);
+  }
+  .band-bar span{height:100%;transition:flex-basis .1s;}
+  .band-rows{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px,1fr));
+    gap:9px 20px;
+  }
+  .band-row{
+    display:grid;
+    grid-template-columns: 11px minmax(64px,auto) minmax(50px,1fr) minmax(46px,auto);
+    align-items:center;
+    gap:8px;
+    min-width:0;
+  }
+  .band-row .swatch{width:11px;height:11px;border-radius:3px;}
+  .band-row .blabel{
+    font-size:12px;font-weight:600;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .band-row .bcount{
+    font-size:11.5px;color:var(--muted);text-align:right;
+    font-variant-numeric:tabular-nums;white-space:nowrap;
+  }
+  .band-row input[type=range]{
+    width:100%;
+    min-width:0;
+    accent-color:var(--accent);
+    height:16px;
+  }
+
+  .board{
+    display:grid;
+    grid-template-columns: minmax(0,1fr) minmax(0,1.15fr);
+    gap:16px;
+  }
+  @media (max-width: 760px){
+    .board{grid-template-columns: 1fr;}
+  }
+
+  .panel{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px;
+    min-height:200px;
+    display:flex;
+    flex-direction:column;
+  }
+  .panel-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:8px;
+    gap:8px;
+  }
+  .panel-head h2{
+    margin:0;
+    font-size:16px;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    font-weight:700;
+  }
+  .panel-head .count{font-size:11.5px;color:var(--muted);font-family:'Inter',sans-serif;}
+
+  .list{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    min-height:60px;
+    flex:1;
+  }
+  .list.pool.dropactive{outline:2px dashed var(--accent);outline-offset:4px;border-radius:8px;}
+
+  .card{
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:5px 8px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    cursor:grab;
+    user-select:none;
+    min-height:30px;
+  }
+  .card:active{cursor:grabbing;}
+  .card.dragging{opacity:.35;}
+
+  .pool .card .pick{
+    font-size:13px;
+    font-weight:700;
+    color:var(--muted);
+    min-width:20px;
+    text-align:center;
+  }
+  .card .name{
+    flex:1;
+    font-size:13px;
+    font-weight:600;
+    line-height:1.2;
+    min-width:0;
+    overflow-wrap:break-word;
+  }
+  .card .origtag{
+    font-size:9.5px;
+    color:var(--muted);
+    font-weight:600;
+  }
+
+  .pool .card .addbtn{
+    flex:none;
+    width:22px;height:22px;
+    border-radius:5px;
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--muted);
+    font-size:14px;
+    line-height:1;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .pool .card .addbtn:hover{border-color:var(--accent);color:var(--accent);}
+
+  .redraft .card{
+    border-width:1px;
+    border-left-width:5px;
+  }
+  .redraft .card.empty{
+    cursor:default;
+    border-style:dashed;
+    background:transparent;
+  }
+  .redraft .card.dragover{outline:2px solid var(--accent);outline-offset:1px;}
+  .redraft .card .pos{
+    font-size:15px;
+    font-weight:800;
+    min-width:20px;
+    text-align:center;
+    font-variant-numeric:tabular-nums;
+  }
+  .redraft .card .meta{display:flex;flex-direction:column;gap:0;min-width:0;flex:1;}
+  .redraft .card .emptylabel{flex:1;font-size:12px;color:var(--muted);font-style:italic;}
+
+  .removebtn{
+    flex:none;
+    width:20px;height:20px;
+    border-radius:5px;
+    border:none;
+    background:transparent;
+    color:var(--muted);
+    font-size:14px;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .removebtn:hover{color:var(--tier-5);}
+
+  /* tier color per slot, by data-tier attribute */
+  .card[data-tier="0"]{border-left-color:var(--tier-0);}
+  .card[data-tier="1"]{border-left-color:var(--tier-1); background:color-mix(in srgb, var(--tier-1) 18%, var(--surface-2));}
+  .card[data-tier="2"]{border-left-color:var(--tier-2); background:color-mix(in srgb, var(--tier-2) 18%, var(--surface-2));}
+  .card[data-tier="3"]{border-left-color:var(--tier-3); background:color-mix(in srgb, var(--tier-3) 18%, var(--surface-2));}
+  .card[data-tier="4"]{border-left-color:var(--tier-4); background:color-mix(in srgb, var(--tier-4) 20%, var(--surface-2));}
+  .card[data-tier="5"]{border-left-color:var(--tier-5); background:color-mix(in srgb, var(--tier-5) 18%, var(--surface-2));}
+  .card.empty[data-tier="1"]{background:color-mix(in srgb, var(--tier-1) 10%, transparent);}
+  .card.empty[data-tier="2"]{background:color-mix(in srgb, var(--tier-2) 10%, transparent);}
+  .card.empty[data-tier="3"]{background:color-mix(in srgb, var(--tier-3) 10%, transparent);}
+  .card.empty[data-tier="4"]{background:color-mix(in srgb, var(--tier-4) 12%, transparent);}
+  .card.empty[data-tier="5"]{background:color-mix(in srgb, var(--tier-5) 10%, transparent);}
+
+  /* modal */
+  .modal-backdrop{
+    position:fixed;inset:0;
+    background:rgba(0,0,0,.55);
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;
+    z-index:50;
+  }
+  .modal-backdrop[hidden]{display:none;}
+  .modal{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:18px;
+    max-width:520px;
+    width:100%;
+    max-height:85vh;
+    overflow:auto;
+  }
+  .modal h3{margin:0 0 6px;font-family:'Barlow Condensed';font-size:22px;text-transform:uppercase;}
+  .modal p.hint{color:var(--muted);font-size:12.5px;margin:0 0 10px;line-height:1.5;}
+  textarea{
+    width:100%;
+    min-height:220px;
+    font-family:ui-monospace,'SF Mono',Consolas,monospace;
+    font-size:12.5px;
+    background:var(--surface-2);
+    color:var(--text);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px;
+    resize:vertical;
+  }
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;}
+
+  .toast{
+    position:fixed;
+    bottom:18px;left:50%;
+    transform:translateX(-50%) translateY(10px);
+    background:var(--surface-3);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:9px 16px;
+    border-radius:8px;
+    font-size:13px;
+    box-shadow:0 8px 24px rgba(0,0,0,.3);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s, transform .2s;
+    z-index:60;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* ---- game mode ---- */
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;}
+  .seg button{
+    font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;
+    background:var(--surface-2);color:var(--muted);border:none;padding:7px 12px;cursor:pointer;
+  }
+  .seg button + button{border-left:1px solid var(--line);}
+  .seg button[aria-pressed="true"]{background:var(--accent);color:#1a0d02;}
+
+  .game{
+    background:var(--surface);
+    border:1px solid var(--accent);
+    border-radius:10px;
+    padding:12px 14px;
+    margin-bottom:14px;
+  }
+  .game[hidden], .score[hidden], .btn[hidden]{display:none;}
+  .game-top{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .game-top .intro{flex:1;min-width:220px;color:var(--muted);font-size:12.5px;line-height:1.5;}
+  .game-top .intro b{color:var(--text);}
+  .score{display:flex;align-items:baseline;gap:4px;font-family:'Barlow Condensed',sans-serif;}
+  .score .big{font-size:52px;font-weight:800;line-height:.9;color:var(--accent);font-variant-numeric:tabular-nums;}
+  .score .of{font-size:18px;font-weight:700;color:var(--muted);}
+  .stats{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);}
+  .stats b{color:var(--text);font-size:14px;font-variant-numeric:tabular-nums;}
+  .stats .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+  .game details{margin-top:10px;border-top:1px solid var(--line);padding-top:8px;}
+  .game summary{cursor:pointer;font-weight:600;font-size:12.5px;}
+  .truth{list-style:none;margin:8px 0 0;padding:0;columns:260px;column-gap:20px;font-size:12px;}
+  .truth li{display:flex;gap:7px;align-items:center;padding:2px 0;break-inside:avoid;}
+  .truth .r{width:22px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .truth .n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .truth .v{color:var(--muted);font-variant-numeric:tabular-nums;}
+  .truth .you{font-size:10.5px;color:var(--muted);min-width:52px;text-align:right;}
+
+  .tchip{display:inline-block;width:9px;height:9px;border-radius:2px;flex:none;}
+  .tchip[data-t="1"]{background:var(--tier-1);}
+  .tchip[data-t="2"]{background:var(--tier-2);}
+  .tchip[data-t="3"]{background:var(--tier-3);}
+  .tchip[data-t="4"]{background:var(--tier-4);}
+  .tchip[data-t="5"]{background:var(--tier-5);}
+
+  .card .reveal{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums;}
+  .pts{
+    flex:none;min-width:38px;text-align:center;
+    font-size:11px;font-weight:700;border-radius:5px;padding:2px 5px;
+    font-variant-numeric:tabular-nums;
+  }
+  .pts.hit{background:color-mix(in srgb, var(--tier-2) 30%, transparent);color:var(--text);}
+  .pts.near{background:color-mix(in srgb, var(--tier-3) 30%, transparent);color:var(--text);}
+  .pts.miss{background:color-mix(in srgb, var(--tier-5) 22%, transparent);color:var(--muted);}
+  .bands.locked input[type=range]{opacity:.35;}
+  .bands .locknote{font-size:11.5px;color:var(--muted);}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Re<span>Draft</span> Board</h1>
+      <span class="tag">drag a player into a slot &middot; drop on a filled slot to insert</span>
+    </div>
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="Mode">
+        <button type="button" id="mode-free" aria-pressed="true">Free board</button>
+        <button type="button" id="mode-game" aria-pressed="false">Game mode</button>
+      </div>
+      <select id="year-select" title="Load a draft class"></select>
+      <button class="btn" id="btn-import">Import list</button>
+      <button class="btn ghost" id="btn-reset">Reset</button>
+    </div>
+  </header>
+
+  <div class="savebar">
+    <div class="group">
+      <label for="save-name">Save as</label>
+      <input type="text" id="save-name" placeholder="e.g. 2018 Redraft v2">
+      <button class="btn primary" id="btn-save">Save redraft</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="group">
+      <label for="load-select">Saved</label>
+      <select id="load-select"><option value="">— none saved —</option></select>
+      <button class="btn" id="btn-load">Load</button>
+      <button class="btn danger ghost" id="btn-delete">Delete</button>
+    </div>
+  </div>
+
+  <div class="game" id="game-panel" hidden>
+    <div class="game-top">
+      <div class="score" id="score-box" hidden><span class="big" id="score-num">0</span><span class="of">/100</span></div>
+      <div class="intro" id="game-intro"></div>
+      <button class="btn ghost" id="btn-bust-remaining">Move remaining to Bust</button>
+      <button class="btn primary" id="btn-analyze">Analyze</button>
+    </div>
+    <div id="game-results"></div>
+  </div>
+
+  <div class="bands" id="bands">
+    <div class="bands-head">
+      <h2 id="bands-title">Tier bands</h2>
+      <span class="locknote" id="bands-lock" hidden>Locked to the default split in game mode</span>
+      <button class="btn ghost small" id="btn-reset-bands">Reset bands</button>
+    </div>
+    <div class="band-bar" id="band-bar"></div>
+    <div class="band-rows" id="band-rows"></div>
+  </div>
+
+  <div class="board">
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Draft pool</h2>
+        <span class="count" id="pool-count"></span>
+      </div>
+      <ul class="list pool" id="pool-list"></ul>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Your re-draft</h2>
+        <span class="count" id="redraft-count"></span>
+      </div>
+      <ul class="list redraft" id="redraft-list"></ul>
+    </section>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="import-backdrop" hidden>
+  <div class="modal">
+    <h3>Import player list</h3>
+    <p class="hint">Paste one player per line as "pick number, then name" — e.g. <code>1. Deandre Ayton</code> or <code>1 Deandre Ayton</code>. This replaces the current pool and clears your re-draft slots.</p>
+    <textarea id="import-text" spellcheck="false" placeholder="1. Player One&#10;2. Player Two&#10;3. Player Three&#10;..."></textarea>
+    <div class="modal-actions">
+      <button class="btn ghost" id="import-cancel">Cancel</button>
+      <button class="btn primary" id="import-confirm">Import</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="confirm-backdrop" hidden>
+  <div class="modal" style="max-width:380px;">
+    <h3 id="confirm-title">Are you sure?</h3>
+    <p class="hint" id="confirm-body"></p>
+    <div class="modal-actions">
+      <button class="btn ghost" id="confirm-no">Cancel</button>
+      <button class="btn primary" id="confirm-yes">Yes, do it</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORE_KEY = "nba-redraft-state-v2";
+  var SAVES_KEY = "nba-redraft-saves-v2";
+  // The board always has exactly as many slots as there are players in the
+  // pool — no fixed 30. Tier-band boundaries default to the same proportions
+  // as a 30-player board (3/5/14/5/3 -> 10% / 16.7% / 46.7% / 16.7% / 10%)
+  // scaled to however many players are actually in play.
+  function slotCount(){ return state.redraft.length; }
+  function defaultBoundsFor(n){
+    var raw = [n * 3/30, n * 8/30, n * 22/30, n * 27/30].map(Math.round);
+    for (var i = 1; i < 4; i++){ if (raw[i] < raw[i-1]) raw[i] = raw[i-1]; }
+    for (var j = 0; j < 4; j++){ if (raw[j] > n) raw[j] = n; }
+    return raw;
+  }
+
+  var TIER_NAMES = ["", "Elite hit", "Good starter", "Solid role player", "Fringe / bench", "Bust"];
+
+  // Real NBA first-round draft orders, pulled from Basketball-Reference (and,
+  // where B-R blocked the fetch, Wikipedia) — pick number + player name.
+  var DRAFTS = {
+    1950: [[1,"Paul Arizin"],[2,"Chuck Share"],[3,"Don Rehfeldt"],[4,"Bob Cousy"],[5,"Dick Schnittker"],[6,"Larry Foust"],[7,"Irwin Dambrot"],[8,"George Yardley"],[9,"Bob Lavoy"],[10,"Joe McNamee"],[11,"Kevin O'Shea"],[12,"Don Lofgran"],[13,"Chuck Cooper"],[14,"John Pilch"],[15,"Ed Dahler"],[16,"Ed Gayda"],[17,"Bill Sharman"],[18,"Wally Osterkorn"],[19,"Herb Scherer"],[20,"Jim Riffey"],[21,"Paul Unruh"],[22,"George Stanich"],[23,"Hal Haskins"],[24,"Gerald Calabrese"]],
+    1951: [[1,"Whitey Skoog"],[2,"Gene Melchiorre"],[3,"Mel Hutchins"],[4,"Marcus Freiberger"],[5,"Zeke Sinicola"],[6,"John McConathy"],[7,"Ed Smith"],[8,"Ernie Barrett"],[9,"Sam Ranzino"],[10,"Don Sunderlage"],[11,"Jack Stone"],[12,"Bill Gossett"],[13,"Scotty Steagall"],[14,"Jack Kiley"],[15,"Don Savage"],[16,"Roland Minson"],[17,"Bill Garrett"],[18,"Ray Ragelis"],[19,"Mel Payton"],[20,"Lew Hitch"]],
+    1952: [[1,"Mark Workman"],[2,"Jim Baechtold"],[3,"Dick Groat"],[4,"Joe Dean"],[5,"Ralph Polson"],[6,"Bill Stauffer"],[7,"Bob Lochmueller"],[8,"Chuck Darling"],[9,"Clyde Lovellette"],[10,"Bill Mlkvy"],[11,"Chuck Grigsby"],[12,"Jim Iverson"],[13,"Monk Meineke"],[14,"Zeke Zawoluk"],[15,"Eddie Miller"],[16,"Jim Holstein"],[17,"Bert Cook"],[18,"Walt Davis"],[19,"Jack McMahon"],[20,"Jim Brasco"]],
+    1953: [[1,"Ernie Beck"],[2,"Ray Felix"],[3,"Bob Houbregs"],[4,"Jack Molinas"],[5,"Richie Regan"],[6,"Frank Ramsey"],[7,"Jim Neal"],[8,"Jim Fritsche"],[9,"Walter Dukes"],[10,"Larry Hennessy"],[11,"Don Ackerman"],[12,"Bob Speight"],[13,"George Glasgow"],[14,"Norm Swanson"],[15,"Chet Noe"],[16,"Dick Knostman"],[17,"Nield Gordon"],[18,"Ron Feiereisel"]],
+    1954: [[1,"Frank Selvy"],[2,"Bob Pettit"],[3,"Gene Shue"],[4,"Red Kerr"],[5,"Tom Marshall"],[6,"Jack Turner"],[7,"Dick Rosenthal"],[8,"Togo Palazzi"],[9,"Ed Kalafat"],[10,"Slick Leonard"],[11,"Bob Mattick"],[12,"Larry Costello"],[13,"Arnold Short"],[14,"Red Morrison"],[15,"Dick Farley"],[16,"Boris Nachamkin"],[17,"Richie Guerin"],[18,"Al Bianchi"]],
+    1955: [[1,"Tom Gola"],[2,"Dick Garmaker"],[3,"Dick Ricketts"],[4,"Maurice Stokes"],[5,"Jim Loscutoff"],[6,"Kenny Sears"],[7,"Ed Conlin"],[8,"Johnny Horan"],[9,"Jack Stephens"],[10,"Jack Twyman"],[11,"Corky Devlin"],[12,"Dick Hemric"],[13,"Jerry Mullen"],[14,"Chuck Mencel"],[15,"Jesse Arnelle"],[16,"Don Schlundt"]],
+    1956: [[1,"Tom Heinsohn"],[2,"Si Green"],[3,"Bill Russell"],[4,"Jim Paxson"],[5,"Ron Shavlik"],[6,"Joe Holup"],[7,"Ron Sobie"],[8,"Hal Lear"],[9,"Bob Burrow"],[10,"Willie Naulls"],[11,"Terry Rand"],[12,"Gary Bergen"],[13,"Paul Judson"],[14,"K.C. Jones"],[15,"Bob Kessler"],[16,"Phil Rollins"]],
+    1957: [[1,"Hot Rod Hundley"],[2,"Charlie Tyra"],[3,"Jim Krebs"],[4,"Win Wilfong"],[5,"Brendan McCann"],[6,"Lennie Rosenbluth"],[7,"George Bon Salle"],[8,"Sam Jones"],[9,"Dick Duckett"],[10,"Bob McCoy"],[11,"Harvey Schmidt"],[12,"Jim Palmer"],[13,"Larry Friend"],[14,"Jack Sullivan"],[15,"Jim Morgan"],[16,"Dick O'Neal"]],
+    1958: [[1,"Guy Rodgers"],[2,"Elgin Baylor"],[3,"Archie Dees"],[4,"Mike Farmer"],[5,"Pete Brennan"],[6,"Connie Dierking"],[7,"Dave Gambee"],[8,"Bennie Swain"],[9,"Steve Hamilton"],[10,"Vern Hatton"],[11,"Barney Cable"],[12,"Joe Quigg"],[13,"Lloyd Sharrar"],[14,"Hal Greer"],[15,"Hub Reed"],[16,"Jimmy Smith"]],
+    1959: [[1,"Wilt Chamberlain"],[2,"Bob Ferry"],[3,"Bob Boozer"],[4,"Bailey Howell"],[5,"Tom Hawkins"],[6,"Dick Barnett"],[7,"Johnny Green"],[8,"John Richter"],[9,"Tom Robitaille"],[10,"Don Goldstein"],[11,"Joe Ruklick"],[12,"Rudy LaRusso"],[13,"Bumper Tormohlen"],[14,"Al Seiden"],[15,"Cal Ramsey"],[16,"Gene Guarilia"]],
+    1960: [[1,"Oscar Robertson"],[2,"Jerry West"],[3,"Darrall Imhoff"],[4,"Jackie Moreland"],[5,"Lee Shaffer"],[6,"Lenny Wilkens"],[7,"Al Bunge"],[8,"Tom Sanders"],[9,"Jay Arnette"],[10,"Dave Budd"],[11,"Kelly Coleman"],[12,"Ron Johnson"],[13,"Wilbur Trosch"],[14,"Frank Radovich"],[15,"Pickles Kennedy"],[16,"Leroy Wright"]],
+    1961: [[1,"Walt Bellamy"],[2,"Tom Stith"],[3,"Larry Siegfried"],[4,"Ray Scott"],[5,"Wayne Yates"],[6,"Ben Warley"],[7,"Tom Meschery"],[8,"Cleo Hill"],[9,"Gary Phillips"],[10,"Jack Turner"],[11,"Jerry Graves"],[12,"York Larese"],[13,"Don Kojis"],[14,"Doug Moe"],[15,"Whitey Martin"],[16,"Bob Wiesenhahn"],[17,"Johnny Egan"],[18,"Fred Sawyer"],[19,"Chris Smith"],[20,"Ted Luckenbill"],[21,"Ron Horn"],[22,"Al Butler"],[23,"Jeff Cohen"]],
+    1962: [[1,"Billy McGill"],[2,"Paul Hogue"],[3,"Zelmo Beaty"],[4,"Dave DeBusschere"],[5,"Len Chappell"],[6,"Jerry Lucas"],[7,"Wayne Hightower"],[8,"Leroy Ellis"],[9,"John Havlicek"],[10,"Terry Dischinger"],[11,"John Rudometkin"],[12,"Bob Duffy"],[13,"Kevin Loughery"],[14,"Chet Walker"],[15,"Bud Olsen"],[16,"Hubie White"],[17,"Gene Wiley"],[18,"Jack Foley"]],
+    1963: [[1,"Art Heyman"],[2,"Rod Thorn"],[3,"Nate Thurmond"],[4,"Eddie Miles"],[5,"Tom Thacker"],[6,"Gerry Ward"],[7,"Tom Hoover"],[8,"Roger Strickland"],[9,"Bill Green"],[10,"Jerry Harkness"],[11,"Gus Johnson"],[12,"Gary Hill"],[13,"Jerry Smith"],[14,"Jim King"],[15,"Leland Mitchell"],[16,"Hershell West"],[17,"Mel Gibson"],[18,"Ken Saylors"]],
+    1964: [[1,"Walt Hazzard"],[2,"George Wilson"],[3,"Jim Barnes"],[4,"Joe Caldwell"],[5,"Gary Bradds"],[6,"Luke Jackson"],[7,"Jeff Mullins"],[8,"Barry Kramer"],[9,"Mel Counts"],[10,"Willis Reed"],[11,"Les Hunter"],[12,"Paul Silas"],[13,"Ira Harge"],[14,"Cotton Nash"],[15,"Howard Komives"],[16,"Bud Koper"],[17,"Bill Chmielewski"],[18,"Ron Bonham"]],
+    1965: [[1,"Bill Bradley"],[2,"Bill Buntin"],[3,"Gail Goodrich"],[4,"Fred Hetzel"],[5,"Rick Barry"],[6,"Dave Stallworth"],[7,"Jerry Sloan"],[8,"Billy Cunningham"],[9,"Jim Washington"],[10,"Nate Bowman"],[11,"Ollie Johnson"],[12,"Will Frazier"],[13,"Dick Van Arsdale"],[14,"Tom Van Arsdale"],[15,"Tal Brody"],[16,"Jesse Branson"],[17,"Hal Blevins"],[18,"Flynn Robinson"],[19,"John Fairchild"],[20,"Ron Watts"]],
+    1966: [[1,"Cazzie Russell"],[2,"Dave Bing"],[3,"Clyde Lee"],[4,"Lou Hudson"],[5,"Jack Marin"],[6,"Walt Wesley"],[7,"Jerry Chambers"],[8,"Jim Barnett"],[9,"Matt Guokas"],[10,"Dave Schellhase"],[11,"Henry Akin"],[12,"Dorie Murrey"],[13,"Joe Ellis"],[14,"Dick Snyder"],[15,"Neil Johnson"],[16,"Jerry Lee Wells"],[17,"Hank Finkel"],[18,"Leon Clark"],[19,"Bill Melchionni"],[20,"Erwin Mueller"]],
+    1967: [[1,"Jimmy Walker"],[2,"Earl Monroe"],[3,"Clem Haskins"],[4,"Sonny Dove"],[5,"Walt Frazier"],[6,"Al Tucker"],[7,"Pat Riley"],[8,"Tom Workman"],[9,"Mel Daniels"],[10,"Dave Lattin"],[11,"Mal Graham"],[12,"Craig Raymond"],[13,"Jimmy Jones"],[14,"Steve Sullivan"],[15,"Byron Beck"],[16,"Randy Mahaffey"],[17,"Phil Jackson"],[18,"Bob Netolicky"],[19,"Bob Rule"]],
+    1968: [[1,"Elvin Hayes"],[2,"Wes Unseld"],[3,"Bob Kauffman"],[4,"Tom Boerwinkle"],[5,"Zaid Abdul-Aziz"],[6,"Otto Moore"],[7,"Charlie Paulk"],[8,"Gary Gregor"],[9,"Ron Williams"],[10,"Bill Hosket"],[11,"Bill Hewitt"],[12,"Don Chaney"],[13,"Skip Harlicka"],[14,"Shaler Halimon"]],
+    1969: [[1,"Kareem Abdul-Jabbar"],[2,"Neal Walk"],[3,"Lucius Allen"],[4,"Terry Driscoll"],[5,"Larry Cannon"],[6,"Bingo Smith"],[7,"Bob Portman"],[8,"Herm Gilliam"],[9,"Jo Jo White"],[10,"Butch Beard"],[11,"John Warren"],[12,"Willie McCarter"],[13,"Bud Ogden"],[14,"Mike Davis"],[15,"Rick Roberson"]],
+    1970: [[1,"Bob Lanier"],[2,"Rudy Tomjanovich"],[3,"Pete Maravich"],[4,"Dave Cowens"],[5,"Sam Lacey"],[6,"Jim Ard"],[7,"John Johnson"],[8,"Geoff Petrie"],[9,"George E. Johnson"],[10,"Greg Howard"],[11,"Jimmy Collins"],[12,"Al Henry"],[13,"Jim McMillian"],[14,"John Vallely"],[15,"John Hummer"],[16,"Gary Freeman"],[17,"Mike Price"]],
+    1971: [[1,"Austin Carr"],[2,"Sidney Wicks"],[3,"Elmore Smith"],[4,"Ken Durrett"],[5,"George Trapp"],[6,"Fred Brown"],[7,"Cliff Meely"],[8,"Darnell Hillman"],[9,"Stan Love"],[10,"Clarence Glover"],[11,"Curtis Rowe"],[12,"Dana Lewis"],[13,"Jim Cleamons"],[14,"John Roche"],[15,"Kenny McIntosh"],[16,"Dean Meminger"],[17,"Collis Jones"]],
+    1972: [[1,"LaRue Martin"],[2,"Bob McAdoo"],[3,"Dwight Davis"],[4,"Corky Calhoun"],[5,"Freddie Boyd"],[6,"Russ Lee"],[7,"Bud Stallworth"],[8,"Tom Riker"],[9,"Bob Nash"],[10,"Paul Westphal"],[11,"Ralph Simpson"],[12,"Julius Erving"],[13,"Travis Grant"]],
+    1973: [[1,"Doug Collins"],[2,"Jim Brewer"],[3,"Ernie DiGregorio"],[4,"Mike Green"],[5,"Kermit Washington"],[6,"Ed Ratleff"],[7,"Ron Behagen"],[8,"Mike Bantom"],[9,"Dwight Jones"],[10,"John Brown"],[11,"Kevin Joyce"],[12,"Kevin Kunnert"],[13,"Nick Weatherspoon"],[14,"Mel Davis"],[15,"Barry Parkhill"],[16,"Swen Nater"],[17,"Steve Downing"],[18,"Raymond Lewis"]],
+    1974: [[1,"Bill Walton"],[2,"Marvin Barnes"],[3,"Tom Burleson"],[4,"John Shumate"],[5,"Bobby Jones"],[6,"Scott Wedman"],[7,"Tom Henderson"],[8,"Campy Russell"],[9,"Tom McMillen"],[10,"Mike Sojourner"],[11,"Jamaal Wilkes"],[12,"Brian Winters"],[13,"Len Elmore"],[14,"Maurice Lucas"],[15,"Al Eberhard"],[16,"Cliff Pondexter"],[17,"Glenn McDonald"],[18,"Gary Brokaw"]],
+    1975: [[1,"David Thompson"],[2,"Dave Meyers"],[3,"Marvin Webster"],[4,"Alvan Adams"],[5,"Darryl Dawkins"],[6,"Lionel Hollins"],[7,"Rich Kelley"],[8,"Junior Bridgeman"],[9,"Gene Short"],[10,"Bill Robinzine"],[11,"Joe Meriweather"],[12,"Frank Oleynick"],[13,"Bob Bigelow"],[14,"Joe Bryant"],[15,"John Lambert"],[16,"Ricky Sobers"],[17,"Tom Boswell"],[18,"Kevin Grevey"]],
+    1976: [[1,"John Lucas"],[2,"Scott May"],[3,"Richard Washington"],[4,"Leon Douglas"],[5,"Wally Walker"],[6,"Adrian Dantley"],[7,"Quinn Buckner"],[8,"Robert Parish"],[9,"Armond Hill"],[10,"Ron Lee"],[11,"Bob Wilkerson"],[12,"Terry Furlow"],[13,"Mitch Kupchak"],[14,"Larry Wright"],[15,"Chuckie Williams"],[16,"Norm Cook"],[17,"Sonny Parker"]],
+    1977: [[1,"Kent Benson"],[2,"Otis Birdsong"],[3,"Marques Johnson"],[4,"Greg Ballard"],[5,"Walter Davis"],[6,"Kenny Carr"],[7,"Bernard King"],[8,"Jack Sikma"],[9,"Tom LaGarde"],[10,"Ray Williams"],[11,"Ernie Grunfeld"],[12,"Cedric Maxwell"],[13,"Tate Armstrong"],[14,"Tree Rollins"],[15,"Brad Davis"],[16,"Rickey Green"],[17,"Bo Ellis"],[18,"Wesley Cox"],[19,"Rich Laurel"],[20,"Glenn Mosley"],[21,"Anthony Roberts"],[22,"Norm Nixon"]],
+    1978: [[1,"Mychal Thompson"],[2,"Phil Ford"],[3,"Rick Robey"],[4,"Michael Ray Richardson"],[5,"Purvis Short"],[6,"Larry Bird"],[7,"Ron Brewer"],[8,"Freeman Williams"],[9,"Reggie Theus"],[10,"Butch Lee"],[11,"James Hardy"],[12,"George Johnson"],[13,"Winford Boynes"],[14,"Roger Phegley"],[15,"Mike Mitchell"],[16,"Jack Givens"],[17,"Rod Griffin"],[18,"Dave Corzine"],[19,"Marty Byrnes"],[20,"Frankie Sanders"],[21,"Mike Evans"],[22,"Raymond Townsend"]],
+    1979: [[1,"Magic Johnson"],[2,"Dave Greenwood"],[3,"Bill Cartwright"],[4,"Greg Kelser"],[5,"Sidney Moncrief"],[6,"James Bailey"],[7,"Vinnie Johnson"],[8,"Calvin Natt"],[9,"Larry Demic"],[10,"Roy Hamilton"],[11,"Cliff Robinson"],[12,"Jim Paxson"],[13,"Dudley Bradley"],[14,"Brad Holland"],[15,"Phil Hubbard"],[16,"Jim Spanarkel"],[17,"Lee Johnson"],[18,"Reggie King"],[19,"Wiley Peck"],[20,"Larry Knight"],[21,"Sly Williams"],[22,"Kyle Macy"]],
+    1980: [[1,"Joe Barry Carroll"],[2,"Darrell Griffith"],[3,"Kevin McHale"],[4,"Kelvin Ransey"],[5,"James Ray"],[6,"Mike O'Koren"],[7,"Mike Gminski"],[8,"Andrew Toney"],[9,"Michael Brooks"],[10,"Ronnie Lester"],[11,"Kiki Vandeweghe"],[12,"Mike Woodson"],[13,"Rickey Brown"],[14,"Wes Matthews"],[15,"Reggie Johnson"],[16,"Hawkeye Whitney"],[17,"Larry Drew"],[18,"Don Collins"],[19,"John Duren"],[20,"Bill Hanzlik"],[21,"Monti Davis"],[22,"Chad Kinch"],[23,"Carl Nicks"]],
+    1981: [[1,"Mark Aguirre"],[2,"Isiah Thomas"],[3,"Buck Williams"],[4,"Al Wood"],[5,"Danny Vranes"],[6,"Orlando Woolridge"],[7,"Steve Johnson"],[8,"Tom Chambers"],[9,"Rolando Blackman"],[10,"Albert King"],[11,"Frank Johnson"],[12,"Kelly Tripucka"],[13,"Danny Schayes"],[14,"Herb Williams"],[15,"Jeff Lamp"],[16,"Darnell Valentine"],[17,"Kevin Loder"],[18,"Ray Tolbert"],[19,"Mike McGee"],[20,"Larry Nance"],[21,"Alton Lister"],[22,"Franklin Edwards"],[23,"Charles Bradley"]],
+    1982: [[1,"James Worthy"],[2,"Terry Cummings"],[3,"Dominique Wilkins"],[4,"Bill Garnett"],[5,"LaSalle Thompson"],[6,"Trent Tucker"],[7,"Quintin Dailey"],[8,"Clark Kellogg"],[9,"Cliff Levingston"],[10,"Keith Edmonson"],[11,"Fat Lever"],[12,"John Bagley"],[13,"Sleepy Floyd"],[14,"Lester Conner"],[15,"David Thirdkill"],[16,"Terry Teagle"],[17,"Brook Steppe"],[18,"Ricky Pierce"],[19,"Rob Williams"],[20,"Paul Pressey"],[21,"Eddie Phillips"],[22,"Mark McNamara"],[23,"Darren Tillis"]],
+    1983: [[1,"Ralph Sampson"],[2,"Steve Stipanovich"],[3,"Rodney McCray"],[4,"Byron Scott"],[5,"Sidney Green"],[6,"Russell Cross"],[7,"Thurl Bailey"],[8,"Antoine Carr"],[9,"Dale Ellis"],[10,"Jeff Malone"],[11,"Derek Harper"],[12,"Darrell Walker"],[13,"Ennis Whatley"],[14,"Clyde Drexler"],[15,"Howard Carter"],[16,"Jon Sundvold"],[17,"Leo Rautins"],[18,"Randy Breuer"],[19,"John Paxson"],[20,"Roy Hinson"],[21,"Greg Kite"],[22,"Randy Wittman"],[23,"Mitchell Wiggins"],[24,"Stewart Granger"]],
+    1984: [[1,"Hakeem Olajuwon"],[2,"Sam Bowie"],[3,"Michael Jordan"],[4,"Sam Perkins"],[5,"Charles Barkley"],[6,"Melvin Turpin"],[7,"Alvin Robertson"],[8,"Lancaster Gordon"],[9,"Otis Thorpe"],[10,"Leon Wood"],[11,"Kevin Willis"],[12,"Tim McCormick"],[13,"Jay Humphries"],[14,"Michael Cage"],[15,"Terence Stansbury"],[16,"John Stockton"],[17,"Jeff Turner"],[18,"Vern Fleming"],[19,"Bernard Thompson"],[20,"Tony Campbell"],[21,"Kenny Fields"],[22,"Tom Sewell"],[23,"Earl Jones"],[24,"Michael Young"]],
+    1985: [[1,"Patrick Ewing"],[2,"Wayman Tisdale"],[3,"Benoit Benjamin"],[4,"Xavier McDaniel"],[5,"Jon Koncak"],[6,"Joe Kleine"],[7,"Chris Mullin"],[8,"Detlef Schrempf"],[9,"Charles Oakley"],[10,"Ed Pinckney"],[11,"Keith Lee"],[12,"Kenny Green"],[13,"Karl Malone"],[14,"Alfredrick Hughes"],[15,"Blair Rasmussen"],[16,"Bill Wennington"],[17,"Uwe Blab"],[18,"Joe Dumars"],[19,"Steve Harris"],[20,"Sam Vincent"],[21,"Terry Catledge"],[22,"Jerry Reynolds"],[23,"A.C. Green"],[24,"Terry Porter"]],
+    1986: [[1,"Brad Daugherty"],[2,"Len Bias"],[3,"Chris Washburn"],[4,"Chuck Person"],[5,"Kenny Walker"],[6,"William Bedford"],[7,"Roy Tarpley"],[8,"Ron Harper"],[9,"Brad Sellers"],[10,"Johnny Dawkins"],[11,"John Salley"],[12,"John Williams"],[13,"Dwayne Washington"],[14,"Walter Berry"],[15,"Dell Curry"],[16,"Maurice Martin"],[17,"Harold Pressley"],[18,"Mark Alarie"],[19,"Billy Thompson"],[20,"Buck Johnson"],[21,"Anthony Jones"],[22,"Scott Skiles"],[23,"Ken Barlow"],[24,"Arvydas Sabonis"]],
+    1987: [[1,"David Robinson"],[2,"Armen Gilliam"],[3,"Dennis Hopson"],[4,"Reggie Williams"],[5,"Scottie Pippen"],[6,"Kenny Smith"],[7,"Kevin Johnson"],[8,"Olden Polynice"],[9,"Derrick McKey"],[10,"Horace Grant"],[11,"Reggie Miller"],[12,"Muggsy Bogues"],[13,"Joe Wolf"],[14,"Tellis Frank"],[15,"José Ortiz"],[16,"Chris Welp"],[17,"Ronnie Murphy"],[18,"Mark Jackson"],[19,"Ken Norman"],[20,"Jim Farmer"],[21,"Dallas Comegys"],[22,"Reggie Lewis"],[23,"Greg Anderson"]],
+    1988: [[1,"Danny Manning"],[2,"Rik Smits"],[3,"Charles Smith"],[4,"Chris Morris"],[5,"Mitch Richmond"],[6,"Hersey Hawkins"],[7,"Tim Perry"],[8,"Rex Chapman"],[9,"Rony Seikaly"],[10,"Willie Anderson"],[11,"Will Perdue"],[12,"Harvey Grant"],[13,"Jeff Grayer"],[14,"Dan Majerle"],[15,"Gary Grant"],[16,"Derrick Chievous"],[17,"Eric Leckner"],[18,"Ricky Berry"],[19,"Rod Strickland"],[20,"Kevin Edwards"],[21,"Mark Bryant"],[22,"Randolph Keys"],[23,"Jerome Lane"],[24,"Brian Shaw"],[25,"David Rivers"]],
+    1989: [[1,"Pervis Ellison"],[2,"Danny Ferry"],[3,"Sean Elliott"],[4,"Glen Rice"],[5,"J.R. Reid"],[6,"Stacey King"],[7,"George McCloud"],[8,"Randy White"],[9,"Tom Hammonds"],[10,"Pooh Richardson"],[11,"Nick Anderson"],[12,"Mookie Blaylock"],[13,"Michael Smith"],[14,"Tim Hardaway"],[15,"Todd Lichti"],[16,"Dana Barros"],[17,"Shawn Kemp"],[18,"B.J. Armstrong"],[19,"Kenny Payne"],[20,"Jeff Sanders"],[21,"Blue Edwards"],[22,"Byron Irvin"],[23,"Roy Marble"],[24,"Anthony Cook"],[25,"John Morton"],[26,"Vlade Divac"],[27,"Kenny Battle"]],
+    1990: [[1,"Derrick Coleman"],[2,"Gary Payton"],[3,"Mahmoud Abdul-Rauf"],[4,"Dennis Scott"],[5,"Kendall Gill"],[6,"Felton Spencer"],[7,"Lionel Simmons"],[8,"Bo Kimble"],[9,"Willie Burton"],[10,"Rumeal Robinson"],[11,"Tyrone Hill"],[12,"Alec Kessler"],[13,"Loy Vaught"],[14,"Travis Mays"],[15,"Dave Jamerson"],[16,"Terry Mills"],[17,"Jerrod Mustaf"],[18,"Duane Causwell"],[19,"Dee Brown"],[20,"Gerald Glass"],[21,"Jayson Williams"],[22,"Tate George"],[23,"Anthony Bonner"],[24,"Dwayne Schintzius"],[25,"Alaa Abdelnaby"],[26,"Lance Blanks"],[27,"Elden Campbell"]],
+    1991: [[1,"Larry Johnson"],[2,"Kenny Anderson"],[3,"Billy Owens"],[4,"Dikembe Mutombo"],[5,"Steve Smith"],[6,"Doug Smith"],[7,"Luc Longley"],[8,"Mark Macon"],[9,"Stacey Augmon"],[10,"Bison Dele"],[11,"Terrell Brandon"],[12,"Greg Anthony"],[13,"Dale Davis"],[14,"Rich King"],[15,"Anthony Avent"],[16,"Chris Gatling"],[17,"Victor Alexander"],[18,"Kevin Brooks"],[19,"LaBradford Smith"],[20,"John Turner"],[21,"Eric Murdock"],[22,"LeRon Ellis"],[23,"Stanley Roberts"],[24,"Rick Fox"],[25,"Shaun Vandiver"],[26,"Mark Randall"],[27,"Pete Chilcutt"]],
+    1992: [[1,"Shaquille O'Neal"],[2,"Alonzo Mourning"],[3,"Christian Laettner"],[4,"Jim Jackson"],[5,"LaPhonso Ellis"],[6,"Tom Gugliotta"],[7,"Walt Williams"],[8,"Todd Day"],[9,"Clarence Weatherspoon"],[10,"Adam Keefe"],[11,"Robert Horry"],[12,"Harold Miner"],[13,"Bryant Stith"],[14,"Malik Sealy"],[15,"Anthony Peeler"],[16,"Randy Woods"],[17,"Doug Christie"],[18,"Tracy Murray"],[19,"Don MacLean"],[20,"Hubert Davis"],[21,"Jon Barry"],[22,"Oliver Miller"],[23,"Lee Mayberry"],[24,"Latrell Sprewell"],[25,"Elmore Spencer"],[26,"Dave Johnson"],[27,"Byron Houston"]],
+    1993: [[1,"Chris Webber"],[2,"Shawn Bradley"],[3,"Anfernee Hardaway"],[4,"Jamal Mashburn"],[5,"Isaiah Rider"],[6,"Calbert Cheaney"],[7,"Bobby Hurley"],[8,"Vin Baker"],[9,"Rodney Rogers"],[10,"Lindsey Hunter"],[11,"Allan Houston"],[12,"George Lynch"],[13,"Terry Dehere"],[14,"Scott Haskin"],[15,"Doug Edwards"],[16,"Rex Walters"],[17,"Greg Graham"],[18,"Luther Wright"],[19,"Acie Earl"],[20,"Scott Burrell"],[21,"James Robinson"],[22,"Chris Mills"],[23,"Ervin Johnson"],[24,"Sam Cassell"],[25,"Corie Blount"],[26,"Geert Hammink"],[27,"Malcolm Mackey"]],
+    1994: [[1,"Glenn Robinson"],[2,"Jason Kidd"],[3,"Grant Hill"],[4,"Donyell Marshall"],[5,"Juwan Howard"],[6,"Sharone Wright"],[7,"Lamond Murray"],[8,"Brian Grant"],[9,"Eric Montross"],[10,"Eddie Jones"],[11,"Carlos Rogers"],[12,"Khalid Reeves"],[13,"Jalen Rose"],[14,"Yinka Dare"],[15,"Eric Piatkowski"],[16,"Clifford Rozier"],[17,"Aaron McKie"],[18,"Eric Mobley"],[19,"Tony Dumas"],[20,"B.J. Tyler"],[21,"Dickey Simpkins"],[22,"Bill Curley"],[23,"Wesley Person"],[24,"Monty Williams"],[25,"Greg Minor"],[26,"Charlie Ward"],[27,"Brooks Thompson"]],
+    1995: [[1,"Joe Smith"],[2,"Antonio McDyess"],[3,"Jerry Stackhouse"],[4,"Rasheed Wallace"],[5,"Kevin Garnett"],[6,"Bryant Reeves"],[7,"Damon Stoudamire"],[8,"Shawn Respert"],[9,"Ed O'Bannon"],[10,"Kurt Thomas"],[11,"Gary Trent"],[12,"Cherokee Parks"],[13,"Corliss Williamson"],[14,"Eric Williams"],[15,"Brent Barry"],[16,"Alan Henderson"],[17,"Bob Sura"],[18,"Theo Ratliff"],[19,"Randolph Childress"],[20,"Jason Caffey"],[21,"Michael Finley"],[22,"George Zídek"],[23,"Travis Best"],[24,"Loren Meyer"],[25,"David Vaughn"],[26,"Sherell Ford"],[27,"Mario Bennett"],[28,"Greg Ostertag"],[29,"Cory Alexander"]],
+    1996: [[1,"Allen Iverson"],[2,"Marcus Camby"],[3,"Shareef Abdur-Rahim"],[4,"Stephon Marbury"],[5,"Ray Allen"],[6,"Antoine Walker"],[7,"Lorenzen Wright"],[8,"Kerry Kittles"],[9,"Samaki Walker"],[10,"Erick Dampier"],[11,"Todd Fuller"],[12,"Vitaly Potapenko"],[13,"Kobe Bryant"],[14,"Peja Stojaković"],[15,"Steve Nash"],[16,"Tony Delk"],[17,"Jermaine O'Neal"],[18,"John Wallace"],[19,"Walter McCarty"],[20,"Zydrunas Ilgauskas"],[21,"Dontae' Jones"],[22,"Roy Rogers"],[23,"Efthimios Rentzias"],[24,"Derek Fisher"],[25,"Martin Müürsepp"],[26,"Jerome Williams"],[27,"Brian Evans"],[28,"Priest Lauderdale"],[29,"Travis Knight"]],
+    1997: [[1,"Tim Duncan"],[2,"Keith Van Horn"],[3,"Chauncey Billups"],[4,"Antonio Daniels"],[5,"Tony Battie"],[6,"Ron Mercer"],[7,"Tim Thomas"],[8,"Adonal Foyle"],[9,"Tracy McGrady"],[10,"Danny Fortson"],[11,"Tariq Abdul-Wahad"],[12,"Austin Croshere"],[13,"Derek Anderson"],[14,"Maurice Taylor"],[15,"Kelvin Cato"],[16,"Brevin Knight"],[17,"Johnny Taylor"],[18,"Chris Anstey"],[19,"Scot Pollard"],[20,"Paul Grant"],[21,"Anthony Parker"],[22,"Ed Gray"],[23,"Bobby Jackson"],[24,"Rodrick Rhodes"],[25,"John Thomas"],[26,"Charles Smith"],[27,"Jacque Vaughn"],[28,"Keith Booth"]],
+    1998: [[1,"Michael Olowokandi"],[2,"Mike Bibby"],[3,"Raef LaFrentz"],[4,"Antawn Jamison"],[5,"Vince Carter"],[6,"Robert Traylor"],[7,"Jason Williams"],[8,"Larry Hughes"],[9,"Dirk Nowitzki"],[10,"Paul Pierce"],[11,"Bonzi Wells"],[12,"Michael Doleac"],[13,"Keon Clark"],[14,"Michael Dickerson"],[15,"Matt Harpring"],[16,"Bryce Drew"],[17,"Rasho Nesterović"],[18,"Mirsad Türkcan"],[19,"Pat Garrity"],[20,"Roshown McLeod"],[21,"Ricky Davis"],[22,"Brian Skinner"],[23,"Tyronn Lue"],[24,"Felipe López"],[25,"Al Harrington"],[26,"Sam Jacobson"],[27,"Vladimir Stepania"],[28,"Corey Benjamin"],[29,"Nazr Mohammed"]],
+    1999: [[1,"Elton Brand"],[2,"Steve Francis"],[3,"Baron Davis"],[4,"Lamar Odom"],[5,"Jonathan Bender"],[6,"Wally Szczerbiak"],[7,"Richard Hamilton"],[8,"Andre Miller"],[9,"Shawn Marion"],[10,"Jason Terry"],[11,"Trajan Langdon"],[12,"Aleksandar Radojević"],[13,"Corey Maggette"],[14,"William Avery"],[15,"Frédéric Weis"],[16,"Metta World Peace"],[17,"Cal Bowdler"],[18,"James Posey"],[19,"Quincy Lewis"],[20,"Dion Glover"],[21,"Jeff Foster"],[22,"Kenny Thomas"],[23,"Devean George"],[24,"Andrei Kirilenko"],[25,"Tim James"],[26,"Vonteego Cummings"],[27,"Jumaine Jones"],[28,"Scott Padgett"],[29,"Leon Smith"]],
+    2000: [[1,"Kenyon Martin"],[2,"Stromile Swift"],[3,"Darius Miles"],[4,"Marcus Fizer"],[5,"Mike Miller"],[6,"DerMarr Johnson"],[7,"Chris Mihm"],[8,"Jamal Crawford"],[9,"Joel Przybilla"],[10,"Keyon Dooling"],[11,"Jérôme Moïso"],[12,"Etan Thomas"],[13,"Courtney Alexander"],[14,"Mateen Cleaves"],[15,"Jason Collier"],[16,"Hedo Türkoğlu"],[17,"Desmond Mason"],[18,"Quentin Richardson"],[19,"Jamaal Magloire"],[20,"Speedy Claxton"],[21,"Morris Peterson"],[22,"Donnell Harvey"],[23,"DeShawn Stevenson"],[24,"Dalibor Bagarić"],[25,"Jake Tsakalidis"],[26,"Mamadou N'Diaye"],[27,"Primož Brezec"],[28,"Erick Barkley"],[29,"Mark Madsen"],[30,"Marko Jaric"],[31,"Dan Langhi"],[32,"A.J. Guyton"],[33,"Jake Voskuhl"],[34,"Khalid El-Amin"],[35,"Mike Smith"],[36,"Soumaila Samake"],[37,"Eddie House"],[38,"Eduardo Najera"],[39,"Lavor Postell"],[40,"Hanno Mottola"],[41,"Chris Carrawell"],[42,"Olumide Oyedeji"],[43,"Michael Redd"],[44,"Brian Cardinal"],[45,"Jabari Smith"],[46,"DeeAndre Hulett"],[47,"Josip Sesar"],[48,"Mark Karcher"],[49,"Jason Hart"],[50,"Kaniel Dickens"],[51,"Igor Rakocevic"],[52,"Ernest Brown"],[53,"Dan McClintock"],[54,"Cory Hightower"],[55,"Chris Porter"],[56,"Jaquay Walls"],[57,"Scoonie Penn"],[58,"Pete Mickeal"]],
+    2001: [[1,"Kwame Brown"],[2,"Tyson Chandler"],[3,"Pau Gasol"],[4,"Eddy Curry"],[5,"Jason Richardson"],[6,"Shane Battier"],[7,"Eddie Griffin"],[8,"DeSagana Diop"],[9,"Rodney White"],[10,"Joe Johnson"],[11,"Kedrick Brown"],[12,"Vladimir Radmanović"],[13,"Richard Jefferson"],[14,"Troy Murphy"],[15,"Steven Hunter"],[16,"Kirk Haston"],[17,"Michael Bradley"],[18,"Jason Collins"],[19,"Zach Randolph"],[20,"Brendan Haywood"],[21,"Joseph Forte"],[22,"Jeryl Sasser"],[23,"Brandon Armstrong"],[24,"Raül López"],[25,"Gerald Wallace"],[26,"Samuel Dalembert"],[27,"Jamaal Tinsley"],[28,"Tony Parker"],[30,"Trenton Hassell"],[31,"Gilbert Arenas"],[32,"Omar Cook"],[33,"Will Solomon"],[34,"Terence Morris"],[35,"Brian Scalabrine"],[36,"Jeff Trepagnier"],[37,"Damone Brown"],[38,"Mehmet Okur"],[39,"Michael Wright"],[40,"Earl Watson"],[41,"Jamison Brewer"],[42,"Bobby Simmons"],[43,"Eric Chenowith"],[44,"Kyle Hill"],[45,"Sean Lampley"],[46,"Loren Woods"],[47,"Ousmane Cisse"],[48,"Antonis Fotsis"],[49,"Ken Johnson"],[50,"Ruben Boumtje-Boumtje"],[51,"Alton Ford"],[52,"Andre Hutson"],[53,"Jarron Collins"],[54,"Kenny Satterfield"],[55,"Maurice Jeffers"],[56,"Robertas Javtokas"],[57,"Alvin Jones"],[58,"Bryan Bracey"]],
+    2002: [[1,"Yao Ming"],[2,"Jay Williams"],[3,"Mike Dunleavy"],[4,"Drew Gooden"],[5,"Nikoloz Tskitishvili"],[6,"Dajuan Wagner"],[7,"Nenê"],[8,"Chris Wilcox"],[9,"Amar'e Stoudemire"],[10,"Caron Butler"],[11,"Jared Jeffries"],[12,"Melvin Ely"],[13,"Marcus Haislip"],[14,"Fred Jones"],[15,"Boštjan Nachbar"],[16,"Jiří Welsch"],[17,"Juan Dixon"],[18,"Curtis Borchardt"],[19,"Ryan Humphrey"],[20,"Kareem Rush"],[21,"Qyntel Woods"],[22,"Casey Jacobsen"],[23,"Tayshaun Prince"],[24,"Nenad Krstić"],[25,"Frank Williams"],[26,"John Salmons"],[27,"Chris Jefferies"],[28,"Dan Dickau"],[30,"Steve Logan"],[31,"Roger Mason"],[32,"Robert Archibald"],[33,"Vincent Yarbrough"],[34,"Dan Gadzuric"],[35,"Carlos Boozer"],[36,"Milos Vujanic"],[37,"David Andersen"],[38,"Tito Maddox"],[39,"Rod Grizzard"],[40,"Juan Carlos Navarro"],[41,"Mario Kasun"],[42,"Ronald Murray"],[43,"Jason Jennings"],[44,"Lonny Baxter"],[45,"Sam Clancy"],[46,"Matt Barnes"],[47,"Jamal Sampson"],[48,"Chris Owens"],[49,"Peter Fehse"],[50,"Darius Songaila"],[51,"Federico Kammerichs"],[52,"Marcus Taylor"],[53,"Rasual Butler"],[54,"Tamar Slay"],[55,"Mladen Sekularac"],[56,"Luis Scola"],[57,"Randy Holcomb"],[58,"Corsley Edwards"]],
+    2003: [[1,"LeBron James"],[2,"Darko Miličić"],[3,"Carmelo Anthony"],[4,"Chris Bosh"],[5,"Dwyane Wade"],[6,"Chris Kaman"],[7,"Kirk Hinrich"],[8,"T.J. Ford"],[9,"Mike Sweetney"],[10,"Jarvis Hayes"],[11,"Mickaël Piétrus"],[12,"Nick Collison"],[13,"Marcus Banks"],[14,"Luke Ridnour"],[15,"Reece Gaines"],[16,"Troy Bell"],[17,"Žarko Čabarkapa"],[18,"David West"],[19,"Sasha Pavlović"],[20,"Dahntay Jones"],[21,"Boris Diaw"],[22,"Zoran Planinić"],[23,"Travis Outlaw"],[24,"Brian Cook"],[25,"Carlos Delfino"],[26,"Ndudi Ebi"],[27,"Kendrick Perkins"],[28,"Leandro Barbosa"],[29,"Josh Howard"],[30,"Maciej Lampe"],[31,"Jason Kapono"],[32,"Luke Walton"],[33,"Jerome Beasley"],[34,"Sofoklis Schortsanitis"],[35,"Szymon Szewczyk"],[36,"Mario Austin"],[37,"Travis Hansen"],[38,"Steve Blake"],[39,"Slavko Vranes"],[40,"Derrick Zimmerman"],[41,"Willie Green"],[42,"Zaza Pachulia"],[43,"Keith Bogans"],[44,"Malick Badiane"],[45,"Matt Bonner"],[46,"Sani Becirovic"],[47,"Mo Williams"],[48,"James Lang"],[49,"James Jones"],[50,"Paccelis Morlende"],[51,"Kyle Korver"],[52,"Remon van de Hare"],[53,"Tommy Smith"],[54,"Nedzad Sinanovic"],[55,"Rick Rickert"],[56,"Brandon Hunter"],[57,"Xue Yuyang"],[58,"Andreas Glyniadakis"]],
+    2004: [[1,"Dwight Howard"],[2,"Emeka Okafor"],[3,"Ben Gordon"],[4,"Shaun Livingston"],[5,"Devin Harris"],[6,"Josh Childress"],[7,"Luol Deng"],[8,"Rafael Araújo"],[9,"Andre Iguodala"],[10,"Luke Jackson"],[11,"Andris Biedriņš"],[12,"Robert Swift"],[13,"Sebastian Telfair"],[14,"Kris Humphries"],[15,"Al Jefferson"],[16,"Kirk Snyder"],[17,"Josh Smith"],[18,"J.R. Smith"],[19,"Dorell Wright"],[20,"Jameer Nelson"],[21,"Pavel Podkolzin"],[22,"Viktor Khryapa"],[23,"Sergei Monia"],[24,"Delonte West"],[25,"Tony Allen"],[26,"Kevin Martin"],[27,"Sasha Vujačić"],[28,"Beno Udrih"],[29,"David Harrison"],[30,"Anderson Varejao"],[31,"Jackson Vroman"],[32,"Peter John Ramos"],[33,"Lionel Chalmers"],[34,"Donta Smith"],[35,"Andre Emmett"],[36,"Antonio Burks"],[37,"Royal Ivey"],[38,"Chris Duhon"],[39,"Albert Miralles"],[40,"Justin Reed"],[41,"David Young"],[42,"Viktor Sanikidze"],[43,"Trevor Ariza"],[44,"Tim Pickett"],[45,"Bernard Robinson"],[46,"Ha Seung-Jin"],[47,"Pape Sow"],[48,"Ricky Minard"],[49,"Sergei Lishouk"],[50,"Vassilis Spanoulis"],[51,"Christian Drejer"],[52,"Romain Sato"],[53,"Matt Freije"],[54,"Rickey Paulding"],[55,"Luis Flores"],[56,"Marcus Douthit"],[57,"Sergei Karaulov"],[58,"Blake Stepp"],[59,"Rashad Wright"]],
+    2005: [[1,"Andrew Bogut"],[2,"Marvin Williams"],[3,"Deron Williams"],[4,"Chris Paul"],[5,"Raymond Felton"],[6,"Martell Webster"],[7,"Charlie Villanueva"],[8,"Channing Frye"],[9,"Ike Diogu"],[10,"Andrew Bynum"],[11,"Fran Vázquez"],[12,"Yaroslav Korolev"],[13,"Sean May"],[14,"Rashad McCants"],[15,"Antoine Wright"],[16,"Joey Graham"],[17,"Danny Granger"],[18,"Gerald Green"],[19,"Hakim Warrick"],[20,"Julius Hodge"],[21,"Nate Robinson"],[22,"Jarrett Jack"],[23,"Francisco García"],[24,"Luther Head"],[25,"Johan Petro"],[26,"Jason Maxiell"],[27,"Linas Kleiza"],[28,"Ian Mahinmi"],[29,"Wayne Simien"],[30,"David Lee"],[31,"Salim Stoudamire"],[32,"Daniel Ewing"],[33,"Brandon Bass"],[34,"C.J. Miles"],[35,"Ricky Sanchez"],[36,"Ersan Ilyasova"],[37,"Ronny Turiaf"],[38,"Travis Diener"],[39,"Von Wafer"],[40,"Monta Ellis"],[41,"Roko Ukic"],[42,"Chris Taft"],[43,"Mile Ilic"],[44,"Martynas Andriuskevicius"],[45,"Lou Williams"],[46,"Erazem Lorbek"],[47,"Bracey Wright"],[48,"Mickael Gelabale"],[49,"Andray Blatche"],[50,"Ryan Gomes"],[51,"Robert Whaley"],[52,"Axel Hervelle"],[53,"Orien Greene"],[54,"Dijon Thompson"],[55,"Lawrence Roberts"],[56,"Amir Johnson"],[57,"Marcin Gortat"],[58,"Uros Slokar"],[59,"Cenk Akyol"],[60,"Alex Acker"]],
+    2006: [[1,"Andrea Bargnani"],[2,"LaMarcus Aldridge"],[3,"Adam Morrison"],[4,"Tyrus Thomas"],[5,"Shelden Williams"],[6,"Brandon Roy"],[7,"Randy Foye"],[8,"Rudy Gay"],[9,"Patrick O'Bryant"],[10,"Mouhamed Sene"],[11,"JJ Redick"],[12,"Hilton Armstrong"],[13,"Thabo Sefolosha"],[14,"Ronnie Brewer"],[15,"Cedric Simmons"],[16,"Rodney Carney"],[17,"Shawne Williams"],[18,"Oleksiy Pecherov"],[19,"Quincy Douby"],[20,"Renaldo Balkman"],[21,"Rajon Rondo"],[22,"Marcus Williams"],[23,"Josh Boone"],[24,"Kyle Lowry"],[25,"Shannon Brown"],[26,"Jordan Farmar"],[27,"Sergio Rodríguez"],[28,"Maurice Ager"],[29,"Mardy Collins"],[30,"Joel Freeland"],[31,"James White"],[32,"Steve Novak"],[33,"Solomon Jones"],[34,"Paul Davis"],[35,"P.J. Tucker"],[36,"Craig Smith"],[37,"Bobby Jones"],[38,"Kosta Perovic"],[39,"David Noel"],[40,"Denham Brown"],[41,"James Augustine"],[42,"Daniel Gibson"],[43,"Marcus Vinicius"],[44,"Lior Eliyahu"],[45,"Alexander Johnson"],[46,"Dee Brown"],[47,"Paul Millsap"],[48,"Vladimir Veremeenko"],[49,"Leon Powe"],[50,"Ryan Hollins"],[51,"Cheikh Samb"],[52,"Guillermo Diaz"],[53,"Yotam Halperin"],[54,"Hassan Adams"],[55,"Ejike Ugboaja"],[56,"Edin Bavcic"],[57,"Loukas Mavrokefalidis"],[58,"J.R. Pinnock"],[59,"Damir Markota"],[60,"Will Blalock"]],
+    2007: [[1,"Greg Oden"],[2,"Kevin Durant"],[3,"Al Horford"],[4,"Mike Conley"],[5,"Jeff Green"],[6,"Yi Jianlian"],[7,"Corey Brewer"],[8,"Brandan Wright"],[9,"Joakim Noah"],[10,"Spencer Hawes"],[11,"Acie Law"],[12,"Thaddeus Young"],[13,"Julian Wright"],[14,"Al Thornton"],[15,"Rodney Stuckey"],[16,"Nick Young"],[17,"Sean Williams"],[18,"Marco Belinelli"],[19,"Javaris Crittenton"],[20,"Jason Smith"],[21,"Daequan Cook"],[22,"Jared Dudley"],[23,"Wilson Chandler"],[24,"Rudy Fernández"],[25,"Morris Almond"],[26,"Aaron Brooks"],[27,"Arron Afflalo"],[28,"Tiago Splitter"],[29,"Alando Tucker"],[30,"Petteri Koponen"],[31,"Carl Landry"],[32,"Gabe Pruitt"],[33,"Marcus Williams"],[34,"Nick Fazekas"],[35,"Glen Davis"],[36,"Jermareo Davidson"],[37,"Josh McRoberts"],[38,"Kyrylo Fesenko"],[39,"Stanko Barac"],[40,"Sun Yue"],[41,"Chris Richard"],[42,"Derrick Byars"],[43,"Adam Haluska"],[44,"Reyshawn Terry"],[45,"Jared Jordan"],[46,"Stephane Lasme"],[47,"Dominic McGuire"],[48,"Marc Gasol"],[49,"Aaron Gray"],[50,"Renaldas Seibutis"],[51,"JamesOn Curry"],[52,"Taurean Green"],[53,"Demetris Nichols"],[54,"Brad Newley"],[55,"Herbert Hill"],[56,"Ramon Sessions"],[57,"Sammy Mejia"],[58,"Georgios Printezis"],[59,"D.J. Strawberry"],[60,"Milovan Rakovic"]],
+    2008: [[1,"Derrick Rose"],[2,"Michael Beasley"],[3,"O.J. Mayo"],[4,"Russell Westbrook"],[5,"Kevin Love"],[6,"Danilo Gallinari"],[7,"Eric Gordon"],[8,"Joe Alexander"],[9,"D.J. Augustin"],[10,"Brook Lopez"],[11,"Jerryd Bayless"],[12,"Jason Thompson"],[13,"Brandon Rush"],[14,"Anthony Randolph"],[15,"Robin Lopez"],[16,"Marreese Speights"],[17,"Roy Hibbert"],[18,"JaVale McGee"],[19,"J.J. Hickson"],[20,"Alexis Ajinça"],[21,"Ryan Anderson"],[22,"Courtney Lee"],[23,"Kosta Koufos"],[24,"Serge Ibaka"],[25,"Nicolas Batum"],[26,"George Hill"],[27,"Darrell Arthur"],[28,"Donté Greene"],[29,"D.J. White"],[30,"J.R. Giddens"],[31,"Nikola Pekovic"],[32,"Walter Sharpe"],[33,"Joey Dorsey"],[34,"Mario Chalmers"],[35,"DeAndre Jordan"],[36,"Omer Asik"],[37,"Luc Mbah a Moute"],[38,"Kyle Weaver"],[39,"Sonny Weems"],[40,"Chris Douglas-Roberts"],[41,"Nathan Jawai"],[42,"Sean Singletary"],[43,"Patrick Ewing Jr."],[44,"Ante Tomic"],[45,"Goran Dragic"],[46,"Trent Plaisted"],[47,"Henry Walker"],[48,"Malik Hairston"],[49,"Richard Hendrix"],[50,"DeVon Hardin"],[51,"Shan Foster"],[52,"Darnell Jackson"],[53,"Tadija Dragicevic"],[54,"Maarty Leunen"],[55,"Mike Taylor"],[56,"Sasha Kaun"],[57,"James Gist"],[58,"Joe Crawford"],[59,"Deron Washington"],[60,"Semih Erden"]],
+    2009: [[1,"Blake Griffin"],[2,"Hasheem Thabeet"],[3,"James Harden"],[4,"Tyreke Evans"],[5,"Ricky Rubio"],[6,"Jonny Flynn"],[7,"Stephen Curry"],[8,"Jordan Hill"],[9,"DeMar DeRozan"],[10,"Brandon Jennings"],[11,"Terrence Williams"],[12,"Gerald Henderson"],[13,"Tyler Hansbrough"],[14,"Earl Clark"],[15,"Austin Daye"],[16,"James Johnson"],[17,"Jrue Holiday"],[18,"Ty Lawson"],[19,"Jeff Teague"],[20,"Eric Maynor"],[21,"Darren Collison"],[22,"Victor Claver"],[23,"Omri Casspi"],[24,"Byron Mullens"],[25,"Rodrigue Beaubois"],[26,"Taj Gibson"],[27,"DeMarre Carroll"],[28,"Wayne Ellington"],[29,"Toney Douglas"],[30,"Christian Eyenga"],[31,"Jeff Ayres"],[32,"Jermaine Taylor"],[33,"Dante Cunningham"],[34,"Sergio Llull"],[35,"DaJuan Summers"],[36,"Sam Young"],[37,"DeJuan Blair"],[38,"Jon Brockman"],[39,"Jonas Jerebko"],[40,"Derrick Brown"],[41,"Jodie Meeks"],[42,"Patrick Beverley"],[43,"Marcus Thornton"],[44,"Chase Budinger"],[45,"Nick Calathes"],[46,"Danny Green"],[47,"Henk Norel"],[48,"Taylor Griffin"],[49,"Sergiy Gladyr"],[50,"Goran Suton"],[51,"Jack McClinton"],[52,"A.J. Price"],[53,"Nando De Colo"],[54,"Robert Vaden"],[55,"Patty Mills"],[56,"Ahmad Nivins"],[57,"Emir Preldzic"],[58,"Lester Hudson"],[59,"Chinemelu Elonu"],[60,"Robert Dozier"]],
+    2010: [[1,"John Wall"],[2,"Evan Turner"],[3,"Derrick Favors"],[4,"Wesley Johnson"],[5,"DeMarcus Cousins"],[6,"Ekpe Udoh"],[7,"Greg Monroe"],[8,"Al-Farouq Aminu"],[9,"Gordon Hayward"],[10,"Paul George"],[11,"Cole Aldrich"],[12,"Xavier Henry"],[13,"Ed Davis"],[14,"Patrick Patterson"],[15,"Larry Sanders"],[16,"Luke Babbitt"],[17,"Kevin Séraphin"],[18,"Eric Bledsoe"],[19,"Avery Bradley"],[20,"James Anderson"],[21,"Craig Brackins"],[22,"Elliot Williams"],[23,"Trevor Booker"],[24,"Damion James"],[25,"Dominique Jones"],[26,"Quincy Pondexter"],[27,"Jordan Crawford"],[28,"Greivis Vásquez"],[29,"Daniel Orton"],[30,"Lazar Hayward"],[31,"Tibor Pleiss"],[32,"Dexter Pittman"],[33,"Hassan Whiteside"],[34,"Armon Johnson"],[35,"Nemanja Bjelica"],[36,"Terrico White"],[37,"Darington Hobson"],[38,"Andy Rautins"],[39,"Landry Fields"],[40,"Lance Stephenson"],[41,"Jarvis Varnado"],[42,"Da\'Sean Butler"],[43,"Devin Ebanks"],[44,"Jerome Jordan"],[45,"Paulao Prestes"],[46,"Gani Lawal"],[47,"Tiny Gallon"],[48,"Latavious Williams"],[49,"Ryan Richards"],[50,"Solomon Alabi"],[51,"Magnum Rolle"],[52,"Luke Harangody"],[53,"Pape Sy"],[54,"Willie Warren"],[55,"Jeremy Evans"],[56,"Hamady N\'Diaye"],[57,"Ryan Reid"],[58,"Derrick Caracter"],[59,"Stanley Robinson"],[60,"Dwayne Collins"]],
+    2011: [[1,"Kyrie Irving"],[2,"Derrick Williams"],[3,"Enes Freedom"],[4,"Tristan Thompson"],[5,"Jonas Valančiūnas"],[6,"Jan Veselý"],[7,"Bismack Biyombo"],[8,"Brandon Knight"],[9,"Kemba Walker"],[10,"Jimmer Fredette"],[11,"Klay Thompson"],[12,"Alec Burks"],[13,"Markieff Morris"],[14,"Marcus Morris"],[15,"Kawhi Leonard"],[16,"Nikola Vučević"],[17,"Iman Shumpert"],[18,"Chris Singleton"],[19,"Tobias Harris"],[20,"Donatas Motiejūnas"],[21,"Nolan Smith"],[22,"Kenneth Faried"],[23,"Nikola Mirotić"],[24,"Reggie Jackson"],[25,"MarShon Brooks"],[26,"Jordan Hamilton"],[27,"JaJuan Johnson"],[28,"Norris Cole"],[29,"Cory Joseph"],[30,"Jimmy Butler"],[31,"Bojan Bogdanovic"],[32,"Justin Harper"],[33,"Kyle Singler"],[34,"Shelvin Mack"],[35,"Tyler Honeycutt"],[36,"Jordan Williams"],[37,"Trey Thompkins"],[38,"Chandler Parsons"],[39,"Jeremy Tyler"],[40,"Jon Leuer"],[41,"Darius Morris"],[42,"Davis Bertans"],[43,"Malcolm Lee"],[44,"Charles Jenkins"],[45,"Josh Harrellson"],[46,"Andrew Goudelock"],[47,"Travis Leslie"],[48,"Keith Benson"],[49,"Josh Selby"],[50,"Lavoy Allen"],[51,"Jon Diebler"],[52,"Vernon Macklin"],[53,"DeAndre Liggins"],[54,"Milan Macvan"],[55,"E\'Twaun Moore"],[56,"Chukwudiebere Maduabum"],[57,"Tanguy Ngombo"],[58,"Ater Majok"],[59,"Adam Hanga"],[60,"Isaiah Thomas"]],
+    2012: [[1,"Anthony Davis"],[2,"Michael Kidd-Gilchrist"],[3,"Bradley Beal"],[4,"Dion Waiters"],[5,"Thomas Robinson"],[6,"Damian Lillard"],[7,"Harrison Barnes"],[8,"Terrence Ross"],[9,"Andre Drummond"],[10,"Austin Rivers"],[11,"Meyers Leonard"],[12,"Jeremy Lamb"],[13,"Kendall Marshall"],[14,"John Henson"],[15,"Maurice Harkless"],[16,"Royce White"],[17,"Tyler Zeller"],[18,"Terrence Jones"],[19,"Andrew Nicholson"],[20,"Evan Fournier"],[21,"Jared Sullinger"],[22,"Fab Melo"],[23,"John Jenkins"],[24,"Jared Cunningham"],[25,"Tony Wroten"],[26,"Miles Plumlee"],[27,"Arnett Moultrie"],[28,"Perry Jones"],[29,"Marquis Teague"],[30,"Festus Ezeli"],[31,"Jeff Taylor"],[32,"Tomas Satoransky"],[33,"Bernard James"],[34,"Jae Crowder"],[35,"Draymond Green"],[36,"Orlando Johnson"],[37,"Quincy Acy"],[38,"Quincy Miller"],[39,"Khris Middleton"],[40,"Will Barton"],[41,"Tyshawn Taylor"],[42,"Doron Lamb"],[43,"Mike Scott"],[44,"Kim English"],[45,"Justin Hamilton"],[46,"Darius Miller"],[47,"Kevin Murphy"],[48,"Kostas Papanikolaou"],[49,"Kyle O\'Quinn"],[50,"Izzet Turkyilmaz"],[51,"Kris Joseph"],[52,"Ognjen Kuzmic"],[53,"Furkan Aldemir"],[54,"Tornike Shengelia"],[55,"Darius Johnson-Odom"],[56,"Tomislav Zubcic"],[57,"Ilkan Karaman"],[58,"Robbie Hummel"],[59,"Marcus Denmon"],[60,"Robert Sacre"]],
+    2013: [[1,"Anthony Bennett"],[2,"Victor Oladipo"],[3,"Otto Porter Jr."],[4,"Cody Zeller"],[5,"Alex Len"],[6,"Nerlens Noel"],[7,"Ben McLemore"],[8,"Kentavious Caldwell-Pope"],[9,"Trey Burke"],[10,"CJ McCollum"],[11,"Michael Carter-Williams"],[12,"Steven Adams"],[13,"Kelly Olynyk"],[14,"Shabazz Muhammad"],[15,"Giannis Antetokounmpo"],[16,"Lucas Nogueira"],[17,"Dennis Schröder"],[18,"Shane Larkin"],[19,"Sergey Karasev"],[20,"Tony Snell"],[21,"Gorgui Dieng"],[22,"Mason Plumlee"],[23,"Solomon Hill"],[24,"Tim Hardaway Jr."],[25,"Reggie Bullock"],[26,"Andre Roberson"],[27,"Rudy Gobert"],[28,"Livio Jean-Charles"],[29,"Archie Goodwin"],[30,"Nemanja Nedović"],[31,"Allen Crabbe"],[32,"Alex Abrines"],[33,"Carrick Felix"],[34,"Isaiah Canaan"],[35,"Glen Rice Jr."],[36,"Ray McCallum"],[37,"Tony Mitchell"],[38,"Nate Wolters"],[39,"Jeff Withey"],[40,"Grant Jerrett"],[41,"Jamaal Franklin"],[42,"Pierre Jackson"],[43,"Ricky Ledo"],[44,"Mike Muscala"],[45,"Marko Todorovic"],[46,"Erick Green"],[47,"Raul Neto"],[48,"Ryan Kelly"],[49,"Erik Murphy"],[50,"James Ennis III"],[51,"Romero Osby"],[52,"Lorenzo Brown"],[53,"Colton Iverson"],[54,"Arsalan Kazemi"],[55,"Joffrey Lauvergne"],[56,"Peyton Siva"],[57,"Alex Oriakhi"],[58,"Deshaun Thomas"],[59,"Bojan Dubljevic"],[60,"Janis Timma"]],
+    2014: [[1,"Andrew Wiggins"],[2,"Jabari Parker"],[3,"Joel Embiid"],[4,"Aaron Gordon"],[5,"Danté Exum"],[6,"Marcus Smart"],[7,"Julius Randle"],[8,"Nik Stauskas"],[9,"Noah Vonleh"],[10,"Elfrid Payton"],[11,"Doug McDermott"],[12,"Dario Šarić"],[13,"Zach LaVine"],[14,"T.J. Warren"],[15,"Adreian Payne"],[16,"Jusuf Nurkić"],[17,"James Young"],[18,"Tyler Ennis"],[19,"Gary Harris"],[20,"Bruno Caboclo"],[21,"Mitch McGary"],[22,"Jordan Adams"],[23,"Rodney Hood"],[24,"Shabazz Napier"],[25,"Clint Capela"],[26,"P.J. Hairston"],[27,"Bogdan Bogdanović"],[28,"C.J. Wilcox"],[29,"Josh Huestis"],[30,"Kyle Anderson"],[31,"Damien Inglis"],[32,"K.J. McDaniels"],[33,"Joe Harris"],[34,"Cleanthony Early"],[35,"Jarnell Stokes"],[36,"Johnny O\'Bryant"],[37,"DeAndre Daniels"],[38,"Spencer Dinwiddie"],[39,"Jerami Grant"],[40,"Glenn Robinson III"],[41,"Nikola Jokic"],[42,"Nick Johnson"],[43,"Edy Tavares"],[44,"Markel Brown"],[45,"Dwight Powell"],[46,"Jordan Clarkson"],[47,"Russ Smith"],[48,"Lamar Patterson"],[49,"Cameron Bairstow"],[50,"Alec Brown"],[51,"Thanasis Antetokounmpo"],[52,"Vasilije Micic"],[53,"Alessandro Gentile"],[54,"Nemanja Dangubic"],[55,"Semaj Christon"],[56,"Devyn Marble"],[57,"Louis Labeyrie"],[58,"Jordan McRae"],[59,"Xavier Thames"],[60,"Cory Jefferson"]],
+    2015: [[1,"Karl-Anthony Towns"],[2,"D'Angelo Russell"],[3,"Jahlil Okafor"],[4,"Kristaps Porziņģis"],[5,"Mario Hezonja"],[6,"Willie Cauley-Stein"],[7,"Emmanuel Mudiay"],[8,"Stanley Johnson"],[9,"Frank Kaminsky"],[10,"Justise Winslow"],[11,"Myles Turner"],[12,"Trey Lyles"],[13,"Devin Booker"],[14,"Cameron Payne"],[15,"Kelly Oubre Jr."],[16,"Terry Rozier"],[17,"Rashad Vaughn"],[18,"Sam Dekker"],[19,"Jerian Grant"],[20,"Delon Wright"],[21,"Justin Anderson"],[22,"Bobby Portis"],[23,"Rondae Hollis-Jefferson"],[24,"Tyus Jones"],[25,"Jarell Martin"],[26,"Nikola Milutinov"],[27,"Larry Nance Jr."],[28,"R.J. Hunter"],[29,"Chris McCullough"],[30,"Kevon Looney"],[31,"Cedi Osman"],[32,"Montrezl Harrell"],[33,"Jordan Mickey"],[34,"Anthony Brown"],[35,"Willy Hernangomez"],[36,"Rakeem Christmas"],[37,"Richaun Holmes"],[38,"Darrun Hilliard"],[39,"Juan Pablo Vaulet"],[40,"Josh Richardson"],[41,"Pat Connaughton"],[42,"Olivier Hanlan"],[43,"Joe Young"],[44,"Andrew Harrison"],[45,"Marcus Thornton"],[46,"Norman Powell"],[47,"Arturas Gudaitis"],[48,"Dakari Johnson"],[49,"Aaron White"],[50,"Marcus Eriksson"],[51,"Tyler Harvey"],[52,"Satnam Singh"],[53,"Sir\'Dominic Pointer"],[54,"Dani Diez"],[55,"Cady Lalanne"],[56,"Branden Dawson"],[57,"Nikola Radicevic"],[58,"J.P. Tokoto"],[59,"Dimitrios Agravanis"],[60,"Luka Mitrovic"]],
+    2016: [[1,"Ben Simmons"],[2,"Brandon Ingram"],[3,"Jaylen Brown"],[4,"Dragan Bender"],[5,"Kris Dunn"],[6,"Buddy Hield"],[7,"Jamal Murray"],[8,"Marquese Chriss"],[9,"Jakob Poeltl"],[10,"Thon Maker"],[11,"Domantas Sabonis"],[12,"Taurean Prince"],[13,"Georgios Papagiannis"],[14,"Denzel Valentine"],[15,"Juancho Hernangómez"],[16,"Guerschon Yabusele"],[17,"Wade Baldwin"],[18,"Henry Ellenson"],[19,"Malik Beasley"],[20,"Caris LeVert"],[21,"DeAndre' Bembry"],[22,"Malachi Richardson"],[23,"Ante Žižić"],[24,"Timothé Luwawu-Cabarrot"],[25,"Brice Johnson"],[26,"Furkan Korkmaz"],[27,"Pascal Siakam"],[28,"Skal Labissière"],[29,"Dejounte Murray"],[30,"Damian Jones"],[31,"Deyonta Davis"],[32,"Ivica Zubac"],[33,"Cheick Diallo"],[34,"Tyler Ulis"],[35,"Rade Zagorac"],[36,"Malcolm Brogdon"],[37,"Chinanu Onuaku"],[38,"Patrick McCaw"],[39,"David Michineau"],[40,"Diamond Stone"],[41,"Stephen Zimmerman"],[42,"Isaiah Whitehead"],[43,"Zhou Qi"],[44,"Isaia Cordinier"],[45,"Demetrius Jackson"],[46,"A.J. Hammons"],[47,"Jake Layman"],[48,"Paul Zipser"],[49,"Michael Gbinije"],[50,"Georges Niang"],[51,"Ben Bentil"],[52,"Joel Bolomboy"],[53,"Petr Cornelie"],[54,"Kay Felder"],[55,"Marcus Paige"],[56,"Daniel Hamilton"],[57,"Wang Zhelin"],[58,"Abdel Nader"],[59,"Isaiah Cousins"],[60,"Tyrone Wallace"]],
+    2017: [[1,"Markelle Fultz"],[2,"Lonzo Ball"],[3,"Jayson Tatum"],[4,"Josh Jackson"],[5,"De'Aaron Fox"],[6,"Jonathan Isaac"],[7,"Lauri Markkanen"],[8,"Frank Ntilikina"],[9,"Dennis Smith Jr."],[10,"Zach Collins"],[11,"Malik Monk"],[12,"Luke Kennard"],[13,"Donovan Mitchell"],[14,"Bam Adebayo"],[15,"Justin Jackson"],[16,"Justin Patton"],[17,"D.J. Wilson"],[18,"T.J. Leaf"],[19,"John Collins"],[20,"Harry Giles"],[21,"Terrance Ferguson"],[22,"Jarrett Allen"],[23,"OG Anunoby"],[24,"Tyler Lydon"],[25,"Anžejs Pasečņiks"],[26,"Caleb Swanigan"],[27,"Kyle Kuzma"],[28,"Tony Bradley"],[29,"Derrick White"],[30,"Josh Hart"],[31,"Frank Jackson"],[32,"Davon Reed"],[33,"Wes Iwundu"],[34,"Frank Mason III"],[35,"Ivan Rabb"],[36,"Jonah Bolden"],[37,"Semi Ojeleye"],[38,"Jordan Bell"],[39,"Jawun Evans"],[40,"Dwayne Bacon"],[41,"Tyler Dorsey"],[42,"Thomas Bryant"],[43,"Isaiah Hartenstein"],[44,"Damyean Dotson"],[45,"Dillon Brooks"],[46,"Sterling Brown"],[47,"Ike Anigbogu"],[48,"Sindarius Thornwell"],[49,"Vlatko Cancar"],[50,"Mathias Lessort"],[51,"Monte Morris"],[52,"Edmond Sumner"],[53,"Kadeem Allen"],[54,"Alec Peters"],[55,"Nigel Williams-Goss"],[56,"Jabari Bird"],[57,"Sasha Vezenkov"],[58,"Ognjen Jaramaz"],[59,"Jaron Blossomgame"],[60,"Alpha Kaba"]],
+    2018: [[1,"Deandre Ayton"],[2,"Marvin Bagley III"],[3,"Luka Dončić"],[4,"Jaren Jackson Jr."],[5,"Trae Young"],[6,"Mo Bamba"],[7,"Wendell Carter Jr."],[8,"Collin Sexton"],[9,"Kevin Knox"],[10,"Mikal Bridges"],[11,"Shai Gilgeous-Alexander"],[12,"Miles Bridges"],[13,"Jerome Robinson"],[14,"Michael Porter Jr."],[15,"Troy Brown Jr."],[16,"Zhaire Smith"],[17,"Donte DiVincenzo"],[18,"Lonnie Walker IV"],[19,"Kevin Huerter"],[20,"Josh Okogie"],[21,"Grayson Allen"],[22,"Chandler Hutchison"],[23,"Aaron Holiday"],[24,"Anfernee Simons"],[25,"Moritz Wagner"],[26,"Landry Shamet"],[27,"Robert Williams"],[28,"Jacob Evans"],[29,"Džanan Musa"],[30,"Omari Spellman"],[31,"Elie Okobo"],[32,"Jevon Carter"],[33,"Jalen Brunson"],[34,"Devonte\' Graham"],[35,"Melvin Frazier"],[36,"Mitchell Robinson"],[37,"Gary Trent Jr."],[38,"Khyri Thomas"],[39,"Isaac Bonga"],[40,"Rodions Kurucs"],[41,"Jarred Vanderbilt"],[42,"Bruce Brown"],[43,"Justin Jackson"],[44,"Issuf Sanon"],[45,"Hamidou Diallo"],[46,"De\'Anthony Melton"],[47,"Svi Mykhailiuk"],[48,"Keita Bates-Diop"],[49,"Chimezie Metu"],[50,"Alize Johnson"],[51,"Tony Carr"],[52,"Vince Edwards"],[53,"Devon Hall"],[54,"Shake Milton"],[55,"Arnoldas Kulboka"],[56,"Ray Spalding"],[57,"Kevin Hervey"],[58,"Thomas Welsh"],[59,"George King"],[60,"Kostas Antetokounmpo"]],
+    2019: [[1,"Zion Williamson"],[2,"Ja Morant"],[3,"RJ Barrett"],[4,"De'Andre Hunter"],[5,"Darius Garland"],[6,"Jarrett Culver"],[7,"Coby White"],[8,"Jaxson Hayes"],[9,"Rui Hachimura"],[10,"Cam Reddish"],[11,"Cameron Johnson"],[12,"P.J. Washington"],[13,"Tyler Herro"],[14,"Romeo Langford"],[15,"Sekou Doumbouya"],[16,"Chuma Okeke"],[17,"Nickeil Alexander-Walker"],[18,"Goga Bitadze"],[19,"Luka Šamanić"],[20,"Matisse Thybulle"],[21,"Brandon Clarke"],[22,"Grant Williams"],[23,"Darius Bazley"],[24,"Ty Jerome"],[25,"Nassir Little"],[26,"Dylan Windler"],[27,"Mfiondu Kabengele"],[28,"Jordan Poole"],[29,"Keldon Johnson"],[30,"Kevin Porter Jr."],[31,"Nic Claxton"],[32,"KZ Okpala"],[33,"Carsen Edwards"],[34,"Bruno Fernando"],[35,"Didi Louzada"],[36,"Cody Martin"],[37,"Deividas Sirvydis"],[38,"Daniel Gafford"],[39,"Alen Smailagic"],[40,"Justin James"],[41,"Eric Paschall"],[42,"Admiral Schofield"],[43,"Jaylen Nowell"],[44,"Bol Bol"],[45,"Isaiah Roby"],[46,"Talen Horton-Tucker"],[47,"Ignas Brazdeikis"],[48,"Terance Mann"],[49,"Quinndary Weatherspoon"],[50,"Jarrell Brantley"],[51,"Tremont Waters"],[52,"Jalen McDaniels"],[53,"Justin Wright-Foreman"],[54,"Marial Shayok"],[55,"Kyle Guy"],[56,"Jaylen Hands"],[57,"Jordan Bone"],[58,"Miye Oni"],[59,"Dewan Hernandez"],[60,"Vanja Marinkovic"]],
+    2020: [[1,"Anthony Edwards"],[2,"James Wiseman"],[3,"LaMelo Ball"],[4,"Patrick Williams"],[5,"Isaac Okoro"],[6,"Onyeka Okongwu"],[7,"Killian Hayes"],[8,"Obi Toppin"],[9,"Deni Avdija"],[10,"Jalen Smith"],[11,"Devin Vassell"],[12,"Tyrese Haliburton"],[13,"Kira Lewis Jr."],[14,"Aaron Nesmith"],[15,"Cole Anthony"],[16,"Isaiah Stewart"],[17,"Aleksej Pokuševski"],[18,"Josh Green"],[19,"Saddiq Bey"],[20,"Precious Achiuwa"],[21,"Tyrese Maxey"],[22,"Zeke Nnaji"],[23,"Leandro Bolmaro"],[24,"R.J. Hampton"],[25,"Immanuel Quickley"],[26,"Payton Pritchard"],[27,"Udoka Azubuike"],[28,"Jaden McDaniels"],[29,"Malachi Flynn"],[30,"Desmond Bane"],[31,"Tyrell Terry"],[32,"Vernon Carey Jr."],[33,"Daniel Oturu"],[34,"Theo Maledon"],[35,"Xavier Tillman"],[36,"Tyler Bey"],[37,"Vit Krejci"],[38,"Saben Lee"],[39,"Elijah Hughes"],[40,"Robert Woodard II"],[41,"Tre Jones"],[42,"Nick Richards"],[43,"Jahmi\'us Ramsey"],[44,"Marko Simonovic"],[45,"Jordan Nwora"],[46,"C.J. Elleby"],[47,"Yam Madar"],[48,"Nico Mannion"],[49,"Isaiah Joe"],[50,"Skylar Mays"],[51,"Justinian Jessup"],[52,"Kenyon Martin Jr."],[53,"Cassius Winston"],[54,"Cassius Stanley"],[55,"Jay Scrubb"],[56,"Grant Riller"],[57,"Reggie Perry"],[58,"Paul Reed"],[59,"Jalen Harris"],[60,"Sam Merrill"]],
+    2021: [[1,"Cade Cunningham"],[2,"Jalen Green"],[3,"Evan Mobley"],[4,"Scottie Barnes"],[5,"Jalen Suggs"],[6,"Josh Giddey"],[7,"Jonathan Kuminga"],[8,"Franz Wagner"],[9,"Davion Mitchell"],[10,"Ziaire Williams"],[11,"James Bouknight"],[12,"Joshua Primo"],[13,"Chris Duarte"],[14,"Moses Moody"],[15,"Corey Kispert"],[16,"Alperen Şengün"],[17,"Trey Murphy III"],[18,"Tre Mann"],[19,"Kai Jones"],[20,"Jalen Johnson"],[21,"Keon Johnson"],[22,"Isaiah Jackson"],[23,"Usman Garuba"],[24,"Josh Christopher"],[25,"Quentin Grimes"],[26,"Bones Hyland"],[27,"Cam Thomas"],[28,"Jaden Springer"],[29,"Day'Ron Sharpe"],[30,"Santi Aldama"],[31,"Isaiah Todd"],[32,"Jeremiah Robinson-Earl"],[33,"Jason Preston"],[34,"Rokas Jokubaitis"],[35,"Herbert Jones"],[36,"Miles McBride"],[37,"JT Thor"],[38,"Ayo Dosunmu"],[39,"Neemias Queta"],[40,"Jared Butler"],[41,"Joe Wieskamp"],[42,"Isaiah Livers"],[43,"Greg Brown III"],[44,"Kessler Edwards"],[45,"Juhann Begarin"],[46,"Dalano Banton"],[47,"David Johnson"],[48,"Sharife Cooper"],[49,"Marcus Zegarowski"],[50,"Filip Petrusev"],[51,"Brandon Boston Jr."],[52,"Luka Garza"],[53,"Charles Bassey"],[54,"Sandro Mamukelashvili"],[55,"Aaron Wiggins"],[56,"Scottie Lewis"],[57,"Balsa Koprivica"],[58,"Jericho Sims"],[59,"RaiQuan Gray"],[60,"Georgios Kalaitzakis"]],
+    2022: [[1,"Paolo Banchero"],[2,"Chet Holmgren"],[3,"Jabari Smith Jr."],[4,"Keegan Murray"],[5,"Jaden Ivey"],[6,"Bennedict Mathurin"],[7,"Shaedon Sharpe"],[8,"Dyson Daniels"],[9,"Jeremy Sochan"],[10,"Johnny Davis"],[11,"Ousmane Dieng"],[12,"Jalen Williams"],[13,"Jalen Duren"],[14,"Ochai Agbaji"],[15,"Mark Williams"],[16,"AJ Griffin"],[17,"Tari Eason"],[18,"Dalen Terry"],[19,"Jake LaRavia"],[20,"Malaki Branham"],[21,"Christian Braun"],[22,"Walker Kessler"],[23,"David Roddy"],[24,"MarJon Beauchamp"],[25,"Blake Wesley"],[26,"Wendell Moore Jr."],[27,"Nikola Jović"],[28,"Patrick Baldwin Jr."],[29,"TyTy Washington Jr."],[30,"Peyton Watson"],[31,"Andrew Nembhard"],[32,"Caleb Houstan"],[33,"Christian Koloko"],[34,"Jaylin Williams"],[35,"Max Christie"],[36,"Gabriele Procida"],[37,"Jaden Hardy"],[38,"Kennedy Chandler"],[39,"Khalifa Diop"],[40,"Bryce McGowens"],[41,"E.J. Liddell"],[42,"Trevor Keels"],[43,"Moussa Diabate"],[44,"Ryan Rollins"],[45,"Josh Minott"],[46,"Ismael Kamagate"],[47,"Vince Williams Jr."],[48,"Kendall Brown"],[49,"Isaiah Mobley"],[50,"Matteo Spagnolo"],[51,"Tyrese Martin"],[52,"Karlo Matkovic"],[53,"JD Davison"],[54,"Yannick Nzosa"],[55,"Gui Santos"],[56,"Luke Travers"],[57,"Jabari Walker"],[58,"Hugo Besson"]],
+    2023: [[1,"Victor Wembanyama"],[2,"Brandon Miller"],[3,"Scoot Henderson"],[4,"Amen Thompson"],[5,"Ausar Thompson"],[6,"Anthony Black"],[7,"Bilal Coulibaly"],[8,"Jarace Walker"],[9,"Taylor Hendricks"],[10,"Cason Wallace"],[11,"Jett Howard"],[12,"Dereck Lively II"],[13,"Gradey Dick"],[14,"Jordan Hawkins"],[15,"Kobe Bufkin"],[16,"Keyonte George"],[17,"Jalen Hood-Schifino"],[18,"Jaime Jaquez Jr."],[19,"Brandin Podziemski"],[20,"Cam Whitmore"],[21,"Noah Clowney"],[22,"Dariq Whitehead"],[23,"Kris Murray"],[24,"Olivier-Maxence Prosper"],[25,"Marcus Sasser"],[26,"Ben Sheppard"],[27,"Nick Smith Jr."],[28,"Brice Sensabaugh"],[29,"Julian Strawther"],[30,"Kobe Brown"],[31,"James Nnaji"],[32,"Jalen Pickett"],[33,"Leonard Miller"],[34,"Colby Jones"],[35,"Julian Phillips"],[36,"Andre Jackson Jr."],[37,"Hunter Tyson"],[38,"Jordan Walsh"],[39,"Mouhamed Gueye"],[40,"Maxwell Lewis"],[41,"Amari Bailey"],[42,"Tristan Vukcevic"],[43,"Rayan Rupert"],[44,"Sidy Cissoko"],[45,"GG Jackson II"],[46,"Seth Lundy"],[47,"Mojave King"],[48,"Jordan Miller"],[49,"Emoni Bates"],[50,"Keyontae Johnson"],[51,"Jalen Wilson"],[52,"Toumani Camara"],[53,"Jaylen Clark"],[54,"Jalen Slawson"],[55,"Isaiah Wong"],[56,"Tarik Biberovic"],[57,"Trayce Jackson-Davis"],[58,"Chris Livingston"]],
+    2024: [[1,"Zaccharie Risacher"],[2,"Alex Sarr"],[3,"Reed Sheppard"],[4,"Stephon Castle"],[5,"Ron Holland"],[6,"Tidjane Salaün"],[7,"Donovan Clingan"],[8,"Rob Dillingham"],[9,"Zach Edey"],[10,"Cody Williams"],[11,"Matas Buzelis"],[12,"Nikola Topić"],[13,"Devin Carter"],[14,"Bub Carrington"],[15,"Kel'el Ware"],[16,"Jared McCain"],[17,"Dalton Knecht"],[18,"Tristan Da Silva"],[19,"Ja'Kobe Walter"],[20,"Jaylon Tyson"],[21,"Yves Missi"],[22,"DaRon Holmes"],[23,"AJ Johnson"],[24,"Kyshawn George"],[25,"Pacôme Dadiet"],[26,"Dillon Jones"],[27,"Terrence Shannon Jr."],[28,"Ryan Dunn"],[29,"Isaiah Collier"],[30,"Baylor Scheierman"],[31,"Jonathan Mogbo"],[32,"Kyle Filipowski"],[33,"Tyler Smith"],[34,"Tyler Kolek"],[35,"Johnny Furphy"],[36,"Juan Nunez"],[37,"Bobi Klintman"],[38,"Ajay Mitchell"],[39,"Jaylen Wells"],[40,"Oso Ighodaro"],[41,"Adem Bona"],[42,"KJ Simpson"],[43,"Nikola Djurisic"],[44,"Pelle Larsson"],[45,"Jamal Shead"],[46,"Cam Christie"],[47,"Antonio Reeves"],[48,"Harrison Ingram"],[49,"Tristen Newton"],[50,"Enrique Freeman"],[51,"Melvin Ajinca"],[52,"Quinten Post"],[53,"Cam Spencer"],[54,"Anton Watson"],[55,"Bronny James"],[56,"Kevin McCullar Jr."],[57,"Ulrich Chomche"],[58,"Ariel Hukporti"]],
+    2025: [[1,"Cooper Flagg"],[2,"Dylan Harper"],[3,"V.J. Edgecombe"],[4,"Kon Knueppel"],[5,"Ace Bailey"],[6,"Tre Johnson"],[7,"Jeremiah Fears"],[8,"Egor Dëmin"],[9,"Collin Murray-Boyles"],[10,"Khaman Maluach"],[11,"Cedric Coward"],[12,"Noa Essengue"],[13,"Derik Queen"],[14,"Carter Bryant"],[15,"Thomas Sorber"],[16,"Yang Hansen"],[17,"Joan Beringer"],[18,"Walter Clayton Jr."],[19,"Nolan Traoré"],[20,"Kasparas Jakučionis"],[21,"Will Riley"],[22,"Drake Powell"],[23,"Asa Newell"],[24,"Nique Clifford"],[25,"Jase Richardson"],[26,"Ben Saraf"],[27,"Danny Wolf"],[28,"Hugo González"],[29,"Liam McNeeley"],[30,"Yanic Konan Niederhäuser"],[31,"Rasheer Fleming"],[32,"Noah Penda"],[33,"Sion James"],[34,"Ryan Kalkbrenner"],[35,"Johni Broome"],[36,"Adou Thiero"],[37,"Chaz Lanier"],[38,"Kam Jones"],[39,"Alijah Martin"],[40,"Micah Peavy"],[41,"Koby Brea"],[42,"Maxime Raynaud"],[43,"Jamir Watkins"],[44,"Brooks Barnhizer"],[45,"Rocco Zikarsky"],[46,"Amari Williams"],[47,"Bogoljub Markovic"],[48,"Javon Small"],[49,"Tyrese Proctor"],[50,"Kobe Sanders"],[51,"Mohamed Diawara"],[52,"Alex Toohey"],[53,"John Tonje"],[54,"Taelon Peter"],[55,"Lachlan Olbrich"],[56,"Will Richard"],[57,"Max Shulga"],[58,"Saliou Niang"],[59,"Jahmai Mashack"]],
+    2026: [[1,"AJ Dybantsa"],[2,"Darryn Peterson"],[3,"Cameron Boozer"],[4,"Caleb Wilson"],[5,"Keaton Wagler"],[6,"Mikel Brown Jr."],[7,"Darius Acuff Jr."],[8,"Kingston Flemings"],[9,"Morez Johnson Jr."],[10,"Brayden Burries"],[11,"Yaxel Lendeborg"],[12,"Aday Mara"],[13,"Nate Ament"],[14,"Hannes Steinbach"],[15,"Dailyn Swain"],[16,"Bennett Stirtz"],[17,"Ebuka Okorie"],[18,"Christian Anderson Jr."],[19,"Allen Graves"],[20,"Jayden Quaintance"],[21,"Karim López"],[22,"Labaron Philon Jr."],[23,"Zuby Ejiofor"],[24,"Cameron Carr"],[25,"Sergio de Larrea"],[26,"Tarris Reed Jr."],[27,"Chris Cenac Jr."],[28,"Joshua Jefferson"],[29,"Alex Karaban"],[30,"Koa Peat"],[31,"Bruce Thornton"],[32,"Richie Saunders"],[33,"Isaiah Evans"],[34,"Meleek Thomas"],[35,"Trevon Brazile"],[36,"Baba Miller"],[37,"Ryan Conwell"],[38,"Braden Smith"],[39,"Jack Kayil"],[40,"Dillon Mitchell"],[41,"Otega Oweh"],[42,"Ja'Kobi Gillespie"],[43,"Tyler Bilodeau"],[44,"Maliq Brown"],[45,"Emanuel Sharp"],[46,"Felix Okpara"],[47,"Tyler Nickel"],[48,"Tobi Lawal"],[49,"Bryce Hopkins"],[50,"Jaden Bradley"],[51,"Izaiyah Nelson"],[52,"Henri Veesaar"],[53,"Ugonna Onyenso"],[54,"Lajae Jones"],[55,"Nick Martinelli"],[56,"Vsevolod Ishchenko"],[57,"Narcisse Ngoy"],[58,"Jaron Pierre Jr."],[59,"Trey Kaufman-Renn"],[60,"Malique Lewis"]]
+  };
+
+  var DEFAULT_YEAR = 2018;
+
+  // Career VORP (NBA regular season, summed across every season) for each pick,
+  // keyed by draft year then original pick number. Built from Basketball-Reference's
+  // season-level advanced stats through the end of the 2025-26 season. null = never
+  // played an NBA game. Only 1973+ classes are here: VORP starts with 1973-74.
+  var VORP = {"1973":{"1":8.5,"2":8.6,"3":-3.6,"4":2.0,"5":8.1,"6":5.3,"7":-0.3,"8":5.9,"9":1.6,"10":-0.5,"11":null,"12":2.3,"13":-0.3,"14":-1.3,"15":null,"16":7.5,"17":-0.2,"18":null},"1974":{"1":21.4,"2":0.2,"3":5.1,"4":6.9,"5":30.5,"6":10.4,"7":4.5,"8":9.9,"9":-0.2,"10":1.1,"11":14.3,"12":7.7,"13":1.5,"14":10.7,"15":-0.5,"16":1.1,"17":-0.3,"18":0.1},"1975":{"1":16.9,"2":2.5,"3":6.2,"4":32.9,"5":7.7,"6":3.1,"7":12.7,"8":8.3,"9":-0.2,"10":0.6,"11":1.3,"12":-0.8,"13":-0.2,"14":-0.8,"15":-1.5,"16":4.2,"17":1.5,"18":2.9},"1976":{"1":21.2,"2":2.6,"3":-1.1,"4":-2.4,"5":-0.7,"6":43.6,"7":7.8,"8":40.6,"9":-0.9,"10":3.9,"11":-0.7,"12":2.5,"13":3.1,"14":1.4,"15":-0.1,"16":-0.1,"17":10.5},"1977":{"1":8.6,"2":14.3,"3":31.7,"4":18.1,"5":25.2,"6":2.3,"7":27.0,"8":37.0,"9":-1.5,"10":17.0,"11":4.9,"12":22.1,"13":-0.3,"14":18.9,"15":12.1,"16":14.9,"17":-0.3,"18":-0.9,"19":-0.1,"20":-0.1,"21":-2.3,"22":10.2},"1978":{"1":14.4,"2":4.0,"3":0.2,"4":21.2,"5":12.2,"6":77.4,"7":2.3,"8":2.3,"9":18.4,"10":0.3,"11":1.0,"12":1.4,"13":-1.3,"14":0.1,"15":4.9,"16":0.6,"17":null,"18":7.0,"19":-0.5,"20":-0.1,"21":-1.2,"22":-0.7},"1979":{"1":80.2,"2":7.4,"3":9.8,"4":0.4,"5":33.3,"6":-2.6,"7":16.4,"8":15.6,"9":-2.9,"10":-0.6,"11":6.8,"12":13.4,"13":6.8,"14":-0.3,"15":1.5,"16":3.8,"17":-0.2,"18":4.6,"19":-0.4,"20":null,"21":4.4,"22":9.6},"1980":{"1":8.1,"2":3.5,"3":34.3,"4":3.4,"5":-0.6,"6":3.3,"7":13.2,"8":4.6,"9":4.6,"10":0.8,"11":17.6,"12":8.5,"13":-2.8,"14":1.8,"15":-0.5,"16":0.1,"17":4.9,"18":3.5,"19":-2.4,"20":2.2,"21":0.0,"22":-0.3,"23":-1.6},"1981":{"1":24.2,"2":41.7,"3":21.7,"4":1.8,"5":0.9,"6":13.2,"7":1.1,"8":12.0,"9":19.6,"10":1.1,"11":2.5,"12":11.1,"13":-0.0,"14":7.8,"15":-0.5,"16":5.6,"17":0.2,"18":-0.7,"19":1.7,"20":43.5,"21":3.0,"22":0.1,"23":-0.4},"1982":{"1":29.1,"2":22.5,"3":50.6,"4":1.6,"5":2.7,"6":10.1,"7":0.2,"8":7.3,"9":7.7,"10":-0.4,"11":32.1,"12":4.5,"13":16.6,"14":11.3,"15":-1.1,"16":-3.3,"17":0.1,"18":18.5,"19":-1.0,"20":22.9,"21":-0.3,"22":-1.9,"23":-0.9},"1983":{"1":4.9,"2":8.4,"3":19.2,"4":21.0,"5":-3.9,"6":0.1,"7":7.0,"8":4.0,"9":22.9,"10":3.9,"11":35.7,"12":13.1,"13":2.1,"14":70.4,"15":-0.5,"16":-0.9,"17":-0.1,"18":2.3,"19":3.0,"20":3.3,"21":-6.7,"22":1.9,"23":1.7,"24":-0.8},"1984":{"1":74.3,"2":6.0,"3":116.1,"4":29.1,"5":80.6,"6":1.2,"7":28.3,"8":-2.3,"9":19.0,"10":0.8,"11":-1.2,"12":0.1,"13":10.9,"14":13.5,"15":-1.2,"16":106.4,"17":-7.2,"18":15.3,"19":-0.6,"20":2.2,"21":-0.2,"22":-0.2,"23":-0.1,"24":0.3},"1985":{"1":50.1,"2":2.4,"3":4.7,"4":9.6,"5":3.4,"6":-6.8,"7":41.6,"8":32.3,"9":15.4,"10":9.2,"11":-0.7,"12":-0.9,"13":99.1,"14":-0.8,"15":-3.4,"16":-4.4,"17":-1.7,"18":25.3,"19":-0.4,"20":2.2,"21":-2.0,"22":5.5,"23":16.7,"24":43.3},"1986":{"1":21.2,"2":null,"3":-0.9,"4":9.0,"5":0.5,"6":-1.8,"7":3.3,"8":30.4,"9":-0.4,"10":4.4,"11":10.5,"12":8.7,"13":0.3,"14":1.2,"15":17.2,"16":-0.4,"17":3.9,"18":-0.5,"19":1.2,"20":1.7,"21":-0.3,"22":6.6,"23":null,"24":18.4},"1987":{"1":82.1,"2":8.8,"3":0.6,"4":8.9,"5":63.2,"6":11.1,"7":37.3,"8":-1.7,"9":20.3,"10":32.8,"11":66.0,"12":18.0,"13":-6.8,"14":-2.5,"15":-0.4,"16":-0.9,"17":-0.2,"18":37.6,"19":4.9,"20":-0.8,"21":-0.9,"22":12.4,"23":-3.6},"1988":{"1":18.4,"2":10.4,"3":8.2,"4":13.5,"5":29.3,"6":32.8,"7":1.5,"8":5.2,"9":0.6,"10":8.7,"11":-0.2,"12":5.5,"13":-1.3,"14":29.8,"15":3.5,"16":-0.7,"17":-4.7,"18":0.1,"19":36.4,"20":3.3,"21":-4.1,"22":-1.6,"23":-1.2,"24":5.4,"25":-0.7},"1989":{"1":4.5,"2":4.9,"3":13.5,"4":24.8,"5":-3.6,"6":-2.6,"7":5.4,"8":-4.0,"9":-4.7,"10":10.4,"11":24.7,"12":39.4,"13":-0.6,"14":39.8,"15":-0.5,"16":18.2,"17":19.5,"18":8.0,"19":-0.9,"20":-0.6,"21":1.9,"22":0.6,"23":-0.3,"24":-0.7,"25":-0.5,"26":36.2,"27":0.8},"1990":{"1":22.3,"2":62.4,"3":4.6,"4":9.7,"5":15.8,"6":-7.1,"7":6.6,"8":-1.2,"9":-0.8,"10":0.9,"11":0.7,"12":-2.8,"13":2.1,"14":-0.5,"15":-0.3,"16":5.8,"17":-0.9,"18":-0.7,"19":11.6,"20":0.2,"21":-2.1,"22":-0.7,"23":0.1,"24":-1.4,"25":-1.4,"26":-0.3,"27":9.6},"1991":{"1":22.0,"2":21.9,"3":7.8,"4":33.8,"5":24.6,"6":-2.4,"7":-1.9,"8":-2.3,"9":9.8,"10":3.5,"11":30.1,"12":13.3,"13":18.3,"14":-0.3,"15":-6.3,"16":3.2,"17":-0.3,"18":-1.0,"19":-1.2,"20":-0.5,"21":11.9,"22":-0.3,"23":-2.0,"24":11.8,"25":null,"26":-0.3,"27":0.2},"1992":{"1":75.4,"2":27.2,"3":19.4,"4":8.2,"5":4.7,"6":15.2,"7":11.9,"8":3.4,"9":12.0,"10":1.6,"11":26.5,"12":-0.9,"13":4.9,"14":2.3,"15":6.7,"16":0.2,"17":20.6,"18":5.8,"19":-0.9,"20":4.3,"21":13.3,"22":7.2,"23":-2.3,"24":21.0,"25":-1.6,"26":-0.8,"27":-1.3},"1993":{"1":42.1,"2":8.7,"3":26.8,"4":13.5,"5":4.6,"6":-2.9,"7":-3.5,"8":5.4,"9":9.8,"10":9.4,"11":14.9,"12":7.4,"13":-1.1,"14":0.0,"15":-0.7,"16":-0.0,"17":-1.1,"18":-0.2,"19":-2.5,"20":5.3,"21":0.1,"22":6.8,"23":2.6,"24":28.9,"25":-1.0,"26":0.0,"27":-0.1},"1994":{"1":13.4,"2":73.4,"3":43.4,"4":19.8,"5":3.9,"6":-3.3,"7":4.1,"8":6.2,"9":-5.3,"10":42.3,"11":1.5,"12":1.0,"13":12.1,"14":-1.5,"15":7.8,"16":-1.1,"17":13.0,"18":-0.9,"19":-0.7,"20":-0.6,"21":-3.3,"22":-1.4,"23":15.2,"24":0.4,"25":0.6,"26":14.6,"27":0.2},"1995":{"1":3.1,"2":13.0,"3":17.4,"4":38.4,"5":97.0,"6":-4.4,"7":16.8,"8":-0.3,"9":-0.7,"10":8.6,"11":2.3,"12":-0.6,"13":-0.2,"14":-1.3,"15":27.7,"16":0.7,"17":9.4,"18":10.3,"19":-0.4,"20":-3.7,"21":28.7,"22":-1.9,"23":6.2,"24":-2.7,"25":-1.3,"26":-0.1,"27":0.3,"28":5.1,"29":0.4},"1996":{"1":49.7,"2":31.4,"3":21.9,"4":30.7,"5":57.5,"6":18.1,"7":-2.8,"8":18.1,"9":-1.3,"10":4.2,"11":-2.2,"12":-5.8,"13":80.1,"14":26.1,"15":48.2,"16":4.7,"17":15.7,"18":-1.2,"19":1.0,"20":10.3,"21":-0.2,"22":-1.0,"23":-0.1,"24":8.8,"25":0.1,"26":7.6,"27":0.3,"28":-0.8,"29":-1.0},"1997":{"1":91.2,"2":9.7,"3":43.7,"4":10.2,"5":0.8,"6":-2.3,"7":6.3,"8":0.9,"9":55.7,"10":-2.6,"11":-1.3,"12":5.5,"13":13.4,"14":-5.3,"15":4.6,"16":10.4,"17":-0.5,"18":-0.5,"19":2.9,"20":-0.2,"21":6.0,"22":-0.4,"23":10.1,"24":-1.3,"25":-1.3,"26":0.4,"27":-4.5,"28":-0.4},"1998":{"1":-8.6,"2":23.9,"3":9.8,"4":24.4,"5":57.9,"6":0.7,"7":12.9,"8":10.7,"9":85.0,"10":65.6,"11":8.3,"12":-3.6,"13":2.6,"14":1.3,"15":6.3,"16":-1.2,"17":5.0,"18":-0.1,"19":0.6,"20":-1.2,"21":6.2,"22":-1.4,"23":0.7,"24":-0.5,"25":3.5,"26":-0.3,"27":-1.3,"28":-1.6,"29":-2.3},"1999":{"1":37.2,"2":22.6,"3":33.1,"4":31.5,"5":-0.6,"6":13.6,"7":13.1,"8":33.3,"9":47.6,"10":37.4,"11":0.4,"12":-0.4,"13":13.3,"14":-1.1,"15":null,"16":25.3,"17":-0.4,"18":13.9,"19":-1.5,"20":0.2,"21":6.3,"22":3.1,"23":1.4,"24":41.7,"25":-0.3,"26":-0.2,"27":2.2,"28":2.2,"29":0.0},"2000":{"1":12.1,"2":1.0,"3":3.1,"4":-2.6,"5":19.7,"6":0.6,"7":-4.3,"8":18.5,"9":0.6,"10":-0.2,"11":-0.4,"12":-0.1,"13":-1.8,"14":-1.7,"15":-1.8,"16":19.6,"17":-2.1,"18":8.5,"19":-3.0,"20":3.6,"21":7.7,"22":-0.5,"23":-3.3,"24":-1.4,"25":-1.3,"26":-0.5,"27":-1.7,"28":-0.2,"29":-2.9,"30":3.7,"31":-0.9,"32":-0.2,"33":-2.9,"34":-0.1,"35":-0.1,"36":-0.1,"37":6.1,"38":2.8,"39":-0.3,"40":-2.3,"41":null,"42":-0.4,"43":21.4,"44":3.1,"45":-0.6,"46":null,"47":null,"48":null,"49":1.0,"50":0.0,"51":-0.2,"52":-0.1,"53":-0.1,"54":null,"55":-0.7,"56":null,"57":null,"58":null},"2001":{"1":-1.3,"2":16.9,"3":57.6,"4":-1.3,"5":23.9,"6":28.0,"7":2.7,"8":0.4,"9":-0.2,"10":26.6,"11":0.5,"12":7.5,"13":19.3,"14":10.8,"15":-0.5,"16":-0.4,"17":-1.0,"18":-6.5,"19":19.0,"20":2.8,"21":-0.2,"22":-0.1,"23":-1.0,"24":-0.2,"25":23.5,"26":4.7,"27":7.0,"28":30.3,"30":-3.7,"31":22.3,"32":0.0,"33":-0.5,"34":-0.4,"35":-1.1,"36":-0.1,"37":-0.6,"38":14.5,"39":null,"40":2.7,"41":-0.1,"42":3.6,"43":null,"44":null,"45":0.1,"46":-0.3,"47":null,"48":-0.1,"49":-0.2,"50":-0.2,"51":-0.6,"52":null,"53":-2.5,"54":-0.6,"55":null,"56":null,"57":-0.2,"58":null},"2002":{"1":20.7,"2":0.0,"3":15.8,"4":4.4,"5":-2.0,"6":-1.6,"7":18.8,"8":1.2,"9":22.2,"10":12.5,"11":-1.4,"12":-3.1,"13":-0.5,"14":2.6,"15":0.6,"16":0.2,"17":-0.4,"18":-0.5,"19":-1.1,"20":-1.7,"21":-0.4,"22":-0.3,"23":18.1,"24":-1.6,"25":-0.3,"26":6.6,"27":-0.8,"28":0.7,"30":null,"31":1.6,"32":-0.3,"33":-0.1,"34":-0.7,"35":23.1,"36":null,"37":-0.2,"38":0.0,"39":null,"40":-0.2,"41":-0.7,"42":-0.3,"43":null,"44":-1.2,"45":null,"46":10.7,"47":-0.1,"48":0.0,"49":null,"50":-0.1,"51":null,"52":null,"53":2.4,"54":-0.5,"55":null,"56":6.3,"57":0.0,"58":-0.1},"2003":{"1":159.5,"2":-0.8,"3":36.7,"4":31.3,"5":62.7,"6":0.4,"7":13.4,"8":4.7,"9":-0.7,"10":-1.3,"11":3.2,"12":3.2,"13":-0.1,"14":7.5,"15":-0.6,"16":-0.2,"17":-0.7,"18":27.6,"19":-3.0,"20":-4.1,"21":15.6,"22":-0.7,"23":2.1,"24":0.4,"25":7.3,"26":0.0,"27":0.5,"28":8.7,"29":10.0,"30":-0.8,"31":-1.4,"32":2.4,"33":0.0,"34":null,"35":null,"36":null,"37":-0.5,"38":4.3,"39":0.0,"40":-0.1,"41":-2.7,"42":3.0,"43":1.9,"44":null,"45":9.9,"46":null,"47":10.0,"48":-0.1,"49":5.4,"50":null,"51":20.8,"52":null,"53":null,"54":null,"55":null,"56":-0.2,"57":null,"58":-0.2},"2004":{"1":39.1,"2":6.9,"3":8.7,"4":4.4,"5":15.5,"6":7.3,"7":22.9,"8":-2.1,"9":41.2,"10":-0.4,"11":4.5,"12":-0.7,"13":-4.2,"14":1.1,"15":21.2,"16":0.7,"17":27.2,"18":14.5,"19":9.3,"20":11.6,"21":0.0,"22":-0.9,"23":-0.3,"24":8.6,"25":10.4,"26":16.1,"27":2.3,"28":4.8,"29":-1.7,"30":8.8,"31":-0.9,"32":0.0,"33":-0.4,"34":-0.2,"35":-0.1,"36":-0.6,"37":-2.5,"38":3.1,"39":null,"40":-1.4,"41":null,"42":null,"43":21.9,"44":null,"45":0.0,"46":-0.6,"47":-0.8,"48":null,"49":null,"50":-0.3,"51":null,"52":null,"53":-0.5,"54":null,"55":0.0,"56":null,"57":null,"58":null,"59":null},"2005":{"1":16.0,"2":12.3,"3":28.4,"4":98.7,"5":10.0,"6":4.4,"7":4.9,"8":8.1,"9":-0.6,"10":9.2,"11":null,"12":-0.1,"13":0.2,"14":0.4,"15":-2.4,"16":-2.5,"17":17.6,"18":2.3,"19":0.4,"20":-0.1,"21":8.5,"22":6.5,"23":5.6,"24":4.2,"25":-4.7,"26":-1.6,"27":-0.7,"28":0.1,"29":-0.3,"30":19.2,"31":-0.6,"32":-0.4,"33":5.2,"34":6.8,"35":null,"36":8.8,"37":4.9,"38":1.1,"39":0.2,"40":12.5,"41":-0.6,"42":0.0,"43":-0.1,"44":0.0,"45":23.1,"46":null,"47":0.1,"48":-0.0,"49":3.8,"50":1.4,"51":-0.2,"52":null,"53":-1.1,"54":0.1,"55":0.0,"56":10.6,"57":12.8,"58":-0.1,"59":null,"60":-0.2},"2006":{"1":1.5,"2":33.5,"3":-2.5,"4":1.6,"5":-1.5,"6":16.2,"7":3.8,"8":22.5,"9":-0.4,"10":-0.2,"11":16.1,"12":-1.9,"13":12.5,"14":10.8,"15":-0.5,"16":0.4,"17":-0.4,"18":-0.8,"19":-0.6,"20":1.6,"21":23.5,"22":-1.0,"23":0.0,"24":43.0,"25":0.9,"26":3.6,"27":0.0,"28":-1.0,"29":-1.6,"30":-0.6,"31":-0.2,"32":4.0,"33":-1.6,"34":-0.5,"35":6.4,"36":1.5,"37":-0.4,"38":0.0,"39":-0.2,"40":null,"41":0.0,"42":2.3,"43":0.0,"44":null,"45":-0.9,"46":-0.2,"47":30.1,"48":null,"49":0.4,"50":-3.1,"51":-0.2,"52":0.0,"53":null,"54":0.0,"55":null,"56":null,"57":null,"58":null,"59":-0.3,"60":-0.2},"2007":{"1":0.9,"2":92.5,"3":45.3,"4":40.9,"5":4.4,"6":-3.5,"7":2.0,"8":7.6,"9":20.9,"10":3.3,"11":-1.1,"12":20.4,"13":1.2,"14":-3.2,"15":5.1,"16":-0.7,"17":-0.6,"18":3.3,"19":-1.1,"20":-2.2,"21":-1.0,"22":11.1,"23":3.7,"24":5.6,"25":-0.4,"26":2.7,"27":2.4,"28":5.3,"29":-0.3,"30":null,"31":4.9,"32":-0.1,"33":-0.1,"34":0.2,"35":-1.7,"36":-0.4,"37":4.5,"38":-1.2,"39":null,"40":-0.1,"41":-0.7,"42":0.0,"43":null,"44":null,"45":null,"46":-0.2,"47":-0.1,"48":36.8,"49":-1.4,"50":null,"51":0.0,"52":-0.1,"53":-0.1,"54":null,"55":null,"56":5.3,"57":null,"58":null,"59":-0.2,"60":null},"2008":{"1":18.2,"2":0.8,"3":4.8,"4":59.2,"5":36.5,"6":21.0,"7":9.1,"8":-0.3,"9":7.6,"10":28.5,"11":1.2,"12":-2.3,"13":1.6,"14":0.5,"15":4.6,"16":-0.6,"17":3.6,"18":7.1,"19":0.6,"20":-0.8,"21":12.8,"22":8.0,"23":1.9,"24":15.6,"25":28.9,"26":19.4,"27":-0.3,"28":-1.0,"29":0.0,"30":-0.2,"31":2.3,"32":0.0,"33":-0.2,"34":5.9,"35":22.2,"36":0.2,"37":2.0,"38":0.3,"39":-1.8,"40":-0.2,"41":-0.3,"42":-0.2,"43":0.0,"44":null,"45":15.9,"46":null,"47":0.2,"48":0.0,"49":null,"50":null,"51":null,"52":-0.9,"53":null,"54":null,"55":-0.6,"56":0.0,"57":null,"58":0.0,"59":null,"60":-0.3},"2009":{"1":32.7,"2":-0.4,"3":87.9,"4":13.1,"5":13.3,"6":-1.9,"7":77.4,"8":0.1,"9":30.5,"10":11.8,"11":-0.6,"12":0.6,"13":0.0,"14":-0.7,"15":-0.0,"16":9.1,"17":32.7,"18":13.6,"19":14.3,"20":-0.7,"21":13.4,"22":-0.4,"23":3.3,"24":-1.8,"25":1.4,"26":6.4,"27":6.9,"28":2.2,"29":2.3,"30":-0.6,"31":-0.1,"32":-0.4,"33":1.1,"34":null,"35":-0.8,"36":0.0,"37":1.5,"38":-0.8,"39":2.9,"40":0.5,"41":4.2,"42":11.8,"43":6.2,"44":2.9,"45":0.7,"46":20.4,"47":null,"48":-0.1,"49":null,"50":null,"51":null,"52":0.6,"53":0.5,"54":null,"55":8.6,"56":null,"57":null,"58":0.0,"59":null,"60":null},"2010":{"1":24.2,"2":0.4,"3":13.9,"4":1.4,"5":21.7,"6":0.8,"7":15.3,"8":6.4,"9":23.0,"10":45.4,"11":1.8,"12":-1.7,"13":6.1,"14":7.5,"15":1.3,"16":-0.2,"17":-3.7,"18":18.8,"19":-1.8,"20":-0.8,"21":-0.3,"22":-1.1,"23":4.1,"24":-0.3,"25":-0.1,"26":0.3,"27":1.2,"28":1.9,"29":-0.1,"30":-0.3,"31":-0.2,"32":-0.4,"33":14.5,"34":-0.2,"35":5.3,"36":null,"37":-0.1,"38":-0.1,"39":2.7,"40":2.2,"41":-0.1,"42":null,"43":-0.5,"44":0.2,"45":null,"46":0.0,"47":null,"48":null,"49":null,"50":-0.1,"51":null,"52":-0.4,"53":0.0,"54":0.0,"55":1.9,"56":-0.2,"57":0.0,"58":-0.3,"59":null,"60":null},"2011":{"1":43.9,"2":0.8,"3":7.6,"4":1.1,"5":18.0,"6":-0.4,"7":-2.7,"8":1.5,"9":29.8,"10":-0.5,"11":17.4,"12":6.7,"13":2.3,"14":6.8,"15":55.1,"16":33.3,"17":0.8,"18":-0.9,"19":24.4,"20":-0.5,"21":-0.9,"22":7.4,"23":7.1,"24":7.4,"25":0.3,"26":1.0,"27":-0.1,"28":-4.2,"29":4.2,"30":52.8,"31":5.8,"32":-0.3,"33":-0.9,"34":0.1,"35":-0.1,"36":0.0,"37":-0.1,"38":10.3,"39":-1.3,"40":2.0,"41":-1.1,"42":4.7,"43":-0.1,"44":-0.8,"45":0.4,"46":-0.3,"47":0.0,"48":0.0,"49":-0.6,"50":-0.1,"51":null,"52":0.1,"53":-0.1,"54":null,"55":0.3,"56":null,"57":null,"58":null,"59":null,"60":16.2},"2012":{"1":54.8,"2":0.5,"3":23.6,"4":-0.3,"5":-1.6,"6":54.6,"7":10.0,"8":4.6,"9":18.9,"10":-4.4,"11":1.0,"12":8.0,"13":-1.2,"14":3.3,"15":4.2,"16":0.0,"17":0.1,"18":3.7,"19":-1.6,"20":4.5,"21":2.6,"22":-0.1,"23":0.1,"24":-0.5,"25":-1.0,"26":0.1,"27":-0.2,"28":-0.7,"29":-1.1,"30":0.0,"31":-1.4,"32":2.4,"33":0.0,"34":10.8,"35":28.1,"36":-0.2,"37":0.0,"38":-0.5,"39":15.7,"40":7.0,"41":-0.8,"42":-1.3,"43":0.6,"44":-0.2,"45":0.6,"46":-0.3,"47":-0.2,"48":-0.2,"49":5.1,"50":null,"51":-0.1,"52":-0.2,"53":-0.2,"54":-0.3,"55":-0.1,"56":null,"57":null,"58":-0.4,"59":null,"60":-1.4},"2013":{"1":-1.3,"2":10.9,"3":12.6,"4":4.1,"5":0.4,"6":7.5,"7":-3.4,"8":7.2,"9":1.6,"10":21.6,"11":1.9,"12":12.8,"13":13.2,"14":-0.0,"15":65.5,"16":2.0,"17":2.7,"18":-0.5,"19":-0.5,"20":-0.1,"21":7.1,"22":15.3,"23":-0.2,"24":5.2,"25":2.6,"26":2.3,"27":35.8,"28":null,"29":-0.7,"30":-0.3,"31":1.0,"32":0.0,"33":0.0,"34":-0.4,"35":-0.1,"36":-0.4,"37":0.0,"38":-0.2,"39":1.4,"40":-0.1,"41":-0.2,"42":-0.1,"43":-0.4,"44":3.8,"45":null,"46":-0.2,"47":0.8,"48":-0.4,"49":-0.1,"50":0.8,"51":null,"52":-0.5,"53":null,"54":null,"55":-0.1,"56":-0.2,"57":null,"58":null,"59":null,"60":null},"2014":{"1":6.0,"2":2.5,"3":34.3,"4":13.3,"5":-1.2,"6":7.6,"7":19.3,"8":-1.8,"9":-0.7,"10":3.0,"11":-0.6,"12":3.4,"13":14.6,"14":4.1,"15":-1.4,"16":9.5,"17":-0.3,"18":-0.8,"19":2.7,"20":-0.3,"21":-0.1,"22":0.2,"23":2.2,"24":1.9,"25":16.4,"26":-0.9,"27":7.7,"28":-0.3,"29":-0.4,"30":15.1,"31":-0.1,"32":-0.4,"33":4.1,"34":-0.8,"35":0.0,"36":-1.7,"37":null,"38":8.1,"39":8.6,"40":0.3,"41":82.4,"42":-0.3,"43":0.0,"44":-0.5,"45":9.1,"46":5.0,"47":-0.1,"48":-0.4,"49":-0.2,"50":null,"51":-0.9,"52":-1.8,"53":null,"54":null,"55":-0.8,"56":-0.4,"57":null,"58":-0.1,"59":null,"60":-0.2},"2015":{"1":38.4,"2":12.5,"3":0.0,"4":19.0,"5":-1.2,"6":4.4,"7":-2.2,"8":-1.4,"9":3.6,"10":-0.2,"11":13.5,"12":3.0,"13":20.2,"14":3.2,"15":0.9,"16":10.0,"17":-1.1,"18":0.5,"19":0.6,"20":11.3,"21":0.3,"22":6.7,"23":2.2,"24":9.1,"25":-1.7,"26":null,"27":10.2,"28":0.0,"29":0.0,"30":6.2,"31":-0.4,"32":12.2,"33":-0.4,"34":-0.6,"35":2.8,"36":-0.2,"37":5.0,"38":-0.5,"39":null,"40":5.6,"41":4.7,"42":null,"43":-0.6,"44":-0.5,"45":null,"46":9.1,"47":null,"48":0.1,"49":null,"50":null,"51":null,"52":null,"53":null,"54":null,"55":null,"56":0.0,"57":null,"58":null,"59":null,"60":null},"2016":{"1":14.9,"2":10.5,"3":14.1,"4":-1.9,"5":2.8,"6":11.7,"7":16.4,"8":-0.5,"9":11.8,"10":-0.1,"11":27.6,"12":-0.4,"13":-0.3,"14":0.2,"15":0.1,"16":0.4,"17":-0.4,"18":-0.3,"19":3.8,"20":7.1,"21":-0.4,"22":-0.6,"23":-0.2,"24":-2.6,"25":0.0,"26":-0.0,"27":21.0,"28":-0.1,"29":12.9,"30":0.9,"31":-0.1,"32":10.4,"33":0.3,"34":-1.1,"35":null,"36":11.2,"37":-0.1,"38":-0.7,"39":null,"40":-0.1,"41":-0.2,"42":-1.4,"43":-0.3,"44":null,"45":0.1,"46":-0.2,"47":-0.2,"48":-1.3,"49":-0.1,"50":0.7,"51":-0.1,"52":0.1,"53":-0.1,"54":-0.3,"55":0.0,"56":-0.1,"57":null,"58":-0.3,"59":null,"60":-1.4},"2017":{"1":1.2,"2":6.8,"3":30.2,"4":-3.1,"5":15.1,"6":4.4,"7":12.1,"8":-3.4,"9":-0.2,"10":1.0,"11":3.1,"12":6.3,"13":29.4,"14":22.2,"15":-1.0,"16":0.0,"17":-0.1,"18":0.1,"19":9.8,"20":-0.3,"21":-2.2,"22":19.4,"23":10.7,"24":-0.1,"25":-0.5,"26":-0.7,"27":2.0,"28":1.1,"29":18.6,"30":12.6,"31":-1.8,"32":-0.3,"33":-1.9,"34":-0.2,"35":0.1,"36":0.1,"37":-1.5,"38":1.1,"39":-0.7,"40":-3.1,"41":-0.5,"42":4.9,"43":9.5,"44":-0.8,"45":-5.3,"46":-0.1,"47":0.0,"48":-0.5,"49":-0.2,"50":null,"51":5.4,"52":-0.6,"53":0.1,"54":0.0,"55":0.0,"56":0.0,"57":0.1,"58":null,"59":-0.2,"60":null},"2018":{"1":9.2,"2":1.5,"3":44.9,"4":9.2,"5":19.6,"6":2.9,"7":5.3,"8":3.0,"9":-3.5,"10":15.9,"11":36.9,"12":8.3,"13":-1.2,"14":8.8,"15":0.4,"16":-0.2,"17":10.0,"18":-0.9,"19":4.2,"20":0.7,"21":6.5,"22":-0.8,"23":0.1,"24":2.9,"25":3.4,"26":0.4,"27":9.7,"28":-0.8,"29":-0.4,"30":0.3,"31":-0.9,"32":1.0,"33":18.8,"34":3.2,"35":-0.5,"36":10.2,"37":1.5,"38":-0.1,"39":-0.8,"40":-0.4,"41":3.3,"42":1.4,"43":null,"44":null,"45":-0.1,"46":5.2,"47":-0.7,"48":0.5,"49":0.4,"50":-0.1,"51":null,"52":0.0,"53":-0.1,"54":-0.2,"55":0.0,"56":-0.2,"57":0.0,"58":0.0,"59":-0.1,"60":-0.1},"2019":{"1":14.1,"2":11.9,"3":1.8,"4":-2.2,"5":7.8,"6":-1.7,"7":1.7,"8":3.5,"9":0.1,"10":-1.7,"11":8.8,"12":2.7,"13":9.1,"14":-0.9,"15":-1.8,"16":0.9,"17":3.7,"18":4.4,"19":-0.8,"20":6.1,"21":7.3,"22":1.1,"23":-0.5,"24":3.4,"25":-0.5,"26":0.1,"27":-0.2,"28":0.3,"29":3.3,"30":2.5,"31":8.2,"32":-0.8,"33":-0.5,"34":-0.6,"35":-0.3,"36":0.3,"37":-0.1,"38":8.1,"39":-0.1,"40":-0.2,"41":-0.1,"42":-0.9,"43":-0.2,"44":1.1,"45":-0.2,"46":0.1,"47":-0.6,"48":2.0,"49":-0.2,"50":0.1,"51":-0.2,"52":-1.6,"53":-0.1,"54":-0.1,"55":-0.3,"56":null,"57":-0.2,"58":-0.2,"59":-0.1,"60":null},"2020":{"1":15.8,"2":-1.4,"3":12.5,"4":-1.5,"5":-0.9,"6":5.9,"7":-3.0,"8":5.2,"9":5.9,"10":2.4,"11":4.3,"12":18.9,"13":-0.7,"14":-0.2,"15":2.6,"16":1.2,"17":-1.0,"18":-1.2,"19":4.3,"20":-0.3,"21":13.5,"22":-0.7,"23":-0.4,"24":-1.4,"25":9.2,"26":8.6,"27":0.1,"28":1.6,"29":-0.4,"30":12.6,"31":0.0,"32":-0.2,"33":-0.1,"34":-2.5,"35":2.0,"36":-0.1,"37":0.0,"38":0.2,"39":-0.5,"40":-0.1,"41":4.0,"42":-1.2,"43":-0.4,"44":-0.2,"45":-0.6,"46":-1.1,"47":null,"48":-0.2,"49":4.6,"50":0.4,"51":null,"52":0.3,"53":-0.1,"54":-0.4,"55":-0.3,"56":0.0,"57":-0.3,"58":3.7,"59":0.1,"60":2.2},"2021":{"1":9.8,"2":2.4,"3":12.1,"4":13.0,"5":3.0,"6":8.9,"7":1.4,"8":7.8,"9":-1.3,"10":-1.4,"11":-0.9,"12":-0.9,"13":-0.8,"14":1.6,"15":-0.7,"16":13.4,"17":8.3,"18":-1.7,"19":0.2,"20":7.2,"21":-1.7,"22":1.3,"23":0.3,"24":-1.1,"25":2.6,"26":2.0,"27":-0.4,"28":-0.2,"29":2.1,"30":4.8,"31":-0.3,"32":-0.5,"33":0.0,"34":null,"35":2.5,"36":2.0,"37":-1.5,"38":2.0,"39":2.9,"40":0.3,"41":-0.2,"42":-0.6,"43":-0.6,"44":-0.6,"45":null,"46":0.4,"47":0.0,"48":-0.4,"49":null,"50":0.0,"51":-1.0,"52":1.2,"53":1.0,"54":3.1,"55":1.9,"56":0.0,"57":null,"58":-0.3,"59":0.1,"60":-0.3},"2022":{"1":6.9,"2":7.4,"3":1.4,"4":1.6,"5":-0.5,"6":-2.3,"7":-0.2,"8":5.3,"9":-1.1,"10":-1.3,"11":-0.7,"12":8.1,"13":7.6,"14":-1.3,"15":3.7,"16":0.1,"17":2.7,"18":-0.4,"19":0.9,"20":-2.9,"21":1.8,"22":5.1,"23":-1.4,"24":-0.8,"25":-2.2,"26":-0.1,"27":0.8,"28":-0.3,"29":-0.7,"30":0.3,"31":-0.2,"32":-0.4,"33":-0.6,"34":3.5,"35":-0.5,"36":null,"37":-1.7,"38":-0.3,"39":null,"40":-1.7,"41":-0.1,"42":0.0,"43":1.9,"44":1.6,"45":1.5,"46":null,"47":0.4,"48":-0.1,"49":-0.1,"50":null,"51":-0.6,"52":0.6,"53":0.0,"54":null,"55":0.7,"56":-0.2,"57":-1.1,"58":null},"2023":{"1":13.1,"2":1.9,"3":-1.8,"4":8.1,"5":3.5,"6":0.4,"7":-1.8,"8":0.3,"9":0.0,"10":4.1,"11":-0.6,"12":2.0,"13":-2.0,"14":-2.2,"15":-0.4,"16":-0.2,"17":-0.8,"18":1.6,"19":3.4,"20":0.9,"21":-1.0,"22":-0.4,"23":-0.7,"24":0.4,"25":0.1,"26":-0.7,"27":-2.3,"28":-0.5,"29":-1.6,"30":-0.4,"31":null,"32":0.0,"33":0.3,"34":-0.2,"35":-0.8,"36":-1.0,"37":-0.6,"38":0.5,"39":0.4,"40":-0.5,"41":-0.1,"42":0.4,"43":-1.9,"44":-0.8,"45":-0.2,"46":-0.1,"47":null,"48":0.7,"49":-0.2,"50":-0.1,"51":-2.0,"52":1.4,"53":0.1,"54":0.1,"55":-0.1,"56":null,"57":2.4,"58":-0.2},"2024":{"1":-0.9,"2":0.3,"3":2.6,"4":1.4,"5":-0.3,"6":-0.8,"7":3.2,"8":-1.6,"9":0.9,"10":-2.9,"11":0.3,"12":-0.3,"13":-0.2,"14":-3.2,"15":2.5,"16":0.2,"17":-0.1,"18":0.4,"19":0.3,"20":0.8,"21":-0.4,"22":0.1,"23":-1.8,"24":-0.6,"25":-0.1,"26":-0.3,"27":-0.2,"28":-0.3,"29":-1.8,"30":0.9,"31":0.1,"32":0.8,"33":-0.1,"34":0.2,"35":-0.3,"36":null,"37":-0.1,"38":1.5,"39":-0.6,"40":0.7,"41":-0.5,"42":-0.9,"43":null,"44":0.2,"45":-0.9,"46":-0.3,"47":-0.1,"48":0.0,"49":-0.1,"50":-0.2,"51":null,"52":0.7,"53":2.0,"54":0.0,"55":-0.4,"56":0.0,"57":0.0,"58":-0.2},"2025":{"1":2.0,"2":1.3,"3":1.0,"4":3.1,"5":-1.2,"6":-1.1,"7":-0.4,"8":0.1,"9":1.0,"10":-0.2,"11":0.7,"12":0.0,"13":0.6,"14":-0.2,"15":null,"16":-0.6,"17":0.2,"18":-0.8,"19":-1.5,"20":0.4,"21":-1.0,"22":-1.3,"23":0.1,"24":-1.4,"25":-0.1,"26":-1.2,"27":-0.2,"28":0.1,"29":0.1,"30":0.0,"31":-0.3,"32":0.1,"33":0.0,"34":1.4,"35":-0.2,"36":-0.1,"37":-0.2,"38":-0.6,"39":-0.1,"40":-0.7,"41":0.0,"42":-0.2,"43":-0.3,"44":-0.1,"45":0.0,"46":0.0,"47":null,"48":0.6,"49":-0.1,"50":-0.3,"51":0.0,"52":null,"53":0.0,"54":-0.3,"55":-0.1,"56":0.1,"57":-0.1,"58":null,"59":-0.8}};
+  var TIER_WEIGHTS = [0, 5, 3, 1.5, 1, 0.5]; // index = tier; stars count most, busts least
+
+  function uid(){ return 'p' + Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+
+  function safeGet(key){
+    try{ var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }
+    catch(e){ return null; }
+  }
+  function safeSet(key, val){
+    try{ localStorage.setItem(key, JSON.stringify(val)); return true; }
+    catch(e){ return false; }
+  }
+
+  // ---- state ----
+  // players: {id -> {id, orig, name}}
+  // pool: array of ids, sorted by original pick, not yet placed
+  // redraft: array sized to match the player pool exactly, each an id or null
+  // tierBounds: [b1,b2,b3,b4] cumulative slot counts ending tiers 1..4 (tier 5 = rest)
+  // year: draft year this board came from (null for a pasted list)
+  // mode: 'free' | 'game'; analyzed: true once Analyze has been hit on the current board
+  var state = { players:{}, pool:[], redraft:[], tierBounds: [0,0,0,0], year:null, mode:'free', analyzed:false };
+
+  function freshFromList(list, year){
+    var players = {}, pool = [];
+    list.forEach(function(row){
+      var id = uid();
+      players[id] = { id:id, orig: row[0], name: row[1] };
+      pool.push(id);
+    });
+    var n = list.length;
+    return { players:players, pool:pool, redraft:new Array(n).fill(null), tierBounds: defaultBoundsFor(n),
+             year: year == null ? null : Number(year), mode: state.mode || 'free', analyzed:false };
+  }
+
+  // Boards saved before game mode existed don't know their year — work it out by
+  // matching the player list against the built-in draft classes.
+  function ensureYear(s){
+    if (s.year !== undefined && s.year !== null) return s;
+    s.year = null;
+    var names = Object.keys(s.players).map(function(id){ return s.players[id].orig + '|' + s.players[id].name; }).sort().join('\n');
+    for (var y in DRAFTS){
+      if (DRAFTS[y].length !== Object.keys(s.players).length) continue;
+      var cand = DRAFTS[y].map(function(r){ return r[0] + '|' + r[1]; }).sort().join('\n');
+      if (cand === names){ s.year = Number(y); break; }
+    }
+    if (!s.mode) s.mode = 'free';
+    s.analyzed = !!s.analyzed;
+    return s;
+  }
+
+  function isValidState(s){
+    return !!(s && s.players && Array.isArray(s.pool) && Array.isArray(s.redraft) &&
+      s.redraft.length > 0 && Array.isArray(s.tierBounds) && s.tierBounds.length === 4);
+  }
+
+  function loadInitial(){
+    var saved = safeGet(STORE_KEY);
+    if (isValidState(saved)) {
+      state = ensureYear(saved);
+    } else {
+      state = freshFromList(DRAFTS[DEFAULT_YEAR], DEFAULT_YEAR);
+      persist();
+    }
+    if (state.mode === 'game' && !hasVorp()) state.mode = 'free';
+  }
+
+  function persist(){ safeSet(STORE_KEY, state); }
+
+  function reSortPool(){
+    state.pool.sort(function(a,b){ return state.players[a].orig - state.players[b].orig; });
+  }
+
+  // ---- tier helpers ----
+  function isGame(){ return state.mode === 'game'; }
+  function hasVorp(){ return state.year != null && !!VORP[state.year]; }
+  // Game mode always scores (and colors the board) with the default split, so a
+  // score can't be inflated by stretching one band over the whole board.
+  function activeBounds(){ return isGame() ? defaultBoundsFor(slotCount()) : state.tierBounds; }
+
+  function tierAt(i, b){
+    if (i < b[0]) return 1;
+    if (i < b[1]) return 2;
+    if (i < b[2]) return 3;
+    if (i < b[3]) return 4;
+    return 5;
+  }
+  function tierForSlot(i){ return tierAt(i, activeBounds()); } // i is 0-based slot index
+  function tierSizes(){
+    var b = activeBounds();
+    return [b[0], b[1]-b[0], b[2]-b[1], b[3]-b[2], slotCount()-b[3]];
+  }
+
+  // ---- game scoring ----
+  function vorpOf(id){
+    var v = VORP[state.year] ? VORP[state.year][state.players[id].orig] : undefined;
+    return v === undefined ? null : v;
+  }
+  // True order = career VORP high to low, never-played at the bottom. That order is
+  // cut into the same default bands. Players tied on VORP (e.g. every never-played
+  // guy) can legitimately land in any band their tie group spans.
+  // Each player earns weight(true tier) x 1 for the same tier, x 0.5 for one tier
+  // off, 0 otherwise. The raw total is then rescaled so a shuffled-at-random board
+  // lands around 0 and a perfect board is 100 (otherwise the huge yellow band hands
+  // out ~45 points for pure guessing).
+  function analyze(board){
+    board = board || state.redraft;
+    var n = slotCount(), b = defaultBoundsFor(n);
+    var ids = Object.keys(state.players);
+    ids.sort(function(a, c){
+      var va = vorpOf(a), vc = vorpOf(c);
+      if (va === null && vc !== null) return 1;
+      if (vc === null && va !== null) return -1;
+      if (va !== vc) return vc - va;
+      return state.players[a].orig - state.players[c].orig;
+    });
+    var truth = {};
+    for (var i = 0; i < ids.length; ){
+      var v = vorpOf(ids[i]), j = i;
+      while (j + 1 < ids.length && vorpOf(ids[j+1]) === v) j++;
+      var tiers = [];
+      for (var k = i; k <= j; k++){ var t = tierAt(k, b); if (tiers.indexOf(t) === -1) tiers.push(t); }
+      for (k = i; k <= j; k++) truth[ids[k]] = { rank: i + 1, vorp: v, tiers: tiers };
+      i = j + 1;
+    }
+    var slotOf = {};
+    board.forEach(function(id, s){ if (id) slotOf[id] = s; });
+
+    var max = 0;
+    for (var s = 0; s < n; s++) max += TIER_WEIGHTS[tierAt(s, b)];
+    // expected raw points if every player were dropped into a random slot
+    var sizes = [b[0], b[1]-b[0], b[2]-b[1], b[3]-b[2], n-b[3]], chance = 0;
+    for (s = 0; s < n; s++){
+      var T = tierAt(s, b), e = 0;
+      for (var t2 = 1; t2 <= 5; t2++){
+        var d2 = Math.abs(t2 - T);
+        e += (d2 === 0 ? 1 : d2 === 1 ? 0.5 : 0) * sizes[t2-1] / n;
+      }
+      chance += TIER_WEIGHTS[T] * e;
+    }
+
+    var earned = 0, per = {}, counts = { hit:0, near:0, miss:0, unplaced:0 };
+    ids.forEach(function(id){
+      var tr = truth[id], slot = slotOf[id];
+      if (slot === undefined){
+        per[id] = { pts:0, trueTier: tr.tiers[0], userTier:null, diff:null };
+        counts.unplaced++;
+        return;
+      }
+      var ut = tierAt(slot, b), best = tr.tiers[0], bd = 99;
+      tr.tiers.forEach(function(t){ var d = Math.abs(t - ut); if (d < bd){ bd = d; best = t; } });
+      var pts = TIER_WEIGHTS[best] * (bd === 0 ? 1 : bd === 1 ? 0.5 : 0);
+      earned += pts;
+      per[id] = { pts:pts, trueTier:best, userTier:ut, diff:bd };
+      counts[bd === 0 ? 'hit' : bd === 1 ? 'near' : 'miss']++;
+    });
+    var scaled = (earned - chance) / (max - chance) * 100;
+    return { score: Math.max(0, Math.min(100, Math.round(scaled))), earned:earned, max:max, chance:chance,
+             order: ids, truth: truth, per: per, counts: counts, slotOf: slotOf };
+  }
+  var lastAnalysis = null;
+  function boardChanged(){ state.analyzed = false; }
+
+  // ---- rendering ----
+  var poolEl = document.getElementById('pool-list');
+  var redraftEl = document.getElementById('redraft-list');
+  var poolCount = document.getElementById('pool-count');
+  var redraftCount = document.getElementById('redraft-count');
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function showingResults(){ return isGame() && state.analyzed && lastAnalysis; }
+  function fmtVorp(v){ return v === null ? 'never played' : 'VORP ' + v.toFixed(1); }
+  function revealHtml(id){
+    if (!showingResults()) return '';
+    var tr = lastAnalysis.truth[id], pr = lastAnalysis.per[id];
+    return '<span class="reveal"><span class="tchip" data-t="'+pr.trueTier+'" title="True tier: '+TIER_SHORT[pr.trueTier-1]+'"></span>' +
+      fmtVorp(tr.vorp) + ' &middot; true #' + tr.rank + '</span>';
+  }
+  function ptsHtml(id){
+    if (!showingResults()) return '';
+    var pr = lastAnalysis.per[id];
+    var cls = pr.diff === 0 ? 'hit' : pr.diff === 1 ? 'near' : 'miss';
+    var label = pr.diff === 0 ? 'Right tier' : pr.diff === 1 ? 'One tier off' : 'Off by ' + pr.diff + ' tiers';
+    return '<span class="pts '+cls+'" title="'+label+'">+' + (Math.round(pr.pts*10)/10) + '</span>';
+  }
+
+  function makePoolCard(id){
+    var p = state.players[id];
+    var li = document.createElement('li');
+    li.className = 'card';
+    li.draggable = true;
+    li.dataset.id = id;
+    li.innerHTML =
+      '<span class="pick">'+p.orig+'</span>' +
+      '<span class="name">'+escapeHtml(p.name)+ revealHtml(id) + '</span>' +
+      '<button type="button" class="addbtn" title="Add to first open slot" aria-label="Add '+escapeHtml(p.name)+' to re-draft">+</button>';
+    li.addEventListener('dragstart', function(e){
+      e.dataTransfer.setData('text/plain', JSON.stringify({source:'pool', id:id}));
+      e.dataTransfer.effectAllowed = 'move';
+      li.classList.add('dragging');
+      startAutoScroll();
+    });
+    li.addEventListener('dragend', function(){ li.classList.remove('dragging'); stopAutoScroll(); });
+    li.querySelector('.addbtn').addEventListener('click', function(){
+      var idx = state.redraft.indexOf(null);
+      if (idx === -1){ showToast('All ' + slotCount() + ' slots are full'); return; }
+      placeInSlot(id, idx);
+    });
+    return li;
+  }
+
+  function makeSlot(i){
+    var id = state.redraft[i];
+    var tier = tierForSlot(i);
+    var li = document.createElement('li');
+    li.className = 'card' + (id ? '' : ' empty');
+    li.dataset.tier = tier;
+    li.dataset.slot = i;
+
+    if (id) {
+      var p = state.players[id];
+      li.draggable = true;
+      li.innerHTML =
+        '<span class="pos">'+(i+1)+'</span>' +
+        '<span class="meta"><span class="name">'+escapeHtml(p.name)+'</span><span class="origtag">Drafted #'+p.orig+'</span>' + revealHtml(id) + '</span>' +
+        ptsHtml(id) +
+        '<button type="button" class="removebtn" title="Send back to pool" aria-label="Remove '+escapeHtml(p.name)+' from re-draft">&times;</button>';
+      li.addEventListener('dragstart', function(e){
+        e.dataTransfer.setData('text/plain', JSON.stringify({source:'redraft', id:id, slot:i}));
+        e.dataTransfer.effectAllowed = 'move';
+        li.classList.add('dragging');
+        startAutoScroll();
+      });
+      li.addEventListener('dragend', function(){ li.classList.remove('dragging'); stopAutoScroll(); });
+      li.querySelector('.removebtn').addEventListener('click', function(){
+        removeFromSlot(i);
+      });
+    } else {
+      li.innerHTML =
+        '<span class="pos">'+(i+1)+'</span>' +
+        '<span class="emptylabel">Drop a player here — '+TIER_NAMES[tier]+'</span>';
+    }
+
+    li.addEventListener('dragover', function(e){ e.preventDefault(); li.classList.add('dragover'); });
+    li.addEventListener('dragleave', function(){ li.classList.remove('dragover'); });
+    li.addEventListener('drop', function(e){
+      e.preventDefault();
+      li.classList.remove('dragover');
+      var data;
+      try{ data = JSON.parse(e.dataTransfer.getData('text/plain')); } catch(err){ return; }
+      if (!data) return;
+      if (data.source === 'pool') {
+        placeInSlot(data.id, i);
+      } else if (data.source === 'redraft') {
+        reorderSlot(data.slot, i);
+      }
+    });
+
+    return li;
+  }
+
+  function render(){
+    lastAnalysis = (isGame() && state.analyzed && hasVorp()) ? analyze() : null;
+    if (lastAnalysis){
+      // benchmark: the order teams actually drafted in
+      var actual = Object.keys(state.players).sort(function(a, c){ return state.players[a].orig - state.players[c].orig; });
+      lastAnalysis.gmScore = analyze(actual).score;
+    }
+
+    // pool
+    poolEl.innerHTML = '';
+    state.pool.forEach(function(id){
+      if (state.players[id]) poolEl.appendChild(makePoolCard(id));
+    });
+
+    // redraft — always exactly as many rows as the pool has players
+    var n = slotCount();
+    redraftEl.innerHTML = '';
+    for (var i = 0; i < n; i++){
+      redraftEl.appendChild(makeSlot(i));
+    }
+
+    var filled = state.redraft.filter(Boolean).length;
+    poolCount.textContent = state.pool.length + ' waiting';
+    redraftCount.textContent = filled + ' / ' + n + ' filled';
+
+    renderBands();
+    renderGame();
+  }
+
+  // ---- game panel ----
+  var gamePanel = document.getElementById('game-panel');
+  var gameIntro = document.getElementById('game-intro');
+  var gameResults = document.getElementById('game-results');
+  var scoreBox = document.getElementById('score-box');
+  var scoreNum = document.getElementById('score-num');
+  var analyzeBtn = document.getElementById('btn-analyze');
+  var bustBtn = document.getElementById('btn-bust-remaining');
+  var modeFreeBtn = document.getElementById('mode-free');
+  var modeGameBtn = document.getElementById('mode-game');
+
+  function renderGame(){
+    modeFreeBtn.setAttribute('aria-pressed', String(!isGame()));
+    modeGameBtn.setAttribute('aria-pressed', String(isGame()));
+    gamePanel.hidden = !isGame();
+    if (!isGame()) return;
+
+    var a = lastAnalysis;
+    if (!a){
+      scoreBox.hidden = true;
+      gameIntro.innerHTML = '<b>' + state.year + ' draft &middot; game mode.</b> Rank the class by how their careers turned out, then hit Analyze. ' +
+        'You\'re scored against career VORP (value over replacement): right tier = full points, one tier off = half. ' +
+        'Stars are worth the most (dark green 5 pts each &rarr; red 0.5), so nailing the top matters more than sorting the busts. ' +
+        'A random board scores about 0, a perfect one 100.';
+      analyzeBtn.textContent = 'Analyze';
+      bustBtn.hidden = !state.pool.length;
+      gameResults.innerHTML = '';
+      return;
+    }
+    bustBtn.hidden = true;
+    scoreBox.hidden = false;
+    scoreNum.textContent = a.score;
+    var c = a.counts;
+    gameIntro.innerHTML = '<div class="stats">' +
+      '<span><span class="dot" style="background:var(--tier-2)"></span><b>'+c.hit+'</b> right tier</span>' +
+      '<span><span class="dot" style="background:var(--tier-3)"></span><b>'+c.near+'</b> one off</span>' +
+      '<span><span class="dot" style="background:var(--tier-5)"></span><b>'+c.miss+'</b> missed</span>' +
+      (c.unplaced ? '<span><b>'+c.unplaced+'</b> left in pool (0 pts)</span>' : '') +
+      '</div><div style="margin-top:6px">' +
+      (a.score > a.gmScore ? '<b>You beat the ' + state.year + ' GMs.</b> ' : '<b>The GMs win this one.</b> ') +
+      'The actual ' + state.year + ' draft order scores <b>' + a.gmScore + '</b>. A random shuffle scores about 0.</div>';
+    analyzeBtn.textContent = 'Hide results';
+    gameResults.innerHTML = '<details><summary>True order by career VORP</summary><ol class="truth">' +
+      a.order.map(function(id){
+        var tr = a.truth[id], pr = a.per[id], p = state.players[id];
+        var you = a.slotOf[id] === undefined ? 'unplaced' : 'you: #' + (a.slotOf[id] + 1);
+        return '<li><span class="r">'+tr.rank+'</span><span class="tchip" data-t="'+pr.trueTier+'"></span>' +
+          '<span class="n">'+escapeHtml(p.name)+' <span class="v">(#'+p.orig+')</span></span>' +
+          '<span class="v">'+(tr.vorp === null ? '—' : tr.vorp.toFixed(1))+'</span>' +
+          '<span class="you">'+you+'</span></li>';
+      }).join('') + '</ol></details>';
+  }
+
+  function setMode(m){
+    if (m === 'game' && !hasVorp()){
+      showToast('Game mode needs a 1973–2025 class — pick one from the draft dropdown');
+      return;
+    }
+    state.mode = m;
+    persist(); render();
+  }
+  modeFreeBtn.addEventListener('click', function(){ setMode('free'); });
+  modeGameBtn.addEventListener('click', function(){ setMode('game'); });
+
+  // Dumps whatever's left in the pool into the empty slots at the bottom of the
+  // board (the Red / bust tier), filling from the last slot backward, so you
+  // don't have to hand-drag every non-entity to the end before analyzing.
+  bustBtn.addEventListener('click', function(){
+    if (!state.pool.length){ showToast('The pool is already empty'); return; }
+    var empties = [];
+    for (var i = state.redraft.length - 1; i >= 0 && empties.length < state.pool.length; i--){
+      if (!state.redraft[i]) empties.push(i);
+    }
+    var moved = state.pool.length;
+    state.pool.forEach(function(id, idx){ state.redraft[empties[idx]] = id; });
+    state.pool = [];
+    boardChanged(); persist(); render();
+    showToast('Moved ' + moved + ' player' + (moved === 1 ? '' : 's') + ' to the bottom of the board');
+  });
+
+  analyzeBtn.addEventListener('click', function(){
+    if (state.analyzed){ state.analyzed = false; persist(); render(); return; }
+    var open = state.pool.length;
+    var go = function(){ state.analyzed = true; persist(); render(); };
+    if (open){
+      showConfirm(open + ' player' + (open === 1 ? ' is' : 's are') + ' still in the pool and will score 0. Analyze anyway?', go, 'Board not full');
+    } else go();
+  });
+
+  // ---- auto-scroll the page while dragging near the top/bottom edge ----
+  var autoScrollRAF = null;
+  var autoScrollSpeed = 0;
+  var EDGE = 80;       // px from viewport edge that triggers scrolling
+  var MAX_SPEED = 22;  // px per frame at the very edge
+
+  function onDragOverForScroll(e){
+    var y = e.clientY;
+    var vh = window.innerHeight;
+    if (y < EDGE) {
+      autoScrollSpeed = -MAX_SPEED * (1 - y / EDGE);
+    } else if (y > vh - EDGE) {
+      autoScrollSpeed = MAX_SPEED * (1 - (vh - y) / EDGE);
+    } else {
+      autoScrollSpeed = 0;
+    }
+  }
+  document.addEventListener('dragover', onDragOverForScroll);
+
+  function autoScrollStep(){
+    if (autoScrollSpeed !== 0) window.scrollBy(0, autoScrollSpeed);
+    autoScrollRAF = requestAnimationFrame(autoScrollStep);
+  }
+  function startAutoScroll(){
+    if (autoScrollRAF) return;
+    autoScrollRAF = requestAnimationFrame(autoScrollStep);
+  }
+  function stopAutoScroll(){
+    if (autoScrollRAF) cancelAnimationFrame(autoScrollRAF);
+    autoScrollRAF = null;
+    autoScrollSpeed = 0;
+  }
+
+  // ---- placement logic ----
+  // Dropping a pool player onto an OCCUPIED slot inserts him there and cascades
+  // everyone from that slot onward down by one — the old occupant of the last
+  // slot (30) falls back to the pool if the board was already full. Dropping
+  // onto an empty slot just places him, no cascade needed.
+  function placeInSlot(id, idx){
+    var pi = state.pool.indexOf(id);
+    if (pi !== -1) state.pool.splice(pi, 1);
+
+    var arr = state.redraft;
+    if (arr[idx] == null) {
+      arr[idx] = id;
+    } else {
+      var lastIdx = arr.length - 1;
+      var displaced = arr[lastIdx];
+      for (var i = lastIdx; i > idx; i--) arr[i] = arr[i-1];
+      arr[idx] = id;
+      if (displaced && displaced !== id) {
+        state.pool.push(displaced);
+        reSortPool();
+      }
+    }
+    boardChanged(); persist(); render();
+  }
+
+  // Dragging a player already on the board to a new slot moves him there —
+  // everyone between his old and new spot shifts over by one to close the gap
+  // he left and make room, the same way reordering any ranked list works.
+  function reorderSlot(from, to){
+    if (from === to) return;
+    var arr = state.redraft;
+    var item = arr.splice(from, 1)[0];
+    arr.splice(to, 0, item);
+    boardChanged(); persist(); render();
+  }
+
+  function removeFromSlot(i){
+    var id = state.redraft[i];
+    if (!id) return;
+    // close the gap: everyone below shifts up one slot, leaving the new
+    // opening at the very end of the board instead of a hole in the middle.
+    state.redraft.splice(i, 1);
+    state.redraft.push(null);
+    state.pool.push(id);
+    reSortPool();
+    boardChanged(); persist(); render();
+  }
+
+  // ---- pool as a drop target (drag a slot card back out) ----
+  poolEl.addEventListener('dragover', function(e){ e.preventDefault(); poolEl.classList.add('dropactive'); });
+  poolEl.addEventListener('dragleave', function(e){ if (e.target === poolEl) poolEl.classList.remove('dropactive'); });
+  poolEl.addEventListener('drop', function(e){
+    e.preventDefault();
+    poolEl.classList.remove('dropactive');
+    var data;
+    try{ data = JSON.parse(e.dataTransfer.getData('text/plain')); } catch(err){ return; }
+    if (data && data.source === 'redraft') removeFromSlot(data.slot);
+  });
+
+  // ---- tier band control ----
+  var bandBarEl = document.getElementById('band-bar');
+  var bandRowsEl = document.getElementById('band-rows');
+  var TIER_VARS = ['--tier-1','--tier-2','--tier-3','--tier-4','--tier-5'];
+  var TIER_SHORT = ['Dark green','Light green','Yellow','Orange','Red'];
+
+  function renderBands(){
+    var sizes = tierSizes();
+    var n = slotCount();
+    var locked = isGame();
+    var b = activeBounds();
+    document.getElementById('bands').classList.toggle('locked', locked);
+    document.getElementById('bands-lock').hidden = !locked;
+    document.getElementById('btn-reset-bands').hidden = locked;
+    document.getElementById('bands-title').textContent = 'Tier bands (' + n + ' slots)';
+
+    bandBarEl.innerHTML = sizes.map(function(sz, i){
+      return '<span style="flex-basis:'+ (n ? sz/n*100 : 0) +'%;background:var('+TIER_VARS[i]+')"></span>';
+    }).join('');
+
+    bandRowsEl.innerHTML = '';
+    for (var t = 0; t < 5; t++){
+      var row = document.createElement('div');
+      row.className = 'band-row';
+      var sliderHtml = '';
+      if (t < 4) {
+        sliderHtml = '<input type="range" min="0" max="'+n+'" step="1" value="'+b[t]+'" data-bound="'+t+'"'+(locked?' disabled':'')+' aria-label="'+TIER_SHORT[t]+' boundary">';
+      } else {
+        sliderHtml = '<span style="flex:1"></span>';
+      }
+      row.innerHTML =
+        '<span class="swatch" style="background:var('+TIER_VARS[t]+')"></span>' +
+        '<span class="blabel">'+TIER_SHORT[t]+'</span>' +
+        sliderHtml +
+        '<span class="bcount">'+sizes[t]+' slot'+(sizes[t]===1?'':'s')+'</span>';
+      bandRowsEl.appendChild(row);
+    }
+    bandRowsEl.querySelectorAll('input[type=range]').forEach(function(input){
+      // 'input' fires continuously while dragging — rebuilding the slider's own
+      // DOM here (via a full render()) would yank it out from under the mouse
+      // mid-drag, so this only patches values/colors in place, never innerHTML.
+      input.addEventListener('input', function(){
+        var idx = parseInt(input.dataset.bound, 10);
+        var v = parseInt(input.value, 10);
+        var b = state.tierBounds;
+        b[idx] = v;
+        // keep bounds non-decreasing by pushing neighbors out of the way
+        for (var j = idx - 1; j >= 0; j--){ if (b[j] > b[j+1]) b[j] = b[j+1]; }
+        for (var k = idx + 1; k < 4; k++){ if (b[k] < b[k-1]) b[k] = b[k-1]; }
+        persist();
+        updateBandVisuals();
+      });
+      // once the user releases the thumb, do a full, clean re-render
+      input.addEventListener('change', function(){ render(); });
+    });
+  }
+
+  // Lightweight refresh used while a slider is actively being dragged: updates
+  // the band-bar widths, each row's count text and slider value, and the
+  // redraft slots' tier colors — without recreating any DOM node a drag might
+  // currently be attached to.
+  function updateBandVisuals(){
+    var sizes = tierSizes();
+    var n = slotCount();
+
+    var bars = bandBarEl.querySelectorAll('span');
+    bars.forEach(function(span, i){ span.style.flexBasis = (n ? sizes[i]/n*100 : 0) + '%'; });
+
+    var rows = bandRowsEl.querySelectorAll('.band-row');
+    rows.forEach(function(row, t){
+      var countEl = row.querySelector('.bcount');
+      if (countEl) countEl.textContent = sizes[t] + ' slot' + (sizes[t]===1?'':'s');
+      var input = row.querySelector('input[type=range]');
+      if (input && parseInt(input.value,10) !== state.tierBounds[t]) input.value = state.tierBounds[t];
+    });
+
+    var slotEls = redraftEl.children;
+    for (var i = 0; i < slotEls.length; i++){
+      var li = slotEls[i];
+      var tier = tierForSlot(i);
+      li.dataset.tier = tier;
+      if (li.classList.contains('empty')) {
+        var lbl = li.querySelector('.emptylabel');
+        if (lbl) lbl.textContent = 'Drop a player here — ' + TIER_NAMES[tier];
+      }
+    }
+  }
+
+  document.getElementById('btn-reset-bands').addEventListener('click', function(){
+    state.tierBounds = defaultBoundsFor(slotCount());
+    persist(); render();
+    showToast('Tier bands reset to the default proportions');
+  });
+
+  // ---- confirm modal (window.confirm is blocked inside this page's sandbox,
+  // so every "are you sure" prompt uses this instead) ----
+  var confirmBackdrop = document.getElementById('confirm-backdrop');
+  var confirmTitleEl = document.getElementById('confirm-title');
+  var confirmBodyEl = document.getElementById('confirm-body');
+  var confirmYesBtn = document.getElementById('confirm-yes');
+  var confirmNoBtn = document.getElementById('confirm-no');
+  var pendingConfirmCb = null;
+
+  function showConfirm(message, onYes, title){
+    confirmTitleEl.textContent = title || 'Are you sure?';
+    confirmBodyEl.textContent = message;
+    pendingConfirmCb = onYes;
+    confirmBackdrop.hidden = false;
+  }
+  confirmYesBtn.addEventListener('click', function(){
+    confirmBackdrop.hidden = true;
+    var cb = pendingConfirmCb;
+    pendingConfirmCb = null;
+    if (cb) cb();
+  });
+  confirmNoBtn.addEventListener('click', function(){
+    confirmBackdrop.hidden = true;
+    pendingConfirmCb = null;
+  });
+  confirmBackdrop.addEventListener('click', function(e){
+    if (e.target === confirmBackdrop){ confirmBackdrop.hidden = true; pendingConfirmCb = null; }
+  });
+
+  // ---- draft year selector ----
+  var yearSelect = document.getElementById('year-select');
+  (function initYearSelect(){
+    var years = Object.keys(DRAFTS).map(Number).sort(function(a,b){ return b-a; });
+    yearSelect.innerHTML = '<option value="">Load a draft class…</option>' +
+      years.map(function(y){ return '<option value="'+y+'">'+y+' NBA Draft</option>'; }).join('');
+  })();
+  yearSelect.addEventListener('change', function(){
+    var y = yearSelect.value;
+    yearSelect.value = '';
+    if (!y || !DRAFTS[y]) return;
+    showConfirm('Load the '+y+' draft class? This replaces your current pool and re-draft.', function(){
+      state = freshFromList(DRAFTS[y], y); // slot count + tier bands scale to this class's size
+      persist(); render();
+      showToast('Loaded the ' + y + ' draft class');
+    }, 'Load ' + y + ' draft?');
+  });
+
+  // ---- import ----
+  var backdrop = document.getElementById('import-backdrop');
+  var importText = document.getElementById('import-text');
+
+  document.getElementById('btn-import').addEventListener('click', function(){
+    importText.value = '';
+    backdrop.hidden = false;
+    importText.focus();
+  });
+  document.getElementById('import-cancel').addEventListener('click', function(){ backdrop.hidden = true; });
+  backdrop.addEventListener('click', function(e){ if (e.target === backdrop) backdrop.hidden = true; });
+
+  document.getElementById('import-confirm').addEventListener('click', function(){
+    var lines = importText.value.split('\n');
+    var rows = [];
+    lines.forEach(function(line){
+      var m = line.match(/^\s*#?\s*(\d+)[\.\)\:]?\s+(.+?)\s*$/);
+      if (m) rows.push([parseInt(m[1],10), m[2]]);
+    });
+    if (!rows.length){
+      showToast('No valid lines found — use "1. Player Name" per line');
+      return;
+    }
+    state = freshFromList(rows, null); // slot count + tier bands scale to however many rows were pasted
+    if (state.mode === 'game'){ state.mode = 'free'; showToast('Imported lists have no VORP data, so game mode is off'); }
+    persist(); render();
+    backdrop.hidden = true;
+    showToast('Imported ' + rows.length + ' players');
+  });
+
+  // ---- reset ----
+  document.getElementById('btn-reset').addEventListener('click', function(){
+    showConfirm('Reset the re-draft? All players go back to the pool and every slot is cleared.', function(){
+      var allIds = Object.keys(state.players).sort(function(a,b){
+        return state.players[a].orig - state.players[b].orig;
+      });
+      state.pool = allIds;
+      state.redraft = new Array(allIds.length).fill(null);
+      boardChanged(); persist(); render();
+      showToast('Re-draft reset');
+    }, 'Reset re-draft?');
+  });
+
+  // ---- saved redrafts ----
+  var loadSelect = document.getElementById('load-select');
+
+  function getSaves(){ return safeGet(SAVES_KEY) || []; }
+  function setSaves(v){ safeSet(SAVES_KEY, v); }
+
+  function refreshSavedList(){
+    var saves = getSaves();
+    loadSelect.innerHTML = '<option value="">— none saved —</option>' +
+      saves.map(function(s,i){
+        return '<option value="'+i+'">'+escapeHtml(s.name)+' &middot; '+new Date(s.time).toLocaleDateString()+'</option>';
+      }).join('');
+  }
+
+  document.getElementById('btn-save').addEventListener('click', function(){
+    var nameInput = document.getElementById('save-name');
+    var name = nameInput.value.trim() || ('Redraft ' + new Date().toLocaleString());
+    var saves = getSaves();
+    saves.push({ name:name, time:Date.now(), data: JSON.parse(JSON.stringify(state)) });
+    setSaves(saves);
+    refreshSavedList();
+    nameInput.value = '';
+    showToast('Saved "' + name + '"');
+  });
+
+  document.getElementById('btn-load').addEventListener('click', function(){
+    var idx = loadSelect.value;
+    if (idx === '') { showToast('Pick a saved redraft first'); return; }
+    var saves = getSaves();
+    var entry = saves[parseInt(idx,10)];
+    if (!entry || !isValidState(entry.data)) { showToast('That save looks corrupted'); return; }
+    showConfirm('Load "'+entry.name+'"? This replaces your current board.', function(){
+      state = ensureYear(JSON.parse(JSON.stringify(entry.data)));
+      if (state.mode === 'game' && !hasVorp()) state.mode = 'free';
+      persist(); render();
+      showToast('Loaded "' + entry.name + '"');
+    }, 'Load saved redraft?');
+  });
+
+  document.getElementById('btn-delete').addEventListener('click', function(){
+    var idx = loadSelect.value;
+    if (idx === '') { showToast('Pick a saved redraft first'); return; }
+    var saves = getSaves();
+    var entry = saves[parseInt(idx,10)];
+    if (!entry) return;
+    showConfirm('Delete saved redraft "'+entry.name+'"? This cannot be undone.', function(){
+      saves.splice(parseInt(idx,10),1);
+      setSaves(saves);
+      refreshSavedList();
+      showToast('Deleted "' + entry.name + '"');
+    }, 'Delete saved redraft?');
+  });
+
+  // ---- toast ----
+  var toastEl = document.getElementById('toast');
+  var toastTimer = null;
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 2200);
+  }
+
+  // ---- boot ----
+  loadInitial();
+  render();
+  refreshSavedList();
+})();
+</script>
+
+</body></html>
