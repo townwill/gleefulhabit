@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grandpa's Shed: bring saves over</title>
+<meta name="robots" content="noindex">
+<style>
+  body{margin:0;background:#15181e;color:#f1ebe0;font:17px/1.45 -apple-system,BlinkMacSystemFont,sans-serif;padding:24px 16px}
+  .wrap{max-width:560px;margin:0 auto}
+  h1{font-size:24px;color:#ffc65c;margin:0 0 6px}
+  p{color:#c9cfda}
+  .card{background:#1c2129;border:1px solid #3a4354;border-radius:14px;padding:16px;margin:14px 0}
+  button{font:700 16px -apple-system,sans-serif;padding:12px 16px;border-radius:12px;border:0;background:#ffc65c;color:#15181e;cursor:pointer}
+  button:disabled{opacity:.4;cursor:default}
+  .row{font-size:14px;padding:4px 0;border-bottom:1px solid #2b3240}
+  .ok{color:#79d69f}.bad{color:#ff7d6e}.dim{color:#a2aab8;font-size:14px}
+  input[type=file]{color:#c9cfda;margin:8px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Bring the Shed saves over</h1>
+  <p>One-time move of every player's save from the old Claude version into your Google account.</p>
+
+  <div class="card" id="step1"><b>1. Sign in</b><div id="who" class="dim">Loading…</div><button id="signin" hidden>Sign in with Google</button></div>
+  <div class="card" id="step2"><b>2. Choose shed-move.txt</b><br><input type="file" id="file" accept=".txt,.json,text/plain,application/json" disabled><div id="check"></div></div>
+  <div class="card" id="step3"><b>3. Copy into your account</b><div id="warn" class="dim"></div><button id="go" disabled>Import saves</button><div id="log"></div></div>
+  <p class="dim">When it says every record checked out, open <a href="./" style="color:#ffc65c">Grandpa's Shed</a>.</p>
+</div>
+<script type="module">
+const ALLOWED = 'townwill@gmail.com';
+const G = 'https://www.gstatic.com/firebasejs/13.2.0/';
+const firebaseConfig = {
+  apiKey: "AIzaSyCQHJfUE5mPvy6KgTb128wuomkkSgad4mM",
+  authDomain: "townwill-4cf01.firebaseapp.com",
+  projectId: "townwill-4cf01",
+  storageBucket: "townwill-4cf01.firebasestorage.app",
+  messagingSenderId: "549139097198",
+  appId: "1:549139097198:web:5d5a7e09a376a85c3da87f"
+};
+const $ = id => document.getElementById(id);
+const line = (html, cls) => { const d = document.createElement('div'); d.className = 'row ' + (cls || ''); d.innerHTML = html; $('log').appendChild(d); };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// key order doesn't matter to Firestore, so compare with sorted keys
+const canon = v => Array.isArray(v) ? '[' + v.map(canon).join(',') + ']' : (v && typeof v === 'object') ? '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}' : JSON.stringify(v);
+
+const [appMod, A, F] = await Promise.all([import(G + 'firebase-app.js'), import(G + 'firebase-auth.js'), import(G + 'firebase-firestore.js')]);
+const app = appMod.initializeApp(firebaseConfig);
+const auth = A.getAuth(app);
+const fs = F.initializeFirestore(app, { ignoreUndefinedProperties: true });
+try { await A.getRedirectResult(auth); } catch (e) {}
+const provider = new A.GoogleAuthProvider();
+provider.setCustomParameters({ login_hint: ALLOWED, prompt: 'select_account' });
+$('signin').onclick = async () => { try { await A.signInWithPopup(auth, provider); } catch (e) { if (e.code === 'auth/popup-blocked') A.signInWithRedirect(auth, provider); else $('who').textContent = 'Sign-in failed: ' + (e.code || e.message); } };
+
+let bundle = null, user = null;
+A.onAuthStateChanged(auth, u => {
+  user = u;
+  if (!u) { $('who').textContent = 'Not signed in.'; $('signin').hidden = false; $('file').disabled = true; return; }
+  const ok = (u.email || '').toLowerCase() === ALLOWED;
+  $('who').innerHTML = ok ? '<span class="ok">✓ Signed in as ' + esc(u.email) + '</span>' : '<span class="bad">Signed in as ' + esc(u.email) + '. Sign in with ' + ALLOWED + ' instead.</span>';
+  $('signin').hidden = ok; $('file').disabled = !ok;
+});
+
+$('file').onchange = async () => {
+  const f = $('file').files[0]; if (!f) return;
+  $('check').innerHTML = 'Checking…'; $('go').disabled = true; bundle = null;
+  try {
+    const b = JSON.parse(await f.text());
+    if (b.kind !== 'grandpas-shed-move' || !Array.isArray(b.docs)) throw new Error("This isn't a Grandpa's Shed move file.");
+    const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(b.docs)));
+    const hash = Array.from(new Uint8Array(h)).map(x => x.toString(16).padStart(2, '0')).join('').slice(0, 16);
+    const good = hash === b.hash && b.docs.length === b.docCount;
+    let html = `<div class="${good ? 'ok' : 'bad'}">${good ? '✓' : '✗'} ${b.docs.length} records, check code ${hash} ${good ? 'matches' : 'does NOT match ' + esc(b.hash)}</div>`;
+    for (const d of b.docs) { const s = d.data && d.data.summary; html += `<div class="row">${esc(d.path)}${d.data.name ? ' · ' + esc(d.data.name) : ''}${s ? ` · level ${s.level} · $${(s.cash || 0).toLocaleString()}` : ''}</div>`; }
+    $('check').innerHTML = html;
+    if (!good) return;
+    bundle = b;
+    const existing = await F.getDocs(F.collection(fs, 'apps/shed/profiles'));
+    $('warn').textContent = existing.size ? `Heads up: your account already has ${existing.size} Shed player(s). Importing replaces them with the saves from this file.` : 'Your account has no Shed saves yet.';
+    $('go').disabled = false;
+  } catch (e) { $('check').innerHTML = '<span class="bad">' + esc(e.message || e) + '</span>'; }
+};
+
+$('go').onclick = async () => {
+  if (!bundle || !user) return;
+  $('go').disabled = true; $('log').innerHTML = '';
+  let ok = 0;
+  for (const d of bundle.docs) {
+    const ref = F.doc(fs, 'apps/shed/' + d.path);
+    try {
+      await F.setDoc(ref, d.data);
+      const back = await F.getDoc(ref);
+      if (back.exists() && canon(back.data()) === canon(d.data)) { ok++; line('✓ ' + esc(d.path), 'ok'); }
+      else line('✗ ' + esc(d.path) + ' read back different', 'bad');
+    } catch (e) { line('✗ ' + esc(d.path) + ': ' + esc(e.code || e.message), 'bad'); }
+  }
+  line(`<b>${ok} of ${bundle.docs.length} records copied and checked.</b>`, ok === bundle.docs.length ? 'ok' : 'bad');
+  if (ok !== bundle.docs.length) $('go').disabled = false;
+};
+</script>
+</body>
+</html>
