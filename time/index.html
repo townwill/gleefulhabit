@@ -1,0 +1,495 @@
+<!doctype html><html><head><meta charset=utf8><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Yesterday"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><script>window.townwillCloudP=new Promise(function(r){window.__townwillCloudResolve=r});</script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Late for Yesterday</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Share+Tech+Mono&family=Rubik:wght@400;500;700&display=swap">
+<style>
+/* Layout: a stainless dashboard console. Header = time display + speedometer; body = map of chapters or the puzzle bench. Single dark look on purpose. */
+:root{
+  --bg:#0e1013; --panel:#171a1f; --panel2:#1f242b; --line:#2c333c; --steel:#9aa4b0; --fg:#eceff3; --muted:#8b95a1;
+  --amber:#ffb22e; --amber-dim:#3a2c12; --red:#ff4f3f; --red-dim:#3d1714; --green:#4cf08c; --green-dim:#123522; --cyan:#62e3ff;
+  --display:"Bungee",Impact,"Arial Black",sans-serif; --body:"Rubik",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"Share Tech Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--body);font-size:16px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 32px}
+*{box-sizing:border-box}
+button{font:inherit;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:9px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;touch-action:manipulation}
+button:hover{border-color:var(--steel)}
+button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+button.primary{background:var(--amber);color:#1d1404;border-color:var(--amber);font-weight:500}
+.wrap{max-width:980px;margin:0 auto}
+header.console{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between;padding:16px 0 14px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.brand{display:flex;flex-direction:column;cursor:pointer;min-width:0}
+.brand h1{font-family:var(--display);font-weight:400;font-size:clamp(22px,4.4vw,32px);line-height:1;margin:0;letter-spacing:.5px;color:var(--fg)}
+.brand h1 span{color:var(--amber)}
+.brand small{font-size:12px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-top:6px}
+.gauges{display:flex;gap:10px;flex-wrap:wrap}
+.readout{background:#07080a;border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-width:0}
+.readout label{display:block;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted)}
+.readout b{font-family:var(--mono);font-weight:400;font-size:20px;letter-spacing:1px;font-variant-numeric:tabular-nums}
+.readout.now b{color:var(--green);text-shadow:0 0 6px rgba(76,240,140,.35)}
+.readout.mph b{color:var(--red);text-shadow:0 0 6px rgba(255,79,63,.35)}
+.mphbar{height:4px;background:var(--red-dim);border-radius:2px;margin-top:4px;overflow:hidden}
+.mphbar i{display:block;height:100%;background:var(--red);transition:width .6s}
+/* map */
+.hero{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;margin-bottom:22px}
+.hero p{margin:0;color:var(--muted);max-width:56ch}
+.hero .syncnote{font-size:12px;margin-top:6px;color:var(--muted)}
+.hero>div{min-width:0}
+.chap{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.chap h2{font-family:var(--display);font-weight:400;font-size:18px;margin:0;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;text-wrap:balance}
+.chap h2 em{font-style:normal;font-family:var(--mono);font-size:14px;color:var(--green)}
+.chap .meta{font-size:13px;color:var(--muted);margin:2px 0 12px}
+.lv{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px}
+@media (max-width:560px){.lv{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.lvb{flex-direction:column;justify-content:center;gap:1px;padding:7px 0 5px;min-width:0;border-radius:8px}
+.lvb .n{font-family:var(--mono);font-size:16px;line-height:1}
+.lvb .k{font-size:10px;color:var(--muted);letter-spacing:.5px}
+.lvb .st{font-size:10px;color:var(--amber);letter-spacing:1px;min-height:12px;line-height:12px}
+.lvb.done{background:#1b2a20;border-color:#2a4a34}
+.lvb.next{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber) inset}
+.lvb.locked{opacity:.35;cursor:not-allowed}
+/* play */
+.bench{display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:820px){.bench{grid-template-columns:minmax(0,1fr)}}
+.topbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.topbar .title{font-family:var(--display);font-size:16px;letter-spacing:.5px}
+.topbar .sub{font-size:13px;color:var(--muted)}
+.board{display:grid;width:max-content;max-width:100%;border:3px solid var(--steel);border-radius:4px;touch-action:none;user-select:none;-webkit-user-select:none;background:#000}
+.fc{display:flex;align-items:center;justify-content:center;cursor:pointer;border:.5px solid rgba(0,0,0,.22);position:relative}
+.fc.focus{box-shadow:inset 0 0 0 3px var(--amber)}
+.fc svg{width:58%;height:58%;pointer-events:none}
+.fc .x{pointer-events:none;font-weight:500;line-height:1}
+.sc{display:flex;align-items:center;justify-content:center;cursor:pointer;background:#1a1e24;color:var(--cyan);font-family:var(--mono);border-right:1px solid #3b434e;border-bottom:1px solid #3b434e}
+.sc.g{color:var(--fg);background:#262c34;font-weight:700;font-family:var(--body)}
+.sc.hl{background:#212832}
+.sc.same{background:#2b3a2f}
+.sc.sel{background:var(--amber-dim);box-shadow:inset 0 0 0 2px var(--amber)}
+.sc.bad{color:#fff;background:var(--red)}
+.sc.focus{box-shadow:inset 0 0 0 3px var(--amber)}
+.sc.bR{border-right:3px solid #c9d1db}.sc.bB{border-bottom:3px solid #c9d1db}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.pad{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-top:12px;max-width:100%}
+.pad button{justify-content:center;font-family:var(--mono);font-size:20px;padding:10px 0}
+.toggle{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.bubble{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;gap:12px;align-items:flex-start}
+.av{width:44px;height:44px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:16px}
+.bubble .who{font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin:0}
+.bubble .say{margin:4px 0 0;font-size:16px;line-height:1.55;text-wrap:pretty}
+.bubble .why{margin:8px 0 0;font-size:14px;line-height:1.55;color:var(--muted)}
+.bubble .why b{color:var(--amber);font-weight:500}
+.rules{font-size:13px;color:var(--muted);line-height:1.6;background:transparent;border:1px dashed var(--line);border-radius:12px;padding:12px 14px}
+.rules b{color:var(--fg);font-weight:500}
+.clock{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.clock .readout{padding:4px 10px}
+.clock .readout b{font-size:18px;color:var(--amber)}
+.clock .readout.par b{color:var(--muted)}
+.clock .readout.go b{color:var(--green)}
+.card.fast{border-color:var(--green);box-shadow:0 0 0 1px var(--green),0 0 28px rgba(76,240,140,.25)}
+.card .eyebrow.fast{color:var(--amber)}
+.card .times{font-family:var(--mono);font-size:15px;color:var(--muted);margin:-4px 0 12px;font-variant-numeric:tabular-nums}
+.card .times b{color:var(--fg);font-weight:400}
+.card .times .nb{color:var(--green)}
+.stat{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+/* modal */
+.veil{position:fixed;inset:0;background:rgba(5,6,8,.78);display:flex;align-items:center;justify-content:center;padding:20px max(16px,env(safe-area-inset-right,0px)) 20px max(16px,env(safe-area-inset-left,0px));z-index:30}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;max-width:460px;width:100%;padding:22px;animation:rise .35s ease-out}
+.card .eyebrow{font-family:var(--mono);color:var(--green);font-size:14px;letter-spacing:1px}
+.card h3{font-family:var(--display);font-weight:400;font-size:24px;margin:6px 0 10px;text-wrap:balance}
+.card p{margin:0 0 16px;line-height:1.6}
+.card .bolts{font-size:26px;letter-spacing:6px;color:var(--amber);margin:-4px 0 12px}
+.card .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.flash{position:fixed;inset:0;background:#fff;pointer-events:none;z-index:40;animation:flash .7s ease-out forwards}
+@keyframes flash{0%{opacity:.85}100%{opacity:0}}
+@keyframes rise{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.22)}100%{transform:scale(1)}}
+.shake{animation:shake .45s}.pop{animation:pop .35s ease-out}.cshake{animation:shake .35s}
+@media (prefers-reduced-motion:reduce){.shake,.pop,.cshake,.card,.flash{animation:none!important}.flash{display:none}}
+</style>
+
+<div class="wrap">
+<header class="console">
+  <div class="brand" id="home" role="button" tabindex="0" aria-label="Back to the level map">
+    <h1>Late for <span>Yesterday</span></h1>
+    <small>A time-travel puzzle adventure</small>
+  </div>
+  <div class="gauges">
+    <div class="readout now"><label>Present time</label><b id="nowd">SEP 12 1986</b></div>
+    <div class="readout mph"><label>Chapter speed</label><b id="mph">00 MPH</b><div class="mphbar"><i id="mphb" style="width:0"></i></div></div>
+  </div>
+</header>
+<main id="app"></main>
+</div>
+<div id="modal"></div>
+
+<script>
+const DATA={"levels":[{"t":"f","n":6,"r":["CCABBB","CCAABB","CCCEEE","CCCDEE","CCCEEE","FEEEEE"],"s":[2,4,1,3,5,0]},{"t":"f","n":6,"r":["AAAAAA","ACDAAB","CCDAAB","CCDDAA","CEDDAF","EEFFFF"],"s":[2,5,0,3,1,4]},{"t":"s","p":"060015021300130050240063400601602504","s":"364215521346136452245163453621612534"},{"t":"f","n":6,"r":["BBCCCA","BBCCCC","BDCCCE","FDFCCE","FFFEEE","FFFFEE"],"s":[5,0,3,1,4,2]},{"t":"f","n":6,"r":["CCAABB","CCCABB","CCCCDB","CEEEDB","FEFFFF","FFFFFF"],"s":[2,5,0,4,1,3]},{"t":"s","p":"602104314000003201006045235006401020","s":"652134314652543261126345235416461523"},{"t":"f","n":6,"r":["AABBBB","ACBBBB","DCCBBB","DDDBBF","DEEEFF","EEEFFF"],"s":[1,4,2,0,3,5]},{"t":"f","n":6,"r":["BBAAAC","BBBBAC","BBEECC","BDEECE","DDEEEE","FFEEEE"],"s":[4,2,5,1,3,0]},{"t":"f","n":7,"r":["BBBCEEA","BDCCEEE","DDCCCEE","DDCCCEG","FFFEEEG","FFFEEEG","FFEEEGG"],"s":[6,0,3,1,4,2,5]},{"t":"s","p":"305001400605106050004306240563053020","s":"365241412635136452524316241563653124"},{"t":"f","n":7,"r":["ACCCCCC","AACCCCB","ECCCCCB","EEECCDD","EEECFFD","EEEEFFF","GGFFFFF"],"s":[0,6,3,5,2,4,1]},{"t":"f","n":7,"r":["BCCAAAA","BCCCCCA","ECCCCCA","EDDCDAA","EEDDDAA","EEEGGGF","EGGGGGG"],"s":[5,0,2,4,1,6,3]},{"t":"s","p":"205364036152024500600000000035503041","s":"215364436152324516651423142635563241"},{"t":"f","n":7,"r":["BBCCACC","BBBCCCE","BBBBFCE","DDBBFEE","DDFBFEE","DDFFFEE","GFFFFEE"],"s":[4,2,5,1,6,3,0]},{"t":"f","n":7,"r":["AAABBBB","AAABBBB","ACCCBBB","CCCDFBE","FFFFFFE","FGFFFEE","FGGFFEE"],"s":[0,5,1,3,6,4,2]},{"t":"s","p":"600310001004036541005206463105012000","s":"654312321654236541145236463125512463"},{"t":"f","n":7,"r":["AABBBCC","BBBBCCC","BBEBCDC","BBEEEDD","BEEEEEE","BFEEEEE","FFEEGGE"],"s":[0,2,4,6,3,1,5]},{"t":"f","n":7,"r":["BBBBAAA","BBBCCAA","BCCCCDD","EEECCDD","EEEEEED","EFEEEEE","FFFEEGE"],"s":[4,0,2,6,3,1,5]},{"t":"s","p":"002003100250010420604300240600360502","s":"452163136254513426624315245631361542"},{"t":"f","n":7,"r":["AAABBBB","ABBBBBC","ABBBCBC","DBBCCCC","DEEECCF","EEEEFFF","EEEGFFF"],"s":[1,4,6,0,2,5,3]},{"t":"f","n":7,"r":["CCCABBB","CCCBBBB","CCCBCCB","DCCCCEE","FFFFFFE","FFFGEEE","FFFGGGE"],"s":[3,5,2,0,6,1,4]},{"t":"f","n":7,"r":["DDCAABB","DCCABBB","DCCCBBB","DDECEBB","DDECEEB","DFEEEEG","DDEEEEG"],"s":[3,5,2,0,4,1,6]},{"t":"s","p":"000000504000063015040236602301030652","s":"316524524163263415145236652341431652"},{"t":"f","n":7,"r":["AAAAAAA","BAAAAAA","BAAACEE","BFDDCEE","FFDFFEG","FFFFFEG","FFFFFGG"],"s":[3,0,4,2,5,1,6]},{"t":"f","n":7,"r":["CCAABBB","CCCABDD","CEEEBDD","EEEFDDD","EEEFFFD","EFFFFFD","EEFFFFG"],"s":[2,4,0,5,1,3,6]},{"t":"s","p":"021030030000000300653241105003340056","s":"521634436512214365653241165423342156"},{"t":"f","n":8,"r":["BBBBDAAD","BBBBDDDD","BBBDDDDC","BBBBDDDD","EBBDDDFF","HHHGGDFF","HGGGGGGG","HHGGGGGG"],"s":[5,2,7,4,0,6,3,1]},{"t":"f","n":8,"r":["CBBBAAAF","CCCBBDDF","ECDDDDDF","EEDDDDFF","EEDDDDDF","HEDHHDFF","HHHHGDFD","HHHHHDDD"],"s":[6,3,1,5,0,7,4,2]},{"t":"f","n":8,"r":["CCCCCCAA","BCCCCAAD","CCCCCCAD","GCGCCCAD","GGGFCEEE","GGGFFFHE","GGGGHHHE","GGHHHHHH"],"s":[6,0,2,7,5,3,1,4]},{"t":"s","p":"024015501204002450605300400500006040","s":"324615561234132456645321413562256143"},{"t":"f","n":8,"r":["BBBAAADF","BCBCADDF","CCBCADFF","CCCCCDDF","CCECCFDF","GCCHFFFF","GGGHHFFF","HHHHHFFF"],"s":[5,0,3,6,2,7,1,4]},{"t":"f","n":8,"r":["AAADDDBB","ECCDDDDB","ECCCDDDB","ECCDDDDD","ECCDDDDD","EEEEHFDD","GGHHHHDD","GGGHHHDD"],"s":[2,7,3,6,0,5,1,4]},{"t":"s","p":"001460430205245600063020050140000002","s":"521463436215245631163524352146614352"},{"t":"f","n":8,"r":["AAACCCCB","AEAACCBB","AECCCCCD","EEEECGCD","FFFEGGGD","FFFGGGGD","FFGGGGGG","HGGGGGGG"],"s":[2,6,4,7,3,1,5,0]},{"t":"f","n":8,"r":["CCBBBABB","CCBDBBBB","CCDDDBDD","ECDDDDDD","ECGDDDDD","GGGDFFHH","GGGGHHHH","GGHHHHHH"],"s":[5,7,1,3,0,4,2,6]},{"t":"s","p":"010043342001103000064035005000400356","s":"516243342561153624264135635412421356"},{"t":"f","n":8,"r":["DDDBBAAA","DDDBBBBB","DDDBBBBC","DDDBBBBB","DDDEBBBB","DDGGFFFF","HHGGFFFF","HHHGGFFF"],"s":[6,4,7,1,3,5,2,0]},{"t":"f","n":8,"r":["BBBBBBBA","CCBBBBDD","ECEEDDDD","EEEEDFDD","GEEEDFFF","GEGEEEFF","GGGEFFFF","GGGGHHHH"],"s":[7,3,1,4,2,6,0,5]},{"t":"s","p":"601050420013000020000536500102000045","s":"631254425613356421214536543162162345"},{"t":"f","n":8,"r":["DDACCCBB","DDACCCCB","DCCCCCCC","DDDCCCEE","FDCCCEEE","FDCCGGHE","FCCCGHHH","FCCCCCHH"],"s":[2,7,3,1,5,0,4,6]},{"t":"f","n":8,"r":["BCCCDDAA","BBCCDDAA","BCCCDDAD","BCCCFDDD","EEEFFDDD","EEEFFFDD","GEEEFFHH","EEEEFFFH"],"s":[6,1,3,5,2,4,0,7]},{"t":"f","n":8,"r":["CCCCCBAA","DCCCEBBB","DDDCEEBF","DDDEEEFF","DDDDEEFF","GGDGHHFF","GGGGHHHF","GHHHHHHH"],"s":[7,5,3,1,4,6,0,2]},{"t":"s","p":"400050030006605134000000250600146005","s":"461253532416625134314562253641146325"},{"t":"f","n":8,"r":["CCCCCACC","BCCCCCCC","CCCCCCCC","ECCCCCCD","EEGCCCCD","EEGFFFFF","GGGGGHFF","GGGHHHFF"],"s":[5,0,3,7,1,6,2,4]},{"t":"f","n":8,"r":["BBBBBCAC","BBBDBCCC","BBBDBCCC","BBBDDDCC","EDDDDFFC","HDDFFFFC","HHGGFFFF","HHGFFFFF"],"s":[6,2,7,4,0,5,3,1]},{"t":"s","p":"000502100400502060401253000000006045","s":"643512125436532164461253354621216345"},{"t":"f","n":8,"r":["CCCBBDDA","CCCCBBDD","CCCCCBBD","CCCDDDDD","CCGEEFDD","CCGGFFDD","GGGHHFDD","GGHHHFDD"],"s":[7,4,1,6,3,5,0,2]},{"t":"f","n":8,"r":["BAAACCCC","BBBAAAAC","BAAAACCC","BBADDCCC","GGDDEEEE","GHHHFFFF","GHHHFHFF","HHHHHHFF"],"s":[3,1,6,4,7,5,0,2]},{"t":"f","n":8,"r":["BCCCCCCA","BBCCCAAA","ECCCCCCC","ECDDCCCC","EEFFFCCC","EEEFFFCC","EEFFHHGG","FFFFHHHH"],"s":[7,1,5,2,0,3,6,4]},{"t":"s","p":"412360053020005130040000000210000040","s":"412365653421265134341652534216126543"},{"t":"f","n":8,"r":["BBBBBBBA","FFFFBBBB","DFFFBBCB","DDFFBECC","FFFEEEEE","FFFGGGGG","FFGGGGHG","FFFFHHHH"],"s":[7,4,6,1,3,0,2,5]},{"t":"f","n":9,"r":["AAAAAAAAA","BAAAAAAAA","DDAACAAAA","DDFFCEEGG","DFFFFFEGG","HFFFFFGGI","HHFFFFFGI","HHHFFFFII","HHHFFFIII"],"s":[5,0,4,1,6,3,7,2,8]},{"t":"s","p":"600400154003020300060010006045240000","s":"632451154623521364463512316245245136"},{"t":"f","n":9,"r":["CCCCBBBBA","CCCCCBDBB","GECDCDDDD","GEEDDDDDD","GEEEDDDFF","GEEHHDHFF","GGEHHHHFF","GGGHHHHHF","IGGHHHHFF"],"s":[8,5,2,6,3,7,1,4,0]},{"t":"f","n":9,"r":["CADDDBBBB","CDDDDDBBF","CCDDDDFFF","GDDDEEEFF","GGGEEEEFF","GGGEEEFFF","GGGGGEFFF","GGGGGFFFH","GGIGGFFHH"],"s":[1,6,0,3,5,7,4,8,2]},{"t":"s","p":"006245002600050000060002021500000001","s":"316245542613253164164352421536635421"},{"t":"f","n":9,"r":["CCCAAAEBB","CCCCCCEEB","FCCCHHEDD","FFCCHEEDD","FFCCHEEGD","HFHHHGGGG","HHHGGGGGG","HHGGHGGGG","IHHHHHGGG"],"s":[3,8,2,7,5,1,6,4,0]},{"t":"f","n":9,"r":["ACCCCBBBB","CCCCCCCBD","CCCCDDDDD","CCCCDDDFF","IIIEEDFFF","IIIEDDFFF","IGIHHHHFF","IIIHHHHFF","IIIHHHHHF"],"s":[0,7,3,6,4,8,1,5,2]},{"t":"s","p":"103000000010000030000054654001301060","s":"163542542613415236236154654321321465"},{"t":"f","n":9,"r":["DAAAAABBB","DCACCCCBF","DCCCFFCCF","DCCFFFFFF","DEEFFFFFF","EEEFFFFFI","GGEHFFFII","GHHHHFFII","GHHHIIIII"],"s":[5,7,3,0,2,6,1,4,8]},{"t":"f","n":9,"r":["CCAAEEBBB","CCCDEEEEB","CFCDEEEEE","FFFDEEEEE","FFFFEEEEE","FFFHHHEEE","FFHHHHGGE","HHHHHHGGI","HHHHHHGII"],"s":[2,8,0,3,5,1,6,4,7]},{"t":"f","n":9,"r":["AACCCEEDD","AACCBEEDD","ACCCCEEED","AACCCEDDD","AACCCEEED","FCCCEEDDD","FCCGGGDDD","FCCGGGHHH","FCCGGGIHH"],"s":[1,4,2,7,5,0,3,8,6]},{"t":"s","p":"000060301205014350030020400002000000","s":"542163361245214356635421453612126534"},{"t":"f","n":9,"r":["AAAABBBBB","AAABBBEEE","BBBBBBEEC","DFBEEEECC","FFEEEEEEE","FFEIEEEGG","FIIIEIEGG","FFHIEIIIG","HHHIIIGGG"],"s":[3,5,8,0,6,1,7,2,4]},{"t":"f","n":9,"r":["CBBBBBBBA","CBBBBDDBB","CBBBDDDBD","EBBBFFDDD","EEFFFFFDD","EEEEFFFDH","EEEGFFFFH","IGGGGGFHH","IIIIGFFHH"],"s":[8,4,0,6,1,5,3,7,2]},{"t":"s","p":"600000503040156002320010000100200000","s":"642351513246156432324615465123231564"},{"t":"f","n":9,"r":["EEEEEAAAA","EEEEEADDB","EECCFAADD","EECCFAADD","EEFFFFFHH","EEGGFFFHH","EGGFFFFHH","GGGGFFHHH","GGGIIHHHH"],"s":[5,8,2,7,0,4,1,6,3]},{"t":"f","n":9,"r":["CCCDAAABB","CCCDDEEEB","CCDDDEEEE","CDDDDDEEI","DDDDDEEEI","DDFDDEEEI","GGFFDEEEI","GGFDDHEEI","GGGGHHIII"],"s":[4,8,1,3,6,2,0,5,7]},{"t":"f","n":9,"r":["AAAADCCCC","AABDDEECC","IAADDECCC","IIIDEEEFC","IIEEEEEFC","IGGEGFFFF","IGGGGFFFF","IIIIGFFFH","IIIIGFFFF"],"s":[0,2,6,3,5,7,4,8,1]},{"t":"s","p":"510023004500000105050004300002000000","s":"516423234516462135153264341652625341"},{"t":"f","n":9,"r":["CCBBADDDD","CBBBDDDDD","CCCCDDDDD","FFDDDDDDD","FFDDDDDDE","FFFDDDDII","FFFGGHHII","FFFFGHHHI","FFFFFHHII"],"s":[4,2,0,6,8,1,3,5,7]},{"t":"f","n":9,"r":["CCCCAABDD","CCCCBBBDD","CCCCCGDDD","FCCCCGDGD","FCCEEGGGD","FFEEEGGGD","HEEGGGIGI","HEEGGGIII","EEEGGGIII"],"s":[4,6,2,8,3,1,5,0,7]},{"t":"s","p":"014036000000003452000000020001000240","s":"214536356124163452542613425361631245"},{"t":"f","n":9,"r":["DDDDAAACC","DDDBDAAAC","DDDDDFFFC","DDDDFFCCC","EDDDFFFFC","GDDDDFFFF","GGDGGFFFF","GGGGHHHFH","GGGIIIHHH"],"s":[5,3,8,2,0,7,1,6,4]},{"t":"f","n":9,"r":["DDDDAEEBB","DDDDAEEBB","DDDDCCEBG","DFDDDDEEG","DFDDEEEGG","FFDDEEEGG","FFFFEIIIG","FHFFIIIIG","HHHIIIIII"],"s":[4,7,5,2,6,0,8,1,3]},{"t":"s","p":"201063000000000540400000030004004601","s":"251463643125312546465312136254524631"},{"t":"f","n":9,"r":["EEEEEAABB","EEEEECACB","EEEDDCCCC","EEEEDDDFC","EEEEEFFFC","EEEEEFFFF","GGEEEFFFF","IHHHHHFFF","IHHHHHHFF"],"s":[5,8,6,4,2,7,1,3,0]},{"t":"f","n":9,"r":["DDDAAAAAB","DDDDAAABB","CDDDDAABB","DDDDDHGBE","DFDDHHGBE","FFDDHHGBB","FHHHHIGGB","HHIHIIIGG","HIIIIIIGG"],"s":[4,7,0,2,8,1,6,3,5]},{"t":"s","p":"040532000040000351000000520000400020","s":"641532352146264351135264526413413625"},{"t":"f","n":9,"r":["CCCCCCAAA","CCEEDAADB","CCEEDDDDD","CEEDDDDDD","EEEDDDFFD","GEIFFFFDD","GEIFHHHDD","GIIFHHDDH","GIIIIHHHH"],"s":[6,8,1,7,2,4,0,5,3]},{"t":"f","n":9,"r":["AAABBBBBB","CCABBBBBB","CCABCBBBB","CCCCCCDDB","ECDCCDDGG","HHDDDDGGF","HDDDDGGGG","HDDHDGIGG","HHHHHHIGG"],"s":[2,4,1,7,0,8,5,3,6]},{"t":"f","n":9,"r":["BBBBBAACC","BBBBDDCCC","BBBBBDCCC","BEHHBDCDC","EEEHDDDDF","EGHHDDDDF","GGHHDDFFF","GHHHHHFFF","GIHHHHFFF"],"s":[6,3,7,5,2,8,0,4,1]},{"t":"s","p":"620000530001060050103000000030000200","s":"621345534621462153153462216534345216"},{"t":"f","n":9,"r":["CCBBBBBDA","CCCBBBBDD","CECBBBDDD","EEEEEBDBD","EEEEEBBBD","EEFEEEBBG","EHFFEEGGG","HHHHEEGGG","IIHHHHGGG"],"s":[8,5,0,6,4,2,7,3,1]},{"t":"f","n":9,"r":["CCCCCCAAB","CCCCCCCBB","CCCCCDDDD","FGGEEDDDD","FGGGEEEDD","FFGGGGDDD","FFFGDDDDD","HFIGGDDDD","HFIGGDDDD"],"s":[6,8,4,7,5,1,3,0,2]},{"t":"s","p":"000310600050200100030000050002420000","s":"542316613254265143134625351462426531"},{"t":"f","n":9,"r":["BBBBCCCAA","BBCCCCCAC","DBBCCCCCC","DDCCCCCCC","EEEGCCCCC","EEGGCCCFC","EEGGGGFFF","EGGGGGHHF","GGIIHHHHF"],"s":[8,1,5,0,2,7,4,6,3]},{"t":"f","n":9,"r":["BDCCCAAAA","BDCCCCCCA","BDCCCCAAA","FDCGGCEEE","FCCGGGEGE","FFFFGGGGG","FFHHHHGGG","FFFHGHHGG","HHHHGGGGI"],"s":[5,0,4,1,6,2,7,3,8]},{"t":"f","n":10,"r":["CAAAAABBBB","CCAADADBBB","CCCDDDDDBB","CCCCDDDDDB","EECCDDDDBB","EECGGFHBBB","EGCGGHHBHB","GGGGGHHHHH","GGGGGHHHIH","JGGGGHHHII"],"s":[4,9,2,7,1,5,3,6,8,0]},{"t":"s","p":"500014200000000005300000003102004600","s":"536214241536412365365421653142124653"},{"t":"f","n":10,"r":["AAEEEEDDDD","ACCCEBBDDD","ACEEEFDDDD","AAAEEFDFDD","JJEEFFFFGG","JHHHHFGGGG","JJHHHFGGGG","JJHHHHHHHG","JHHHHHHHHI","JJJHHHHIII"],"s":[0,6,1,8,3,5,7,4,9,2]},{"t":"f","n":10,"r":["BBCCCCCAAA","BBDDDCCCAA","DBDDDDCFFF","DDDDDDDDDF","DEEDDDDDDF","EEEEDDDDFF","EEEEGGGFFH","IEEGGGGFFH","IIIGGGGGJH","IIIGGJJJJH"],"s":[7,0,6,3,1,8,4,9,2,5]},{"t":"s","p":"054000000105060000000301600002000500","s":"154623236145361254542361615432423516"},{"t":"f","n":10,"r":["CCCCCCCCCA","CBBBCCCCCA","CBBDDDCCCC","BBBDDDDECH","BGDDDDDEHH","FGDDDDDEHH","FGGDDDJJHH","FGGJJDJJHH","IIGJJDJHHH","IIJJJJJHHH"],"s":[9,3,6,4,7,0,2,8,1,5]},{"t":"f","n":10,"r":["BAABBBBFFF","BBBBEEEEFF","CBBBEEEFFF","CCBBEEEDFH","IGGEEGEGFH","IGGGGGGGFH","IGGJJGGHHH","IGGIJJGGGH","IIIIJGGHGH","IIJJJJHHHH"],"s":[1,3,0,7,4,8,6,9,2,5]},{"t":"s","p":"002004500000000000010260020030030001","s":"162354543612256143314265421536635421"},{"t":"f","n":10,"r":["CCDDABBBBB","CCDDDDDGGB","CFDDDDGGGE","FFFDDDGGEE","FFFFHGGJEE","FFFFHGGJJJ","FFHHHGGGJJ","FFHHHGGGJJ","HHHHIIGGJJ","HHHIIIJJJJ"],"s":[4,9,0,3,8,1,6,2,5,7]},{"t":"f","n":10,"r":["CCCCCCCAAA","DCDCBBBEEE","DCDDDDDEEE","DDDDFFDHEE","FFFFFFDHEE","FIIIJJDHEG","FFIJJJJHEG","FFIIJJHHHG","IIIIIJJHHH","IIIIIJJJHH"],"s":[7,4,1,3,8,0,9,6,2,5]},{"t":"s","p":"000000560000054000000051036100000006","s":"341562562314154623623451236145415236"},{"t":"f","n":10,"r":["AAAAACCCCD","BFFAECECDD","FFFFEEECCD","FFFFEEEDDD","FFIFFEEHHH","FFIFEEHHHH","IIIGEEHHHH","IIGGJEHHHH","IIIIJHHHHH","IIIIJJHHHH"],"s":[4,0,7,9,6,1,3,8,2,5]}],"story":{"chapters":[{"name":"The garage","place":"Maple Ridge","now":"SEP 12 1986","intro":"Maple Ridge, 1986. Riley Park skates up to Doc Halvorsen's garage at midnight. Inside sits the Gullwing: a stainless steel coupe with doors that open like wings, and a glowing gadget behind the seats called the flux coil. Tonight is its first test.","outro":"FLASH. The Gullwing vanishes in a trail of fire. Riley blinks, and the mall parking lot is a cornfield. The dashboard reads NOV 03 1956. The flux coil is dead, and Doc is 30 years away.","lines":[["doc","Riley, you came! Tonight the Gullwing makes its first jump, but the flux coil needs power cells. One per row, one per column, one per color, and no two can touch. Tap a square twice to place a bolt."],["riley","So every color gets exactly one bolt. Got it, Doc."],["doc","This is the timeline map. Every row, column, and 2x3 box needs the numbers 1 to 6, once each. If the map has holes, we could land anywhere!"],["doc","Excellent! The coil is humming at 12 percent. Keep going!"],["riley","Why does it have to hit 91 miles per hour, anyway?"],["doc","At 91 the flux coil folds time like a pancake. Don't ask me about the syrup."],["doc","Tip: if a color only fits in one row, cross out the rest of that row. You can drag to paint x's."],["riley","Doc, your dog just licked a power cell."],["doc","Newton will be fine. He's licked worse. The grids get bigger from here!"],["doc","Recalibrating the timeline map. Same rules, fewer clues."],["riley","There's a van parked across the street with its lights off."],["doc","Probably nothing. Probably. Keep wiring!"],["doc","The map says our first hop is one minute into the future. Small steps, Riley."],["riley","Coil's at 70 percent. The garage lights are flickering."],["doc","That's normal! That's... mostly normal."],["riley","Doc, the van guys are getting out. They look mad."],["doc","I may have borrowed a few parts from them. Quickly, Riley!"],["doc","Get in the Gullwing! Floor it across the mall parking lot!"],["riley","The map just reset itself! It says 1956?!"],["doc","Hit 91 and don't look back! Great galloping gigawatts!"]]},{"name":"Elm Street","place":"Maple Ridge","now":"NOV 03 1956","intro":"Maple Ridge, 1956. Milkshakes cost a dime and everybody waves. Riley has a dead time machine, a vest everyone thinks is a life jacket, and one hope: find the young Doc Halvorsen.","outro":"The lightning hits the water tower, races down the cable, and the Gullwing explodes back into time. On the other side, the real Doc is waiting with wild eyes. \"Riley! We have a problem with the future!\"","lines":[["riley","A farmer just chased me with a rake. He thinks I'm from outer space."],["riley","I need to find Doc. The young Doc. He lives on Elm Street in this year."],["ydoc","Who are you? How do you know about my flux coil sketches?"],["ydoc","A time machine?! Prove it. Help me wire these power cells."],["riley","Doc, the coil needs a huge jolt. Way bigger than a wall outlet."],["ydoc","We'd need a bolt of lightning to charge this thing! Where would we ever find one of those?"],["riley","Wait. This souvenir flyer says the water tower gets hit by lightning on Saturday at 9:17 PM!"],["ydoc","A water tower and a lightning bolt. Ha! Let's map it out."],["riley","Uh oh. That's Rex Grubb. He runs this whole school."],["rex","Hey, new kid. Nice life jacket. Expecting a flood?"],["riley","I just need to stay out of Grubb's way until Saturday."],["ydoc","I'm running a cable from the water tower to the street. Keep the cells coming."],["riley","My family photo is fading! I must have changed something."],["ydoc","You've bent the timeline! Every square on that map matters now."],["rex","Grubb's gang swiped the cable spool! Ha ha!"],["riley","Got the spool back. Grubb went headfirst into the bake sale table."],["ydoc","It's 9:10 PM. The storm is rolling in!"],["riley","The cable's connected! The Gullwing is at the starting line."],["ydoc","Final map check. One wrong number and you'll land in the dinosaur days."],["ydoc","Lightning in 30 seconds! Go, Riley, GO!"]]},{"name":"Skyline","place":"Maple Ridge","now":"JUN 21 2016","intro":"Maple Ridge, 2016. Cars cruise above the rooftops and pizza cooks itself in four seconds. Doc has bad news: someone in the future wants to rewrite the past.","outro":"Back home in 1986, Maple Ridge is all wrong: neon casinos everywhere and a giant sign reading GRUBB TOWERS. In Doc's mailbox is a yellowed note in Rex's handwriting: \"Buried the numbers in 1886. You'll never find 'em.\" Doc reaches for his cowboy hat.","lines":[["doc","Welcome to 2016! Flying cars, four-second pizza, and one terrible problem."],["riley","Is that a hover skateboard? I need one. I need one so bad."],["doc","Focus! Rex Grubb's grandson Rook has stolen my spare flux coil."],["riley","What does he want with a flux coil?"],["doc","He wants to send a printout of 60 years of lottery numbers back to old Rex in 1956!"],["rook","Hey, it's the kid from Grandpa's old yearbook! Catch me if you can!"],["riley","He's on a hover board! I'm borrowing this one from a little kid. Sorry, little kid!"],["doc","Hover boards run on power cells too. Keep them balanced!"],["riley","Rook's heading for the courthouse fountain!"],["doc","Hover boards don't work on water! Unless they have plenty of power."],["rook","You'll never catch me, slowpoke!"],["riley","Got the coil back! Rook is stuck in the fountain."],["doc","The timeline map just twitched. Something's still wrong."],["riley","Doc, somebody took the Gullwing for a joyride while we were gone."],["doc","It's back, and the seat is still warm. Who was driving it?"],["riley","There's a cane on the floor. And a lottery printout."],["doc","Old Rex! He borrowed the Gullwing and carried the numbers to the past himself!"],["riley","So the 1986 we go home to will be different?"],["doc","Check the map. If Rex got rich, the whole town is his."],["doc","There's only one way to find out. Set the dial for home!"]]},{"name":"Dry Gulch","place":"Maple Ridge territory","now":"AUG 09 1886","intro":"Maple Ridge territory, 1886. There's no town yet. Just a dusty saloon, a windmill, and half a railroad. Somewhere out here, Rex buried the lottery numbers that made him rich.","outro":"The train roars off the end of an unfinished bridge just as the Gullwing flashes away. The tin box sits in Riley's lap. They tear up the printout on the way home, but the dashboard blinks a warning: TIMELINE UNSTABLE. One last storm is coming.","lines":[["doc","1886! Yeehaw! ...Why is there no road?"],["riley","Doc, the fuel line cracked on landing. There's no gas station for 30 years!"],["doc","Then we'll find another way to hit 91. First, that printout."],["riley","The saloon owner says a stranger buried a tin box under the old windmill."],["ike","Name's Ike Grubb. You two are standing on my windmill."],["doc","Ike is Rex's great-great-grandpa. Same scowl."],["riley","Doc built a steam shovel out of a tea kettle. It needs power cells."],["riley","Found the tin box! It's full of... sand?"],["doc","Ike moved it. Of course he did."],["ike","Lookin' for this, partner? Meet me at high noon. Bring your fancy wagon."],["riley","A high noon showdown. Very normal. Totally fine."],["doc","I have a plan. It involves a steam train and a lot of math."],["riley","Doc, the train tops out at 50. We need 91!"],["doc","Not with my special logs! Each one burns hotter than the last. Wire the boosters!"],["ike","It's noon, kid. Draw!"],["riley","I drew a timeline map. Ike got so confused he dropped the box!"],["doc","Got the printout! Now to the train!"],["riley","The engine is pushing the Gullwing! 60... 70..."],["doc","Map check! If the dates are off we'll end up in the Ice Age!"],["riley","88... 90... 91!"]]},{"name":"The storm","place":"Maple Ridge","now":"SEP 12 1986","intro":"Maple Ridge, 1986, one last time. The casinos are gone, but the town keeps flickering like a bad TV signal. Thunder rolls over the water tower. Doc says the timeline has to be locked before it shakes apart.","outro":"The bolt strikes. The town settles. No casinos, no GRUBB TOWERS, just Maple Ridge on a rainy night. Riley's family photo is whole again. Doc tips his cowboy hat. \"Thanks, Riley. Same time tomorrow? Or yesterday?\" He grins, and the Gullwing vanishes in a flash of fire.","lines":[["doc","We're home, but the timeline is cracking like an egg."],["riley","The town keeps flickering. Houses, then casinos, then houses again!"],["doc","We have to lock the timeline in place. Every map must be perfect now."],["riley","Doc! Rook Grubb followed us from 2016!"],["rook","Grandpa says you ruined everything. I'm taking that coil!"],["doc","Don't let him near the Gullwing! Double the power cells!"],["riley","He's riding a hover board in the middle of a thunderstorm. Bold."],["doc","Lightning hits the water tower again at 9:17 PM. Same storm, 30 years later!"],["riley","We get one shot to charge up and lock the timeline."],["doc","Repairing the 1956 branch. Careful with every square."],["rook","Ha! I cut your cable!"],["riley","I've got both ends! Wire faster, Doc!"],["doc","Repairing the 2016 branch. Almost there."],["riley","Rook slipped into the fountain again. Some things never change."],["doc","9:15! The coil is screaming!"],["doc","Repairing the 1886 branch. The last crack!"],["riley","My family photo is coming back! Everyone's in it!"],["doc","One more power grid, and the timeline is whole!"],["doc","The final timeline map. Lock it in, Riley."],["doc","Lightning in 3... 2... hit 91, Riley!"]]}]}};
+const LV=DATA.levels, CH=DATA.story.chapters;
+const PEOPLE={doc:["Doc Halvorsen","DH","#ffb22e","#2a1d05"],ydoc:["Young Doc","YD","#ffd27a","#2a1d05"],riley:["Riley","R","#62e3ff","#06232b"],rex:["Rex Grubb","RG","#ff6b5c","#2b0905"],rook:["Rook Grubb","RG","#ff6b5c","#2b0905"],ike:["Ike Grubb","IG","#ff6b5c","#2b0905"]};
+const COLORS={A:["#CECBF6","#3C3489","purple"],B:["#9FE1CB","#085041","teal"],C:["#F5C4B3","#712B13","coral"],D:["#FAC775","#633806","gold"],E:["#B5D4F4","#0C447C","blue"],F:["#F4C0D1","#72243E","pink"],G:["#C0DD97","#27500A","green"],H:["#D3D1C7","#2C2C2A","gray"],I:["#F3EC9C","#5A5205","yellow"],J:["#A6E9EE","#0B4E55","cyan"]};
+const BOLT='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2 4 13.5h6.5L9 22l11-13h-7z" fill="currentColor"/></svg>';
+const mini=(n,off)=>'<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true" style="vertical-align:-0.12em"><path d="M13.5 2 4 13.5h6.5L9 22l11-13h-7z" fill="currentColor" opacity="'+(off?.22:1)+'"/></svg>';
+const boltRow=(n,t)=>{let s='';for(let k=0;k<t;k++)s+=mini(0,k>=n);return s};
+const $=s=>document.querySelector(s);
+const app=$('#app'),modal=$('#modal');
+/* save data */
+const KEY='late-for-yesterday-v1';
+let save={done:{},autoX:true,seen:{}};
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.done)save=Object.assign(save,s)}catch(e){}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}cloudPush()}
+/* cloud save: one doc in Will's Firebase (apps/lfy/progress/save), so iPad, phone and computer share progress */
+let cloud=null,syncState='local',pushT=null;
+function mergeSaves(a,b){const out={done:{},best:{},seen:{},autoX:b.autoX!==undefined?b.autoX:a.autoX};
+  for(const s of [a,b]){for(const k in (s.done||{}))out.done[k]=out.done[k]===undefined?s.done[k]:Math.min(out.done[k],s.done[k]);
+    for(const k in (s.best||{}))out.best[k]=out.best[k]===undefined?s.best[k]:Math.min(out.best[k],s.best[k]);
+    for(const k in (s.seen||{}))out.seen[k]=1}
+  return out}
+function cloudPush(){if(!cloud)return;clearTimeout(pushT);pushT=setTimeout(async()=>{try{await cloud.set({save:JSON.stringify(save),at:Date.now()});setSync('cloud')}catch(e){
+  if(e&&e.code=='unavailable'){setTimeout(cloudPush,1500+Math.random()*1500)}else if(e&&(e.code=='invalid_argument'||e.code=='revoked'||e.code=='not_granted')){cloud=null;setSync('local')}}},600)}
+async function cloudPull(){if(!cloud)return;try{const snap=await cloud.get();
+  if(snap.exists){const d=snap.data();const remote=JSON.parse(d.save||'{}');const before=JSON.stringify(save);save=mergeSaves(save,remote);
+    try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}
+    if(JSON.stringify(mergeSaves(remote,{}))!==JSON.stringify(mergeSaves(save,{})))cloudPush();
+    if(JSON.stringify(save)!==before)refreshAfterSync()}
+  else if(Object.keys(save.done).length)cloudPush();
+  setSync('cloud')}catch(e){if(!e||e.code!='unavailable'){cloud=null;setSync('local')}}}
+function setSync(s){syncState=s;const el=document.getElementById('sync');if(el)el.textContent=s=='cloud'?'Progress saved to your Google account, so it follows you between devices.':'Progress is saved on this device only.'}
+function refreshAfterSync(){if(!cur)showMap();else setConsole(Math.floor(cur.i/20))}
+(async()=>{try{const db=await (window.townwillCloudP||Promise.resolve(null));if(!db)return;
+  cloud=db.doc('progress/save');await cloudPull();
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)cloudPull()})}catch(e){}})();
+const isDone=i=>save.done[i]!==undefined;
+const unlocked=i=>i==0||isDone(i)||isDone(i-1);
+const nextLevel=()=>{for(let i=0;i<LV.length;i++)if(!isDone(i))return i;return LV.length-1};
+const stars=h=>h==0?3:h<=2?2:1;
+function chapterMph(c){let n=0;for(let i=c*20;i<c*20+20;i++)if(isDone(i))n++;return Math.round(91*n/20)}
+function setConsole(c){$('#nowd').textContent=CH[c].now;const m=chapterMph(c);$('#mph').textContent=String(m).padStart(2,'0')+' MPH';$('#mphb').style.width=(m/91*100)+'%'}
+function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function avatar(p){const P=PEOPLE[p];return `<div class="av" style="background:${P[2]};color:${P[3]}">${P[1]}</div>`}
+
+/* ---------- map ---------- */
+function showMap(){
+  closeModal();cur=null;
+  const nx=nextLevel();setConsole(Math.floor(nx/20));
+  const total=Object.keys(save.done).length;
+  let h=`<section class="hero"><div><p>Help Riley and Doc Halvorsen fix a twisted timeline across four eras. Wire power cells into the flux coil and repair the timeline maps. ${total} of 100 levels complete.</p><p class="syncnote" id="sync"></p></div><button class="primary" id="go">${total?'Continue':'Start'} · level ${nx+1}</button></section>`;
+  CH.forEach((c,ci)=>{
+    h+=`<section class="chap"><h2>${ci+1}. ${esc(c.name)} <em>${c.now}</em></h2><p class="meta">${esc(c.place)} · ${chapterMph(ci)} of 91 mph</p><div class="lv">`;
+    for(let i=ci*20;i<ci*20+20;i++){const L=LV[i],d=isDone(i),u=unlocked(i);
+      h+=`<button class="lvb ${d?'done':''} ${i==nx&&!d?'next':''} ${u?'':'locked'}" data-l="${i}" aria-label="Level ${i+1}, ${L.t=='f'?'flux cells '+L.n+' by '+L.n:'timeline map'}${d?', complete':''}${u?'':', locked'}"><span class="n">${i+1}</span><span class="k">${L.t=='f'?L.n+'x'+L.n:'map'}</span><span class="st">${d?boltRow(stars(save.done[i]),3):''}</span></button>`}
+    h+=`</div></section>`});
+  app.innerHTML=h;
+  $('#go').onclick=()=>openLevel(nx);setSync(syncState);
+  app.querySelectorAll('.lvb').forEach(b=>b.onclick=()=>{const i=+b.dataset.l;if(unlocked(i))openLevel(i)});
+}
+$('#home').onclick=showMap;$('#home').onkeydown=e=>{if(e.key=='Enter'||e.key==' ')showMap()};
+
+/* ---------- modal ---------- */
+function closeModal(){modal.innerHTML=''}
+function showCard(eyebrow,title,body,buttons,extra='',fast=false){
+  modal.innerHTML=`<div class="veil"><div class="card${fast?' fast':''}" role="dialog" aria-modal="true"><div class="eyebrow${fast?' fast':''}">${fast?'SPEED BADGE · ':''}${eyebrow}</div><h3>${esc(title)}</h3>${extra}<p>${esc(body)}</p><div class="row">${buttons.map((b,i)=>`<button class="${b[2]?'primary':''}" data-b="${i}">${b[0]}</button>`).join('')}</div></div></div>`;
+  modal.querySelectorAll('[data-b]').forEach(el=>el.onclick=()=>buttons[+el.dataset.b][1]());
+  const p=modal.querySelector('.primary');if(p)p.focus();
+}
+
+/* ---------- timer ---------- */
+const PAR=L=>L.t=='s'?120:({6:45,7:75,8:120,9:180,10:270})[L.n];
+const fmt=ms=>{const s=Math.floor(ms/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+function tStart(){const T=cur&&cur.t;if(!T||T.running||T.done)return;T.running=true;T.start=performance.now();$('#clkbox').classList.add('go')}
+function tElapsed(){const T=cur.t;return T.acc+(T.running?performance.now()-T.start:0)}
+function tStop(){const T=cur.t;if(T.running){T.acc+=performance.now()-T.start;T.running=false}T.done=true;$('#clkbox').classList.remove('go')}
+setInterval(()=>{if(cur&&cur.t){const c=$('#clk');if(c)c.textContent=fmt(tElapsed())}},250);
+document.addEventListener('visibilitychange',()=>{const T=cur&&cur.t;if(!T||T.done)return;
+  if(document.hidden&&T.running){T.acc+=performance.now()-T.start;T.running=false;T.paused=true}
+  else if(!document.hidden&&T.paused){T.paused=false;T.running=true;T.start=performance.now()}});
+const FAST=["Great galloping gigawatts, that was quick!","You beat the par! The flux coil can barely keep up!","Faster than a hover board going downhill!","Riley, you're a blur! I didn't even finish my coffee!","Record speed! Somebody check the speedometer!"];
+/* ---------- level ---------- */
+let cur=null;
+function openLevel(i){
+  const ci=Math.floor(i/20);
+  if(i%20==0&&!save.seen[ci]){save.seen[ci]=1;persist();
+    showCard(CH[ci].now,'Chapter '+(ci+1)+': '+CH[ci].name,CH[ci].intro,[['Let\'s go',()=>{closeModal();openLevel(i)},1]]);return}
+  closeModal();setConsole(ci);
+  const L=LV[i];cur={i,L,hints:0,focus:new Set(),pop:new Set(),t:{start:0,acc:0,running:false,done:false}};
+  if(!save.best)save.best={};const best=save.best[i];
+  const line=CH[ci].lines[i%20];
+  app.innerHTML=`<div class="topbar"><button id="back" aria-label="Back to map">← Map</button><span class="title">Level ${i+1}</span><span class="sub">${L.t=='f'?'Flux cells · '+L.n+'x'+L.n:'Timeline map · 6x6'}</span><span class="clock"><span class="readout" id="clkbox"><label>Time</label><b id="clk">0:00</b></span><span class="readout par"><label>${best!==undefined?'Best':'Par'}</label><b>${best!==undefined?fmt(best):fmt(PAR(L)*1000)}</b></span></span></div>
+  <div class="bench"><div><div class="board" id="bd"></div><div id="ctl"></div></div>
+  <div class="side"><div class="bubble" id="bub"></div><div class="stat" id="stat"></div><div class="rules" id="rules"></div></div></div>`;
+  $('#back').onclick=showMap;
+  cur.story=line;say(line[0],line[1]);
+  if(L.t=='f')initFlux();else initSud();
+  window.scrollTo({top:0});
+}
+function say(p,text,why,mode){const P=PEOPLE[p];$('#bub').innerHTML=avatar(p)+`<div style="min-width:0"><p class="who">${P[0]}</p><p class="say">${esc(text)}</p>${why?`<p class="why"><b>Why:</b> ${esc(why)}</p>`:''}</div>`}
+function boardPx(n){const w=Math.min(window.innerWidth-32-6,n<=7?420:500);return Math.max(26,Math.floor(w/n))}
+function win(){
+  tStop();const ms=tElapsed(),par=PAR(cur.L)*1000,fast=cur.hints==0&&ms<=par;
+  if(!save.best)save.best={};const oldBest=save.best[cur.i],newBest=oldBest===undefined||ms<oldBest;if(newBest)save.best[cur.i]=Math.round(ms);
+  if(fast)say('doc',FAST[cur.i%FAST.length]);
+  const i=cur.i,h=cur.hints,prev=save.done[i];save.done[i]=prev===undefined?h:Math.min(prev,h);persist();
+  const ci=Math.floor(i/20);setConsole(ci);
+  const bd=$('#bd'),n=cur.L.t=='f'?cur.L.n:6;
+  [...bd.children].forEach((d,k)=>setTimeout(()=>{d.classList.remove('pop');void d.offsetWidth;d.classList.add('pop')},(Math.floor(k/n)+k%n)*40));
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const token=cur;
+  setTimeout(()=>{if(cur!==token)return;if(!reduce){const f=document.createElement('div');f.className='flash';document.body.appendChild(f);setTimeout(()=>f.remove(),800)}
+    const last=i==LV.length-1,chEnd=i%20==19;
+    const title=fast?'Lightning fast!':cur.L.t=='f'?'Flux coil charged':'Timeline locked';
+    const bolts=`<div class="bolts" aria-label="${stars(h)} of 3 bolts">${boltRow(stars(h),3)}</div>`;
+    const times=`<div class="times">Time <b>${fmt(ms)}</b> · par ${fmt(par)}${newBest&&oldBest!==undefined?' · <span class="nb">new best</span>':''}</div>`;
+    const fastNote=fast?' Under par with no hints. Lightning fast!':h>0&&ms<=par?' Under par, but hints don\'t count for the speed badge.':'';
+    const note=h==0?'Solved without any hints.':h==1?'Solved with 1 hint from Doc.':'Solved with '+h+' hints from Doc.';
+    const extra=bolts+times;
+    if(chEnd){showCard(CH[ci].now,last?'The end':'Chapter '+(ci+1)+' complete',CH[ci].outro,last?[['Back to map',showMap,1]]:[['Map',showMap],['Next chapter',()=>openLevel(i+1),1]],extra,fast)}
+    else showCard('LEVEL '+(i+1)+' · '+chapterMph(ci)+' MPH',title,fast?'Under par with no hints. You beat the clock by '+fmt(par-ms)+'!':note+fastNote,[['Map',showMap],['Replay',()=>openLevel(i)],['Next level',()=>openLevel(i+1),1]],extra,fast);
+  },n*80+250);
+}
+function shakeBoard(){const bd=$('#bd');bd.classList.remove('shake');void bd.offsetWidth;bd.classList.add('shake')}
+function statLine(extra){$('#stat').textContent=extra+' · hints used: '+cur.hints}
+
+/* ---------- flux cells ---------- */
+function initFlux(){
+  const L=cur.L,N=L.n,R=L.r,SOL=L.s;
+  const st={qs:Array(N*N).fill(0),docX:new Set(),drag:null,solved:false};cur.st=st;
+  const rc=i=>[Math.floor(i/N),i%N],reg=i=>R[Math.floor(i/N)][i%N];
+  const blocks=(a,b)=>{const [r1,c1]=rc(a),[r2,c2]=rc(b);return r1==r2||c1==c2||reg(a)==reg(b)||(Math.abs(r1-r2)<=1&&Math.abs(c1-c2)<=1)};
+  const bolts=()=>{const p=[];st.qs.forEach((v,i)=>v==2&&p.push(i));return p};
+  const keys=[...new Set(R.join(''))].sort();
+  const G=[];keys.forEach(k=>G.push({name:'the '+COLORS[k][2]+' circuit',kind:'circuit',cells:[...Array(N*N).keys()].filter(i=>reg(i)==k)}));
+  for(let r=0;r<N;r++)G.push({name:'row '+(r+1),kind:'row',cells:[...Array(N).keys()].map(c=>r*N+c)});
+  for(let c=0;c<N;c++)G.push({name:'column '+(c+1),kind:'column',cells:[...Array(N).keys()].map(r=>r*N+c)});
+  $('#ctl').innerHTML=`<div class="controls"><button id="hb">Ask Doc</button><button id="rs">↺ Reset</button><label class="toggle"><input type="checkbox" id="ax" ${save.autoX?'checked':''}> Auto-X</label></div>`;
+  $('#rules').innerHTML=`<b>Rules:</b> place ${N} bolts. One in every row, every column, and every color. Bolts can't touch, not even corners.<br><b>Controls:</b> tap once for x, twice for a bolt. Drag to paint x's. Start a drag on an x to erase.`;
+  function deduce(){const p=bolts(),isOpen=i=>st.qs[i]!=2&&!st.docX.has(i)&&!p.some(b=>blocks(b,i));
+    const todo=G.filter(g=>!g.cells.some(i=>st.qs[i]==2));
+    for(const g of todo){const o=g.cells.filter(isOpen);if(o.length==1)return{type:'place',cells:o,focus:g.cells,msg:'Put a bolt in the last open spot of '+g.name+'.',why:'Every '+g.kind+' needs exactly one bolt, and every other square in '+g.name+' is already blocked. Only one spot is left, so the bolt has to go there.'}}
+    for(const g of todo.filter(g=>g.kind=='circuit')){const o=g.cells.filter(isOpen);
+      for(const [kind,f] of [['row',i=>rc(i)[0]],['column',i=>rc(i)[1]]]){const s=new Set(o.map(f));if(s.size==1){const line=[...s][0];
+        const t=[...Array(N*N).keys()].filter(i=>f(i)==line&&reg(i)!=reg(o[0])&&isOpen(i));
+        if(t.length)return{type:'x',cells:t,focus:o,msg:'I crossed out the rest of '+kind+' '+(line+1)+'.',why:'Every open spot left in '+g.name+' (outlined) sits in '+kind+' '+(line+1)+'. Its bolt has to land in that '+kind+', which uses up the '+kind+"'s only bolt. Nothing else in that "+kind+' can have one.'}}}}
+    for(const g of todo.filter(g=>g.kind!='circuit')){const o=g.cells.filter(isOpen);const s=new Set(o.map(reg));if(o.length&&s.size==1){const k=[...s][0];
+      const t=[...Array(N*N).keys()].filter(i=>reg(i)==k&&!g.cells.includes(i)&&isOpen(i));
+      if(t.length)return{type:'x',cells:t,focus:o,msg:'I crossed out the rest of the '+COLORS[k][2]+' circuit.',why:'Every open spot left in '+g.name+' (outlined) is '+COLORS[k][2]+'. So '+g.name+"'s bolt is also the "+COLORS[k][2]+" circuit's bolt, and the rest of that circuit has to stay empty."}}}
+    for(let i=0;i<N*N;i++){if(!isOpen(i))continue;for(const g of todo){if(g.cells.includes(i))continue;const b=g.cells.filter(isOpen);
+      if(b.length&&b.every(j=>blocks(i,j)))return{type:'x',cells:[i],focus:b,msg:'I crossed out the square with the orange x.',why:'Imagine a bolt there. It would block every open spot left in '+g.name+' (outlined). That '+g.kind+' would have no room at all, so this square can never work.'}}}
+    return null}
+  function draw(changed){const bd=$('#bd'),px=boardPx(N);bd.style.gridTemplateColumns=`repeat(${N},${px}px)`;bd.innerHTML='';
+    const p=bolts(),bad=new Set(),auto=save.autoX;
+    for(let a=0;a<p.length;a++)for(let b=a+1;b<p.length;b++)if(blocks(p[a],p[b])){bad.add(p[a]);bad.add(p[b])}
+    st.qs.forEach((v,i)=>{const [r,c]=rc(i),k=reg(i),d=document.createElement('div');d.className='fc';d.dataset.i=i;d.style.width=d.style.height=px+'px';d.style.background=COLORS[k][0];d.style.color=COLORS[k][1];
+      if(c<N-1&&R[r][c+1]!==k)d.style.borderRight='3px solid #111';if(r<N-1&&R[r+1][c]!==k)d.style.borderBottom='3px solid #111';
+      if(v==2){d.innerHTML=BOLT;if(bad.has(i)){d.style.background='#ff4f3f';d.style.color='#fff'}}
+      else if(st.docX.has(i))d.innerHTML=`<span class="x" style="font-size:${px*.42}px;color:#c06a00">✕</span>`;
+      else if(v==1)d.innerHTML=`<span class="x" style="font-size:${px*.34}px;opacity:.7">✕</span>`;
+      else if(auto&&p.some(b=>blocks(b,i)))d.innerHTML=`<span class="x" style="font-size:${px*.26}px;opacity:.35">✕</span>`;
+      if(cur.focus.has(i))d.classList.add('focus');
+      if((i===changed&&v==2)||cur.pop.has(i))d.classList.add(bad.has(i)?'cshake':'pop');
+      bd.appendChild(d)});
+    statLine(p.length+' of '+N+' bolts placed');
+    if(!st.solved&&p.length==N&&bad.size==0){st.solved=true;say('doc',['Coil charged! Beautiful wiring, Riley!','Ha! That\'s the stuff! Full power!','Ninety-one, here we come!'][cur.i%3]);win()}
+    else if(p.length==N&&bad.size){say('doc','Short circuit! Check the red bolts.');shakeBoard()}
+    else if(changed!==undefined&&st.qs[changed]==2&&bad.has(changed))say('doc','Zap! That bolt breaks a rule. It shares a row, column, or color with another bolt, or it touches one.');
+  }
+  const bd=$('#bd');
+  const cellAt=e=>{const el=document.elementFromPoint(e.clientX,e.clientY);return el&&el.dataset&&el.dataset.i!==undefined&&bd.contains(el)?+el.dataset.i:-1};
+  const isX=i=>st.qs[i]==1||st.docX.has(i);
+  const paint=i=>{if(i<0||st.qs[i]==2)return;if(st.drag.mode=='x'){if(!isX(i))st.qs[i]=1}else{st.qs[i]=0;st.docX.delete(i)}};
+  bd.addEventListener('pointerdown',e=>{if(st.solved)return;const i=cellAt(e);if(i<0)return;tStart();e.preventDefault();try{bd.setPointerCapture(e.pointerId)}catch(_){}
+    st.drag={start:i,last:i,moved:false,mode:isX(i)?'clear':'x'}});
+  bd.addEventListener('pointermove',e=>{if(!st.drag)return;const i=cellAt(e);if(i<0||i==st.drag.last)return;
+    if(!st.drag.moved){st.drag.moved=true;cur.focus.clear();cur.pop.clear();paint(st.drag.start)}
+    st.drag.last=i;paint(i);draw()});
+  bd.addEventListener('pointerup',()=>{if(!st.drag)return;const d=st.drag;st.drag=null;
+    if(!d.moved){const i=d.start;cur.focus.clear();cur.pop.clear();if(st.docX.has(i)){st.docX.delete(i);st.qs[i]=2}else st.qs[i]=(st.qs[i]+1)%3;draw(i)}});
+  bd.addEventListener('pointercancel',()=>{st.drag=null});
+  $('#hb').onclick=()=>{if(st.solved)return;tStart();cur.pop.clear();const p=bolts();cur.hints++;
+    const wrong=p.find(i=>SOL[rc(i)[0]]!==rc(i)[1]);
+    if(wrong!==undefined){cur.focus=new Set([wrong]);say('doc','That outlined bolt is a dead end. Pull it out first.','This puzzle has only one answer, and that bolt isn\'t part of it. Once it\'s gone, ask me again and I\'ll explain the next step.');draw();return}
+    const h=deduce();if(!h){say('doc','Hmm, I\'m stumped too. Try Reset.');draw();return}
+    cur.focus=new Set(h.focus);h.cells.forEach(i=>{cur.pop.add(i);if(h.type=='place')st.qs[i]=2;else st.docX.add(i)});say('doc',h.msg,h.why);draw()};
+  $('#rs').onclick=()=>{if(st.solved)return;st.qs.fill(0);st.docX.clear();cur.focus.clear();cur.pop.clear();say(cur.story[0],cur.story[1]);draw()};
+  $('#ax').onchange=e=>{save.autoX=e.target.checked;persist();draw()};
+  cur.redraw=draw;draw();
+}
+
+/* ---------- timeline map (6x6 sudoku, 2x3 boxes) ---------- */
+function initSud(){
+  const L=cur.L,P=L.p.split('').map(Number),S=L.s.split('').map(Number);
+  const st={v:P.slice(),given:P.map(x=>x>0),sel:-1,solved:false};cur.st=st;
+  const box=i=>Math.floor(Math.floor(i/6)/2)*2+Math.floor((i%6)/3);
+  const peers=i=>{const r=Math.floor(i/6),c=i%6,b=box(i);return [...Array(36).keys()].filter(j=>j!=i&&(Math.floor(j/6)==r||j%6==c||box(j)==b))};
+  const PE=[...Array(36).keys()].map(peers);
+  const units=[];for(let r=0;r<6;r++)units.push({name:'row '+(r+1),cells:[...Array(6).keys()].map(c=>r*6+c)});
+  for(let c=0;c<6;c++)units.push({name:'column '+(c+1),cells:[...Array(6).keys()].map(r=>r*6+c)});
+  for(let b=0;b<6;b++)units.push({name:'this box',cells:[...Array(36).keys()].filter(i=>box(i)==b)});
+  const bad=i=>{const v=st.v[i];return v&&PE[i].some(j=>st.v[j]==v)};
+  $('#ctl').innerHTML=`<div class="pad" id="pad">${[1,2,3,4,5,6].map(n=>`<button data-n="${n}">${n}</button>`).join('')}</div><div class="controls"><button id="hb">Ask Doc</button><button id="er">⌫ Erase</button><button id="rs">↺ Reset</button></div>`;
+  $('#rules').innerHTML=`<b>Rules:</b> fill every square with 1 to 6. Each row, column, and 2x3 box uses every number exactly once.<br><b>Controls:</b> tap a square, then a number. On a keyboard, type 1 to 6 and use the arrow keys.`;
+  function draw(changed){const bd=$('#bd'),px=Math.min(64,boardPx(6));bd.style.gridTemplateColumns=`repeat(6,${px}px)`;bd.innerHTML='';
+    const sr=Math.floor(st.sel/6),scl=st.sel%6,sb=st.sel>=0?box(st.sel):-1,sv=st.sel>=0?st.v[st.sel]:0;
+    st.v.forEach((v,i)=>{const r=Math.floor(i/6),c=i%6,d=document.createElement('div');d.className='sc'+(st.given[i]?' g':'');d.dataset.i=i;
+      d.style.width=d.style.height=px+'px';d.style.fontSize=Math.round(px*.46)+'px';
+      if(c==2)d.classList.add('bR');if(r==1||r==3)d.classList.add('bB');
+      if(st.sel>=0&&i!=st.sel){if(sv&&v==sv)d.classList.add('same');else if(r==sr||c==scl||box(i)==sb)d.classList.add('hl')}
+      if(i==st.sel)d.classList.add('sel');
+      if(cur.focus.has(i))d.classList.add('focus');
+      d.textContent=v||'';if(!st.given[i]&&bad(i))d.classList.add('bad');
+      if((i===changed&&v)||cur.pop.has(i))d.classList.add(i===changed&&bad(i)?'cshake':'pop');
+      d.onclick=()=>{if(st.solved)return;tStart();st.sel=i;cur.focus.clear();cur.pop.clear();draw()};bd.appendChild(d)});
+    const filled=st.v.filter(x=>x).length;statLine(filled+' of 36 squares filled');
+    const full=filled==36,ok=full&&st.v.every((v,i)=>!bad(i));
+    if(!st.solved&&ok){st.solved=true;st.sel=-1;say('doc',['Timeline locked! The map is whole again.','Perfect! Not a single paradox.','Map repaired. History thanks you, Riley.'][cur.i%3]);win()}
+    else if(full&&!ok){say('doc','Paradox detected! Fix the red squares.');shakeBoard()}
+    else if(changed!==undefined&&bad(changed))say('doc','Paradox! That number already appears in this row, column, or box.');
+  }
+  function put(n){if(st.solved||st.sel<0||st.given[st.sel])return;tStart();st.v[st.sel]=n;cur.focus.clear();cur.pop.clear();draw(st.sel)}
+  $('#pad').querySelectorAll('button').forEach(b=>b.onclick=()=>put(+b.dataset.n));
+  $('#er').onclick=()=>put(0);
+  $('#rs').onclick=()=>{if(st.solved)return;st.v=P.slice();st.sel=-1;cur.focus.clear();cur.pop.clear();say(cur.story[0],cur.story[1]);draw()};
+  cur.key=e=>{if(st.solved)return;if(/^[0-9]$|^Arrow|^Backspace$|^Delete$/.test(e.key))tStart();if(e.key>='1'&&e.key<='6'){put(+e.key);e.preventDefault()}else if(e.key=='Backspace'||e.key=='Delete'||e.key=='0'){put(0);e.preventDefault()}
+    else if(e.key.startsWith('Arrow')){let s=st.sel<0?0:st.sel;const r=Math.floor(s/6),c=s%6;
+      if(e.key=='ArrowUp'&&r>0)s-=6;if(e.key=='ArrowDown'&&r<5)s+=6;if(e.key=='ArrowLeft'&&c>0)s--;if(e.key=='ArrowRight'&&c<5)s++;st.sel=s;draw();e.preventDefault()}};
+  $('#hb').onclick=()=>{if(st.solved)return;tStart();cur.pop.clear();cur.hints++;
+    const wrong=st.v.findIndex((v,i)=>!st.given[i]&&v&&v!=S[i]);
+    if(wrong>=0){cur.focus=new Set([wrong]);st.sel=wrong;say('doc','That outlined '+st.v[wrong]+' doesn\'t belong there. Erase it first.','This map has only one answer, and that number isn\'t part of it, even if it doesn\'t clash with anything yet. Ask me again once it\'s gone.');draw();return}
+    const cand=i=>[1,2,3,4,5,6].filter(n=>!PE[i].some(j=>st.v[j]==n));
+    for(let i=0;i<36;i++){if(st.v[i])continue;const cs=cand(i);if(cs.length!=1)continue;
+      const r=Math.floor(i/6),c=i%6,used={row:[],col:[],box:[]},seen=new Set();const src=[];
+      for(const j of PE[i]){if(st.v[j]&&Math.floor(j/6)==r&&!seen.has(st.v[j])){seen.add(st.v[j]);used.row.push(st.v[j]);src.push(j)}}
+      for(const j of PE[i]){if(st.v[j]&&j%6==c&&!seen.has(st.v[j])){seen.add(st.v[j]);used.col.push(st.v[j]);src.push(j)}}
+      for(const j of PE[i]){if(st.v[j]&&box(j)==box(i)&&!seen.has(st.v[j])){seen.add(st.v[j]);used.box.push(st.v[j]);src.push(j)}}
+      const parts=[];const fmt=a=>a.sort().join(', ');
+      if(used.row.length)parts.push('Row '+(r+1)+' already has '+fmt(used.row));
+      if(used.col.length)parts.push('column '+(c+1)+' adds '+fmt(used.col));
+      if(used.box.length)parts.push('the box adds '+fmt(used.box));
+      st.v[i]=cs[0];st.sel=i;cur.focus=new Set(src);cur.pop=new Set([i]);
+      say('doc','Only a '+cs[0]+' fits in the highlighted square.',parts.join(', ')+'. The outlined squares rule out every number except '+cs[0]+'.');draw();return}
+    for(const u of units)for(let n=1;n<=6;n++){if(u.cells.some(i=>st.v[i]==n))continue;const sp=u.cells.filter(i=>!st.v[i]&&cand(i).includes(n));
+      if(sp.length==1){const i=sp[0];st.v[i]=n;st.sel=i;cur.focus=new Set(u.cells);cur.pop=new Set([i]);
+        say('doc','In '+u.name+', the '+n+' can only go in one square.','Every other open square in '+u.name+' (outlined) already sees a '+n+' in its row, column, or box. So the '+n+' has nowhere else to go.');draw();return}}
+    say('doc','Hmm, I\'m stumped too. Try Reset.');draw()};
+  cur.redraw=draw;draw();
+}
+document.addEventListener('keydown',e=>{if(modal.innerHTML)return;if(cur&&cur.key)cur.key(e)});
+let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(cur&&cur.redraw)cur.redraw()},120)});
+showMap();
+</script>
+
+<script type="module">
+/* TOWNWILL-CLOUD-BEGIN: saves this game to Will's Firebase (Google sign-in). Same shape as the old artifact db, so the game code is unchanged. */
+const APP = 'lfy';
+const ALLOWED = 'townwill@gmail.com';
+const V = '13.2.0', G = 'https://www.gstatic.com/firebasejs/' + V + '/';
+const firebaseConfig = {
+  apiKey: "AIzaSyCQHJfUE5mPvy6KgTb128wuomkkSgad4mM",
+  authDomain: "townwill-4cf01.firebaseapp.com",
+  projectId: "townwill-4cf01",
+  storageBucket: "townwill-4cf01.firebasestorage.app",
+  messagingSenderId: "549139097198",
+  appId: "1:549139097198:web:5d5a7e09a376a85c3da87f"
+};
+const resolveDb = window.__townwillCloudResolve || (() => {});
+let done = false;
+const finish = db => { if (done) return; done = true; resolveDb(db); };
+
+const el = (t, css, txt) => { const e = document.createElement(t); if (css) e.style.cssText = css; if (txt != null) e.textContent = txt; return e; };
+let gate = null;
+function showGate(msg, opts = {}) {
+  if (!gate) {
+    gate = el('div', 'position:fixed;inset:0;z-index:2147483600;background:rgba(10,12,16,.92);display:flex;align-items:center;justify-content:center;padding:20px;font:17px -apple-system,BlinkMacSystemFont,sans-serif;color:#f1ebe0');
+    document.body.appendChild(gate);
+  }
+  gate.innerHTML = '';
+  const box = el('div', 'max-width:420px;width:100%;background:#1c2129;border:1px solid #3a4354;border-radius:16px;padding:22px;text-align:center;line-height:1.45');
+  box.appendChild(el('div', 'font:400 24px Bungee,Impact,sans-serif;color:#ffc65c;margin-bottom:8px', 'Late for Yesterday'));
+  box.appendChild(el('div', 'margin-bottom:16px;color:#c9cfda', msg));
+  if (opts.signIn) { const b = el('button', 'display:block;width:100%;padding:13px;border:0;border-radius:12px;background:#ffc65c;color:#15181e;font:700 17px -apple-system,sans-serif;margin-bottom:10px;cursor:pointer', 'Sign in with Google'); b.onclick = opts.signIn; box.appendChild(b); }
+  if (opts.signOut) { const b = el('button', 'display:block;width:100%;padding:11px;border:1px solid #3a4354;border-radius:12px;background:transparent;color:#f1ebe0;font:600 16px -apple-system,sans-serif;margin-bottom:10px;cursor:pointer', 'Sign out'); b.onclick = opts.signOut; box.appendChild(b); }
+  if (opts.offline) { const b = el('button', 'display:block;width:100%;padding:11px;border:0;background:transparent;color:#a2aab8;font:500 15px -apple-system,sans-serif;text-decoration:underline;cursor:pointer', 'Play on this device only (no online saves)'); b.onclick = () => { hideGate(); finish(null); }; box.appendChild(b); }
+  if (opts.err) box.appendChild(el('div', 'margin-top:8px;color:#ff7d6e;font-size:14px', opts.err));
+  gate.appendChild(box);
+}
+function hideGate() { if (gate) { gate.remove(); gate = null; } }
+
+/* the artifact-style db the game expects, backed by Firestore under apps/<APP>/ */
+function makeDb(F, fs) {
+  const P = p => 'apps/' + APP + '/' + p;
+  const err = e => ({ code: (e && e.code === 'permission-denied') ? 'revoked' : 'unavailable', message: String((e && e.message) || e) });
+  const wrapDoc = s => { const ex = s.exists(); const d = ex ? s.data() : undefined; return { id: s.id, exists: ex, data: () => d, metadata: s.metadata }; };
+  const wrapQuery = q => { const docs = q.docs.map(wrapDoc); return { docs, size: docs.length, empty: !docs.length, metadata: q.metadata,
+    docChanges: () => q.docChanges().map(c => ({ type: c.type, doc: wrapDoc(c.doc), oldIndex: c.oldIndex, newIndex: c.newIndex })) }; };
+  function docRef(path) {
+    const r = F.doc(fs, P(path));
+    return { id: r.id, path,
+      get: () => F.getDoc(r).then(wrapDoc),
+      set: data => F.setDoc(r, data),
+      update: data => F.updateDoc(r, data),
+      delete: () => F.deleteDoc(r),
+      onSnapshot: (next, onErr) => F.onSnapshot(r, s => next(wrapDoc(s)), e => onErr && onErr(err(e))),
+      collection: sub => colRef(path + '/' + sub) };
+  }
+  function query(base, cons) {
+    const target = () => cons.length ? F.query(base, ...cons) : base;
+    return {
+      where: (f, op, v) => query(base, [...cons, F.where(f, op, v)]),
+      orderBy: (f, d) => query(base, [...cons, F.orderBy(f, d || 'asc')]),
+      limit: n => query(base, [...cons, F.limit(n)]),
+      get: () => F.getDocs(target()).then(wrapQuery),
+      onSnapshot: (next, onErr) => F.onSnapshot(target(), s => next(wrapQuery(s)), e => onErr && onErr(err(e))) };
+  }
+  function colRef(path) {
+    const q = query(F.collection(fs, P(path)), []);
+    q.path = path;
+    q.doc = id => docRef(path + '/' + (id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10))));
+    q.add = async data => { const d = q.doc(); await d.set(data); return d; };
+    return q;
+  }
+  return { doc: docRef, collection: colRef };
+}
+
+function chip(user, A, auth) {
+  const c = el('button', 'position:fixed;right:10px;bottom:10px;z-index:2147483000;padding:5px 10px;border-radius:999px;border:1px solid #3a4354;background:#232934cc;color:#a2aab8;font:500 12px -apple-system,sans-serif;cursor:pointer', '☁︎ Saving to ' + (user.displayName || user.email));
+  c.onclick = () => { if (confirm('Sign out of ' + user.email + '? The game will stop saving online until you sign back in.')) A.signOut(auth).then(() => location.reload()); };
+  document.body.appendChild(c);
+}
+
+(async () => {
+  let A, F, auth;
+  const offlineTimer = setTimeout(() => { if (!done) showGate("Can't reach the save server right now.", { offline: true }); }, 12000);
+  try {
+    const [appMod, authMod, fsMod] = await Promise.all([import(G + 'firebase-app.js'), import(G + 'firebase-auth.js'), import(G + 'firebase-firestore.js')]);
+    A = authMod; F = fsMod;
+    const app = appMod.initializeApp(firebaseConfig);
+    auth = A.getAuth(app);
+    const fs = F.initializeFirestore(app, { ignoreUndefinedProperties: true });
+    try { await A.getRedirectResult(auth); } catch (e) {}
+    const provider = new A.GoogleAuthProvider();
+    provider.setCustomParameters({ login_hint: ALLOWED, prompt: 'select_account' });
+    const signIn = async () => {
+      try { await A.signInWithPopup(auth, provider); }
+      catch (e) {
+        const c = e && e.code || '';
+        if (c === 'auth/popup-blocked' || c === 'auth/operation-not-supported-in-this-environment' || c === 'auth/web-storage-unsupported') { try { await A.signInWithRedirect(auth, provider); return; } catch (e2) { e = e2; } }
+        if (c !== 'auth/popup-closed-by-user' && c !== 'auth/cancelled-popup-request') showGate('Sign in to load your progress.', { signIn, offline: true, err: 'Sign-in didn’t work (' + (e.code || e.message) + '). Try again.' });
+      }
+    };
+    A.onAuthStateChanged(auth, user => {
+      clearTimeout(offlineTimer);
+      if (!user) { showGate('Sign in once on this device to load your progress.', { signIn, offline: true }); return; }
+      if ((user.email || '').toLowerCase() !== ALLOWED) { showGate('Signed in as ' + user.email + '. The saves belong to the family account (' + ALLOWED + ').', { signOut: () => A.signOut(auth) }); return; }
+      hideGate();
+      if (!done) { chip(user, A, auth); finish(makeDb(F, fs)); }
+    });
+  } catch (e) {
+    clearTimeout(offlineTimer);
+    showGate("Couldn't load the save system (" + ((e && e.message) || e) + ').', { offline: true });
+  }
+})();
+/* TOWNWILL-CLOUD-END */
+</script>
+
+</body></html>
