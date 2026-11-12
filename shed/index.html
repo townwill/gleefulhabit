@@ -4810,7 +4810,10 @@ function addCard(c,src){
   const k=key(c);S.stacks[k]=(S.stacks[k]||0)+1;
   const had=S.owned[c.pid]||0;S.owned[c.pid]=had+1;let rcNew=false;if(isRC(c)){rcNew=!RCO[c.pid];RCO[c.pid]=(RCO[c.pid]||0)+1}if(c.par===12||c.par===13||c.par===14){if(!VK[c.pid+'.'+c.par]||!VK[c.pid+'.'+c.year+'.'+c.par])rcNew=true;vkAdd(c,1)}if(c.par===11){const cy=c.pid+'.'+c.year;if(!CHY[cy])rcNew=true;CHO[c.pid]=(CHO[c.pid]||0)+1;CHY[cy]=(CHY[cy]||0)+1}if(!had||rcNew){checkSets();if(!had)pairToast(c.pid)}
   if(c.par===10||c.par===15)S.pc[k]=true;
-  if(c.par===6){S.pc[k]=true;S.oneFound.push(k);foundOne(c);return}
+  if(c.par===6){S.pc[k]=true;
+    // coming back from the grader: it's the same 1/1 in a new slab, so just swap it in (no second celebration)
+    if(src==='grade'){const j=S.oneFound.findIndex(x=>{const o=fromKey(x);return o.pid===c.pid&&o.year===c.year&&o.par===6});if(j>=0)S.oneFound[j]=k;else S.oneFound.push(k);return}
+    S.oneFound.push(k);foundOne(c);return}
   if(isHit(c)){S.finds.unshift({k,src});S.finds=S.finds.slice(0,8)}
 }
 const CURRY_END=new Date('2026-11-09T07:00:00Z').getTime();
@@ -5011,6 +5014,7 @@ function rollGrade(c,fresh){
   if(up('loupe')){w={...w};w[10]*=1.2;w[9]*=1.15}
   if(up('doctor')){const d=up('doctor');w={...w};w[10]*=1+.35*d;w[9]*=1+.1*d;[1,2,3,4,5,6].forEach(g=>w[g]*=1-.15*d)}
   if(up('sleeves')){w={...w};w[10]*=1.8;w[9]*=1.4;[1,2,3,4,5,6].forEach(g=>w[g]*=.55)}
+  if(isOne(c)){w={...w};[1,2,3,4,5,6,7].forEach(g=>delete w[g])} // a 1/1 always comes back an 8 or better
   return +wpick(Object.keys(w),g=>w[g]);
 }
 function sendToGrader(k,opt={}){
@@ -5029,7 +5033,7 @@ function resubmit(k){
   if((S.stacks[k]||0)-shelfCount(k)-scCount(k)<=0){toast('Take it off the shelf or out of the showcase first.');return false}
   if(S.grading.length>=gradeMax()){toast(`The grader only takes ${gradeMax()} cards at a time.`);return false}
   const raw={...c};delete raw.g;const fee=gradeFee(raw);if(S.cash<fee){toast(`Resubmitting costs ${money(fee)}.`);return false}
-  const step=Math.random()<.2?2:1,upOrDown=Math.random()<.5+.05*up('doctor')?1:-1,ng=Math.max(1,Math.min(10,c.g+upOrDown*step));
+  const step=Math.random()<.2?2:1,upOrDown=Math.random()<.5+.05*up('doctor')?1:-1,ng=Math.max(isOne(c)?8:1,Math.min(10,c.g+upOrDown*step));
   const pc=!!S.pc[k]&&S.stacks[k]<=1;S.cash-=fee;S.stats.gradeFees=(S.stats.gradeFees||0)+fee;removeCards(k,1);if(pc)delete S.pc[k];
   S.grading.push({k:key(raw),g:ng,ready:Date.now()+gradeMs(),pc,re:c.g});
   toast(`Cracked the ${c.g} and sent it back to Slab Happy. Fingers crossed.`);save(true);updateHeader();renderTabs();return true}
@@ -6456,6 +6460,10 @@ function applyState(saved){
     if(mc&&b&&!S.oneFound.some(k=>+k.split('.')[0]===mc.id)&&!hand.some(c=>c.par===6)){S.sjsOne=true;b.left+=1;b.total=Math.max(b.total,b.left);b.one=true;
       if(S.loc==='rink'){S.pile+=1;S.oneLeft=null}else if(S.places&&S.places.rink){S.places.rink.pile+=1;S.places.rink.oneLeft=null}
       S.onePids=S.onePids.filter(id=>id!==mc.id)}}
+  {const low=Object.keys(S.stacks).filter(k=>{const c=fromKey(k);return isOne(c)&&c.g&&c.g<8});
+    low.forEach(k=>{const c=fromKey(k),nk=key({...c,g:8}),n=S.stacks[k];delete S.stacks[k];S.stacks[nk]=(S.stacks[nk]||0)+n;if(S.pc[k]){delete S.pc[k];S.pc[nk]=true}
+      const sw=a=>a?a.map(x=>x===k?nk:x):a;S.oneFound=sw(S.oneFound);S.showcase=sw(S.showcase);S.shelf=sw(S.shelf)});
+    (S.grading||[]).forEach(x=>{if(isOne(fromKey(x.k))&&x.g<8)x.g=8})}
   for(const k in S.stacks)if([10,15].includes(+k.split('.')[2]))S.pc[k]=true;if(S.shelf)S.shelf=S.shelf.filter(k=>![10,15].includes(+k.split('.')[2]));
   if(PROFILE&&PROFILE.id==='will'&&!S.oneDone.shed&&!S.fixOne&&S.stats.flips>9000){
     S.fixOne=true;const T5=BY_TIER_S.nba[5];const p=pick(T5);const c={pid:p.id,year:p.start+Math.floor(Math.random()*Math.min(4,p.end-p.start+1)),par:6};const k=key(c);
