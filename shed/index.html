@@ -3574,7 +3574,7 @@ function genChallenge(){
   for(let i=0;i<20;i++){const c=pick(opts)();if(!have.includes(c.t)){c.have=0;c.id=Math.random().toString(36).slice(2,8);return c}}
   const c=opts[0]();c.have=0;c.id=Math.random().toString(36).slice(2,8);return c;
 }
-function ensureChals(){S.chal=(S.chal||[]).filter(c=>c&&c.t);while(S.chal.length<3)S.chal.push(genChallenge())}
+function ensureChals(){S.chal=(S.chal||[]).filter(c=>c&&c.t).map(c=>c.done&&Date.now()-(c.doneAt||0)>2500?null:c).filter(Boolean);while(S.chal.length<3)S.chal.push(genChallenge())}
 function challengeEvent(type,d){
   if(!S.chal)return;let changed=false;
   S.chal.forEach(ch=>{
@@ -3591,8 +3591,8 @@ function challengeEvent(type,d){
     if(type==='grade'&&ch.t==='grade8'&&d.g>=8)inc=1;
     if(type==='box'&&ch.t==='box')inc=1;
     if(inc){ch.have=Math.min(ch.n,ch.have+inc);changed=true;
-      if(ch.have>=ch.n){ch.done=true;S.cash+=ch.reward;addXP(30);toast(`Challenge done: ${ch.text}. +${money(ch.reward)}`,'gold',5000);
-        const id=ch.id;setTimeout(()=>{const i=S.chal.findIndex(x=>x.id===id);if(i>=0){S.chal[i]=genChallenge();renderChals();save(true)}},2500)}}
+      if(ch.have>=ch.n){ch.done=true;ch.doneAt=Date.now();S.cash+=ch.reward;addXP(30);toast(`Challenge done: ${ch.text}. +${money(ch.reward)}`,'gold',5000);
+        setTimeout(()=>{renderChals();save(true)},2600)}}
   });
   if(changed)renderChals();
 }
@@ -6420,7 +6420,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-11.1621';
+const APP_VERSION = '2026-11-11.1624';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
