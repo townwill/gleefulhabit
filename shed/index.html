@@ -454,17 +454,18 @@ body:has(.selbar) .wrap{padding-bottom:110px}body:has(.selbar) #toasts{bottom:12
 .vletter{max-width:420px;margin:8px auto;text-align:left}.vcount{margin:0 0 8px;color:var(--gold);font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:13px}.vcard{display:flex;justify-content:center}
 .vgrid{display:flex!important;flex-flow:row wrap!important;justify-content:center;gap:8px;margin:12px 0}.vgrid canvas{width:72px!important;flex:0 0 72px;border-radius:4px;margin:0!important}
 .tbx{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%}.tbx.one{grid-template-columns:1fr}@media(max-width:640px){.tbx{grid-template-columns:1fr}}
-.tbcol{display:flex;flex-direction:column;gap:6px;min-width:0}.tbh{font-weight:800;text-align:left}.tbh b{color:var(--good)}
+.tbcol{display:flex;flex-direction:column;gap:6px;min-width:0}.tbh{font-weight:800;text-align:left;font-size:18px}.tbh b{color:var(--good)}
 .tbq{width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:inherit;font:inherit}
-.tbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px;max-height:44vh;overflow:auto;padding:4px;align-content:start}
-.tbc{position:relative;background:rgba(255,255,255,.04);border:2px solid transparent;border-radius:8px;padding:4px;color:inherit;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font:inherit;font-size:11px}
-.tbc canvas{width:64px;border-radius:4px}.tbc span{line-height:1.15;max-height:2.3em;overflow:hidden}.tbc b{color:var(--good);font-size:12px}
+.tbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px;max-height:52vh;overflow:auto;padding:4px;align-content:start}
+.tbc{position:relative;background:rgba(255,255,255,.04);border:2px solid transparent;border-radius:8px;padding:4px;color:inherit;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font:inherit;font-size:13px}
+.tbc canvas{width:104px;border-radius:5px}.tbc span{line-height:1.2;max-height:2.5em;overflow:hidden}.tbc b{color:var(--good);font-size:15px}
 .tbc.on{border-color:var(--gold);background:rgba(255,200,80,.12)}.tbc i{position:absolute;top:2px;right:2px;background:var(--gold);color:#241a08;border-radius:99px;font-style:normal;font-weight:900;padding:0 6px}.tbc em{font-size:10px;color:var(--muted);font-style:normal}
 .mail{margin-bottom:14px}.mail .orow{border-top:1px solid var(--line);padding:10px 0;display:flex;flex-direction:column;gap:8px}
 .mail .ohead{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.mail .oswap{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.mail .oside small{display:block;color:var(--muted);margin-bottom:4px}.mail .oside>div{display:flex;gap:6px;flex-wrap:wrap}
-.mail figure{margin:0;width:78px;text-align:center;font-size:11px}.mail figure canvas{width:56px;border-radius:4px}.mail figcaption{line-height:1.2}.mail figcaption b{color:var(--good)}
-.mail .obtns,.mail .mbtns{display:flex;gap:8px;flex-wrap:wrap}.mail .mh{margin:12px 0 6px;font-size:15px}.mlog{margin-top:12px;font-size:13px;color:var(--muted)}.mlog div{padding:2px 0}
+.mail .oside small{display:block;color:var(--muted);margin-bottom:6px;font-size:17px;font-weight:700}.mail .oside>div{display:flex;gap:10px;flex-wrap:wrap}.mail .tarrow{font-size:34px}
+.mail figure{margin:0;width:140px;text-align:center;font-size:15px}.mail figure canvas{width:120px;border-radius:6px;cursor:zoom-in}.mail figcaption{line-height:1.25;margin-top:4px}.mail figcaption b{color:var(--good);font-size:16px}
+@media(max-width:640px){.mail figure{width:112px;font-size:13px}.mail figure canvas{width:96px}}
+.mail .obtns,.mail .mbtns{display:flex;gap:8px;flex-wrap:wrap}.mail .obtns .btn{font-size:18px;padding:10px 24px;min-height:44px}.mail .ohead b{font-size:19px}.mail .mh{margin:12px 0 6px;font-size:15px}.mlog{margin-top:12px;font-size:13px;color:var(--muted)}.mlog div{padding:2px 0}
 </style>
 
 <div class="wrap">
@@ -5532,7 +5533,7 @@ function openBuilder(o){
   const tot=sel=>Object.entries(sel).reduce((a,[k,n])=>a+valueOf(fromKey(k))*n,0);
   const grid=(el,items,sel,q)=>{if(!el)return;const show=items.filter(it=>sel[it.k]).concat(items.filter(it=>!sel[it.k]&&(!q||it.t.includes(q))).sort((a,b)=>b.v-a.v).slice(0,40));
     el.innerHTML=show.map(it=>`<button class="tbc${sel[it.k]?' on':''}" data-k="${it.k}"><canvas></canvas><span>${esc(capTxt(fromKey(it.k)))}</span><b>${money(it.v)}</b>${sel[it.k]?`<i>${it.n>1?'×'+sel[it.k]:'✓'}</i>`:it.n>1?`<em>have ${it.n}</em>`:''}</button>`).join('')||`<p class="note">${q?'No cards match.':'No spare cards to trade.'}</p>`;
-    el.querySelectorAll('canvas').forEach((cv,i)=>drawCard(cv,fromKey(show[i].k),64));
+    el.querySelectorAll('canvas').forEach((cv,i)=>drawCard(cv,fromKey(show[i].k),104));
     el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{const it=items.find(x=>x.k===b.dataset.k),cur=sel[it.k]||0,n=Object.values(sel).reduce((a,x)=>a+x,0);
       if(cur>=it.n)delete sel[it.k];else if(n>=10){toast('Up to 10 cards on each side.');return}else sel[it.k]=cur+1;
       grid(el,items,sel,el===$('#tbM',m)?qM:qT);totals()})};
@@ -5651,7 +5652,7 @@ function renderMailbox(el){const me=PROFILE.id,others=allProfiles().filter(p=>p.
     ${sent.length?`<h4 class="mh">Your offers</h4>${sent.join('')}`:''}
     <h4 class="mh">Make an offer to a trader</h4><div class="mbtns">${botList().map(id=>`<button class="btn sm" data-bot="${id}">${botInfo(id).ico} ${esc(botInfo(id).n)}</button>`).join('')}</div>
     ${(S.mail||[]).length?`<details class="mlog"><summary>Recent trades and gifts</summary>${S.mail.slice(0,8).map(x=>`<div>${esc(x.msg)}</div>`).join('')}</details>`:''}</div>`;
-  el.querySelectorAll('canvas[data-mk]').forEach(cv=>drawCard(cv,fromKey(cv.dataset.mk),56));
+  el.querySelectorAll('canvas[data-mk]').forEach(cv=>{drawCard(cv,fromKey(cv.dataset.mk),120);cv.onclick=()=>showCardModal(fromKey(cv.dataset.mk))});
   const inb=i=>(S.inbox||[])[+i],pin=id=>OFF_IN.find(o=>o.id===id),pout=id=>OFF_OUT.find(o=>o.id===id),prof=id=>allProfiles().find(p=>p.id===id);
   el.querySelectorAll('[data-ba]').forEach(b=>b.onclick=()=>botAccept(inb(b.dataset.ba)));
   el.querySelectorAll('[data-bc]').forEach(b=>b.onclick=()=>{const o=inb(b.dataset.bc);if(o)botBuilder(o.bot,o)});
