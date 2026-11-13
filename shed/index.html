@@ -180,7 +180,9 @@ button:focus-visible, input:focus-visible, select:focus-visible{outline:2px soli
 .loc{flex:1 1 180px;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 12px;display:flex;flex-direction:column;gap:1px}
 .loc b{font-size:17px}.loc span{font-size:13px;color:var(--muted)}
 .loc[aria-selected="true"]{border-color:var(--bulb);background:linear-gradient(180deg,rgba(255,198,92,.16),var(--panel))}
-.w-delight{background:conic-gradient(from 20deg,#ff3ca8,#ffe14d,#3cf0ff,#7a3cff,#ff3ca8);width:170px;height:170px;box-shadow:0 0 30px rgba(255,200,80,.5)}.w-delight b{color:#fff;text-shadow:0 2px 4px #000}.w-delightf{background:conic-gradient(from 110deg,#6b3e1f,#ffe14d,#1f7a3a,#3cf0ff,#6b3e1f)}.w-delightb{background:conic-gradient(from 200deg,#1f6fd1,#ffe14d,#c8102e,#3cf0ff,#1f6fd1)}
+.w-delight{background:conic-gradient(from 20deg,#ff3ca8,#ffe14d,#3cf0ff,#7a3cff,#ff3ca8);width:170px;height:170px;box-shadow:0 0 30px rgba(255,200,80,.5)}.w-delight b{color:#fff;text-shadow:0 2px 4px #000}.w-sretail{background:linear-gradient(160deg,#1f7a3a,#0b3d1c 60%,#f2f2f2)}.w-svintage{background:repeating-linear-gradient(135deg,#1f6b3a 0 16px,#e8e0c8 16px 32px)}.w-svintage b{color:#fff5d6}
+.w-sblaster{background:linear-gradient(160deg,#2fae5a,#0c3c1f 60%,#111);width:150px;height:170px}.w-smega{background:linear-gradient(160deg,#9be38f,#1d5c2e 60%,#111);width:160px;height:190px}.w-shobbybox{background:linear-gradient(160deg,#0b1a10,#1f4a2c 40%,#c9a13b);width:180px;height:150px}
+.w-delights{background:conic-gradient(from 110deg,#1f7a3a,#ffe14d,#f2f2f2,#3cf0ff,#1f7a3a)}.w-delightf{background:conic-gradient(from 110deg,#6b3e1f,#ffe14d,#1f7a3a,#3cf0ff,#6b3e1f)}.w-delightb{background:conic-gradient(from 200deg,#1f6fd1,#ffe14d,#c8102e,#3cf0ff,#1f6fd1)}
 .w-gscle{background:linear-gradient(160deg,#1D428A,#FFC72C 46%,#860038)}.w-gscle b{color:#fff}
 .w-sfg{background:linear-gradient(160deg,#FD5A1E,#27251F 62%,#FD5A1E)}.w-sfg b{color:#fff}
 .w-fretail{background:linear-gradient(160deg,#0b3d91,#081f45 60%,#c8102e)}
@@ -2886,14 +2888,602 @@ Bonnie Baker|M_SBB|8|C|1943|1950|3||swing
 Senaida Wirth|M_SBB|2|SS|1946|1951|2||swing
 Elizabeth Mahon|M_SBB|12|OF|1945|1952|2||swing
 Marge Stefani|M_SBB|7|2B|1943|1949|2||swing`;
-const P = (RAW+'\n'+RAW_MLB+'\n'+RAW_NFL+'\n'+RAW_EXTRA).split('\n').map((l,i,arr)=>{
-  const [name,team,num,pos,s,e,tier,m,pose,x]=l.split('|');
-  return {id:i,name,team,num,pos,start:+s,end:+e,tier:+tier,mvp:m==='M',pose,alt:x==='A',sport:team.startsWith('M_')?'mlb':team.startsWith('F_')?'nfl':team.startsWith('H_')?'nhl':'nba'};
+const RAW_SOC = `Nathaniel Creswick|S_SHF|1|FW|1857|1867|2||kick||ENG|
+William Prest|S_SHF|2|FW|1857|1867|1||kick||ENG|
+Ebenezer Cobb Morley|S_BRN|1|FW|1862|1870|3||kick||ENG|
+Charles W. Alcock|S_WAN|1|FW|1859|1875|3||kick||ENG|
+Arthur Kinnaird|S_WAN|1|MF|1864|1883|3||run||SCO|
+Morton Betts|S_WAN|1|FW|1871|1877|1||kick||ENG|
+Francis Marindin|S_REG|1|DF|1866|1874|1||run||ENG|
+Robert Gardner|S_QPK|1|GK|1867|1878|2||catch||SCO|
+Andrew Watson|S_QPK|1|DF|1874|1887|3||run||SCO|
+John Goodall|S_PNE|1|FW|1880|1903|2||kick||ENG|
+Nettie Honeyball|S_BLF|1|DF|1895|1897|2||run||ENG|W
+Lily Parr|S_DKL|9|FW|1919|1951|3||kick||ENG|W
+Jose Nasazzi|S_NAC|3|DF|1923|1937|2||run||URU|
+Hector Scarone|S_NAC|10|FW|1916|1939|2||kick||URU|
+Bert Patenaude|S_USA|9|FW|1928|1934|2||kick||USA|
+Giuseppe Meazza|S_INT|8|FW|1927|1947|4||kick||ITA|
+Silvio Piola|S_LAZ|9|FW|1929|1954|3||kick||ITA|
+Dixie Dean|S_EVE|9|FW|1924|1939|4||kick||ENG|
+Leonidas|S_FLA|8|FW|1929|1950|3||kick||BRA|
+Obdulio Varela|S_PEN|5|MF|1938|1955|3||run||URU|
+Alcides Ghiggia|S_PEN|7|FW|1944|1968|3||run||URU|
+Joe Gaetjens|S_USA|9|FW|1947|1953|2||kick||USA|
+Walter Bahr|S_USA|4|MF|1948|1958|2||run||USA|
+Stanley Matthews|S_BLP|7|FW|1932|1965|5|M|stiff||ENG|
+Tom Finney|S_PNE|7|FW|1946|1960|3||stiff||ENG|
+Billy Wright|S_WOL|5|DF|1939|1959|3||run||ENG|
+Fritz Walter|S_KAI|8|MF|1937|1959|3||kick||GER|
+Helmut Rahn|S_ESS|12|FW|1951|1965|2||kick||GER|
+Ferenc Puskas|S_RMA|10|FW|1943|1966|5||kick||HUN|
+Alfredo Di Stefano|S_RMA|9|FW|1945|1966|5|M|kick||ESP|
+Raymond Kopa|S_REI|10|MF|1949|1967|3|M|stiff||FRA|
+Just Fontaine|S_REI|9|FW|1950|1962|3||kick||FRA|
+Lev Yashin|S_DYN|1|GK|1950|1970|5|M|catch||URS|
+John Charles|S_JUV|9|FW|1948|1974|3||kick||WAL|
+Duncan Edwards|S_MUN|6|MF|1953|1958|3||run||ENG|
+Pele|S_SAN|10|FW|1956|1977|5||kick||BRA|
+Pele|S_COS|10|FW|1975|1977|5||kick|A|BRA|
+Garrincha|S_BOT|7|FW|1953|1972|3||stiff||BRA|
+Didi|S_BOT|8|MF|1946|1966|3||kick||BRA|
+Nilton Santos|S_BOT|6|DF|1948|1964|3||run||BRA|
+Djalma Santos|S_PAL|2|DF|1948|1970|2||run||BRA|
+Jairzinho|S_BOT|7|FW|1959|1982|3||run||BRA|
+Carlos Alberto|S_SAN|4|DF|1963|1982|3||run||BRA|
+Carlos Alberto|S_COS|4|DF|1977|1982|3||run|A|BRA|
+Rivelino|S_COR|10|MF|1965|1981|3||kick||BRA|
+Tostao|S_CRU|9|FW|1962|1973|2||kick||BRA|
+Zico|S_FLA|10|MF|1971|1994|5||kick||BRA|
+Socrates|S_COR|8|MF|1974|1989|3||stiff||BRA|
+Romario|S_PSV|11|FW|1985|2009|3||kick||BRA|
+Romario|S_BAR|10|FW|1993|1995|3||kick|A|BRA|
+Bebeto|S_DEP|9|FW|1983|2002|2||kick||BRA|
+Cafu|S_ACM|2|DF|1989|2008|3||run||BRA|
+Cafu|S_ROM|2|DF|1997|2003|3||run|A|BRA|
+Roberto Carlos|S_RMA|3|DF|1991|2012|3||kick||BRA|
+Ronaldo Nazario|S_RMA|9|FW|1993|2011|5|M|stiff||BRA|
+Ronaldo Nazario|S_BAR|9|FW|1996|1997|5|M|stiff|A|BRA|
+Ronaldo Nazario|S_INT|9|FW|1997|2002|5|M|stiff|A|BRA|
+Rivaldo|S_BAR|11|FW|1991|2014|3|M|kick||BRA|
+Ronaldinho|S_BAR|10|FW|1998|2015|5|M|stiff||BRA|
+Ronaldinho|S_ACM|80|FW|2008|2011|5|M|stiff|A|BRA|
+Kaka|S_ACM|22|MF|2001|2017|4|M|run||BRA|
+Kaka|S_RMA|8|MF|2009|2013|4|M|run|A|BRA|
+Marcelo|S_RMA|12|DF|2005|2025|3||stiff||BRA|
+Thiago Silva|S_PSG|2|DF|2002|2026|3||run||BRA|
+Dani Alves|S_BAR|2|DF|2001|2022|2||run||BRA|
+Neymar|S_SAN|10|FW|2009|2026|5||stiff||BRA|
+Neymar|S_BAR|11|FW|2013|2017|5||stiff|A|BRA|
+Neymar|S_PSG|10|FW|2017|2023|5||stiff|A|BRA|
+Casemiro|S_RMA|14|MF|2010|2026|3||run||BRA|
+Alisson|S_LIV|1|GK|2013|2026|3||catch||BRA|
+Vinicius Junior|S_RMA|7|FW|2017|2026|5||stiff||BRA|
+Rodrygo|S_RMA|11|FW|2017|2026|2||run||BRA|
+Raphinha|S_BAR|11|FW|2015|2026|3||kick||BRA|
+Endrick|S_RMA|16|FW|2022|2026|2||run||BRA|
+Estevao|S_CHE|41|FW|2023|2026|2||stiff||BRA|
+Diego Maradona|S_NAP|10|MF|1976|1997|5||stiff||ARG|
+Diego Maradona|S_BOC|10|MF|1981|1997|5||stiff|A|ARG|
+Diego Maradona|S_BAR|10|MF|1982|1984|5||stiff|A|ARG|
+Mario Kempes|S_VAL|10|FW|1970|1996|3||kick||ARG|
+Daniel Passarella|S_RIV|6|DF|1971|1989|3||run||ARG|
+Gabriel Batistuta|S_FIO|9|FW|1988|2005|3||kick||ARG|
+Juan Roman Riquelme|S_BOC|10|MF|1996|2014|3||stiff||ARG|
+Carlos Tevez|S_BOC|10|FW|2001|2022|3||run||ARG|
+Carlos Tevez|S_MUN|32|FW|2007|2009|3||run|A|ARG|
+Sergio Aguero|S_MCI|10|FW|2003|2021|3||kick||ARG|
+Javier Mascherano|S_BAR|14|DF|2003|2020|2||run||ARG|
+Gonzalo Higuain|S_RMA|20|FW|2005|2022|2||kick||ARG|
+Lionel Messi|S_BAR|10|FW|2004|2026|5|M|stiff||ARG|
+Lionel Messi|S_PSG|30|FW|2021|2023|5|M|stiff|A|ARG|
+Lionel Messi|S_MIA|10|FW|2023|2026|5|M|stiff|A|ARG|
+Angel Di Maria|S_BEN|11|MF|2005|2026|3||run||ARG|
+Angel Di Maria|S_RMA|22|MF|2010|2014|3||run|A|ARG|
+Emiliano Martinez|S_AVL|23|GK|2010|2026|3||catch||ARG|
+Julian Alvarez|S_ATM|19|FW|2018|2026|3||run||ARG|
+Julian Alvarez|S_MCI|19|FW|2022|2024|3||run|A|ARG|
+Enzo Fernandez|S_CHE|8|MF|2019|2026|2||run||ARG|
+Alexis Mac Allister|S_LIV|10|MF|2016|2026|2||run||ARG|
+Lautaro Martinez|S_INT|10|FW|2015|2026|3||kick||ARG|
+Rodrigo De Paul|S_ATM|5|MF|2012|2026|2||run||ARG|
+Nicolas Otamendi|S_BEN|30|DF|2008|2026|1||run||ARG|
+Cristian Romero|S_TOT|17|DF|2016|2026|2||run||ARG|
+Enzo Francescoli|S_RIV|10|MF|1980|1997|3||stiff||URU|
+Diego Forlan|S_ATM|7|FW|1998|2015|3||kick||URU|
+Luis Suarez|S_BAR|9|FW|2005|2026|4||kick||URU|
+Luis Suarez|S_LIV|7|FW|2011|2014|4||kick|A|URU|
+Luis Suarez|S_AJX|16|FW|2007|2011|4||kick|A|URU|
+Luis Suarez|S_MIA|9|FW|2024|2026|4||kick|A|URU|
+Edinson Cavani|S_PSG|9|FW|2006|2026|3||kick||URU|
+Federico Valverde|S_RMA|15|MF|2016|2026|3||run||URU|
+Darwin Nunez|S_LIV|9|FW|2017|2026|2||kick||URU|
+Ronald Araujo|S_BAR|4|DF|2017|2026|2||run||URU|
+Uwe Seeler|S_HSV|9|FW|1953|1972|3||kick||GER|
+Franz Beckenbauer|S_BAY|5|DF|1964|1983|5|M|run||GER|
+Franz Beckenbauer|S_COS|6|DF|1977|1980|5|M|run|A|GER|
+Gerd Muller|S_BAY|9|FW|1963|1981|5|M|kick||GER|
+Sepp Maier|S_BAY|1|GK|1962|1980|3||catch||GER|
+Paul Breitner|S_BAY|3|DF|1970|1983|2||run||GER|
+Karl-Heinz Rummenigge|S_BAY|11|FW|1974|1989|3|M|kick||GER|
+Lothar Matthaus|S_BAY|10|MF|1979|2000|3|M|run||GER|
+Lothar Matthaus|S_INT|10|MF|1988|1992|3|M|run|A|GER|
+Andreas Brehme|S_INT|3|DF|1980|1998|2||kick||GER|
+Rudi Voller|S_ROM|9|FW|1977|1996|2||kick||GER|
+Jurgen Klinsmann|S_BAY|18|FW|1981|1998|3||kick||GER|
+Oliver Kahn|S_BAY|1|GK|1987|2008|3||catch||GER|
+Michael Ballack|S_BAY|13|MF|1995|2012|3||kick||GER|
+Miroslav Klose|S_BAY|11|FW|1999|2016|3||kick||GER|
+Philipp Lahm|S_BAY|21|DF|2002|2017|3||run||GER|
+Bastian Schweinsteiger|S_BAY|31|MF|2002|2019|3||run||GER|
+Thomas Muller|S_BAY|25|FW|2008|2026|3||kick||GER|
+Manuel Neuer|S_BAY|1|GK|2005|2026|4||catch||GER|
+Toni Kroos|S_RMA|8|MF|2007|2024|3||kick||GER|
+Mesut Ozil|S_ARS|11|MF|2006|2023|3||stiff||GER|
+Mario Gotze|S_BVB|10|MF|2009|2026|2||kick||GER|
+Jerome Boateng|S_BAY|17|DF|2007|2024|2||run||GER|
+Mats Hummels|S_BVB|15|DF|2006|2025|2||run||GER|
+Marco Reus|S_BVB|11|FW|2006|2026|2||kick||GER|
+Marco Reus|S_LAG|11|FW|2025|2026|2||kick|A|GER|
+Joshua Kimmich|S_BAY|6|MF|2013|2026|3||run||GER|
+Kai Havertz|S_ARS|29|FW|2016|2026|2||kick||GER|
+Jamal Musiala|S_BAY|42|MF|2020|2026|4||stiff||GER|
+Florian Wirtz|S_LEV|10|MF|2020|2026|3||stiff||GER|
+Florian Wirtz|S_LIV|7|MF|2025|2026|3||stiff|A|GER|
+Johan Cruyff|S_AJX|14|FW|1964|1984|5|M|stiff||NED|
+Johan Cruyff|S_BAR|14|FW|1973|1978|5|M|stiff|A|NED|
+Johan Neeskens|S_AJX|13|MF|1968|1991|3||run||NED|
+Ruud Gullit|S_ACM|10|MF|1979|1998|3|M|run||NED|
+Marco van Basten|S_ACM|9|FW|1981|1995|5|M|kick||NED|
+Frank Rijkaard|S_ACM|8|MF|1980|1995|3||run||NED|
+Ronald Koeman|S_BAR|4|DF|1980|1997|3||kick||NED|
+Dennis Bergkamp|S_ARS|10|FW|1986|2006|4||stiff||NED|
+Marc Overmars|S_ARS|11|FW|1990|2008|2||run||NED|
+Patrick Kluivert|S_AJX|9|FW|1994|2008|2||kick||NED|
+Clarence Seedorf|S_ACM|10|MF|1992|2014|3||run||NED|
+Edwin van der Sar|S_MUN|1|GK|1990|2011|3||catch||NED|
+Ruud van Nistelrooy|S_MUN|10|FW|1993|2012|3||kick||NED|
+Arjen Robben|S_BAY|10|FW|2000|2021|3||stiff||NED|
+Robin van Persie|S_ARS|10|FW|2001|2019|3||kick||NED|
+Wesley Sneijder|S_INT|10|MF|2002|2019|3||kick||NED|
+Virgil van Dijk|S_LIV|4|DF|2011|2026|4||run||NED|
+Frenkie de Jong|S_BAR|21|MF|2015|2026|3||stiff||NED|
+Cody Gakpo|S_LIV|18|FW|2018|2026|2||run||NED|
+Michel Platini|S_JUV|10|MF|1972|1987|5|M|kick||FRA|
+Didier Deschamps|S_JUV|7|MF|1985|2001|2||run||FRA|
+Zinedine Zidane|S_RMA|5|MF|1989|2006|5|M|stiff||FRA|
+Zinedine Zidane|S_JUV|21|MF|1996|2001|5|M|stiff|A|FRA|
+Marcel Desailly|S_CHE|6|DF|1986|2006|3||run||FRA|
+Lilian Thuram|S_JUV|21|DF|1991|2008|3||run||FRA|
+Fabien Barthez|S_MUN|1|GK|1990|2007|2||catch||FRA|
+Patrick Vieira|S_ARS|4|MF|1993|2011|3||run||FRA|
+Robert Pires|S_ARS|7|MF|1992|2011|2||stiff||FRA|
+Thierry Henry|S_ARS|14|FW|1994|2014|5||run||FRA|
+Thierry Henry|S_BAR|14|FW|2007|2010|5||run|A|FRA|
+Thierry Henry|S_NYRB|14|FW|2010|2014|5||run|A|FRA|
+Claude Makelele|S_CHE|4|MF|1991|2011|2||run||FRA|
+Franck Ribery|S_BAY|7|FW|2000|2022|3||stiff||FRA|
+Karim Benzema|S_RMA|9|FW|2004|2026|4|M|kick||FRA|
+Antoine Griezmann|S_ATM|7|FW|2009|2026|3||kick||FRA|
+Kylian Mbappe|S_PSG|7|FW|2015|2026|5||run||FRA|
+Kylian Mbappe|S_MON|29|FW|2015|2017|5||run|A|FRA|
+Kylian Mbappe|S_RMA|9|FW|2024|2026|5||run|A|FRA|
+Paul Pogba|S_JUV|10|MF|2011|2026|3||stiff||FRA|
+Paul Pogba|S_MUN|6|MF|2016|2022|3||stiff|A|FRA|
+N'Golo Kante|S_CHE|7|MF|2011|2026|3||run||FRA|
+Hugo Lloris|S_TOT|1|GK|2005|2026|3||catch||FRA|
+Hugo Lloris|S_LAFC|1|GK|2024|2026|3||catch|A|FRA|
+Raphael Varane|S_RMA|4|DF|2010|2024|2||run||FRA|
+Ousmane Dembele|S_PSG|10|FW|2014|2026|4|M|stiff||FRA|
+William Saliba|S_ARS|2|DF|2018|2026|3||run||FRA|
+Aurelien Tchouameni|S_RMA|14|MF|2018|2026|2||run||FRA|
+Michael Olise|S_BAY|17|FW|2019|2026|3||stiff||FRA|
+Mike Maignan|S_ACM|16|GK|2015|2026|2||catch||FRA|
+Gianni Rivera|S_ACM|10|MF|1959|1979|3|M|kick||ITA|
+Giacinto Facchetti|S_INT|3|DF|1960|1978|3||run||ITA|
+Gigi Riva|S_CAG|11|FW|1962|1977|3||kick||ITA|
+Dino Zoff|S_JUV|1|GK|1961|1983|3||catch||ITA|
+Paolo Rossi|S_JUV|20|FW|1973|1987|3|M|kick||ITA|
+Franco Baresi|S_ACM|6|DF|1977|1997|3||run||ITA|
+Paolo Maldini|S_ACM|3|DF|1985|2009|5||run||ITA|
+Roberto Baggio|S_JUV|10|FW|1982|2004|4|M|kick||ITA|
+Alessandro Del Piero|S_JUV|10|FW|1991|2014|4||kick||ITA|
+Francesco Totti|S_ROM|10|FW|1993|2017|4||kick||ITA|
+Alessandro Nesta|S_ACM|13|DF|1993|2014|3||run||ITA|
+Christian Vieri|S_INT|32|FW|1991|2009|3||kick||ITA|
+Fabio Cannavaro|S_JUV|5|DF|1992|2011|3|M|run||ITA|
+Gianluigi Buffon|S_JUV|1|GK|1995|2023|5||catch||ITA|
+Andrea Pirlo|S_JUV|21|MF|1995|2017|3||kick||ITA|
+Andrea Pirlo|S_ACM|21|MF|2001|2011|3||kick|A|ITA|
+Gennaro Gattuso|S_ACM|8|MF|1995|2013|2||run||ITA|
+Giorgio Chiellini|S_JUV|3|DF|2004|2023|3||run||ITA|
+Leonardo Bonucci|S_JUV|19|DF|2005|2024|2||run||ITA|
+Gianluigi Donnarumma|S_PSG|99|GK|2015|2026|3||catch||ITA|
+Gianluigi Donnarumma|S_ACM|99|GK|2015|2021|3||catch|A|ITA|
+Nicolo Barella|S_INT|23|MF|2014|2026|2||run||ITA|
+Luis Suarez Miramontes|S_INT|10|MF|1953|1973|3|M|kick||ESP|
+Emilio Butragueno|S_RMA|7|FW|1982|1998|3||stiff||ESP|
+Raul|S_RMA|7|FW|1994|2015|4||kick||ESP|
+Iker Casillas|S_RMA|1|GK|1999|2020|4||catch||ESP|
+Xavi|S_BAR|6|MF|1998|2019|5||stiff||ESP|
+Andres Iniesta|S_BAR|8|MF|2002|2024|5||stiff||ESP|
+Carles Puyol|S_BAR|5|DF|1999|2014|3||run||ESP|
+Sergio Ramos|S_RMA|4|DF|2003|2026|4||run||ESP|
+Gerard Pique|S_BAR|3|DF|2004|2022|3||run||ESP|
+Sergio Busquets|S_BAR|5|MF|2008|2025|3||run||ESP|
+Sergio Busquets|S_MIA|5|MF|2023|2025|3||run|A|ESP|
+Jordi Alba|S_BAR|18|DF|2008|2025|2||run||ESP|
+Xabi Alonso|S_RMA|14|MF|1999|2017|3||kick||ESP|
+Xabi Alonso|S_LIV|14|MF|2004|2009|3||kick|A|ESP|
+David Villa|S_BAR|7|FW|1999|2019|3||kick||ESP|
+Fernando Torres|S_ATM|9|FW|2001|2019|3||kick||ESP|
+Fernando Torres|S_LIV|9|FW|2007|2011|3||kick|A|ESP|
+Rodri|S_MCI|16|MF|2015|2026|4|M|run||ESP|
+Pedri|S_BAR|8|MF|2019|2026|3||stiff||ESP|
+Gavi|S_BAR|6|MF|2021|2026|2||run||ESP|
+Lamine Yamal|S_BAR|19|FW|2023|2026|5||stiff||ESP|
+Nico Williams|S_ATH|10|FW|2021|2026|3||run||ESP|
+Dani Olmo|S_BAR|20|MF|2014|2026|2||kick||ESP|
+Eusebio|S_BEN|10|FW|1957|1979|5|M|kick||POR|
+Luis Figo|S_RMA|10|MF|1989|2009|4|M|stiff||POR|
+Luis Figo|S_BAR|7|MF|1995|2000|4|M|stiff|A|POR|
+Rui Costa|S_ACM|10|MF|1990|2008|2||kick||POR|
+Deco|S_POR|10|MF|1996|2010|2||stiff||POR|
+Cristiano Ronaldo|S_MUN|7|FW|2003|2026|5|M|kick||POR|
+Cristiano Ronaldo|S_SCP|28|FW|2002|2003|5|M|kick|A|POR|
+Cristiano Ronaldo|S_RMA|7|FW|2009|2018|5|M|kick|A|POR|
+Cristiano Ronaldo|S_JUV|7|FW|2018|2021|5|M|kick|A|POR|
+Cristiano Ronaldo|S_ANS|7|FW|2023|2026|5|M|kick|A|POR|
+Pepe|S_RMA|3|DF|2001|2024|2||run||POR|
+Bernardo Silva|S_MCI|20|MF|2014|2026|3||stiff||POR|
+Bruno Fernandes|S_MUN|8|MF|2012|2026|3||kick||POR|
+Ruben Dias|S_MCI|3|DF|2015|2026|2||run||POR|
+Rafael Leao|S_ACM|10|FW|2017|2026|2||run||POR|
+Vitinha|S_PSG|17|MF|2018|2026|3||stiff||POR|
+Joao Neves|S_PSG|87|MF|2022|2026|2||run||POR|
+Nuno Mendes|S_PSG|25|DF|2019|2026|2||run||POR|
+Bobby Charlton|S_MUN|9|MF|1956|1975|5|M|kick||ENG|
+Nobby Stiles|S_MUN|4|MF|1960|1975|2||run||ENG|
+Bobby Moore|S_WHU|6|DF|1958|1978|3||run||ENG|
+Geoff Hurst|S_WHU|10|FW|1959|1976|2||kick||ENG|
+Martin Peters|S_WHU|8|MF|1959|1981|2||run||ENG|
+Gordon Banks|S_LEI|1|GK|1958|1978|3||catch||ENG|
+Roger Hunt|S_LIV|8|FW|1958|1972|2||kick||ENG|
+Alan Ball|S_EVE|8|MF|1962|1984|2||run||ENG|
+Jack Charlton|S_LEE|5|DF|1952|1973|2||run||ENG|
+Jimmy Greaves|S_TOT|8|FW|1957|1971|3||kick||ENG|
+Kevin Keegan|S_LIV|7|FW|1968|1985|3|M|run||ENG|
+Peter Shilton|S_NFO|1|GK|1966|1997|3||catch||ENG|
+Gary Lineker|S_TOT|10|FW|1978|1994|3||kick||ENG|
+Paul Gascoigne|S_TOT|8|MF|1985|2004|3||stiff||ENG|
+Alan Shearer|S_NEW|9|FW|1988|2006|3||kick||ENG|
+David Beckham|S_MUN|7|MF|1992|2013|5||kick||ENG|
+David Beckham|S_RMA|23|MF|2003|2007|5||kick|A|ENG|
+David Beckham|S_LAG|23|MF|2007|2012|5||kick|A|ENG|
+Paul Scholes|S_MUN|18|MF|1993|2013|3||kick||ENG|
+Steven Gerrard|S_LIV|8|MF|1998|2016|4||kick||ENG|
+Steven Gerrard|S_LAG|8|MF|2015|2016|4||kick|A|ENG|
+Frank Lampard|S_CHE|8|MF|1995|2017|3||kick||ENG|
+John Terry|S_CHE|26|DF|1998|2018|3||run||ENG|
+Wayne Rooney|S_MUN|10|FW|2002|2021|4||kick||ENG|
+Wayne Rooney|S_DCU|9|FW|2018|2019|4||kick|A|ENG|
+Harry Kane|S_TOT|10|FW|2010|2026|5||kick||ENG|
+Harry Kane|S_BAY|9|FW|2023|2026|5||kick|A|ENG|
+Jude Bellingham|S_RMA|5|MF|2019|2026|5||run||ENG|
+Jude Bellingham|S_BVB|22|MF|2020|2023|5||run|A|ENG|
+Bukayo Saka|S_ARS|7|FW|2018|2026|3||stiff||ENG|
+Phil Foden|S_MCI|47|MF|2017|2026|3||stiff||ENG|
+Declan Rice|S_ARS|41|MF|2017|2026|3||run||ENG|
+Cole Palmer|S_CHE|20|MF|2020|2026|3||kick||ENG|
+Marcus Rashford|S_MUN|10|FW|2016|2026|2||run||ENG|
+Trent Alexander-Arnold|S_LIV|66|DF|2016|2026|3||kick||ENG|
+Trent Alexander-Arnold|S_RMA|12|DF|2025|2026|3||kick|A|ENG|
+Jordan Pickford|S_EVE|1|GK|2011|2026|2||catch||ENG|
+Denis Law|S_MUN|10|FW|1956|1974|3|M|kick||SCO|
+Jimmy Johnstone|S_CEL|7|FW|1961|1979|2||stiff||SCO|
+Billy McNeill|S_CEL|5|DF|1957|1975|2||run||SCO|
+John Greig|S_RAN|6|DF|1961|1978|2||run||SCO|
+Kenny Dalglish|S_LIV|7|FW|1969|1990|4||kick||SCO|
+Ally McCoist|S_RAN|9|FW|1978|2001|2||kick||SCO|
+George Best|S_MUN|7|FW|1963|1984|5|M|stiff||NIR|
+Ian Rush|S_LIV|9|FW|1979|1998|3||kick||WAL|
+Ryan Giggs|S_MUN|11|MF|1990|2014|3||stiff||WAL|
+Roy Keane|S_MUN|16|MF|1990|2006|3||run||IRL|
+Gareth Bale|S_RMA|11|FW|2006|2023|3||kick||WAL|
+Gareth Bale|S_TOT|11|FW|2007|2013|3||kick|A|WAL|
+Peter Schmeichel|S_MUN|1|GK|1981|2003|3||catch||DEN|
+Michael Laudrup|S_BAR|10|MF|1981|1998|3||stiff||DEN|
+Hristo Stoichkov|S_BAR|8|FW|1982|2003|3|M|kick||BUL|
+Gheorghe Hagi|S_GAL|10|MF|1982|2001|3||kick||ROU|
+Henrik Larsson|S_CEL|7|FW|1988|2013|3||kick||SWE|
+Zlatan Ibrahimovic|S_ACM|11|FW|1999|2023|4||kick||SWE|
+Zlatan Ibrahimovic|S_PSG|10|FW|2012|2016|4||kick|A|SWE|
+Zlatan Ibrahimovic|S_LAG|9|FW|2018|2019|4||kick|A|SWE|
+Andriy Shevchenko|S_ACM|7|FW|1994|2012|3|M|kick||UKR|
+Davor Suker|S_RMA|9|FW|1985|2003|2||kick||CRO|
+Luka Modric|S_RMA|10|MF|2003|2026|5|M|stiff||CRO|
+Luka Modric|S_ACM|14|MF|2025|2026|5|M|stiff|A|CRO|
+George Weah|S_ACM|9|FW|1985|2003|3|M|run||LBR|
+Roger Milla|S_MON|9|FW|1970|1996|2||run||CMR|
+Samuel Eto'o|S_BAR|9|FW|1997|2019|3||kick||CMR|
+Didier Drogba|S_CHE|11|FW|1998|2018|4||kick||CIV|
+Yaya Toure|S_MCI|42|MF|2001|2019|3||run||CIV|
+Mohamed Salah|S_LIV|11|FW|2010|2026|5||run||EGY|
+Sadio Mane|S_LIV|10|FW|2011|2026|3||run||SEN|
+Achraf Hakimi|S_PSG|2|DF|2016|2026|3||run||MAR|
+Hidetoshi Nakata|S_ROM|8|MF|1995|2006|2||stiff||JPN|
+Park Ji-sung|S_MUN|13|MF|2000|2014|2||run||KOR|
+Son Heung-min|S_TOT|7|FW|2010|2026|4||kick||KOR|
+Son Heung-min|S_LAFC|7|FW|2025|2026|4||kick|A|KOR|
+Kevin De Bruyne|S_MCI|17|MF|2009|2026|4||kick||BEL|
+Kevin De Bruyne|S_NAP|11|MF|2025|2026|4||kick|A|BEL|
+Eden Hazard|S_CHE|10|FW|2007|2023|3||stiff||BEL|
+Thibaut Courtois|S_RMA|1|GK|2009|2026|3||catch||BEL|
+Robert Lewandowski|S_BAY|9|FW|2006|2026|5||kick||POL|
+Robert Lewandowski|S_BAR|9|FW|2022|2026|5||kick|A|POL|
+Jan Oblak|S_ATM|13|GK|2009|2026|2||catch||SVN|
+Erling Haaland|S_MCI|9|FW|2016|2026|5||kick||NOR|
+Erling Haaland|S_BVB|9|FW|2020|2022|5||kick|A|NOR|
+Martin Odegaard|S_ARS|8|MF|2015|2026|3||stiff||NOR|
+Khvicha Kvaratskhelia|S_PSG|7|FW|2017|2026|3||stiff||GEO|
+Hugo Sanchez|S_RMA|9|FW|1976|1997|3||kick||MEX|
+Rafael Marquez|S_BAR|4|DF|1996|2018|2||run||MEX|
+Cuauhtemoc Blanco|S_AME|10|FW|1992|2016|3||stiff||MEX|
+Javier Hernandez|S_MUN|14|FW|2006|2024|2||kick||MEX|
+Guillermo Ochoa|S_AME|13|GK|2004|2026|2||catch||MEX|
+Santiago Gimenez|S_ACM|7|FW|2018|2026|2||kick||MEX|
+Carlos Valderrama|S_TBM|10|MF|1981|2002|3||stiff||COL|
+James Rodriguez|S_RMA|10|MF|2008|2026|3||kick||COL|
+Radamel Falcao|S_ATM|9|FW|2005|2022|3||kick||COL|
+Luis Diaz|S_LIV|7|FW|2016|2026|3||run||COL|
+Luis Diaz|S_BAY|14|FW|2025|2026|3||run|A|COL|
+Alphonso Davies|S_BAY|19|DF|2016|2026|3||run||CAN|
+Jonathan David|S_JUV|9|FW|2018|2026|2||kick||CAN|
+Giorgio Chinaglia|S_COS|9|FW|1965|1983|2||kick||ITA|
+Alexi Lalas|S_NER|22|DF|1991|2004|2||run||USA|
+Cobi Jones|S_LAG|13|MF|1992|2007|2||run||USA|
+Claudio Reyna|S_RAN|10|MF|1994|2008|2||stiff||USA|
+Brian McBride|S_CLB|20|FW|1993|2010|2||kick||USA|
+Kasey Keller|S_TOT|18|GK|1990|2011|2||catch||USA|
+Brad Friedel|S_BLA|1|GK|1992|2015|2||catch||USA|
+Landon Donovan|S_LAG|10|FW|1999|2018|4||run||USA|
+Clint Dempsey|S_SEA|2|FW|2004|2016|3||kick||USA|
+Clint Dempsey|S_FUL|23|FW|2007|2012|3||kick|A|USA|
+Tim Howard|S_EVE|24|GK|1998|2019|3||catch||USA|
+DaMarcus Beasley|S_PSV|7|MF|1999|2019|2||run||USA|
+Michael Bradley|S_TFC|4|MF|2004|2023|2||run||USA|
+Jozy Altidore|S_TFC|17|FW|2006|2022|2||kick||USA|
+Chris Wondolowski|S_SJE|8|FW|2005|2021|2||kick||USA|
+Christian Pulisic|S_ACM|11|FW|2016|2026|4||stiff||USA|
+Christian Pulisic|S_BVB|22|FW|2016|2019|4||stiff|A|USA|
+Christian Pulisic|S_CHE|10|FW|2019|2023|4||stiff|A|USA|
+Weston McKennie|S_JUV|16|MF|2016|2026|3||run||USA|
+Tyler Adams|S_NYRB|4|MF|2015|2026|2||run||USA|
+Gio Reyna|S_BVB|7|MF|2019|2026|2||stiff||USA|
+Folarin Balogun|S_MON|9|FW|2019|2026|2||kick||USA|
+Sergino Dest|S_PSV|8|DF|2019|2026|2||run||USA|
+Antonee Robinson|S_FUL|33|DF|2016|2026|2||run||USA|
+Timothy Weah|S_JUV|22|FW|2017|2026|2||run||USA|
+Brenden Aaronson|S_LEE|11|MF|2019|2026|2||run||USA|
+Matt Turner|S_NER|30|GK|2016|2026|1||catch||USA|
+Carlos Vela|S_LAFC|10|FW|2007|2023|2||kick||MEX|
+Josef Martinez|S_ATL|7|FW|2010|2026|2||kick||VEN|
+Sebastian Giovinco|S_TFC|10|FW|2006|2021|2||kick||ITA|
+Denis Bouanga|S_LAFC|99|FW|2014|2026|2||run||GAB|
+Cucho Hernandez|S_CLB|9|FW|2016|2026|2||kick||COL|
+Michelle Akers|S_USW|10|FW|1985|2000|5||kick||USA|W
+Mia Hamm|S_WFR|9|FW|1987|2004|5||run||USA|W
+Kristine Lilly|S_BBR|13|MF|1987|2010|3||run||USA|W
+Julie Foudy|S_USW|11|MF|1988|2004|3||run||USA|W
+Brandi Chastain|S_SJC|6|DF|1988|2004|5||kick||USA|W
+Joy Fawcett|S_USW|14|DF|1987|2004|3||run||USA|W
+Carla Overbeck|S_USW|4|DF|1988|2000|2||run||USA|W
+Briana Scurry|S_USW|1|GK|1994|2008|3||catch||USA|W
+Tiffeny Milbrett|S_USW|16|FW|1991|2005|2||kick||USA|W
+Christie Rampone|S_GFC|3|DF|1997|2017|3||run||USA|W
+Abby Wambach|S_WFR|20|FW|2001|2015|5||kick||USA|W
+Hope Solo|S_SRF|1|GK|2000|2016|3||catch||USA|W
+Carli Lloyd|S_GFC|10|MF|2005|2021|5||kick||USA|W
+Megan Rapinoe|S_SRF|15|FW|2006|2023|5||kick||USA|W
+Alex Morgan|S_ORP|13|FW|2010|2024|5||run||USA|W
+Alex Morgan|S_POT|13|FW|2013|2015|5||run|A|USA|W
+Alex Morgan|S_SDW|13|FW|2022|2024|5||run|A|USA|W
+Tobin Heath|S_POT|17|MF|2008|2023|3||stiff||USA|W
+Julie Ertz|S_CHR|8|MF|2014|2023|3||run||USA|W
+Becky Sauerbrunn|S_POT|4|DF|2008|2024|3||run||USA|W
+Kelley O'Hara|S_GFC|5|DF|2010|2024|2||run||USA|W
+Christen Press|S_ANG|23|FW|2011|2025|3||kick||USA|W
+Alyssa Naeher|S_CHR|1|GK|2010|2025|2||catch||USA|W
+Crystal Dunn|S_NCC|19|DF|2013|2026|3||run||USA|W
+Rose Lavelle|S_GFC|16|MF|2017|2026|3||stiff||USA|W
+Lindsey Horan|S_OL|10|MF|2012|2026|3||kick||USA|W
+Mallory Swanson|S_CHR|9|FW|2016|2026|3||kick||USA|W
+Sophia Smith|S_POT|9|FW|2020|2026|4||run||USA|W
+Trinity Rodman|S_WSP|2|FW|2021|2026|4||stiff||USA|W
+Naomi Girma|S_SDW|4|DF|2022|2026|3||run||USA|W
+Naomi Girma|S_CHE|4|DF|2025|2026|3||run|A|USA|W
+Catarina Macario|S_CHE|9|FW|2020|2026|2||kick||USA|W
+Alyssa Thompson|S_ANG|11|FW|2023|2026|2||run||USA|W
+Alyssa Thompson|S_CHE|11|FW|2025|2026|2||run|A|USA|W
+Tierna Davidson|S_GFC|12|DF|2019|2026|2||run||USA|W
+Christine Sinclair|S_POT|12|FW|2000|2024|4||kick||CAN|W
+Jessie Fleming|S_POT|17|MF|2015|2026|2||stiff||CAN|W
+Marta|S_ORP|10|FW|2002|2026|5|M|stiff||BRA|W
+Formiga|S_PSG|20|MF|1995|2021|3||run||BRA|W
+Birgit Prinz|S_FFC|9|FW|1993|2011|4|M|kick||GER|W
+Nadine Angerer|S_FFC|1|GK|1995|2015|3||catch||GER|W
+Alexandra Popp|S_VFL|11|FW|2008|2026|3||kick||GER|W
+Hege Riise|S_NOR|8|MF|1990|2004|3||kick||NOR|W
+Ada Hegerberg|S_OL|14|FW|2011|2026|4|M|kick||NOR|W
+Homare Sawa|S_INK|10|MF|1991|2015|4|M|kick||JPN|W
+Alexia Putellas|S_BAR|11|MF|2010|2026|5|M|stiff||ESP|W
+Aitana Bonmati|S_BAR|14|MF|2016|2026|5|M|stiff||ESP|W
+Jenni Hermoso|S_BAR|10|FW|2005|2026|3||kick||ESP|W
+Salma Paralluelo|S_BAR|7|FW|2019|2026|3||run||ESP|W
+Olga Carmona|S_RMA|7|DF|2019|2026|2||kick||ESP|W
+Kelly Smith|S_ARS|10|FW|1995|2017|3||kick||ENG|W
+Lucy Bronze|S_CHE|2|DF|2007|2026|3||run||ENG|W
+Beth Mead|S_ARS|9|FW|2011|2026|3||kick||ENG|W
+Leah Williamson|S_ARS|6|DF|2014|2026|3||run||ENG|W
+Mary Earps|S_MUN|27|GK|2010|2026|3||catch||ENG|W
+Chloe Kelly|S_ARS|18|FW|2015|2026|2||kick||ENG|W
+Alessia Russo|S_ARS|23|FW|2017|2026|3||kick||ENG|W
+Lauren James|S_CHE|10|FW|2018|2026|3||stiff||ENG|W
+Sam Kerr|S_CHE|20|FW|2008|2026|4||kick||AUS|W
+Wendie Renard|S_OL|3|DF|2006|2026|3||run||FRA|W
+Vivianne Miedema|S_ARS|11|FW|2013|2026|3||kick||NED|W
+Asisat Oshoala|S_BAR|9|FW|2013|2026|3||run||NGA|W
+Barbra Banda|S_ORP|22|FW|2018|2026|3||run||ZAM|W
+Linda Caicedo|S_RMA|18|FW|2019|2026|2||stiff||COL|W`;
+const P = (RAW+'\n'+RAW_MLB+'\n'+RAW_NFL+'\n'+RAW_EXTRA+'\n'+RAW_SOC).split('\n').map((l,i,arr)=>{
+  const [name,team,num,pos,s,e,tier,m,pose,x,nat,wm]=l.split('|');
+  const o={id:i,name,team,num,pos,start:+s,end:+e,tier:+tier,mvp:m==='M',pose,alt:x==='A',sport:team.startsWith('M_')?'mlb':team.startsWith('F_')?'nfl':team.startsWith('H_')?'nhl':team.startsWith('S_')?'soc':'nba'};
+  if(o.sport==='soc'){o.nat=nat;o.women=wm==='W'}return o;
 });
 const BY_NAME = {};P.forEach(p=>{if(!(p.name in BY_NAME))BY_NAME[p.name]=p}); // first one wins (two Reggie Jacksons)
-const BY_TIER_S = {nba:{1:[],2:[],3:[],4:[],5:[]},mlb:{1:[],2:[],3:[],4:[],5:[]},nfl:{1:[],2:[],3:[],4:[],5:[]},nhl:{1:[],2:[],3:[],4:[],5:[]}};
+const BY_TIER_S = {nba:{1:[],2:[],3:[],4:[],5:[]},mlb:{1:[],2:[],3:[],4:[],5:[]},nfl:{1:[],2:[],3:[],4:[],5:[]},nhl:{1:[],2:[],3:[],4:[],5:[]},soc:{1:[],2:[],3:[],4:[],5:[]}};
 P.forEach(p=>BY_TIER_S[p.sport][p.tier].push(p));
 const BY_TIER = BY_TIER_S.nba;
+
+/* =========================================================
+   THE OLD STADIUM: 500,000 soccer cards
+   ========================================================= */
+Object.assign(TEAMS,{
+  S_MUN:["Manchester", "United", "#DA291C", "#FBE122", "MUN"],
+  S_LIV:["Liverpool", "FC", "#C8102E", "#F6EB61", "LIV"],
+  S_ARS:["Arsenal", "FC", "#EF0107", "#FFFFFF", "ARS"],
+  S_CHE:["Chelsea", "FC", "#034694", "#FFFFFF", "CHE"],
+  S_MCI:["Manchester", "City", "#6CABDD", "#1C2C5B", "MCI"],
+  S_TOT:["Tottenham", "Hotspur", "#132257", "#FFFFFF", "TOT"],
+  S_EVE:["Everton", "FC", "#003399", "#FFFFFF", "EVE"],
+  S_NEW:["Newcastle", "United", "#241F20", "#FFFFFF", "NEW"],
+  S_AVL:["Aston", "Villa", "#670E36", "#95BFE5", "AVL"],
+  S_NFO:["Nottingham", "Forest", "#DD0000", "#FFFFFF", "NFO"],
+  S_LEE:["Leeds", "United", "#1D428A", "#FFCD00", "LEE"],
+  S_WHU:["West Ham", "United", "#7A263A", "#1BB1E7", "WHU"],
+  S_LEI:["Leicester", "City", "#003090", "#FDBE11", "LEI"],
+  S_WOL:["Wolverhampton", "Wanderers", "#FDB913", "#231F20", "WOL"],
+  S_BLP:["Blackpool", "FC", "#F68712", "#FFFFFF", "BLP"],
+  S_PNE:["Preston", "North End", "#0A1F44", "#FFFFFF", "PNE"],
+  S_BLA:["Blackburn", "Rovers", "#009EE0", "#FFFFFF", "BLA"],
+  S_FUL:["Fulham", "FC", "#111111", "#CC0000", "FUL"],
+  S_CEL:["Celtic", "FC", "#018749", "#FFFFFF", "CEL"],
+  S_RAN:["Rangers", "FC", "#1B458F", "#FFFFFF", "RAN"],
+  S_RMA:["Real", "Madrid", "#00529F", "#FEBE10", "RMA"],
+  S_BAR:["FC", "Barcelona", "#A50044", "#004D98", "BAR"],
+  S_ATM:["Atletico", "Madrid", "#CB3524", "#272E61", "ATM"],
+  S_VAL:["Valencia", "CF", "#EE3524", "#111111", "VAL"],
+  S_ATH:["Athletic", "Bilbao", "#EE2523", "#FFFFFF", "ATH"],
+  S_DEP:["Deportivo", "La Coruna", "#0055A4", "#FFFFFF", "DEP"],
+  S_JUV:["Juventus", "FC", "#111111", "#FFFFFF", "JUV"],
+  S_ACM:["AC", "Milan", "#FB090B", "#111111", "ACM"],
+  S_INT:["Inter", "Milan", "#0068A8", "#111111", "INT"],
+  S_ROM:["AS", "Roma", "#8E1F2F", "#F0BC42", "ROM"],
+  S_NAP:["SSC", "Napoli", "#12A0D7", "#FFFFFF", "NAP"],
+  S_LAZ:["SS", "Lazio", "#87D8F7", "#14234C", "LAZ"],
+  S_FIO:["Fiorentina", "ACF", "#482E92", "#FFFFFF", "FIO"],
+  S_CAG:["Cagliari", "Calcio", "#AB1C2B", "#00205B", "CAG"],
+  S_BAY:["Bayern", "Munich", "#DC052D", "#0066B2", "FCB"],
+  S_BVB:["Borussia", "Dortmund", "#FDE100", "#111111", "BVB"],
+  S_LEV:["Bayer", "Leverkusen", "#E32221", "#111111", "B04"],
+  S_HSV:["Hamburger", "SV", "#0A3F86", "#FFFFFF", "HSV"],
+  S_KAI:["Kaiserslautern", "FCK", "#C8102E", "#FFFFFF", "FCK"],
+  S_ESS:["Rot-Weiss", "Essen", "#C8102E", "#FFFFFF", "RWE"],
+  S_VFL:["VfL", "Wolfsburg", "#65B32E", "#FFFFFF", "WOB"],
+  S_FFC:["1. FFC", "Frankfurt", "#111111", "#E30613", "FFC"],
+  S_PSG:["Paris", "Saint-Germain", "#004170", "#DA291C", "PSG"],
+  S_OM:["Olympique", "Marseille", "#2FAEE0", "#FFFFFF", "OM"],
+  S_OL:["Olympique", "Lyonnais", "#1E3A8A", "#DA0812", "OL"],
+  S_MON:["AS", "Monaco", "#E51B22", "#FFFFFF", "ASM"],
+  S_REI:["Stade de", "Reims", "#E2001A", "#FFFFFF", "SDR"],
+  S_AJX:["Ajax", "Amsterdam", "#D2122E", "#FFFFFF", "AJX"],
+  S_PSV:["PSV", "Eindhoven", "#ED1C24", "#FFFFFF", "PSV"],
+  S_BEN:["SL", "Benfica", "#E83030", "#FFFFFF", "BEN"],
+  S_POR:["FC", "Porto", "#00428C", "#FFFFFF", "POR"],
+  S_SCP:["Sporting", "CP", "#008057", "#FFFFFF", "SCP"],
+  S_GAL:["Galatasaray", "SK", "#A90432", "#FDB912", "GAL"],
+  S_DYN:["Dynamo", "Moscow", "#0033A0", "#FFFFFF", "DYN"],
+  S_SAN:["Santos", "FC", "#111111", "#FFFFFF", "SAN"],
+  S_FLA:["Flamengo", "CR", "#C52613", "#111111", "FLA"],
+  S_PAL:["Palmeiras", "SE", "#006437", "#FFFFFF", "PAL"],
+  S_BOT:["Botafogo", "FR", "#111111", "#FFFFFF", "BOT"],
+  S_COR:["Corinthians", "SC", "#111111", "#FFFFFF", "COR"],
+  S_CRU:["Cruzeiro", "EC", "#003399", "#FFFFFF", "CRU"],
+  S_BOC:["Boca", "Juniors", "#103F79", "#F3B229", "BOC"],
+  S_RIV:["River", "Plate", "#EB192E", "#FFFFFF", "RIV"],
+  S_PEN:["Penarol", "CA", "#111111", "#FFD100", "PEN"],
+  S_NAC:["Nacional", "Montevideo", "#0033A0", "#E30613", "NAC"],
+  S_AME:["Club", "America", "#FFF200", "#002F6C", "AME"],
+  S_ANS:["Al-Nassr", "FC", "#FFE600", "#003DA5", "NSR"],
+  S_LAG:["LA", "Galaxy", "#00245D", "#FFD200", "LAG"],
+  S_MIA:["Inter", "Miami", "#F7B5CD", "#231F20", "MIA"],
+  S_SEA:["Seattle", "Sounders", "#5D9741", "#005595", "SEA"],
+  S_ATL:["Atlanta", "United", "#80000A", "#A19060", "ATL"],
+  S_LAFC:["Los Angeles", "FC", "#111111", "#C39E6D", "LAFC"],
+  S_NYRB:["New York", "Red Bulls", "#ED1E36", "#23326A", "NYRB"],
+  S_TFC:["Toronto", "FC", "#B81137", "#455560", "TOR"],
+  S_CLB:["Columbus", "Crew", "#FEDD00", "#111111", "CLB"],
+  S_DCU:["D.C.", "United", "#111111", "#EF3E42", "DC"],
+  S_NER:["New England", "Revolution", "#0A2240", "#CE0E2D", "NE"],
+  S_SJE:["San Jose", "Earthquakes", "#0067B1", "#111111", "SJ"],
+  S_TBM:["Tampa Bay", "Mutiny", "#E2231A", "#00205B", "TB"],
+  S_COS:["New York", "Cosmos", "#007A33", "#FFD700", "NYC"],
+  S_POT:["Portland", "Thorns", "#AF1F23", "#111111", "POR"],
+  S_NCC:["North Carolina", "Courage", "#01426A", "#AB0033", "NC"],
+  S_ORP:["Orlando", "Pride", "#633492", "#FFFFFF", "ORL"],
+  S_SDW:["San Diego", "Wave", "#032E62", "#F4A22E", "SD"],
+  S_GFC:["Gotham", "FC", "#0C1C2C", "#A5E2F4", "NJY"],
+  S_WSP:["Washington", "Spirit", "#111111", "#E31837", "WAS"],
+  S_SRF:["Seattle", "Reign", "#00205B", "#FDB913", "SEA"],
+  S_CHR:["Chicago", "Red Stars", "#41B6E6", "#C8102E", "CHI"],
+  S_ANG:["Angel City", "FC", "#F2B8B0", "#111111", "LA"],
+  S_KCC:["Kansas City", "Current", "#CF3339", "#62CBC9", "KC"],
+  S_WFR:["Washington", "Freedom", "#0A2240", "#C8102E", "WAS"],
+  S_SJC:["San Jose", "CyberRays", "#0067B1", "#E35205", "SJ"],
+  S_BBR:["Boston", "Breakers", "#0A2240", "#D50032", "BOS"],
+  S_INK:["INAC", "Kobe Leonessa", "#1E2A5A", "#E60012", "INK"],
+  S_USA:["USA", "National Team", "#0A3161", "#B31942", "USA"],
+  S_USW:["USA", "Women's National Team", "#0A3161", "#B31942", "USA"],
+  S_NOR:["Norway", "National Team", "#BA0C2F", "#00205B", "NOR"],
+  S_SHF:["Sheffield", "FC", "#B22234", "#111111", "SFC"],
+  S_BRN:["Barnes", "FC", "#7A1F2B", "#FFFFFF", "BRN"],
+  S_WAN:["Wanderers", "FC", "#E77D11", "#4B2A6B", "WAN"],
+  S_REG:["Royal", "Engineers", "#0A2A6B", "#C8102E", "RE"],
+  S_QPK:["Queen's", "Park", "#111111", "#FFFFFF", "QP"],
+  S_DKL:["Dick, Kerr", "Ladies", "#111111", "#FFFFFF", "DKL"],
+  S_BLF:["British", "Ladies FC", "#E6007E", "#14234C", "BLF"]
+});
+const SOC_NAT_T={USA:["USA", "Soccer", "#0A3161", "#B31942", "USA"],BRA:["Brazil", "Selecao", "#FEDD00", "#009C3B", "BRA"],ARG:["Argentina", "Albiceleste", "#75AADB", "#FFFFFF", "ARG"],GER:["Germany", "Nationalelf", "#FFFFFF", "#111111", "GER"],FRA:["France", "Les Bleus", "#002395", "#ED2939", "FRA"],ITA:["Italy", "Azzurri", "#0066B3", "#FFFFFF", "ITA"],ESP:["Spain", "La Roja", "#C60B1E", "#FFC400", "ESP"],ENG:["England", "Three Lions", "#FFFFFF", "#CF081F", "ENG"],URU:["Uruguay", "La Celeste", "#5CBFEB", "#111111", "URU"],NED:["Netherlands", "Oranje", "#F36C21", "#111111", "NED"],POR:["Portugal", "Seleccao", "#C8102E", "#046A38", "POR"],NOR:["Norway", "National Team", "#BA0C2F", "#00205B", "NOR"],JPN:["Japan", "Nadeshiko", "#0A1F7A", "#FFFFFF", "JPN"],MEX:["Mexico", "El Tri", "#006847", "#CE1126", "MEX"],CAN:["Canada", "National Team", "#D80621", "#FFFFFF", "CAN"]};
+const SUSA_T=['USA','Soccer','#0A3161','#B31942','USA'];
+const SOC_TW=[2,38,38,14,8];
+const SOC_WC={1930:["URU",["Jose Nasazzi", "Hector Scarone"]],1934:["ITA",["Giuseppe Meazza"]],1938:["ITA",["Giuseppe Meazza", "Silvio Piola"]],1950:["URU",["Obdulio Varela", "Alcides Ghiggia"]],1954:["GER",["Fritz Walter", "Helmut Rahn"]],1958:["BRA",["Pele", "Garrincha", "Didi", "Nilton Santos", "Djalma Santos"]],1962:["BRA",["Garrincha", "Didi", "Nilton Santos", "Djalma Santos", "Pele"]],1966:["ENG",["Bobby Charlton", "Bobby Moore", "Gordon Banks", "Geoff Hurst", "Martin Peters", "Roger Hunt", "Nobby Stiles", "Alan Ball", "Jack Charlton"]],1970:["BRA",["Pele", "Jairzinho", "Carlos Alberto", "Rivelino", "Tostao"]],1974:["GER",["Franz Beckenbauer", "Gerd Muller", "Sepp Maier", "Paul Breitner"]],1978:["ARG",["Mario Kempes", "Daniel Passarella"]],1982:["ITA",["Paolo Rossi", "Dino Zoff"]],1986:["ARG",["Diego Maradona"]],1990:["GER",["Lothar Matthaus", "Andreas Brehme", "Rudi Voller", "Jurgen Klinsmann"]],1994:["BRA",["Romario", "Bebeto", "Cafu"]],1998:["FRA",["Zinedine Zidane", "Thierry Henry", "Didier Deschamps", "Marcel Desailly", "Lilian Thuram", "Fabien Barthez", "Patrick Vieira", "Robert Pires"]],2002:["BRA",["Ronaldo Nazario", "Rivaldo", "Ronaldinho", "Cafu", "Roberto Carlos", "Kaka"]],2006:["ITA",["Fabio Cannavaro", "Gianluigi Buffon", "Andrea Pirlo", "Alessandro Del Piero", "Francesco Totti", "Alessandro Nesta", "Gennaro Gattuso"]],2010:["ESP",["Iker Casillas", "Xavi", "Andres Iniesta", "Carles Puyol", "Sergio Ramos", "Gerard Pique", "Sergio Busquets", "Xabi Alonso", "David Villa", "Fernando Torres"]],2014:["GER",["Manuel Neuer", "Philipp Lahm", "Bastian Schweinsteiger", "Thomas Muller", "Toni Kroos", "Mesut Ozil", "Mario Gotze", "Miroslav Klose", "Jerome Boateng", "Mats Hummels"]],2018:["FRA",["Kylian Mbappe", "Antoine Griezmann", "Paul Pogba", "N'Golo Kante", "Hugo Lloris", "Raphael Varane"]],2022:["ARG",["Lionel Messi", "Emiliano Martinez", "Julian Alvarez", "Enzo Fernandez", "Alexis Mac Allister", "Angel Di Maria", "Lautaro Martinez", "Rodrigo De Paul", "Nicolas Otamendi", "Cristian Romero"]]},SOC_WWC={1991:["USA",["Michelle Akers", "Mia Hamm", "Kristine Lilly", "Julie Foudy", "Brandi Chastain", "Joy Fawcett", "Carla Overbeck"]],1995:["NOR",["Hege Riise"]],1999:["USA",["Mia Hamm", "Michelle Akers", "Brandi Chastain", "Briana Scurry", "Kristine Lilly", "Julie Foudy", "Joy Fawcett", "Carla Overbeck", "Tiffeny Milbrett", "Christie Rampone"]],2003:["GER",["Birgit Prinz", "Nadine Angerer"]],2007:["GER",["Birgit Prinz", "Nadine Angerer"]],2011:["JPN",["Homare Sawa"]],2015:["USA",["Carli Lloyd", "Abby Wambach", "Megan Rapinoe", "Alex Morgan", "Hope Solo", "Becky Sauerbrunn", "Tobin Heath", "Julie Ertz", "Christen Press", "Kelley O'Hara", "Christie Rampone"]],2019:["USA",["Megan Rapinoe", "Alex Morgan", "Carli Lloyd", "Rose Lavelle", "Julie Ertz", "Becky Sauerbrunn", "Crystal Dunn", "Tobin Heath", "Alyssa Naeher", "Kelley O'Hara", "Christen Press", "Lindsey Horan", "Mallory Swanson"]],2023:["ESP",["Aitana Bonmati", "Alexia Putellas", "Jenni Hermoso", "Salma Paralluelo", "Olga Carmona"]]};
+// who won what: pid -> [World Cup years]
+const SOC_CHAMP={};[SOC_WC,SOC_WWC].forEach(T=>Object.entries(T).forEach(([y,[cc,ns]])=>ns.forEach(n=>{const p=P.find(q=>q.name===n&&q.sport==='soc'&&!q.alt);if(p)(SOC_CHAMP[p.id]=SOC_CHAMP[p.id]||[]).push(+y)})));
+const SOC_CHAMP_PIDS=Object.keys(SOC_CHAMP).map(Number);
+const socChampNat=(pid,y)=>{const T=P[pid].women?SOC_WWC:SOC_WC;return (T[y]||[P[pid].nat])[0]};
+function socChampCard(pid){if(pid==null||!SOC_CHAMP[pid])pid=wpick(SOC_CHAMP_PIDS,id=>[0,1,2,3,5,8][P[id].tier]);return {pid,year:pick(SOC_CHAMP[pid]),par:11}}
+// Team USA soccer: men at World Cups, women at World Cups and Olympics
+const SOC_USA_YRS={m:[1930,1934,1950,1990,1994,1998,2002,2006,2010,2014,2022,2026],w:[1991,1995,1996,1999,2000,2003,2004,2007,2008,2011,2012,2015,2016,2019,2021,2023,2024]};
+const SOC_USA={};P.forEach(p=>{if(p.sport!=='soc'||p.alt||p.nat!=='USA')return;const ys=SOC_USA_YRS[p.women?'w':'m'].filter(y=>y>=p.start&&y<=p.end);if(ys.length)SOC_USA[p.id]=ys});
+const SOC_USA_PIDS=Object.keys(SOC_USA).map(Number);
+function socUsaCard(pid){if(pid==null||!SOC_USA[pid])pid=wpick(SOC_USA_PIDS,id=>[0,1,2,3,5,8][P[id].tier]);return {pid,year:pick(SOC_USA[pid]),par:12}}
+// twelve legends, hidden somewhere in the stadium
+const SOC_ONES=[['Lionel Messi',2004],['Cristiano Ronaldo',2003],['Pele',1958],['Kylian Mbappe',2018],['Diego Maradona',1986],['Ronaldo Nazario',2002],
+  ['Mia Hamm',1999],['Brandi Chastain',1999],['Alex Morgan',2015],['Abby Wambach',2015],['Megan Rapinoe',2019],['Marta',2007]];
+const socOne=i=>{const [n,y]=SOC_ONES[i];return {pid:P.find(p=>p.name===n&&p.sport==='soc'&&!p.alt).id,year:y,par:6}};
+const SOC_ONE_NOTES={'Lionel Messi':"Messi, 2004. His first year with the big team in Barcelona. He was seventeen and smaller than everybody on the field, and nobody could take the ball off him. I knew right then.",
+  'Cristiano Ronaldo':"Ronaldo, 2003. A skinny kid from Madeira with a lot of step-overs. Manchester United paid a fortune for him and everybody laughed. Nobody's laughing now.",
+  'Pele':"Pele, 1958. Seventeen years old at the World Cup in Sweden. He cried on the field when Brazil won. I heard it on the radio in my dad's kitchen.",
+  'Kylian Mbappe':"Mbappe, 2018. Nineteen years old and he scored in a World Cup final. The fastest player I ever saw, and I saw a lot of fast players.",
+  'Diego Maradona':"Maradona, 1986. Mexico City. He dribbled past half of England for the best goal anybody ever scored. Watch the video. Then watch it again.",
+  'Ronaldo Nazario':"Ronaldo, the Brazilian one. 2002. Two goals in the World Cup final and the funniest haircut in history.",
+  'Mia Hamm':"Mia Hamm, 1999. Ninety thousand people at the Rose Bowl to watch women's soccer. Every little girl in America wanted to be her. A lot of little boys too.",
+  'Brandi Chastain':"Brandi Chastain, 1999. The last penalty in the World Cup final. She took her shirt off and swung it over her head, and the whole country lost its mind.",
+  'Alex Morgan':"Alex Morgan, 2015. World champion in Vancouver. She scored on her birthday once, too. Some people have all the luck, and she earned all of hers.",
+  'Abby Wambach':"Abby Wambach, 2015. Nobody in the world ever scored more headers. She finally won her World Cup in her last try.",
+  'Megan Rapinoe':"Megan Rapinoe, 2019. Arms out wide in France after every goal. Best player in the world that summer.",
+  'Marta':"Marta, 2007. Brazil's number ten. Six times the best player on the planet. Pele said she was the best he'd seen. That's a lot coming from him."};
+
 /* ---------- the garage: WNBA, Team USA and college cards ---------- */
 const isWNBA=p=>p.team.startsWith('W_');
 const NEW_PID=BY_NAME['Bob Davies'].id; // first player added with the garage
@@ -2938,15 +3528,15 @@ const HNAT={},HOLY={};Object.entries(NAT_LIST).forEach(([cc,ns])=>ns.forEach(n=>
     if(yrs.length){const bn=BY_NAME[ps[0].name];const main=bn&&bn.sport==='nhl'?bn:ps[0];HNAT[main.id]=cc;HOLY[main.id]=yrs}})})();
 const HOLY_PIDS=Object.keys(HOLY).map(Number);
 function hockeyOlyCard(pid){if(pid==null||!HOLY[pid])pid=wpick(HOLY_PIDS,id=>[0,1,2,4,6,9][P[id].tier]);return {pid,year:pick(HOLY[pid]),par:14}}
-const tOf=c=>c.par===14&&HNAT[c.pid]?OLY_T[HNAT[c.pid]]:c.par===12?USA_T:c.par===13&&COLLEGE_OF[c.pid]?COLLEGES[COLLEGE_OF[c.pid]]:TEAMS[P[c.pid].team];
+const tOf=c=>P[c.pid].sport==='soc'&&(c.par===11||c.par===12)?(c.par===12?SUSA_T:SOC_NAT_T[socChampNat(c.pid,c.year)]||TEAMS[P[c.pid].team]):c.par===14&&HNAT[c.pid]?OLY_T[HNAT[c.pid]]:c.par===12?USA_T:c.par===13&&COLLEGE_OF[c.pid]?COLLEGES[COLLEGE_OF[c.pid]]:TEAMS[P[c.pid].team];
 function usaCard(pid){if(pid==null||!OLY_OF[pid])pid=wpick(OLY_PIDS,id=>[0,1,2,3,4,6][P[id].tier]);return {pid,year:pick(OLY_OF[pid]),par:12}}
 function collegeCard(pid){if(pid==null||!COLLEGE_OF[pid])pid=wpick(COLLEGE_PIDS,id=>[0,1,2,3,4,6][P[id].tier]);return {pid,year:P[pid].start,par:13}}
-const LOCS={shed:{name:'Shed',long:"Grandpa's Shed",sport:'nba',size:10000,label:'Basketball'},attic:{name:'Attic',long:"Grandpa's Attic",sport:'mlb',size:25000,label:'Baseball'},barn:{name:'Barn',long:"Grandpa's Barn",sport:'nfl',size:50000,label:'Football'},garage:{name:'Garage',long:"Grandpa's Garage",sport:'nba',size:75000,label:'Basketball'},basement:{name:'Basement',long:"Grandpa's Basement",sport:'mix',size:100000,label:'Lost teams'},rink:{name:'Ice Rink',long:'The Old Ice Rink',sport:'nhl',size:250000,label:'Hockey'}};
-const LOOSE_ID={attic:'loose',barn:'floose',garage:'gloose',rink:'rloose'},BOXW={attic:['box','boxes'],barn:['crate','crates'],garage:['bin','bins'],rink:['box','boxes']};
-const packLoc=sp=>sp==='nba'&&S.garageOpen?'garage':sp==='nhl'?(S.rinkOpen?'rink':null):SPORT_LOC[sp]||'shed';
-const SPORT_LOC={nba:'shed',mlb:'attic',nfl:'barn',nhl:'rink'},SPORT_WORD={nba:'Basketball',mlb:'Baseball',nfl:'Football',nhl:'Hockey'},SPORT_ICON={nba:'🏀',mlb:'⚾',nfl:'🏈',nhl:'🏒'};
+const LOCS={shed:{name:'Shed',long:"Grandpa's Shed",sport:'nba',size:10000,label:'Basketball'},attic:{name:'Attic',long:"Grandpa's Attic",sport:'mlb',size:25000,label:'Baseball'},barn:{name:'Barn',long:"Grandpa's Barn",sport:'nfl',size:50000,label:'Football'},garage:{name:'Garage',long:"Grandpa's Garage",sport:'nba',size:75000,label:'Basketball'},basement:{name:'Basement',long:"Grandpa's Basement",sport:'mix',size:100000,label:'Lost teams'},rink:{name:'Ice Rink',long:'The Old Ice Rink',sport:'nhl',size:250000,label:'Hockey'},stadium:{name:'Stadium',long:'The Old Stadium',sport:'soc',size:500000,label:'Soccer'}};
+const LOOSE_ID={attic:'loose',barn:'floose',garage:'gloose',rink:'rloose',stadium:'zloose'},BOXW={attic:['box','boxes'],barn:['crate','crates'],garage:['bin','bins'],rink:['box','boxes'],stadium:['locker','lockers']};
+const packLoc=sp=>sp==='nba'&&S.garageOpen?'garage':sp==='nhl'?(S.rinkOpen?'rink':null):sp==='soc'?(S.stadiumOpen?'stadium':null):SPORT_LOC[sp]||'shed';
+const SPORT_LOC={nba:'shed',mlb:'attic',nfl:'barn',nhl:'rink',soc:'stadium'},SPORT_WORD={nba:'Basketball',mlb:'Baseball',nfl:'Football',nhl:'Hockey',soc:'Soccer'},SPORT_ICON={nba:'🏀',mlb:'⚾',nfl:'🏈',nhl:'🏒',soc:'⚽'};
 const locOf=pid=>{const p=P[pid];if(p.sport==='nhl'&&typeof DEF!=='undefined'&&DEF[p.team])return 'basement';return SPORT_LOC[p.sport]||'shed'};
-function openSports(){return ['nba'].concat(S.atticOpen?['mlb']:[],S.barnOpen?['nfl']:[],S.basementOpen?['nhl']:[])}
+function openSports(){return ['nba'].concat(S.atticOpen?['mlb']:[],S.barnOpen?['nfl']:[],S.basementOpen?['nhl']:[],S.stadiumOpen?['soc']:[])}
 
 // the Giants' three title teams (used by the Champs cards and the Champs sets)
 // ---- Warriors vs Cavs: four straight Finals, 2015 to 2018
@@ -3103,6 +3693,26 @@ const SETS = [
   {id:'fmvp',sport:'nfl',name:'Every MVP (Football)',hint:'Grandpa circled every one in the Sunday paper.',m:P.filter(p=>p.mvp&&p.sport==='nfl').map(p=>p.name)},
   ...(()=>{const by={};P.filter(p=>p.sport==='nfl'&&p.pos==='QB'&&p.start<=2026).forEach(p=>(by[p.start]=by[p.start]||[]).push(p.name));
     return [{id:'rq1983',sport:'nfl',rc:true,name:"The QB Class of '83",hint:'Rookie cards only. Elway, Marino and Kelly all came out of the same draft.',m:['John Elway','Dan Marino','Jim Kelly']}].concat(Object.keys(by).filter(y=>+y>=1998&&(by[y].length>=3||+y===2026)).map(y=>({id:'rq'+y,sport:'nfl',rc:true,name:`Rookie QBs of ${y}`,hint:`Rookie cards only. Every quarterback who started out in ${y}.`,m:by[y]})))})(),
+  // ---------- soccer (the old stadium) ----------
+  {id:'sballon',stad:1,sport:'soc',name:"Ballon d'Or",hint:'The best player in the world, year after year.',m:[...new Set(P.filter(p=>p.mvp&&p.sport==='soc'&&!p.women).map(p=>p.name))]},
+  {id:'sballonw',stad:1,sport:'soc',name:"Ballon d'Or Feminin",hint:'The best women in the world.',m:[...new Set(P.filter(p=>p.mvp&&p.sport==='soc'&&p.women).map(p=>p.name))]},
+  {id:'sfound',stad:1,sport:'soc',name:'The Founders',hint:'Sheffield, 1857. A London pub, 1863. The very first rules, the very first Cup.',m:['Nathaniel Creswick','William Prest','Ebenezer Cobb Morley','Charles W. Alcock','Arthur Kinnaird','Morton Betts','Francis Marindin','Robert Gardner','Andrew Watson']},
+  {id:'spioneer',stad:1,sport:'soc',name:'Pioneers of the Women\'s Game',hint:'Ladies played to crowds of fifty thousand, a hundred years ago.',m:['Nettie Honeyball','Lily Parr','Michelle Akers','Mia Hamm','Birgit Prinz','Homare Sawa','Marta']},
+  {id:'sgalac',stad:1,sport:'soc',name:'Los Galacticos',hint:'Madrid bought every superstar it could find.',m:['Zinedine Zidane@S_RMA','Luis Figo@S_RMA','Ronaldo Nazario@S_RMA','David Beckham@S_RMA','Raul','Roberto Carlos','Iker Casillas']},
+  {id:'smsn',stad:1,sport:'soc',name:'MSN',hint:'The best front three ever, in Barcelona.',m:['Lionel Messi@S_BAR','Luis Suarez@S_BAR','Neymar@S_BAR']},
+  {id:'stiki',stad:1,sport:'soc',name:'Tiki-Taka',hint:'Pass, pass, pass, goal. Barcelona and Spain, 2008 to 2012.',m:['Xavi','Andres Iniesta','Sergio Busquets@S_BAR','Carles Puyol','Gerard Pique','David Villa','Lionel Messi@S_BAR','Dani Alves']},
+  {id:'s99ers',stad:1,sport:'soc',name:'The 99ers',hint:'Ninety thousand at the Rose Bowl. One penalty to win it.',m:['Mia Hamm','Brandi Chastain','Michelle Akers','Kristine Lilly','Julie Foudy','Joy Fawcett','Carla Overbeck','Briana Scurry','Tiffeny Milbrett','Christie Rampone']},
+  {id:'sinvin',stad:1,sport:'soc',name:'The Invincibles',hint:'Arsenal went a whole season without losing.',m:['Thierry Henry@S_ARS','Dennis Bergkamp','Patrick Vieira','Robert Pires']},
+  {id:'sclass92',stad:1,sport:'soc',name:"Class of '92",hint:'The kids Manchester United grew themselves.',m:['David Beckham@S_MUN','Paul Scholes','Ryan Giggs']},
+  {id:'stotal',stad:1,sport:'soc',name:'Total Football',hint:'Everybody plays everywhere. Amsterdam, 1970s.',m:['Johan Cruyff@S_AJX','Johan Neeskens']},
+  {id:'sitaly',stad:1,sport:'soc',name:'The Wall of Milan',hint:'Nobody scored on these guys.',m:['Franco Baresi','Paolo Maldini','Alessandro Nesta','Frank Rijkaard','Marco van Basten','Ruud Gullit']},
+  {id:'skeep',stad:1,sport:'soc',name:'Great Goalkeepers',hint:'The last line.',m:['Lev Yashin','Gordon Banks','Dino Zoff','Sepp Maier','Peter Schmeichel','Oliver Kahn','Gianluigi Buffon','Iker Casillas','Manuel Neuer','Hope Solo','Briana Scurry']},
+  {id:'smls',stad:1,sport:'soc',name:'Stars Who Came to MLS',hint:'They crossed the ocean to play in America.',m:['Pele@S_COS','Franz Beckenbauer@S_COS','David Beckham@S_LAG','Thierry Henry@S_NYRB','Zlatan Ibrahimovic@S_LAG','Lionel Messi@S_MIA','Wayne Rooney@S_DCU','Son Heung-min@S_LAFC']},
+  {id:'snow',stad:1,sport:'soc',name:'The Kids Running the World Now',hint:'Today\'s young superstars.',m:['Lamine Yamal','Jude Bellingham@S_RMA','Jamal Musiala','Florian Wirtz@S_LEV','Erling Haaland@S_MCI','Kylian Mbappe@S_PSG','Vinicius Junior','Pedri','Cole Palmer','Bukayo Saka']},
+  ...Object.entries(SOC_WC).map(([y,[cc,ns]])=>({id:'swc'+y,sport:'soc',stad:1,champYr:+y,name:`${y} World Cup: ${SOC_NAT_T[cc]?SOC_NAT_T[cc][0]:cc}`,hint:`The ${y} World Cup winners, on their World Cup Champs cards.`,m:ns})),
+  ...Object.entries(SOC_WWC).map(([y,[cc,ns]])=>({id:'swwc'+y,sport:'soc',stad:1,champYr:+y,name:`${y} Women's World Cup: ${SOC_NAT_T[cc]?SOC_NAT_T[cc][0]:cc}`,hint:`The ${y} Women's World Cup winners, on their World Cup Champs cards.`,m:ns})),
+  {id:'susmnt',sport:'soc',stad:1,vpar:12,name:'Team USA Soccer: Men',hint:'Team USA cards only.',m:SOC_USA_PIDS.filter(id=>!P[id].women).map(id=>P[id].name)},
+  {id:'suswnt',sport:'soc',stad:1,vpar:12,name:'Team USA Soccer: Women',hint:'Team USA cards only. Four World Cups and counting.',m:SOC_USA_PIDS.filter(id=>P[id].women).map(id=>P[id].name)},
 ].map(s=>({...s,pids:s.m.map(n=>{const [nm,tm]=n.split('@');return tm?P.find(p=>p.name===nm&&p.team===tm)?.id:BY_NAME[nm]?.id}).filter(v=>v!==undefined)}));
 const SETD=Object.fromEntries(SETS.map(s=>[s.id,s]));
 // rookie cards held, by player (rebuilt from the binder on load)
@@ -3183,6 +3793,13 @@ const PACKS = [
   {id:'dmlb',sport:'mlb',kind:'delight',box:true,cls:'w-box w-delight w-delightb',title:"BREAKER'S DELIGHT",sub:'Baseball',name:"Breaker's Delight: Baseball",cost:4000,n:10,lv:3,desc:'10 cards, every one numbered, autographed or a relic, from today\'s stars. About 1 box in 40 has a Superfractor 1/1.'},
   {id:'sfg',sport:'mlb',kind:'sfg',cls:'w-sfg',title:'ORANGE & BLACK',sub:'Giants dynasty',name:'Giants Dynasty Pack',cost:45,n:6,lv:3,desc:'6 Giants cards from the 2010, 2012 and 2014 champions. One World Series Champs card guaranteed.'},
   {id:'gscle',sport:'nba',kind:'gscle',cls:'w-gscle',title:'THE FINALS',sub:'Warriors vs Cavs',name:'Warriors vs Cavs Rivalry Pack',cost:45,n:6,lv:3,desc:'6 cards from four straight Finals, 2015 to 2018. One NBA Champs card guaranteed.'},
+  {id:'sretail',sport:'soc',kind:'retail',cls:'w-sretail',title:'KICKOFF',sub:'Soccer hanger',name:'Soccer Hanger',cost:8,n:6,lv:3,desc:'6 soccer cards, 1996 to today. Base cards go in the stadium\'s loose locker.'},
+  {id:'shobby',sport:'soc',kind:'hobby',cls:'w-hobby',title:'CHROMIUM',sub:'Soccer hobby',name:'Soccer Hobby Pack',cost:35,n:8,lv:3,desc:'8 soccer cards from any era. One hit guaranteed.'},
+  {id:'svintage',sport:'soc',kind:'vintage',cls:'w-svintage',title:'TOUCHLINE',sub:'Soccer 1950–1979',name:'Soccer Vintage Wax',cost:90,n:10,lv:3,desc:'10 soccer cards from the 50s, 60s and 70s. Pele, Eusebio and Best live in here.'},
+  {id:'sblaster',sport:'soc',kind:'blaster',box:true,cls:'w-box w-sblaster',title:'KICKOFF',sub:'Soccer blaster',name:'Kickoff Soccer Blaster',cost:90,n:24,lv:3,desc:'6 packs, 24 soccer cards from today\'s players. About 3 refractors and 6 more inserts or parallels.'},
+  {id:'smega',sport:'soc',kind:'mega',box:true,cls:'w-box w-smega',title:'KICKOFF',sub:'Soccer mega',name:'Kickoff Soccer Mega',cost:150,n:60,lv:3,desc:'6 packs, 60 soccer cards. About 14 refractors and 6 inserts or parallels.'},
+  {id:'shobbybox',sport:'soc',kind:'hobbybox',box:true,cls:'w-box w-shobbybox',title:'KICKOFF',sub:'Soccer hobby box',name:'Kickoff Soccer Hobby Box',cost:900,n:144,lv:3,desc:'12 packs, 144 soccer cards. 2 autographs guaranteed, about 22 parallels and 10 inserts.'},
+  {id:'dsoc',sport:'soc',kind:'delight',box:true,cls:'w-box w-delight w-delights',title:"BREAKER'S DELIGHT",sub:'Soccer',name:"Breaker's Delight: Soccer",cost:4000,n:10,lv:3,desc:'10 cards, every one numbered, autographed or a relic, from today\'s stars, men and women. About 1 box in 40 has a Superfractor 1/1.'},
   {id:'hretail',sport:'nhl',kind:'retail',cls:'w-hretail',title:'BREAKAWAY',sub:'Hockey hanger',name:'Hockey Hanger',cost:8,n:6,lv:3,desc:'6 hockey cards, 1996 to today. Base cards go in the rink\'s loose box.'},
   {id:'hhobby',sport:'nhl',kind:'hobby',cls:'w-hobby',title:'CHROMIUM',sub:'Hockey hobby',name:'Hockey Hobby Pack',cost:35,n:8,lv:3,desc:'8 hockey cards from any era. One hit guaranteed.'},
   {id:'hvintage',sport:'nhl',kind:'vintage',cls:'w-hvintage',title:'FACEOFF',sub:'Hockey 1950–1979',name:'Hockey Vintage Wax',cost:90,n:10,lv:3,desc:'10 hockey cards from the 50s, 60s and 70s. Original Six legends live in here.'},
@@ -3404,11 +4021,11 @@ const GRADE_MULT={10:8,9:3,8:1.6,7:1.1,6:.9,5:.7,4:.55,3:.45,2:.35,1:.25};
 const GRADE_WORD={10:'GEM MT',9:'MINT',8:'NM-MT',7:'NM',6:'EX-MT',5:'EX',4:'VG-EX',3:'VG',2:'GOOD',1:'POOR'};
 const isRC=c=>c.year===P[c.pid].start&&!P[c.pid].alt;
 const modern=c=>c.year>=1996;
-const parName=c=>c.par===11&&P[c.pid]&&P[c.pid].sport==='nba'?'NBA Champs':(modern(c)?PAR_MODERN:PAR_VINTAGE)[c.par];
-function brand(y,sp){const e=eraOf(y);return (sp==='nhl'?{V:'Grandstand',S:'Faceoff',H:'Blue Line',C:'Power Play',X:'Chromium',B:'Breakaway',P:'Spectra'}:sp==='nfl'?{V:'Grandstand',S:'Gridiron',H:'Endzone',C:'Blitz',X:'Chromium',B:'Playbook',P:'Spectra'}:sp==='mlb'?{V:'Grandstand',S:'Leadoff',H:'Diamond',C:'Dugout',X:'Chromium',B:'Bullpen',P:'Spectra'}:{V:'Grandstand',S:'Tip-Off',H:'Hardwood',C:'Courtside',X:'Chromium',B:'Baseline',P:'Spectra'})[e]}
+const parName=c=>c.par===11&&P[c.pid]&&P[c.pid].sport==='soc'?'World Cup Champs':c.par===12&&P[c.pid]&&P[c.pid].sport==='soc'?'Team USA':c.par===11&&P[c.pid]&&P[c.pid].sport==='nba'?'NBA Champs':(modern(c)?PAR_MODERN:PAR_VINTAGE)[c.par];
+function brand(y,sp){const e=eraOf(y);return (sp==='soc'?{V:'Grandstand',S:'Touchline',H:'Pitchside',C:'Golazo',X:'Chromium',B:'Kickoff',P:'Spectra'}:sp==='nhl'?{V:'Grandstand',S:'Faceoff',H:'Blue Line',C:'Power Play',X:'Chromium',B:'Breakaway',P:'Spectra'}:sp==='nfl'?{V:'Grandstand',S:'Gridiron',H:'Endzone',C:'Blitz',X:'Chromium',B:'Playbook',P:'Spectra'}:sp==='mlb'?{V:'Grandstand',S:'Leadoff',H:'Diamond',C:'Dugout',X:'Chromium',B:'Bullpen',P:'Spectra'}:{V:'Grandstand',S:'Tip-Off',H:'Hardwood',C:'Courtside',X:'Chromium',B:'Baseline',P:'Spectra'})[e]}
 function eraOf(y){return y<1970?'V':y<1980?'S':y<1990?'H':y<1996?'C':y<2006?'X':y<2016?'B':'P'}
 // today's hottest names in the hobby
-const HOT={'Caitlin Clark':4,'Paige Bueckers':3,"A'ja Wilson":1.6,'Angel Reese':1.6,'Matas Buzelis':1.3,'Jared McCain':1.3,'Cooper Flagg':6,'Victor Wembanyama':6,'LeBron James':3,'Stephen Curry':3,'AJ Dybantsa':3,'Kon Knueppel':2.5,'Shai Gilgeous-Alexander':2.5,'Luka Doncic':2.5,'Darryn Peterson':2.5,'Anthony Edwards':2.2,'Michael Jordan':2,'Kobe Bryant':2,'Giannis Antetokounmpo':2,'Nikola Jokic':2,'Cameron Boozer':2,'Kevin Durant':1.8,'Jayson Tatum':1.5,'Jalen Brunson':1.5,'Paolo Banchero':1.5,'Ja Morant':1.3,'Yaxel Lendeborg':1.5,
+const HOT={'Lionel Messi':3,'Cristiano Ronaldo':3,'Lamine Yamal':3,'Kylian Mbappe':2.5,'Erling Haaland':2.5,'Jude Bellingham':2,'Vinicius Junior':1.8,'Pele':2,'Diego Maradona':2,'Christian Pulisic':1.5,'Trinity Rodman':1.5,'Sophia Smith':1.5,'Alex Morgan':1.5,'Mia Hamm':1.5,'Caitlin Clark':4,'Paige Bueckers':3,"A'ja Wilson":1.6,'Angel Reese':1.6,'Matas Buzelis':1.3,'Jared McCain':1.3,'Cooper Flagg':6,'Victor Wembanyama':6,'LeBron James':3,'Stephen Curry':3,'AJ Dybantsa':3,'Kon Knueppel':2.5,'Shai Gilgeous-Alexander':2.5,'Luka Doncic':2.5,'Darryn Peterson':2.5,'Anthony Edwards':2.2,'Michael Jordan':2,'Kobe Bryant':2,'Giannis Antetokounmpo':2,'Nikola Jokic':2,'Cameron Boozer':2,'Kevin Durant':1.8,'Jayson Tatum':1.5,'Jalen Brunson':1.5,'Paolo Banchero':1.5,'Ja Morant':1.3,'Yaxel Lendeborg':1.5,
   'Patrick Mahomes':3,'Tom Brady':2.5,'Josh Allen':2.5,'Lamar Jackson':2.5,'Jayden Daniels':2.5,'Joe Burrow':2,'Travis Hunter':2.5,'Fernando Mendoza':2.5,'Cam Ward':2,'Ashton Jeanty':2,'Jeremiyah Love':2,'Drake Maye':2,"Ja'Marr Chase":2,'Justin Jefferson':2,'Brock Bowers':1.8,'Puka Nacua':1.8,'Caleb Williams':1.8,'Malik Nabers':1.8,'Saquon Barkley':1.8,'Travis Kelce':2,'Micah Parsons':1.5,'C.J. Stroud':1.5,'Joe Montana':1.5,'Jerry Rice':1.5,'Jim Brown':1.5,'Walter Payton':1.5,'Johnny Unitas':1.5,
   'Shohei Ohtani':12.5,'Buster Posey':1.6,'Tim Lincecum':1.3,'Madison Bumgarner':1.3,'VJ Edgecombe':2,'Ace Bailey':1.5,'Koa Peat':1.3,'Caleb Wilson':1.8,'Mikel Brown Jr.':1.5,'Keaton Wagler':1.5,'Aaron Judge':3,'Paul Skenes':3,'Bobby Witt Jr.':2.2,'Juan Soto':2,'Elly De La Cruz':2,'Mike Trout':2,'Ken Griffey Jr.':1.8,'Julio Rodriguez':1.5,'Gunnar Henderson':1.5,'Cal Raleigh':1.5,'Mickey Mantle':1.5};
 const SF_TOP={'Caitlin Clark':120000,'Shohei Ohtani':300000,'Cooper Flagg':200000,'Victor Wembanyama':180000,'Stephen Curry':150000,'LeBron James':150000,'Kon Knueppel':100000};
@@ -3478,7 +4095,7 @@ function rollCard(o={}){
   const tw=o.tw||[45,30,15,7,3];
   let tier=wpick([1,2,3,4,5],t=>tw[t-1]);
   if(o.minTier)tier=Math.max(tier,o.minTier);
-  const sp=o.sport||'nba';while(!BY_TIER_S[sp][tier].length&&tier<5)tier++;let pool=BY_TIER_S[sp][tier];if(o.filter){const f=pool.filter(o.filter);if(f.length)pool=f}
+  const sp=o.sport||'nba';if(sp==='soc'&&tier===1&&Math.random()<.95)tier=2;while(!BY_TIER_S[sp][tier].length&&tier<5)tier++;let pool=BY_TIER_S[sp][tier];if(o.filter){const f=pool.filter(o.filter);if(f.length)pool=f}
   const p=wpick(pool,q=>o.shed?(q.start<2000?2:1):1);
   let lo=Math.max(p.start,o.yLo||0),hi=Math.min(p.end,o.yHi||2026);if(lo>hi){lo=p.start;hi=p.end}
   const year=Math.random()<.15?lo:lo+Math.floor(Math.random()*(hi-lo+1));
@@ -3497,10 +4114,10 @@ function oneOfOne(){
   const year=p.start+Math.floor(Math.random()*Math.min(4,p.end-p.start+1));
   return {pid:p.id,year,par:6};
 }
-function hideOne(){if(S.loc==='basement'||(S.loc==='rink'&&(S.rinkBoxes||[]).some(b=>b.one))){S.oneLeft=null;return}S.oneLeft=S.pile>1?Math.floor(S.pile*rnd(.15,.7)):0}
+function hideOne(){if(S.loc==='basement'||S.loc==='stadium'||(S.loc==='rink'&&(S.rinkBoxes||[]).some(b=>b.one))){S.oneLeft=null;return}S.oneLeft=S.pile>1?Math.floor(S.pile*rnd(.15,.7)):0}
 function addToPile(loc,n){if(!n)return;const rb=boxedRoom(loc)&&roomBoxes(loc);if(rb){let lb=rb.find(b=>b.loose);if(!lb){lb={id:LOOSE_ID[loc],label:'Loose cards from packs',loose:true,total:0,left:0};rb.push(lb)}lb.total+=n;lb.left+=n}if(S.loc===loc){S.pile+=n;if(S.level>=6&&S.oneLeft===null&&S.pile>0&&!(S.oneDone||{})[loc])hideOne()}else{const pl=S.places[loc];if(pl)pl.pile+=n}}
 function switchLoc(to){
-  if(to===S.loc||(to==='attic'&&!S.atticOpen)||(to==='barn'&&!S.barnOpen)||(to==='garage'&&!S.garageOpen)||(to==='basement'&&!S.basementOpen)||(to==='rink'&&!S.rinkOpen))return;
+  if(to===S.loc||(to==='attic'&&!S.atticOpen)||(to==='barn'&&!S.barnOpen)||(to==='garage'&&!S.garageOpen)||(to==='basement'&&!S.basementOpen)||(to==='rink'&&!S.rinkOpen)||(to==='stadium'&&!S.stadiumOpen))return;
   if(phase==='up')sortHand('marks',true);
   S.places[S.loc]={pile:S.pile,oneLeft:S.oneLeft};
   const t=S.places[to]||{pile:LOCS[to].size,oneLeft:null};S.pile=t.pile;S.oneLeft=t.oneLeft;S.loc=to;
@@ -3546,7 +4163,7 @@ function checkRink(){
     const b=$('#goRink');if(b)b.onclick=()=>{closeModal(true);switchLoc('rink')}});
   renderTabs();
 }
-function checkAttic(){checkBarn();checkGarage();checkBasement();checkRink();
+function checkAttic(){checkBarn();checkGarage();checkBasement();checkRink();checkStadium();
   if(S.atticOpen||S.loc!=='shed')return;
   if(S.pile<=2000&&S.pile>0&&!S.atticTease){S.atticTease=true;save(true);queueModal(()=>modal(`<h2>A note tucked in a box</h2><div class="letter">Almost there, kiddo. When you get to the very bottom of the last box, look close. I left something down there for you. Something that opens a door.<br><br>— Grandpa</div><p>${num(S.pile)} cards to go in the shed.</p><div class="row2"><button class="btn go" data-close>Keep sorting</button></div>`));return}
   if(S.pile>0)return;
@@ -3562,7 +4179,7 @@ function genChallenge(){
   const sp=roomSport(),have=(S.chal||[]).map(c=>c.t),r=Math.random;
   const opts=[];
   opts.push(()=>{const n=[60,90,120,150][(r()*4)|0];return {t:'sort',n,text:`Sort ${n} cards by hand`,reward:Math.round(n*.4)}});
-  opts.push(()=>{const pl=pick(roomPool(sp));const tm=TEAMS[pl.team];const n=2+((r()*3)|0);return {t:'team',team:pl.team,n,text:`Find ${n} ${tm[1]} cards`,reward:25+n*12}});
+  opts.push(()=>{const pl=pick(roomPool(sp));const tm=TEAMS[pl.team];const n=2+((r()*3)|0);return {t:'team',team:pl.team,n,text:`Find ${n} ${pl.sport==='soc'?tm[0]+' '+tm[1]:tm[1]} cards`,reward:25+n*12}});
   opts.push(()=>{const n=3+((r()*4)|0);return {t:'rc',n,text:`Find ${n} rookie cards`,reward:20+n*10}});
   opts.push(()=>{const n=1+((r()*2)|0);return {t:'par',n,text:n===1?'Find a refractor, numbered card, auto or relic':`Find ${n} refractors, numbered cards, autos or relics`,reward:40+n*30}});
   opts.push(()=>{const decs=sp==='mix'?[1940,1950,1960,1970,1980,1990,2000]:sp==='mlb'?[1950,1960,1970,1980,1990,2000,2010]:[1960,1970,1980,1990,2000,2010,2020];const d=pick(decs),n=4+((r()*5)|0);return {t:'dec',d,n,text:`Find ${n} cards from the ${d}s`,reward:20+n*8}});
@@ -3688,6 +4305,49 @@ const RINK_LEDGER=[
   [170000,"Every NHL team, every era. Even the ones that moved. Hockey teams move a lot. Atlanta lost two of them."],
   [220000,"Almost through the rink. Lace up and go skate somewhere real when you're done."],
 ];
+/* ---------- the old stadium: lockers of soccer cards ---------- */
+const SOC_NOT_CLUBS=['S_USA','S_USW','S_NOR','S_SHF','S_BRN','S_WAN','S_REG','S_QPK','S_DKL','S_BLF','S_PNE','S_BLP','S_WOL','S_ESS','S_KAI','S_REI','S_DYN','S_CAG','S_FIO','S_LAZ','S_DEP','S_TBM','S_SJC','S_WFR','S_BBR','S_INK','S_FFC','S_VFL','S_ANS','S_GAL','S_CRU','S_PEN','S_NAC','S_BLA','S_FUL','S_LEI','S_HSV','S_NFO','S_LEE','S_ATH','S_VAL','S_SJE','S_ATL','S_NER','S_DCU','S_CLB','S_SEA','S_KCC','S_WSP','S_NCC','S_SDW','S_ANG','S_CHR'];
+const SOC_CLUBS=Object.keys(TEAMS).filter(k=>k.startsWith('S_')&&!SOC_NOT_CLUBS.includes(k)&&P.filter(p=>p.team===k).length>=3);
+const SOC_MLS=['S_LAG','S_MIA','S_SEA','S_ATL','S_LAFC','S_NYRB','S_TFC','S_CLB','S_DCU','S_NER','S_SJE','S_TBM','S_COS'];
+const SOC_NWSL=['S_POT','S_NCC','S_ORP','S_SDW','S_GFC','S_WSP','S_SRF','S_CHR','S_ANG','S_KCC','S_WFR','S_SJC','S_BBR'];
+const STADIUM_TEMPLATES=[
+  ...SOC_CLUBS.map(tm=>[TEAMS[tm][0]+' '+TEAMS[tm][1],{teams:[tm],crate:true,tm},7000]),
+  ['USA, men and women',{nat:['USA']},14000],['Brazil',{nat:['BRA']},9000],['Argentina',{nat:['ARG']},7000],['Germany',{nat:['GER']},7000],['France',{nat:['FRA']},7000],
+  ['Italy',{nat:['ITA']},6000],['Spain',{nat:['ESP']},6000],['England',{nat:['ENG']},8000],['Netherlands',{nat:['NED']},5000],['Portugal',{nat:['POR']},5000],
+  ['Every World Cup winner',{wc:true},14000],['The women\'s game',{women:true},22000],
+  ['Where it all started, 1857 to 1925',{yHi:1925},5000],['Before television, 1926 to 1959',{yLo:1926,yHi:1959},9000],
+  ['Rookies, 2015 and up',{yLo:2015,rookie:true},12000],['Goalkeepers only',{pos:['GK']},7000],
+  ['MLS and the old NASL',{teams:SOC_MLS},14000],['NWSL and the first women\'s leagues',{teams:SOC_NWSL},12000],
+  ['Hall of Fame box',{minTier:4},6000],['The 2026 World Cup',{yLo:2026,minTier:2},12000],
+  ['Mystery box. Smells like orange slices.',{parMul:2.5},1500],
+  ['Loose cards from packs',{loose0:true},6000],
+];
+const STADIUM_LEDGER=[
+  [0,"The old stadium out past the fairgrounds. Soccer, kiddo. The whole world's game. Half a million cards in the locker rooms, the tunnels and under the stands."],
+  [3000,"The first rules were written in a London pub in 1863. Ebenezer Cobb Morley wrote them down. Find his card. He's the reason any of this exists."],
+  [15000,"Your great-grandpa called it football and so does everybody else on Earth. We're the odd ones. That's fine."],
+  [40000,"In 1950 a team of mailmen and dishwashers from America beat England at the World Cup. Joe Gaetjens scored the goal. Nobody back home believed it."],
+  [80000,"I hid twelve one-of-ones in here. Messi, Ronaldo, Pele, Maradona and more. Mia Hamm and Brandi Chastain too. They're not in any special locker. Keep flipping."],
+  [140000,"1999, the Rose Bowl. Ninety thousand people watched the women win the World Cup. Your grandmother and I were two of them. We lost our voices."],
+  [220000,"Halfway through the stadium. You've sorted more soccer cards than anybody in this country, I bet."],
+  [300000,"Every locker has a story. Some teams I loved. Some I just liked their shirts."],
+  [400000,"Almost there. When you're done, go kick a ball against the garage door. That's how every great one started."],
+  [470000,"Last few lockers. I'm proud of you, kiddo. Half a million cards. I never did it."],
+];
+const STADIUM_NOTES=["Locker done. That one smelled like old shin guards.","Another locker empty. I found that one behind the snack stand.","Good work. The label on that one was in Portuguese. I never learned what it said.","Done. A groundskeeper gave me that locker in 1977 for a jar of pickles.","That's a locker. You're faster than a counterattack.","Finished. I used to eat my lunch on that one during halftime."];
+// twelve 1/1s hidden in the stadium: each counter ticks down only on cards YOU pull
+function hideSocOnes(){if(S.sOnes)return;const n=S.pile||LOCS.stadium.size;S.sOnes=SOC_ONES.map((_,i)=>({i,left:Math.floor(n*rnd(.02+i*.078,.07+i*.078))}))}
+function checkStadium(){
+  if(S.stadiumOpen||!S.rinkOpen)return;
+  const rp=S.loc==='rink'?S.pile:(S.places.rink?S.places.rink.pile:LOCS.rink.size);
+  if(S.loc==='rink'&&rp<=5000&&rp>0&&!S.stadiumTease){S.stadiumTease=true;save(true);queueModal(()=>modal(`<h2>A ticket stub in a box</h2><div class="letter">Almost through the rink, kiddo. Look at this ticket stub. The old stadium past the fairgrounds. I bought that too.<br><br>Finish up here first.<br><br>— Grandpa</div><p>${num(rp)} cards to go in the rink.</p><div class="row2"><button class="btn go" data-close>Keep sorting</button></div>`));return}
+  if(rp>0||(S.loc==='rink'&&(hand.length||S.aside.length)))return;
+  S.stadiumOpen=true;S.rinkEnd=true;S.places.stadium=S.places.stadium||{pile:LOCS.stadium.size,oneLeft:null};ensureBoxes();save('now');
+  queueModal(()=>{modal(`<h2>The keys to the old stadium</h2><div class="letter">Five hundred and ten thousand cards. The shed, the attic, the barn, the garage, the basement and the rink. Every one.<br><br>Now the big one. The old stadium out past the fairgrounds. When the team moved away, I bought the whole place. Not for the grass. For the soccer cards.<br><br>Half a million of them. Every big club in the world. The World Cups. The women who packed the Rose Bowl. Even the men in a London pub who wrote the first rules in 1863.<br><br>And twelve one-of-ones. Messi. Ronaldo. Pele. Maradona. Mia Hamm. Brandi Chastain. More. They could be in any locker.<br><br>— Grandpa</div><p>The Old Stadium is open: 500,000 soccer cards in lockers, ${SOC_CLUBS.length} clubs, every country's legends, World Cup Champs cards, soccer packs at Lenny's, and twelve hidden 1/1s.</p><div class="row2"><button class="btn go" id="goStad">Walk into the stadium</button><button class="btn" data-close>Later</button></div>`);
+    const b=$('#goStad');if(b)b.onclick=()=>{closeModal(true);switchLoc('stadium')}});
+  renderTabs();
+}
+
 const RINK_NOTES=["Box done. That one sat under the bleachers for thirty years.","Another one finished. I think a goalie used that box as a pad once.","Good work. The label said 'misc pucks' but it was all cards.","Done. Your grandmother taped that box shut with hockey tape. It never came off.","That's a box. You're faster than a breakaway."];
 const BASEMENT_LEDGER=[
   [0,"The basement. Watch the bottom step. Every team down here is gone: folded, moved, renamed or forgotten. A hundred thousand cards."],
@@ -3732,11 +4392,11 @@ function renderBoxBar(){
     :`<div class="bxlabel">Nothing open</div><div class="bxinfo"><span>${done}/${list.length} ${word} done. Pick one to keep sorting.</span></div><button class="btn go sm" id="boxSwitch">Pick one</button>`;
   $('#boxSwitch').onclick=showBoxPicker;
 }
-const boxedRoom=l=>l==='attic'||l==='barn'||l==='garage'||l==='rink';
-function roomBoxes(l=S.loc){return l==='attic'?S.boxes:l==='barn'?S.barnBoxes:l==='garage'?S.garageBoxes:l==='rink'?S.rinkBoxes:null}
-function getCur(l=S.loc){return l==='barn'?S.barnCur:l==='garage'?S.garageCur:l==='rink'?S.rinkCur:S.boxCur}
-function setCur(v,l=S.loc){if(l==='barn')S.barnCur=v;else if(l==='garage')S.garageCur=v;else if(l==='rink')S.rinkCur=v;else S.boxCur=v}
-const boxRoom=b=>{const c=b&&String(b.id)[0];return c==='f'?'barn':c==='g'?'garage':c==='r'?'rink':'attic'};
+const boxedRoom=l=>l==='attic'||l==='barn'||l==='garage'||l==='rink'||l==='stadium';
+function roomBoxes(l=S.loc){return l==='attic'?S.boxes:l==='barn'?S.barnBoxes:l==='garage'?S.garageBoxes:l==='rink'?S.rinkBoxes:l==='stadium'?S.stadiumBoxes:null}
+function getCur(l=S.loc){return l==='barn'?S.barnCur:l==='garage'?S.garageCur:l==='rink'?S.rinkCur:l==='stadium'?S.stadiumCur:S.boxCur}
+function setCur(v,l=S.loc){if(l==='barn')S.barnCur=v;else if(l==='garage')S.garageCur=v;else if(l==='rink')S.rinkCur=v;else if(l==='stadium')S.stadiumCur=v;else S.boxCur=v}
+const boxRoom=b=>{const c=b&&String(b.id)[0];return c==='f'?'barn':c==='g'?'garage':c==='r'?'rink':c==='z'?'stadium':'attic'};
 // the room's card count and its boxes must agree; if they drift, the extra cards go in the loose box
 function reconcileBoxes(l){const rb=roomBoxes(l);if(!rb)return;const sum=rb.reduce((a,b)=>a+Math.max(0,b.left),0);
   const pile=l===S.loc?S.pile:(S.places[l]?S.places[l].pile:null);if(pile==null||pile===sum)return;
@@ -3749,6 +4409,8 @@ function ensureBoxes(){
   if(S.rinkOpen&&!S.rinkBoxes){const pile=S.loc==='rink'?S.pile:(S.places.rink?S.places.rink.pile:LOCS.rink.size);S.rinkBoxes=makeBoxes(Math.max(1,pile),RINK_TEMPLATES,'r');S.rinkBoxes.forEach(b=>{if(b.loose0){b.loose=true;b.id='rloose'}});S.rinkCur=null;
     const tot=S.rinkBoxes.reduce((a,b)=>a+b.left,0);if(S.loc==='rink')S.pile=tot;else if(S.places.rink)S.places.rink.pile=tot}
   addVault();
+  if(S.stadiumOpen&&!S.stadiumBoxes){const pile=S.loc==='stadium'?S.pile:(S.places.stadium?S.places.stadium.pile:LOCS.stadium.size);S.stadiumBoxes=makeBoxes(Math.max(1,pile),STADIUM_TEMPLATES,'z');S.stadiumBoxes.forEach(b=>{if(b.loose0){b.loose=true;b.id='zloose'}});S.stadiumCur=null;
+    const tot=S.stadiumBoxes.reduce((a,b)=>a+b.left,0);if(S.loc==='stadium')S.pile=tot;else if(S.places.stadium)S.places.stadium.pile=tot}
   if(S.garageOpen&&!S.garageBoxes){const pile=S.loc==='garage'?S.pile:(S.places.garage?S.places.garage.pile:LOCS.garage.size);S.garageBoxes=makeBoxes(Math.max(1,pile),GARAGE_TEMPLATES,'g');S.garageCur=null;
     const tot=S.garageBoxes.reduce((a,b)=>a+b.left,0);if(S.loc==='garage')S.pile=tot;else if(S.places.garage)S.places.garage.pile=tot}
   if(S.barnOpen&&!S.barnBoxes){const pile=S.loc==='barn'?S.pile:(S.places.barn?S.places.barn.pile:LOCS.barn.size);S.barnBoxes=makeBoxes(Math.max(1,pile),BARN_TEMPLATES,'f');S.barnCur=null;
@@ -3762,9 +4424,11 @@ function rollBoxCard(b){
   const room=boxRoom(b),bsp=b.sp||LOCS[room].sport;
   if(b.riv&&Math.random()<.1)return b.riv==='gscle'?rivCard(Math.random()<.3):giantsCard(Math.random()<.3);
   if(b.usa)return usaCard();if(b.college)return collegeCard();if(b.holy)return hockeyOlyCard();
-  const cands=P.filter(p=>p.sport===bsp&&(room!=='garage'||b.teams||b.wnba?true:!isWNBA(p))&&(!b.wnba||isWNBA(p))&&(!b.fresh||p.id>=NEW_PID)&&(!b.teams||b.teams.includes(p.team))&&(!b.pos||b.pos.includes(p.pos))&&(!b.minTier||p.tier>=b.minTier)&&p.end>=(b.yLo||0)&&p.start<=(b.yHi||3000)&&(!b.rookie||p.start>=(b.yLo||0)));
+  if(bsp==='soc'&&b.wc&&Math.random()<.2)return socChampCard();
+  if(bsp==='soc'&&b.nat&&b.nat.includes('USA')&&Math.random()<.05)return socUsaCard();
+  const cands=P.filter(p=>p.sport===bsp&&(room!=='garage'||b.teams||b.wnba?true:!isWNBA(p))&&(!b.wnba||isWNBA(p))&&(!b.fresh||p.id>=NEW_PID)&&(!b.teams||b.teams.includes(p.team))&&(!b.pos||b.pos.includes(p.pos))&&(!b.nat||b.nat.includes(p.nat))&&(!b.rookie||bsp!=='soc'||!p.alt)&&(!b.women||p.women)&&(!b.wc||(SOC_CHAMP[p.id]&&!p.alt))&&(!b.minTier||p.tier>=b.minTier)&&p.end>=(b.yLo||0)&&p.start<=(b.yHi||3000)&&(!b.rookie||p.start>=(b.yLo||0)));
   if(!cands.length||b.loose)return rollCard({shed:true,sport:bsp,parMul:.8*EYE});
-  const tw=b.tw||[45,30,15,7,3],cnt={};cands.forEach(p=>cnt[p.tier]=(cnt[p.tier]||0)+1);
+  const tw=b.tw||(bsp==='soc'?SOC_TW:[45,30,15,7,3]),cnt={};cands.forEach(p=>cnt[p.tier]=(cnt[p.tier]||0)+1);
   const p=wpick(cands,q=>(tw[q.tier-1]||0)/cnt[q.tier]+.0001);
   const lo=Math.max(p.start,b.yLo||0),hi=Math.min(p.end,b.yHi||2026);
   const year=b.rookie?p.start:(Math.random()<.15?lo:lo+Math.floor(Math.random()*(hi-lo+1)));
@@ -3778,7 +4442,9 @@ function boxDone(b){
     queueModal(()=>modal(`<h2>All 32 NHL teams!</h2><div class="letter">Every team box in the rink, sorted. Even the Kraken, and they didn't exist until you were born.<br><br>— Grandpa</div><p>+$25,000 and 1,500 XP.</p><div class="row2"><button class="btn go" data-close>Wow</button></div>`))}
   if(gar&&b.crate&&!S.allNBA&&list.filter(x=>x.crate).every(x=>x.left<=0)){S.allNBA=true;S.cash+=10000;addXP(800);
     queueModal(()=>modal(`<h2>All 30 NBA teams!</h2><div class="letter">Every team bin on the garage shelves, sorted. I labeled those bins with a marker in 1989 and some of the teams didn't even exist yet.<br><br>Here's a little something for the effort.<br><br>— Grandpa</div><p>+$10,000 and 800 XP.</p><div class="row2"><button class="btn go" data-close>Wow</button></div>`))}
-  const notes=room==='rink'?RINK_NOTES:barn?BARN_NOTES:gar?GARAGE_NOTES:BOX_NOTES;const note=notes[hash(b.id)%notes.length];const doneN=list.filter(x=>x.left<=0).length;
+  if(room==='stadium'&&b.crate&&!S.allClubs&&list.filter(x=>x.crate).every(x=>x.left<=0)){S.allClubs=true;S.cash+=50000;addXP(2500);
+    queueModal(()=>modal(`<h2>Every club locker!</h2><div class="letter">Every club in the stadium, sorted. Manchester to Madrid to Buenos Aires to Los Angeles. You've been around the whole world without leaving the fairgrounds.<br><br>— Grandpa</div><p>+$50,000 and 2,500 XP.</p><div class="row2"><button class="btn go" data-close>Golazo</button></div>`))}
+  const notes=room==='stadium'?STADIUM_NOTES:room==='rink'?RINK_NOTES:barn?BARN_NOTES:gar?GARAGE_NOTES:BOX_NOTES;const note=notes[hash(b.id)%notes.length];const doneN=list.filter(x=>x.left<=0).length;
   if(barn&&b.crate&&!S.allTeams&&list.filter(x=>x.crate).every(x=>x.left<=0)){S.allTeams=true;S.cash+=5000;addXP(500);
     queueModal(()=>modal(`<h2>All 32 teams!</h2><div class="letter">Every team crate in the barn, sorted. I started that project in 1971 and never finished it. You did.<br><br>Here's something I saved for whoever got this far.<br><br>— Grandpa</div><p>+$5,000 and 500 XP.</p><div class="row2"><button class="btn go" data-close>Wow</button></div>`))}
   queueModal(()=>{modal(`<h2>${W[0][0].toUpperCase()+W[0].slice(1)} finished: ${esc(b.label)}</h2><div class="letter">${esc(note)}<br><br>— Grandpa</div><p>+${money(cash)} and 50 XP. ${doneN} of ${list.length} ${W[1]} done.</p><div class="row2"><button class="btn go" id="pickNext">Pick the next ${W[0]}</button><button class="btn" data-close>Later</button></div>`);const pn=$('#pickNext');if(pn)pn.onclick=()=>{closeModal(true);showBoxPicker()}});
@@ -3815,7 +4481,7 @@ function showBoxPicker(){
   ensureBoxes();reconcileBoxes(S.loc);const list=roomBoxes();if(!list)return;const barn=S.loc==='barn',gar=S.loc==='garage';
   const tiles=list.map(b=>{const done=b.left<=0,cur=b.id===getCur(),started=b.left<b.total;
     return `<button class="boxtile${done?' done':''}${cur?' cur':''}" data-box="${b.id}" ${done?'disabled':''}${b.tm&&TEAMS[b.tm]?` style="box-shadow:inset 6px 0 0 ${TEAMS[b.tm][2]}"`:''}><span class="bl">${esc(b.label)}</span><span class="bn">${done?'Done ✓':`${num(b.left)} ${started?'left':'cards'}`}</span>${started&&!done?`<i class="bp"><b style="width:${(1-b.left/b.total)*100}%"></b></i>`:''}</button>`}).join('');
-  const m=modal(S.loc==='rink'?`<h2>Which box next?</h2><p>The rink floor is covered in boxes: one for every NHL team (old cities included), the Original Six, goalies, the PWHL, rookies, and a box of loose cards from packs. Hockey packs you rip at Lenny's toss their base cards in that loose box. Finishing all 32 team boxes pays a big bonus. ${list.filter(x=>x.crate&&x.left<=0).length} of 32 teams done.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:gar?`<h2>Which bin next?</h2><p>The garage walls are lined with plastic bins: one for every NBA team, the WNBA teams, Team USA, college cards, and whatever else Grandpa couldn't fit in the house. Finishing a bin pays a bonus, and finishing all 30 NBA team bins pays a big one. ${list.filter(x=>x.crate&&x.left<=0).length} of 30 teams done.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:barn?`<h2>Which crate next?</h2><p>The barn is stacked with crates, one for every NFL team plus a few Grandpa never labeled right. Finishing a crate pays a bonus, and finishing all 32 team crates pays a big one. ${list.filter(x=>x.crate&&x.left<=0).length} of 32 teams done.</p><div class="boxgrid">${tiles}</div>`:`<h2>Which box next?</h2><p>Grandpa's attic is full of boxes. Each one has a different mix of cards, and finishing a box pays a bonus. You can switch boxes any time.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`);
+  const m=modal(S.loc==='stadium'?`<h2>Which locker next?</h2><p>The locker rooms, the tunnels, under the stands. One locker for every big club, one for each country, the World Cups, the women's game, the founders, the goalkeepers, MLS and the NWSL, and a locker of loose cards from packs. The twelve 1/1s could be in any of them. ${list.filter(x=>x.crate&&x.left<=0).length} of ${list.filter(x=>x.crate).length} clubs done.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:S.loc==='rink'?`<h2>Which box next?</h2><p>The rink floor is covered in boxes: one for every NHL team (old cities included), the Original Six, goalies, the PWHL, rookies, and a box of loose cards from packs. Hockey packs you rip at Lenny's toss their base cards in that loose box. Finishing all 32 team boxes pays a big bonus. ${list.filter(x=>x.crate&&x.left<=0).length} of 32 teams done.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:gar?`<h2>Which bin next?</h2><p>The garage walls are lined with plastic bins: one for every NBA team, the WNBA teams, Team USA, college cards, and whatever else Grandpa couldn't fit in the house. Finishing a bin pays a bonus, and finishing all 30 NBA team bins pays a big one. ${list.filter(x=>x.crate&&x.left<=0).length} of 30 teams done.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:barn?`<h2>Which crate next?</h2><p>The barn is stacked with crates, one for every NFL team plus a few Grandpa never labeled right. Finishing a crate pays a bonus, and finishing all 32 team crates pays a big one. ${list.filter(x=>x.crate&&x.left<=0).length} of 32 teams done.</p><div class="boxgrid">${tiles}</div>`:`<h2>Which box next?</h2><p>Grandpa's attic is full of boxes. Each one has a different mix of cards, and finishing a box pays a bonus. You can switch boxes any time.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`);
   m.querySelectorAll('[data-box]').forEach(b=>b.onclick=()=>pickBox(b.dataset.box));
   $('.mbox',m).classList.add('wide');
 }
@@ -3853,6 +4519,9 @@ function drawFromPile(auto){
     else{const f=B.find(o=>o.left<=0)||(S.pile<B.length?B[0]:null);if(f){S.bOnes=B.filter(o=>o!==f);const c=lostOne(f.i);S.onePids.push(c.pid);return c}B.forEach(o=>o.left--)}
     EYE=eyeMul();try{return lostCard(.8*EYE)}finally{EYE=1}}
   const bx=curBox();if(boxedRoom(S.loc)&&roomBoxes()&&(!bx||bx.left<=0))return null;
+  if(S.loc==='stadium'){hideSocOnes();const B=S.sOnes;
+    if(auto){if(B.length&&S.pile<=B.length)return null;B.forEach(o=>{if(o.left>S.pile-1-B.length)o.left=Math.max(0,S.pile-1-B.length)})}
+    else{const f=B.find(o=>o.left<=0)||(S.pile<=B.length?B[0]:null);if(f){S.pile--;bx.left--;S.sOnes=B.filter(o=>o!==f);const c=socOne(f.i);S.onePids.push(c.pid);if(bx.left<=0)boxDone(bx);return c}B.forEach(o=>o.left--)}}
   if(bx&&bx.one&&bx.left<=1){if(auto)return null;S.pile--;bx.left=0;delete bx.one;if(getCur()===bx.id)setCur(null);return oneOfOne()}
   if(auto&&S.oneLeft!==null&&S.pile<=1)return null;
   S.pile--;
@@ -3864,6 +4533,7 @@ function drawFromPile(auto){
   try{
   if(bx){bx.left--;let c=(S.loc==='attic'&&isWill()&&Math.random()<.02)?giantsCard(Math.random()<.15):rollBoxCard(bx);
     if(S.loc==='rink'&&c.par===0&&!bx.holy&&HOLY[c.pid]&&Math.random()<.015)c=hockeyOlyCard(c.pid);
+    if(S.loc==='stadium'&&c.par===0&&!bx.wc){const r=Math.random();if(r<.012&&SOC_CHAMP[c.pid])c=socChampCard(c.pid);else if(r<.024&&SOC_USA[c.pid])c=socUsaCard(c.pid)}
     if(S.loc==='garage'&&c.par===0&&!bx.usa&&!bx.college){const r=Math.random();if(r<.012&&OLY_OF[c.pid])c=usaCard(c.pid);else if(r<.03&&COLLEGE_OF[c.pid])c=collegeCard(c.pid)}
     if(bx.left<=0)boxDone(bx);return c}
   return rollCard({shed:true,sport:LOCS[S.loc].sport,parMul:(S.loc==='shed'?1:.8)*EYE});
@@ -3885,7 +4555,7 @@ const F_DISP="#px 'Bungee', 'Arial Black', sans-serif";
 const F_TYPE="#px 'Special Elite', 'Courier New', monospace";
 const F_ANTON="#px 'Anton', Impact, 'Arial Narrow', sans-serif";
 const F_SCRIPT="#px 'Yellowtail', 'Brush Script MT', cursive";
-const POSN={LW:'LEFT WING',RW:'RIGHT WING',D:'DEFENSE',G:'GOALIE',PG:'GUARD',SG:'GUARD',SF:'FORWARD',PF:'FORWARD',C:'CENTER',P:'PITCHER','1B':'FIRST BASE','2B':'SECOND BASE','3B':'THIRD BASE',SS:'SHORTSTOP',LF:'OUTFIELD',CF:'OUTFIELD',RF:'OUTFIELD',DH:'DESIG. HITTER',QB:'QUARTERBACK',RB:'RUNNING BACK',WR:'WIDE RECEIVER',TE:'TIGHT END',OL:'OFFENSIVE LINE',DE:'DEFENSIVE END',DT:'DEFENSIVE TACKLE',LB:'LINEBACKER',CB:'CORNERBACK',S:'SAFETY',K:'KICKER'};
+const POSN={GK:'GOALKEEPER',DF:'DEFENDER',MF:'MIDFIELDER',FW:'FORWARD',LW:'LEFT WING',RW:'RIGHT WING',D:'DEFENSE',G:'GOALIE',PG:'GUARD',SG:'GUARD',SF:'FORWARD',PF:'FORWARD',C:'CENTER',P:'PITCHER','1B':'FIRST BASE','2B':'SECOND BASE','3B':'THIRD BASE',SS:'SHORTSTOP',LF:'OUTFIELD',CF:'OUTFIELD',RF:'OUTFIELD',DH:'DESIG. HITTER',QB:'QUARTERBACK',RB:'RUNNING BACK',WR:'WIDE RECEIVER',TE:'TIGHT END',OL:'OFFENSIVE LINE',DE:'DEFENSIVE END',DT:'DEFENSIVE TACKLE',LB:'LINEBACKER',CB:'CORNERBACK',S:'SAFETY',K:'KICKER'};
 let NOISE=null;
 function grain(ctx,a){
   if(!NOISE){NOISE=document.createElement('canvas');NOISE.width=NOISE.height=96;const g=NOISE.getContext('2d'),d=g.createImageData(96,96);for(let i=0;i<d.data.length;i+=4){const v=Math.random()*255;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255}g.putImageData(d,0,0)}
@@ -3958,7 +4628,7 @@ function shoe2(ctx,f,face,col,trim,mono,high){
 }
 function drawFigure(ctx,card,x,y,w,h,opt={}){
   if(P[card.pid].sport==='mlb')return drawBaseballFigure(ctx,card,x,y,w,h,opt);
-  if(P[card.pid].sport==='nfl'||P[card.pid].sport==='nhl')return drawFootballFigure(ctx,card,x,y,w,h,opt);
+  if(P[card.pid].sport==='nfl'||P[card.pid].sport==='nhl'||P[card.pid].sport==='soc')return drawFootballFigure(ctx,card,x,y,w,h,opt);
   const p=P[card.pid],t=tOf(card),{k:poseKey,q,mir,hs}=poseInfo(card);
   const s=figScale(w,h),yr=card.year;
   const W={C:1.14,PF:1.07,SF:1,SG:.95,PG:.9}[p.pos]||1;
@@ -4304,8 +4974,14 @@ const HPOSES={
   shoot:{h:[50,24],n:[49,33],ls:[43,36],rs:[55,36],le:[36,28],lh:[33,16],re:[45,26],rh:[39,22],pel:[50,68],lp:[46,68],rp:[54,68],lk:[42,90],lf:[36,114],rk:[60,88],rf:[66,112],blade:[12,-2],puck:[72,118]},
   save:{h:[50,34],n:[50,43],ls:[43,46],rs:[57,46],le:[35,56],lh:[28,60],re:[65,56],rh:[68,68],pel:[50,75],lp:[44,75],rp:[56,75],lk:[34,95],lf:[27,116],rk:[66,95],rf:[73,116],blade:[80,118],glove:1},
 };
+const SPOSES={run:{...FPOSES.run,ball:[71,114],tuck:null},stiff:{...FPOSES.stiff,ball:[80,114],tuck:null,palm:null},kick:{h:[49,24],n:[49,33],ls:[43,36],rs:[55,36],le:[34,45],lh:[27,52],re:[64,43],rh:[72,50],pel:[48,68],lp:[44,68],rp:[52,68],lk:[42,92],lf:[40,116],rk:[63,89],rf:[77,105],ball:[86,111]},catch:{...FPOSES.catch}};
+function sposeInfo(card){const p=P[card.pid],hs=hash(key(card));const k=p.pos==='GK'?'catch':(hs%10<6&&SPOSES[p.pose])?p.pose:['run','kick','stiff'][hs%3];return {k,q:SPOSES[k],mir:(hs>>4)&1,hs}}
+function soccerBall(ctx,b,r=5.4,mono){ctx.save();ctx.translate(b[0],b[1]);ctx.fillStyle=mono||'#f7f7f4';ctx.beginPath();ctx.arc(0,0,r,0,7);ctx.fill();
+  if(!mono){ctx.save();ctx.beginPath();ctx.arc(0,0,r,0,7);ctx.clip();ctx.fillStyle='#16171b';const pent=(cx,cy,sz,rot)=>{ctx.beginPath();for(let i=0;i<5;i++){const a=rot+i*2*Math.PI/5;ctx.lineTo(cx+Math.cos(a)*sz,cy+Math.sin(a)*sz)}ctx.closePath();ctx.fill()};
+    pent(0,0,r*.36,-Math.PI/2);for(let i=0;i<5;i++){const a=-Math.PI/2+i*2*Math.PI/5;pent(Math.cos(a)*r*.92,Math.sin(a)*r*.92,r*.26,a+Math.PI)}ctx.restore();
+    ctx.strokeStyle='rgba(0,0,0,.4)';ctx.lineWidth=.5;ctx.beginPath();ctx.arc(0,0,r,0,7);ctx.stroke()}ctx.restore()}
 function hposeInfo(card){const p=P[card.pid],hs=hash(key(card));let k=p.pos==='G'?'save':(hs%10<6&&HPOSES[p.pose]&&p.pose!=='save')?p.pose:['skate','shoot','skate'][hs%3];return {k,q:HPOSES[k],mir:(hs>>4)&1,hs}}
-function fposeInfo(card){if(P[card.pid].sport==='nhl')return hposeInfo(card);const p=P[card.pid],hs=hash(key(card));
+function fposeInfo(card){if(P[card.pid].sport==='nhl')return hposeInfo(card);if(P[card.pid].sport==='soc')return sposeInfo(card);const p=P[card.pid],hs=hash(key(card));
   const alt={QB:['throw','throw','run'],RB:['run','stiff','run','catch'],WR:['catch','run','catch'],TE:['catch','run','stiff'],K:['kick'],OL:['rush'],DE:['rush'],DT:['rush'],LB:['rush','rush','run'],CB:['rush','catch','run'],S:['rush','catch','run']}[p.pos]||['run'];
   let k=(hs%10<6)?p.pose:alt[hs%alt.length];if(!FPOSES[k])k='run';
   return {k,q:FPOSES[k],mir:(hs>>4)&1,hs}}
@@ -4323,10 +4999,11 @@ function drawFootballFigure(ctx,card,x,y,w,h,opt={}){
   const inkH=mixh(t[2],'#0a0b10',.84),rimH=lum(t[3])>.3?t[3]:mixh(t[2],'#ffffff',.5);
   const skin=flat?{l:inkH,b:inkH,d:inkH}:{l:mixh(inkH,rimH,.42),b:inkH,d:mixh(inkH,'#000000',.55)};
   const skinBack=flat?skin:{l:mixh(inkH,rimH,.18),b:mixh(inkH,'#000000',.25),d:mixh(inkH,'#000000',.65)};
-  const home=hs%3!==0,c1=t[2],c2=t[3];
-  const jer=home?c1:'#f4f2ec',jerD=home?mixh(c1,'#000000',.3):'#d2cfc6',trim=home?(lum(c2)>.85&&lum(c1)>.6?'#1a1a1a':c2):c1;
-  const HK=p.sport==='nhl',G=HK&&p.pos==='G',bare=HK&&yr<1979&&!G;
-  const pantsC=HK?mixh(c1,'#000000',.35):['F_PIT','F_GB','F_NO','F_WAS','F_LAR','F_STLR','F_SF','F_ARI','F_STLC','F_MIN'].includes(p.team)?(p.team==='F_SF'||p.team==='F_NO'||p.team==='F_STLR'?'#c9ae6d':p.team==='F_ARI'||p.team==='F_STLC'?'#f2f2f2':'#e8b93a'):['F_LV','F_OAK','F_DAL','F_NE','F_SEA','F_PHI','F_DET','F_CHI','F_BAL'].includes(p.team)?'#b9bcc0':'#f2f0ea';
+  const home=hs%3!==0,c1=t[2],c2=t[3],SC=p.sport==='soc',GK=SC&&p.pos==='GK';
+  const jer=GK?['#c6e83a','#ff8a1f','#22b07d','#e8e23a','#3a3f47'][hs%5]:home?c1:'#f4f2ec',jerD=home?mixh(c1,'#000000',.3):'#d2cfc6',trim=home?(lum(c2)>.85&&lum(c1)>.6?'#1a1a1a':c2):c1;
+  const HK=p.sport==='nhl',G=HK&&p.pos==='G',bare=(HK&&yr<1979&&!G)||SC;
+  const sockC=home?c1:'#f4f2ec',sockT=home?(lum(c2)>.2?c2:'#ffffff'):c1;
+  const pantsC=SC?(GK?'#1d1f26':home?(c2):c1):HK?mixh(c1,'#000000',.35):['F_PIT','F_GB','F_NO','F_WAS','F_LAR','F_STLR','F_SF','F_ARI','F_STLC','F_MIN'].includes(p.team)?(p.team==='F_SF'||p.team==='F_NO'||p.team==='F_STLR'?'#c9ae6d':p.team==='F_ARI'||p.team==='F_STLC'?'#f2f2f2':'#e8b93a'):['F_LV','F_OAK','F_DAL','F_NE','F_SEA','F_PHI','F_DET','F_CHI','F_BAL'].includes(p.team)?'#b9bcc0':'#f2f0ea';
   const J=flat?{l:jer,b:jer,d:jer}:{l:mixh(jer,'#ffffff',.25),b:jer,d:jerD};
   const Pn=flat?{l:pantsC,b:pantsC,d:pantsC}:{l:mixh(pantsC,'#ffffff',.3),b:pantsC,d:mixh(pantsC,'#000000',.25)};
   const helm=['F_CLE','F_CIN'].includes(p.team)?(p.team==='F_CLE'?'#FF3C00':'#FB4F14'):['F_LV','F_OAK','F_DAL','F_NE','F_SEA'].includes(p.team)?'#b9bcc0':['F_SF','F_NO','F_STLR'].includes(p.team)?'#c9ae6d':['F_PIT','F_NYJ','F_ARI','F_STLC','F_IND','F_BCO','F_MIA','F_TB','F_TEN','F_HOUO','F_BUF','F_KC'].includes(p.team)?(['F_PIT','F_TB'].includes(p.team)?(p.team==='F_PIT'?'#16181c':'#8a8f93'):p.team==='F_NYJ'?'#125740':'#f7f7f5'):c1;
@@ -4339,6 +5016,10 @@ function drawFootballFigure(ctx,card,x,y,w,h,opt={}){
   function leg(side,mono){
     const [hp,kn,ft]=legs[side],back=side===backLeg,ank=V.lerp(kn,ft,.9);
     const sk=mono||(back?skinBack:skin),pf=mono||(back?{l:mixh(pantsC,'#000000',.15),b:mixh(pantsC,'#000000',.22),d:mixh(pantsC,'#000000',.4)}:Pn);
+    if(SC){capsule(ctx,hp,kn,10.5,8,1.2,sk,L);capsule(ctx,kn,ank,6.4,4.6,1.8,sk,L);capsule(ctx,hp,V.lerp(hp,kn,.5),13.5,12,0,pf,L);
+      const sc2=mono||(back?mixh(sockC,'#000000',.22):sockC);capsule(ctx,V.lerp(kn,ank,.1),ank,7.2,5.6,.8,sc2,L);
+      if(!mono){const st=V.lerp(kn,ank,.18),nn=V.perp(V.norm(V.sub(ank,kn)));ctx.strokeStyle=sockT;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(...V.add(st,V.mul(nn,3.7)));ctx.lineTo(...V.sub(st,V.mul(nn,3.7)));ctx.stroke()}
+      shoe2(ctx,ft,face,mono||'#17181c',mono?mono:'#f4f1ea',mono,false);return}
     capsule(ctx,kn,ank,6.4,4.6,1.8,sk,L);
     capsule(ctx,hp,kn,13,9.4,1.4,pf,L);capsule(ctx,kn,V.lerp(kn,ank,.2),9.4,8.4,0,pf,L);
     if(!mono){const sc=back?mixh(c1,'#000000',.25):c1;capsule(ctx,V.lerp(kn,ank,.3),ank,6.8,5.4,.6,sc,L);
@@ -4352,16 +5033,16 @@ function drawFootballFigure(ctx,card,x,y,w,h,opt={}){
     const [sh,el,hd]=arms[side],back=side===backArm,wr=V.lerp(el,hd,.82);
     const sk=mono||(back?skinBack:skin);
     capsule(ctx,sh,el,7,5,1.4,sk,L);capsule(ctx,el,wr,5,3.8,1.2,sk,L);
-    const glove=mono||(HK?(G&&side==='l'?'#f4f2ec':mixh(c1,'#000000',.15)):poseKey==='catch'||p.pos==='WR'||p.pos==='RB'?(hs%2?'#f4f2ec':trim):(typeof sk==='string'?sk:sk.b));
-    ctx.fillStyle=typeof glove==='string'?glove:glove.b;ctx.beginPath();ctx.ellipse(hd[0],hd[1],HK?(G&&side==='l'?7:4.6):3.6,HK?(G&&side==='l'?6:5):4.2,Math.atan2(hd[1]-el[1],hd[0]-el[0])+Math.PI/2,0,7);ctx.fill();
-    if(!mono){const us=back?jerD:jer;capsule(ctx,sh,V.lerp(sh,el,.5),9.6,8,0,us,L);
+    const glove=mono||(SC?(GK?'#f4f2ec':(typeof sk==='string'?sk:sk.b)):HK?(G&&side==='l'?'#f4f2ec':mixh(c1,'#000000',.15)):poseKey==='catch'||p.pos==='WR'||p.pos==='RB'?(hs%2?'#f4f2ec':trim):(typeof sk==='string'?sk:sk.b));
+    ctx.fillStyle=typeof glove==='string'?glove:glove.b;ctx.beginPath();ctx.ellipse(hd[0],hd[1],GK?5.4:HK?(G&&side==='l'?7:4.6):3.6,GK?5.8:HK?(G&&side==='l'?6:5):4.2,Math.atan2(hd[1]-el[1],hd[0]-el[0])+Math.PI/2,0,7);ctx.fill();
+    if(!mono){const us=back?jerD:jer;capsule(ctx,sh,V.lerp(sh,el,.5),9.6,8,0,us,L);if(GK)capsule(ctx,el,V.lerp(el,hd,.7),6,5,0,us,L);
       const sb=V.lerp(sh,el,.44);const nn=V.perp(V.norm(V.sub(el,sh)));ctx.strokeStyle=trim;ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(...V.add(sb,V.mul(nn,4.2)));ctx.lineTo(...V.sub(sb,V.mul(nn,4.2)));ctx.stroke()}
   }
   function torso(mono){
     // shoulder pads make the chest wide
-    const shL=V.sub(q.ls,V.mul(u,7.5)),shR=V.add(q.rs,V.mul(u,7.5)),wL=V.sub(q.lp,V.mul(u,1.5)),wR=V.add(q.rp,V.mul(u,1.5));
+    const pad=SC?3:7.5,shL=V.sub(q.ls,V.mul(u,pad)),shR=V.add(q.rs,V.mul(u,pad)),wL=V.sub(q.lp,V.mul(u,1.5)),wR=V.add(q.rp,V.mul(u,1.5));
     const topL=V.sub(V.lerp(q.ls,q.n,.3),V.mul(d,4)),topR=V.sub(V.lerp(q.rs,q.n,.3),V.mul(d,4));
-    const latL=V.sub(V.lerp(q.ls,q.lp,.45),V.mul(u,5)),latR=V.add(V.lerp(q.rs,q.rp,.45),V.mul(u,5));
+    const latL=V.sub(V.lerp(q.ls,q.lp,.45),V.mul(u,SC?3:5)),latR=V.add(V.lerp(q.rs,q.rp,.45),V.mul(u,SC?3:5));
     let jf=mono||jer;if(!mono&&!flat){const lt=mir?shR:shL,dk=mir?shL:shR;jf=ctx.createLinearGradient(lt[0],lt[1],dk[0],dk[1]);jf.addColorStop(0,mixh(jer,'#ffffff',.22));jf.addColorStop(.55,jer);jf.addColorStop(1,jerD)}
     const path=()=>{ctx.beginPath();ctx.moveTo(...shL);ctx.quadraticCurveTo(...topL,...V.lerp(q.ls,q.n,.6));ctx.lineTo(...V.lerp(q.rs,q.n,.6));ctx.quadraticCurveTo(...topR,...shR);ctx.quadraticCurveTo(...latR,...wR);ctx.lineTo(...wL);ctx.quadraticCurveTo(...latL,...shL);ctx.closePath()};
     ctx.fillStyle=jf;path();ctx.fill();
@@ -4385,7 +5066,7 @@ function drawFootballFigure(ctx,card,x,y,w,h,opt={}){
     ctx.save();ctx.translate(q.h[0],q.h[1]);ctx.rotate(tilt);
     // face (mostly hidden by the helmet)
     ctx.fillStyle=mono||skin.b;ctx.beginPath();ctx.ellipse(face*2.2,1.8,4.4,5,0,0,7);ctx.fill();
-    if(HK){
+    if(HK||SC){
       if(G){ctx.fillStyle=mono||'#f2f0ea';ctx.beginPath();ctx.ellipse(face*1,0,6.8,8.4,0,0,7);ctx.fill();if(!mono){ctx.strokeStyle=yr<1975?'rgba(0,0,0,.5)':c1;ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(face*1,0,6.8,8.4,0,0,7);ctx.stroke();ctx.strokeStyle='#555';ctx.lineWidth=.7;for(let i=-1;i<=2;i++){ctx.beginPath();ctx.moveTo(face*(i*2.2+2),-2);ctx.lineTo(face*(i*2.2+2),6);ctx.stroke()}ctx.beginPath();ctx.moveTo(face*-1,1);ctx.lineTo(face*7,1);ctx.moveTo(face*-1,4);ctx.lineTo(face*7,4);ctx.stroke()}}
       else{ctx.fillStyle=mono||skin.b;ctx.beginPath();ctx.ellipse(0,-.6,6,6.6,0,0,7);ctx.fill();
         const hc=mono||(bare?['#2b1d12','#5a3a1e','#c9a15a','#1a1a1a'][hs%4]:helm);ctx.fillStyle=hc;ctx.beginPath();ctx.moveTo(face*5.4,-2.2);ctx.bezierCurveTo(face*5,-9,-face*7,-9.6,-face*7,-1.4);ctx.bezierCurveTo(-face*7,2.6,-face*5.4,4,-face*4,3.6);ctx.lineTo(-face*2.6,-1.8);ctx.lineTo(face*5.4,-2.2);ctx.closePath();ctx.fill();
@@ -4415,7 +5096,7 @@ function drawFootballFigure(ctx,card,x,y,w,h,opt={}){
       if(!mono&&yr>=1960){ctx.strokeStyle='#f4f2ec';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(...V.lerp(top2,shaftEnd,.03));ctx.lineTo(...V.lerp(top2,shaftEnd,.09));ctx.stroke()}
       const pk=q.puck||[shaftEnd[0]+bdir[0]*(bw+4),shaftEnd[1]+1];if(!G){ctx.fillStyle=mono||'#111216';ctx.beginPath();ctx.ellipse(pk[0],pk[1],3.4,1.5,0,0,7);ctx.fill()}
       return}
-    if(!q.ball)return;football(ctx,q.ball,q.bang||0,poseKey==='catch'||poseKey==='kick'?5.8:5,mono)}
+    if(!q.ball)return;if(SC){soccerBall(ctx,q.ball,poseKey==='catch'?6.2:5.6,mono);return}football(ctx,q.ball,q.bang||0,poseKey==='catch'||poseKey==='kick'?5.8:5,mono)}
   function body(mono){
     const bA=backArm,fA=bA==='l'?'r':'l',bL=backLeg,fL=bL==='l'?'r':'l';
     arm(bA,mono);leg(bL,mono);leg(fL,mono);torso(mono);
@@ -4440,6 +5121,38 @@ function drawFootballFigure(ctx,card,x,y,w,h,opt={}){
   ctx.save();place();body(null);ctx.restore();
   ctx.restore();
 }
+function drawPitch(ctx,card,x,y,w,h){
+  const p=P[card.pid],t=tOf(card),r=srand(hash(key(card))+31),era=eraOf(card.year),hs=hash(key(card)),night=['X','B','P'].includes(era)&&hs%2===0,rain=!night&&hs%11===0;
+  const sky=ctx.createLinearGradient(0,y,0,y+h*.3);
+  if(night){sky.addColorStop(0,'#071022');sky.addColorStop(1,'#1b2a4d')}else if(rain){sky.addColorStop(0,'#7d8894');sky.addColorStop(1,'#c3cad2')}else{sky.addColorStop(0,'#5a9fdc');sky.addColorStop(1,'#d2e6f5')}
+  ctx.fillStyle=sky;ctx.fillRect(x,y,w,h);
+  if(night){for(const lx of [x+w*.08,x+w*.92]){const g=ctx.createRadialGradient(lx,y+h*.04,1,lx,y+h*.04,w*.34);g.addColorStop(0,'rgba(255,250,230,.9)');g.addColorStop(1,'rgba(255,250,230,0)');ctx.fillStyle=g;ctx.fillRect(x,y,w,h*.4)}}
+  // the stands, full of scarves
+  const st=y+h*.08,sh=h*.36;ctx.fillStyle=night?'#151a29':'#3d4452';ctx.fillRect(x,st,w,sh);
+  const shirts=[t[2],t[3],t[2],t[2],'#f2f2f2'],skins=['#f1c8a0','#d9a37a','#b07a52','#8a5a3a','#5e3d27'];
+  for(let yy=st+4;yy<st+sh-4;yy+=5.5)for(let xx=x+((yy|0)%2?2:0);xx<x+w;xx+=5){if(r()<.06)continue;ctx.globalAlpha=night?.62:.8;ctx.fillStyle=shirts[(r()*shirts.length)|0];ctx.fillRect(xx,yy+2,3.6,2.4);ctx.fillStyle=skins[(r()*skins.length)|0];ctx.fillRect(xx+.6,yy,2.4,2)}
+  ctx.globalAlpha=1;
+  // a big flag or banner in the crowd
+  if(hs%3===0){const bx=x+w*(.15+r()*.5),by=st+sh*(.25+r()*.3);ctx.fillStyle=t[2];ctx.fillRect(bx,by,w*.28,h*.05);ctx.fillStyle=t[3];ctx.fillRect(bx,by+h*.018,w*.28,h*.014)}
+  // advertising hoardings
+  const wy=st+sh,bh=h*.055;ctx.fillStyle='#111317';ctx.fillRect(x,wy,w,bh);
+  ctx.font=F_ANTON.replace('#',8);ctx.textAlign='center';ctx.textBaseline='middle';[[.18,t[1].toUpperCase(),t[3]==='#FFFFFF'?'#ffffff':t[3]],[.52,"GRANDPA'S",'#ffd23f'],[.84,'CARDS','#7fd3ff']].forEach(([f,s,c])=>{ctx.fillStyle=c;ctx.fillText(s,x+w*f,wy+bh*.5)});
+  // striped grass in perspective
+  const gy=wy+bh,gh=y+h-gy;const g0=rain?'#4b7f45':'#3f8f3c',g1=rain?'#3d6b39':'#347a33';
+  ctx.fillStyle=g0;ctx.fillRect(x,gy,w,gh);
+  for(let i=0;i<8;i++){const y0=gy+gh*Math.pow(i/8,1.5),y1=gy+gh*Math.pow((i+1)/8,1.5);ctx.fillStyle=i%2?g1:g0;ctx.fillRect(x,y0,w,y1-y0)}
+  ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=1.3;const vx=x+w*(.5+((hs>>3)%5-2)*.08);
+  // touchline, halfway line and the centre circle, or the penalty box
+  ctx.beginPath();ctx.moveTo(x,gy+gh*.12);ctx.lineTo(x+w,gy+gh*.12);ctx.stroke();
+  if(hs%2){ctx.beginPath();ctx.moveTo(vx-w*.03,gy+gh*.12);ctx.lineTo(vx-w*.3,y+h);ctx.stroke();ctx.beginPath();ctx.ellipse(vx-w*.1,gy+gh*.55,w*.3,gh*.18,0,0,7);ctx.stroke()}
+  else{ctx.beginPath();ctx.moveTo(x+w*.12,gy+gh*.12);ctx.lineTo(x+w*.02,gy+gh*.5);ctx.lineTo(x+w*.98,gy+gh*.5);ctx.lineTo(x+w*.88,gy+gh*.12);ctx.stroke();
+    // a goal behind the box
+    ctx.lineWidth=2;ctx.strokeStyle='#f6f6f6';ctx.beginPath();ctx.moveTo(x+w*.36,gy+gh*.12);ctx.lineTo(x+w*.36,gy-h*.02);ctx.lineTo(x+w*.64,gy-h*.02);ctx.lineTo(x+w*.64,gy+gh*.12);ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=.6;for(let i=1;i<8;i++){ctx.beginPath();ctx.moveTo(x+w*(.36+i*.035),gy-h*.02);ctx.lineTo(x+w*(.36+i*.035),gy+gh*.12);ctx.stroke()}}
+  if(rain){ctx.strokeStyle='rgba(220,230,240,.35)';ctx.lineWidth=.7;for(let i=0;i<40;i++){const sx=x+r()*w,sy=y+r()*h;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx-2,sy+6);ctx.stroke()}}
+  if(era==='V'||era==='S'){ctx.fillStyle='rgba(235,215,165,.28)';ctx.fillRect(x,y,w,h)}
+}
+
 function drawRink(ctx,card,x,y,w,h){
   const p=P[card.pid],t=tOf(card),r=srand(hash(key(card))+29),era=eraOf(card.year),hs=hash(key(card));
   ctx.fillStyle='#14171f';ctx.fillRect(x,y,w,h);
@@ -4499,7 +5212,7 @@ function drawArt(ctx,card,x,y,w,h,style,radius=0,fig={}){
     ctx.restore();return;
   }
   if(P[card.pid].sport!=='nba'&&(style==='arcade'||ART!=='arcade'||fig._inner)&&!(ART==='pixel'&&!fig._inner)){
-    ctx.save();rr(ctx,x,y,w,h,radius);ctx.clip();if(P[card.pid].sport==='nfl')drawGridiron(ctx,card,x,y,w,h);else if(P[card.pid].sport==='nhl')drawRink(ctx,card,x,y,w,h);else drawBallpark(ctx,card,x,y,w,h);
+    ctx.save();rr(ctx,x,y,w,h,radius);ctx.clip();if(P[card.pid].sport==='nfl')drawGridiron(ctx,card,x,y,w,h);else if(P[card.pid].sport==='nhl')drawRink(ctx,card,x,y,w,h);else if(P[card.pid].sport==='soc')drawPitch(ctx,card,x,y,w,h);else drawBallpark(ctx,card,x,y,w,h);
     drawFigure(ctx,card,x+4,y+8,w-8,h-12,style==='arcade'?{...fig,style:'arcade'}:fig);ctx.restore();return;
   }
   if(style==='arcade'){
@@ -4567,7 +5280,7 @@ function emblem(ctx,t,code,x,y,r){
   ctx.strokeStyle=onColor(t[2],t[3]);ctx.lineWidth=r*.14;ctx.beginPath();ctx.arc(x,y,r*.84,0,7);ctx.stroke();
   ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';fit(ctx,code,r*1.4,Math.round(r*.7),F_DISP);ctx.fillText(code,x,y+1);ctx.restore();
 }
-function emblemBall(ctx,x,y,r,pos,c,sp){ctx.save();ctx.fillStyle='#f6ecd2';ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();ctx.strokeStyle=c;ctx.lineWidth=3;ctx.stroke();if(sp==='mlb')baseball(ctx,[x,y-3.5],r*.36);else if(sp==='nhl'){ctx.fillStyle='#16171b';ctx.beginPath();ctx.ellipse(x,y-3,r*.42,r*.2,0,0,7);ctx.fill();ctx.fillRect(x-r*.42,y-3,r*.84,r*.16);ctx.beginPath();ctx.ellipse(x,y-3+r*.16,r*.42,r*.2,0,0,7);ctx.fill()}else if(sp==='nfl')football(ctx,[x,y-3.5],-.5,r*.5);else ball(ctx,[x,y-3.5],r*.42);ctx.fillStyle=c;ctx.font=F_BODY.replace('#',Math.round(r*.5));ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(pos,x,y+r*.56);ctx.restore()}
+function emblemBall(ctx,x,y,r,pos,c,sp){ctx.save();ctx.fillStyle='#f6ecd2';ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();ctx.strokeStyle=c;ctx.lineWidth=3;ctx.stroke();if(sp==='mlb')baseball(ctx,[x,y-3.5],r*.36);else if(sp==='nhl'){ctx.fillStyle='#16171b';ctx.beginPath();ctx.ellipse(x,y-3,r*.42,r*.2,0,0,7);ctx.fill();ctx.fillRect(x-r*.42,y-3,r*.84,r*.16);ctx.beginPath();ctx.ellipse(x,y-3+r*.16,r*.42,r*.2,0,0,7);ctx.fill()}else if(sp==='nfl')football(ctx,[x,y-3.5],-.5,r*.5);else if(sp==='soc')soccerBall(ctx,[x,y-3.5],r*.42);else ball(ctx,[x,y-3.5],r*.42);ctx.fillStyle=c;ctx.font=F_BODY.replace('#',Math.round(r*.5));ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(pos,x,y+r*.56);ctx.restore()}
 function rcBadge(ctx,card,x,y,sc=1){
   if(!isRC(card))return;const t=tOf(card);
   ctx.save();ctx.translate(x,y);ctx.scale(sc,sc);ctx.beginPath();ctx.moveTo(-15,-17);ctx.lineTo(15,-17);ctx.lineTo(15,2);ctx.quadraticCurveTo(15,14,0,20);ctx.quadraticCurveTo(-15,14,-15,2);ctx.closePath();
@@ -4646,7 +5359,7 @@ function renderCard(ctx,card){
     ctx.fillStyle=c1;ctx.fillRect(26,ry,198,32);
     ctx.fillStyle='#fff';ctx.textAlign='center';fit(ctx,p.name,184,29,F_SCRIPT);ctx.fillText(p.name,125,ry+24);
     ctx.fillStyle='#4d3f2b';ctx.font=F_BODY.replace('#',13);ctx.fillText(`${t[0].toUpperCase()} ${NICK}  ·  ${(p.sport==='mlb'&&p.pos==='C'?'CATCHER':POSN[p.pos])}`,125,315);
-    ctx.fillStyle='#7a6b4e';ctx.font=F_TYPE.replace('#',10);ctx.fillText(`${p.sport==='mlb'?'GRANDSTAND BUBBLE GUM':p.sport==='nhl'?'GRANDSTAND HOCKEY GUM':p.sport==='nfl'?'GRANDSTAND GRIDIRON GUM':'GRANDSTAND GUM CO.'} · ${card.year} · No. ${hs%200+1}`,125,336);
+    ctx.fillStyle='#7a6b4e';ctx.font=F_TYPE.replace('#',10);ctx.fillText(`${p.sport==='mlb'?'GRANDSTAND BUBBLE GUM':p.sport==='nhl'?'GRANDSTAND HOCKEY GUM':p.sport==='soc'?'GRANDSTAND FOOTBALL CLUB GUM':p.sport==='nfl'?'GRANDSTAND GRIDIRON GUM':'GRANDSTAND GUM CO.'} · ${card.year} · No. ${hs%200+1}`,125,336);
     emblemBall(ctx,208+off,238,19,p.pos,c1,p.sport);
     grain(ctx,.22);
     const vg=ctx.createRadialGradient(125,175,110,125,175,230);vg.addColorStop(0,'rgba(120,85,30,0)');vg.addColorStop(1,'rgba(120,85,30,.32)');ctx.fillStyle=vg;ctx.fillRect(0,0,250,350);
@@ -4737,13 +5450,13 @@ function renderCard(ctx,card){
   if(card.par===5){ if(m){borderGrad(ctx,['#000','#555','#000','#888','#000'],11);serial(ctx,card)} else stamp(ctx,'UNCUT PROOF','#222') }
   if(card.par===7){if(m){borderGrad(ctx,['#1b3fa0','#9fb6ff','#1b3fa0','#dfe6ff','#1b3fa0'],7);autograph(ctx,card,212,true)}else autograph(ctx,card,200,false)}
   if(card.par===8){borderGrad(ctx,['#5b5b5b','#e6e6e6','#8a8a8a','#ffffff','#5b5b5b'],7);relicWindow(ctx,card,150,158,76,56,false)}
-  if(card.par===11){const nb=P[card.pid].sport==='nba',T1=nb?TEAMS[P[card.pid].team]:null,c1=nb?T1[2]:'#FD5A1E',c2=nb?(T1[3]==='#FFFFFF'?'#FFC72C':T1[3]):'#27251F';
+  if(card.par===11){const sc=P[card.pid].sport==='soc',nb=P[card.pid].sport==='nba'||sc,T1=sc?tOf(card):nb?TEAMS[P[card.pid].team]:null,c1=nb?T1[2]:'#FD5A1E',c2=sc?(lum(T1[3])>.25?T1[3]:lum(T1[2])>.25?T1[2]:'#ffd23f'):nb?(T1[3]==='#FFFFFF'?'#FFC72C':T1[3]):'#27251F';
     borderGrad(ctx,nb?[c1,c2,c1,'#fff1b0',c2]:['#FD5A1E','#27251F','#FD5A1E','#ffb58a','#27251F'],11);ctx.save();ctx.fillStyle='rgba(20,18,16,.9)';rr(ctx,30,226,190,30,8);ctx.fill();ctx.strokeStyle=nb?c2:'#FD5A1E';ctx.lineWidth=2;ctx.stroke();
     ctx.fillStyle='#e8b93a';ctx.beginPath();ctx.moveTo(44,232);ctx.lineTo(56,232);ctx.lineTo(54,242);ctx.quadraticCurveTo(50,246,46,242);ctx.closePath();ctx.fill();ctx.fillRect(48.5,244,3,5);ctx.fillRect(45,249,10,3);
-    ctx.fillStyle=nb?c2:'#FD5A1E';ctx.font=F_ANTON.replace('#',11);ctx.textAlign='center';ctx.fillText(nb?'NBA CHAMPIONS':'WORLD SERIES CHAMPIONS',134,239);foilText(ctx,String(card.year),134,253,12,'center',F_ANTON);ctx.restore()}
+    ctx.fillStyle=nb?c2:'#FD5A1E';ctx.font=F_ANTON.replace('#',11);ctx.textAlign='center';ctx.fillText(sc?'WORLD CUP CHAMPIONS':nb?'NBA CHAMPIONS':'WORLD SERIES CHAMPIONS',134,239);foilText(ctx,String(card.year),134,253,12,'center',F_ANTON);ctx.restore()}
   if(card.par===12){borderGrad(ctx,['#B31942','#ffffff','#0A3161','#ffffff','#B31942'],10);ctx.save();ctx.fillStyle='rgba(10,49,97,.92)';rr(ctx,34,226,182,30,8);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
     ctx.fillStyle='#fff';[[48,241],[202,241]].forEach(([x,y])=>{ctx.beginPath();for(let i=0;i<10;i++){const r=i%2?2.6:6.2,a=-Math.PI/2+i*Math.PI/5;ctx.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r)}ctx.closePath();ctx.fill()});
-    ctx.font=F_ANTON.replace('#',12);ctx.textAlign='center';ctx.fillText('TEAM USA',125,239);ctx.fillStyle='#ff9aa8';ctx.font=F_BODY.replace('#',9);ctx.fillText(`OLYMPIC GAMES · ${card.year}`,125,251);ctx.restore()}
+    ctx.font=F_ANTON.replace('#',12);ctx.textAlign='center';ctx.fillText('TEAM USA',125,239);ctx.fillStyle='#ff9aa8';ctx.font=F_BODY.replace('#',9);ctx.fillText(P[card.pid].sport==='soc'&&![1996,2000,2004,2008,2012,2016,2021,2024].includes(card.year)?`${P[card.pid].women?"WOMEN'S ":''}WORLD CUP · ${card.year}`:`OLYMPIC GAMES · ${card.year}`,125,251);ctx.restore()}
   if(card.par===14){const ct=tOf(card);borderGrad(ctx,[ct[2],'#ffffff',ct[3]==='#FFFFFF'?ct[2]:ct[3],'#ffffff',ct[2]],10);ctx.save();ctx.fillStyle=ct[2];rr(ctx,34,226,182,30,8);ctx.fill();ctx.strokeStyle=onColor(ct[2],ct[3]);ctx.lineWidth=2;ctx.stroke();
     [[-12,'#0085C7'],[0,'#1A1A1A'],[12,'#DF0024']].forEach(([dx,c])=>{ctx.strokeStyle=c;ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(52+dx,237,5,0,7);ctx.stroke()});[[-6,'#F4C300'],[6,'#009F3D']].forEach(([dx,c])=>{ctx.strokeStyle=c;ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(52+dx,242,5,0,7);ctx.stroke()});
     ctx.fillStyle=onColor(ct[2],ct[3]);ctx.textAlign='center';fit(ctx,ct[0].toUpperCase(),110,12,F_ANTON);ctx.fillText(ct[0].toUpperCase(),140,239);ctx.font=F_BODY.replace('#',9);ctx.fillText(`OLYMPIC HOCKEY · ${card.year}`,140,251);ctx.restore()}
@@ -5119,22 +5832,22 @@ function showLetters(){
 }
 function checkSets(){
   SETS.forEach(s=>{
-    if(S.sets[s.id]==='claimed'||(s.g&&!S.garageOpen)||(s.lost&&!S.basementOpen)||(s.rink&&!S.rinkOpen))return;
+    if(S.sets[s.id]==='claimed'||(s.g&&!S.garageOpen)||(s.lost&&!S.basementOpen)||(s.rink&&!S.rinkOpen)||(s.stad&&!S.stadiumOpen))return;
     const done=s.pids.length>0&&s.pids.every(id=>setHave(s,id));
     if(done&&!S.sets[s.id]){S.sets[s.id]='ready';toast(`Set complete: ${s.name}! Claim it in Sets.`,'gold');renderTabs()}
     else if(!done&&S.sets[s.id]==='ready'){delete S.sets[s.id];renderTabs()}
   });
 }
-function setReward(s){if(s.rink)return {cash:s.pids.length*500,xp:s.pids.length*60};if(s.lost)return {cash:s.pids.length*400,xp:s.pids.length*50};if(s.vpar)return {cash:1000+s.pids.length*250,xp:s.pids.length*40};if(s.id==='wgoat')return {cash:2000,xp:300};if(s.champYr)return {cash:1500+s.pids.length*200,xp:s.pids.length*40};if(s.champ)return {cash:3000,xp:400};if(s.rc)return {cash:s.pids.length*150,xp:s.pids.length*40};return {cash:s.id==='fmvp'?2500:s.id==='fsteel'||s.id==='fpats'?1200:s.id==='ffam'||s.id==='fbro'?1500:s.id==='mvp'||s.id==='bmvp'||s.id==='roy'?2500:s.id==='world'||s.id==='swat'?1200:s.id==='fathers'||s.id==='b500'?1500:s.pids.length*40,xp:s.pids.length*25}}
+function setReward(s){if(s.stad)return {cash:s.pids.length*700,xp:s.pids.length*70};if(s.rink)return {cash:s.pids.length*500,xp:s.pids.length*60};if(s.lost)return {cash:s.pids.length*400,xp:s.pids.length*50};if(s.vpar)return {cash:1000+s.pids.length*250,xp:s.pids.length*40};if(s.id==='wgoat')return {cash:2000,xp:300};if(s.champYr)return {cash:1500+s.pids.length*200,xp:s.pids.length*40};if(s.champ)return {cash:3000,xp:400};if(s.rc)return {cash:s.pids.length*150,xp:s.pids.length*40};return {cash:s.id==='fmvp'?2500:s.id==='fsteel'||s.id==='fpats'?1200:s.id==='ffam'||s.id==='fbro'?1500:s.id==='mvp'||s.id==='bmvp'||s.id==='roy'?2500:s.id==='world'||s.id==='swat'?1200:s.id==='fathers'||s.id==='b500'?1500:s.pids.length*40,xp:s.pids.length*25}}
 function claimSet(id){const s=SETS.find(x=>x.id===id);if(S.sets[id]!=='ready')return;const r=setReward(s);S.sets[id]='claimed';S.cash+=r.cash;addXP(r.xp);toast(`${s.name} claimed: +${money(r.cash)}, +${r.xp} XP`,'gold');updateHeader();renderTabs()}
 function foundOne(c){
   if(S.curry==='drawn'&&P[c.pid].name==='Stephen Curry'){S.curry='done';const bonus=2500;S.cash+=bonus;save('now');
     celebrate(c,()=>queueModal(()=>modal(`<h2>Wait. What?</h2><p><b style="color:var(--ink)">${esc(cardTitle(c))}</b>, one of one.</p><div class="letter">I almost forgot. This one was in my coat pocket the whole time. Steph's rookie year, 2009, one of one. Nobody in the world has another. I wanted you to have it just because.<br><br>— Grandpa</div><p>It's in your PC, and you got ${money(bonus)}.</p><div class="row2"><button class="btn go" data-close>Best day ever</button></div>`)));return}
-  const lostOneCard=LOST_ONES.some(([n,t])=>P[c.pid].name===n&&P[c.pid].team===t);const lostRoom=lostOneCard||(S.loc==='basement'&&DEF[P[c.pid].team]);const loc=lostRoom?'basement':(LOCS[S.loc]&&LOCS[S.loc].sport===P[c.pid].sport)?S.loc:locOf(c.pid);S.oneDone=S.oneDone||{};if(!lostRoom||!(S.bOnes||[]).length)S.oneDone[loc]=true;if(!lostOneCard||S.loc==='basement')S.oneLeft=null;
+  const lostOneCard=LOST_ONES.some(([n,t])=>P[c.pid].name===n&&P[c.pid].team===t);const lostRoom=lostOneCard||(S.loc==='basement'&&DEF[P[c.pid].team]);const loc=lostRoom?'basement':(LOCS[S.loc]&&LOCS[S.loc].sport===P[c.pid].sport)?S.loc:locOf(c.pid);S.oneDone=S.oneDone||{};if((!lostRoom||!(S.bOnes||[]).length)&&(loc!=='stadium'||!(S.sOnes||[]).length))S.oneDone[loc]=true;if(!lostOneCard||S.loc==='basement')S.oneLeft=null;
   const bonus=2500;S.cash+=bonus;const t=S.oneFound.length-1;S.tier=Object.values(S.oneDone).filter(Boolean).length;
   challengeEvent('one',c);save('now');
   celebrate(c,()=>queueModal(()=>{
-    modal(`<h2>You found it.</h2><p><b style="color:var(--ink)">${esc(cardTitle(c))}</b>, one of one. It goes straight into your personal collection. A collector from Tulsa paid ${money(bonus)} just to photograph it.</p><div class="letter">${loc==='rink'?"Macklin Celebrini, 2024. His rookie year in San Jose. I got that one the day it came out and hid it before anybody could ask to see it. The best young player in hockey, one of one, in my old rink. Take care of it.":loc==='basement'?({PRV:"The Providence Steamrollers. 1946, the very first season. They won six games and lost fifty-four, and nobody in Rhode Island cared. I cared. I was a boy in the cheap seats at the Rhode Island Auditorium, and Ernie Calverley hit a shot from past half court. Hardly anyone believes that story. Now you've got the card.",H_INR:"Indianapolis, 1978. A skinny seventeen-year-old played eight games for the Racers before they sold him to Edmonton. Eight games. I drove four hours to see one of them.",SEA:"Seattle, 2007. They let the SuperSonics leave town a year later, and I've been mad about it ever since. Hold on to that one. It's a rookie card of a team that isn't there anymore."}[P[c.pid].team]||"One of the lost ones. Keep it safe."):loc==='shed'?"Knew you'd find it. Now you know why I never sold the shed.":loc==='garage'?"Nineteen eighty-four. His rookie year. I bought it off a kid at a Chicago card show for twenty dollars and a Larry Bird. Best trade I ever made, and I've made a lot of them.":loc==='barn'?"That's the one. I kept it in a coffee can under the hayloft for forty years. Best card I ever owned, and now it's yours.":"The attic's treasure. I held that card the day I bought it and couldn't breathe. Now it's yours."}</div><p>That was the only one in the ${LOCS[loc].name.toLowerCase()}. Hits get a little rarer from here and customers pay a little more. The real finish line is still an empty ${loc==='shed'?'shed':'attic'}.</p><div class="row2"><button class="btn go" data-close>Keep sorting</button></div>`);
+    modal(`<h2>You found it.</h2><p><b style="color:var(--ink)">${esc(cardTitle(c))}</b>, one of one. It goes straight into your personal collection. A collector from Tulsa paid ${money(bonus)} just to photograph it.</p><div class="letter">${loc==='stadium'&&SOC_ONE_NOTES[P[c.pid].name]?SOC_ONE_NOTES[P[c.pid].name]+(S.sOnes&&S.sOnes.length?` ${S.sOnes.length} more ${S.sOnes.length===1?'is':'are'} still out there.`:' That makes all twelve. Every legend in the stadium is yours.'):loc==='rink'?"Macklin Celebrini, 2024. His rookie year in San Jose. I got that one the day it came out and hid it before anybody could ask to see it. The best young player in hockey, one of one, in my old rink. Take care of it.":loc==='basement'?({PRV:"The Providence Steamrollers. 1946, the very first season. They won six games and lost fifty-four, and nobody in Rhode Island cared. I cared. I was a boy in the cheap seats at the Rhode Island Auditorium, and Ernie Calverley hit a shot from past half court. Hardly anyone believes that story. Now you've got the card.",H_INR:"Indianapolis, 1978. A skinny seventeen-year-old played eight games for the Racers before they sold him to Edmonton. Eight games. I drove four hours to see one of them.",SEA:"Seattle, 2007. They let the SuperSonics leave town a year later, and I've been mad about it ever since. Hold on to that one. It's a rookie card of a team that isn't there anymore."}[P[c.pid].team]||"One of the lost ones. Keep it safe."):loc==='shed'?"Knew you'd find it. Now you know why I never sold the shed.":loc==='garage'?"Nineteen eighty-four. His rookie year. I bought it off a kid at a Chicago card show for twenty dollars and a Larry Bird. Best trade I ever made, and I've made a lot of them.":loc==='barn'?"That's the one. I kept it in a coffee can under the hayloft for forty years. Best card I ever owned, and now it's yours.":"The attic's treasure. I held that card the day I bought it and couldn't breathe. Now it's yours."}</div><p>That was the only one in the ${LOCS[loc].name.toLowerCase()}. Hits get a little rarer from here and customers pay a little more. The real finish line is still an empty ${loc==='shed'?'shed':'attic'}.</p><div class="row2"><button class="btn go" data-close>Keep sorting</button></div>`);
   }));
 }
 function fanfare(){
@@ -5169,6 +5882,8 @@ function celebrate(c,done,o={}){
   $('#celBtn',ov).onclick=close;setTimeout(()=>$('#celBtn',ov)?.focus(),400);
 }
 function checkEnd(){
+  if(S.loc==='stadium'){if(S.pile<=0&&!hand.length&&!S.aside.length&&!S.stadiumEnd){S.stadiumEnd=true;queueModal(()=>modal(`<h2>The stadium is empty.</h2><div class="letter">A million and ten thousand cards, kiddo. Every room I ever filled. You looked at every single one.<br><br>Go outside. Kick a ball. I'll be watching.<br><br>— Grandpa</div><div class="row2"><button class="btn go" data-close>Keep playing</button></div>`))}return}
+  if(S.loc==='rink')return; // emptying the rink opens the stadium (checkStadium)
   if(S.loc==='rink'){if(S.pile<=0&&!hand.length&&!S.aside.length&&!S.rinkEnd){S.rinkEnd=true;queueModal(()=>modal(`<h2>The rink is empty.</h2><div class="letter">Five hundred and ten thousand cards, kiddo. You did it. I never finished sorting this place in thirty years. You did it in a season.<br><br>— Grandpa</div><div class="row2"><button class="btn go" data-close>Keep playing</button></div>`))}return}
   if(S.loc==='basement')return; // emptying the basement opens the rink (checkRink)
   if(S.loc==='basement'){if(S.pile<=0&&!hand.length&&!S.aside.length&&!S.basementEnd){S.basementEnd=true;queueModal(()=>modal(`<h2>The basement is empty.</h2><div class="letter">Two hundred sixty thousand cards. Every team that ever was, and a lot that aren't anymore.<br><br>Teams go away. Cards don't, as long as somebody keeps them. Thanks for keeping them.<br><br>— Grandpa</div><div class="row2"><button class="btn go" data-close>Keep playing</button></div>`))}return}
@@ -5236,13 +5951,14 @@ function genPackRaw(pk){
     if(kind==='retail')cards.push(rollCard({sport,yLo:1996,filter:p=>p.end>=1996,parMul:2}));
     else if(kind==='hobby')cards.push(i===pk.n-1?rollCard({sport,par:wpick([2,3,4,5,7,8,9],x=>({2:48,3:20,4:9,5:3,7:8,8:10,9:2})[x]),tw:[30,30,20,13,7]}):rollCard({sport,parMul:1.5}));
     else if(sport==='nfl')cards.push(rollCard({sport,yLo:1950,yHi:1979,filter:p=>p.start<=1979&&p.end>=1950,tw:[35,30,18,11,6]}));
+    else if(sport==='soc')cards.push(rollCard({sport,yLo:1950,yHi:1979,filter:p=>p.start<=1979&&p.end>=1950,tw:[5,40,30,15,10]}));
     else if(sport==='nhl')cards.push(rollCard({sport,yLo:1950,yHi:1979,filter:p=>p.start<=1979&&p.end>=1950,tw:[35,30,18,11,6]}));
     else if(sport==='mlb')cards.push(rollCard({sport,yLo:1952,yHi:1979,filter:p=>p.start<=1979&&p.end>=1952,tw:[35,30,18,11,6]}));
     else cards.push(rollCard({yLo:1970,yHi:1989,filter:p=>p.start<=1989&&p.end>=1970,tw:[35,30,18,11,6]}));
   }
   return cards;
 }
-const PACK_MAX={dnfl:1,gscle:3,hretail:6,hhobby:3,hvintage:2,hblaster:3,hmega:2,hhobbybox:1,dnhl:1,sfg:3,dnba:1,dmlb:1,retail:6,hobby:3,vintage:2,bretail:6,bhobby:3,bvintage:2,fretail:6,fhobby:3,fvintage:2,fblaster:3,fmega:2,fhobbybox:1,blaster:3,mega:2,hobbybox:1,bblaster:3,bmega:2,bhobbybox:1},RESTOCK=150;
+const PACK_MAX={sretail:6,shobby:3,svintage:2,sblaster:3,smega:2,shobbybox:1,dsoc:1,dnfl:1,gscle:3,hretail:6,hhobby:3,hvintage:2,hblaster:3,hmega:2,hhobbybox:1,dnhl:1,sfg:3,dnba:1,dmlb:1,retail:6,hobby:3,vintage:2,bretail:6,bhobby:3,bvintage:2,fretail:6,fhobby:3,fvintage:2,fblaster:3,fmega:2,fhobbybox:1,blaster:3,mega:2,hobbybox:1,bblaster:3,bmega:2,bhobbybox:1},RESTOCK=150;
 function packMax(id){return PACK_MAX[id]+2*up('vip')}
 function packCost(pk){return Math.round(pk.cost*(up('vip')?.8:1)*100)/100}
 function stockOf(id){S.stock=S.stock||{};return S.stock[id]??packMax(id)}
@@ -5455,6 +6171,7 @@ const DEALERS={
   nba:{n:'Hardwood Hank',ico:'🏀',col:'#b5541c',d:'Basketball from every era.',hi:["Hoops only at this table.","I've got Lakers, Celtics, Bulls. Take a look."]},
   mlb:{n:'Diamond Dot',ico:'⚾',col:'#1f5e3a',d:'Baseball from every era.',hi:["Baseball cards, the way they used to be.","Ask me about my Yankees box."]},
   nhl:{n:'Puck Pete',ico:'🏒',col:'#1f4e6b',d:'Hockey from teams that aren\'t around anymore.',hi:["Whalers, Nordiques, North Stars. All gone. All here.","I've got a Gretzky Racers card in the back. Not for sale."]},
+  soc:{n:'Pitchside Paolo',ico:'⚽',col:'#1f6b3a',d:'Soccer from every country and every era.',hi:["The whole world plays. The whole world is on this table.","I've got Pele, I've got Messi, I've got a Wanderers card from 1872."]},
   nfl:{n:'Gridiron Gus',ico:'🏈',col:'#6b1f1f',d:'Football from every era.',hi:["Football cards. Sundays all week long.","I sort these by team. Mostly."]},
   hr:{n:'High Roller Harry',ico:'💎',col:'#1d1a2e',d:'Big-money cards only, $1,000 to $10,000 each. Stars, autos, numbered cards and gem mint slabs.',hi:["If you have to ask the price, kid... no, go ahead, ask. It's on the tag.","Nothing on this table is under a grand. Wipe your hands first."]},
   mo:{n:'Mystery Mo',ico:'🎁',col:'#3a3a52',d:'Face-down cards. Pay first, then flip. Could be anything.',hi:["No peeking. That's the whole fun.","Most are okay. Some are great. One might be amazing."]},
@@ -5507,7 +6224,7 @@ function renderTrade(v){
 /* ---------- Mailbox: gifts and trades between players, plus offers from the traders ---------- */
 const BOT_X={sal:{n:'Big Sal',ico:'🧢',col:'#5a4a3a',d:'Flea market regular. Loves a swap.',hi:["Got anything good? I always got something good.","Let's make a deal, kid."]}};
 const botInfo=id=>DEALERS[id]||BOT_X[id];
-const botList=()=>['tom','sal','rita','vic','mike','sally','nba','mlb','nfl','nhl'].filter(id=>botInfo(id)&&(!['nba','mlb','nfl','nhl'].includes(id)||openSports().includes(id)));
+const botList=()=>['tom','sal','rita','vic','mike','sally','nba','mlb','nfl','nhl','soc'].filter(id=>botInfo(id)&&(!['nba','mlb','nfl','nhl','soc'].includes(id)||openSports().includes(id)));
 const cleanC=c=>{if(c.par===6)c.par=2;if(c.par===8&&c.year<1997)c.par=1;if(c.par===9&&c.year<2000)c.par=7;return c};
 function botCard(id){const sports=openSports(),sp=sports.includes(id)?id:pick(sports);
   if(id==='vic')return cleanC(rollCard({sport:sp,yHi:1989,tw:[0,15,35,30,20],parMul:1.5,filter:p=>p.start<=1989}));
@@ -5965,7 +6682,7 @@ function renderShed(v){
         <div class="cb cardback c2" style="--w:74px;transform:translate(-70%,-2px) rotate(-5deg)"></div>
         <div class="cb cardback c1" style="--w:74px;transform:translate(-30%,-6px) rotate(7deg)"></div>
         <div class="cb cardback c0" style="--w:74px;transform:translate(-50%,-10px) rotate(0deg)"></div>
-        <div class="box"><span>${S.loc==='rink'?'HOCKEY<br>on the ice':S.loc==='basement'?'LOST<br>TEAMS':S.loc==='garage'?'HOOPS<br>bins &amp; bins':S.loc==='barn'?'FOOTBALL<br>by team':S.loc==='attic'?'BASEBALL<br>1952–?':'CARDS<br>don\'t toss!'}</span></div>
+        <div class="box"><span>${S.loc==='stadium'?'SOCCER<br>in the lockers':S.loc==='rink'?'HOCKEY<br>on the ice':S.loc==='basement'?'LOST<br>TEAMS':S.loc==='garage'?'HOOPS<br>bins &amp; bins':S.loc==='barn'?'FOOTBALL<br>by team':S.loc==='attic'?'BASEBALL<br>1952–?':'CARDS<br>don\'t toss!'}</span></div>
       </button>
       <div>
         <div class="pilecount"><b id="pcN">${num(S.pile)}</b>cards to go</div>
@@ -5975,7 +6692,7 @@ function renderShed(v){
       </div>
     </div>
     <div class="tablecol">
-      ${S.atticOpen?`<div class="locs" role="tablist" aria-label="Where to sort">${['shed','attic'].concat(S.barnOpen?['barn']:[],S.garageOpen?['garage']:[],S.basementOpen?['basement']:[],S.rinkOpen?['rink']:[]).map(l=>{const pl=l===S.loc?S.pile:(S.places[l]?.pile??LOCS[l].size);return `<button class="loc" data-loc="${l}" aria-selected="${S.loc===l}"><b>${LOCS[l].long}</b><span>${LOCS[l].label} · ${num(pl)} left</span></button>`}).join('')}</div>`:''}
+      ${S.atticOpen?`<div class="locs" role="tablist" aria-label="Where to sort">${['shed','attic'].concat(S.barnOpen?['barn']:[],S.garageOpen?['garage']:[],S.basementOpen?['basement']:[],S.rinkOpen?['rink']:[],S.stadiumOpen?['stadium']:[]).map(l=>{const pl=l===S.loc?S.pile:(S.places[l]?.pile??LOCS[l].size);return `<button class="loc" data-loc="${l}" aria-selected="${S.loc===l}"><b>${LOCS[l].long}</b><span>${LOCS[l].label} · ${num(pl)} left</span></button>`}).join('')}</div>`:''}
       ${boxedRoom(S.loc)&&roomBoxes()?`<div class="boxbar" id="boxbar"></div>`:''}
       <div class="table" id="table"></div>
       <div class="summary" id="summary"></div>
@@ -6057,9 +6774,10 @@ function updatePrimary(){
 }
 function refreshSide(){
   const lg=$('#ledger');if(!lg)return;
-  let note=LEDGER[0][1];if(S.loc==='rink'){const done=LOCS.rink.size-S.pile;note=RINK_LEDGER[0][1];RINK_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='basement'){const done=LOCS.basement.size-S.pile;note=BASEMENT_LEDGER[0][1];BASEMENT_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='garage'){const done=LOCS.garage.size-S.pile;note=GARAGE_LEDGER[0][1];GARAGE_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='barn'){const done=LOCS.barn.size-S.pile;note=BARN_LEDGER[0][1];BARN_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='attic'){const done=LOCS.attic.size-S.pile;note=ATTIC_LEDGER[0][1];ATTIC_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else LEDGER.forEach(([n,t])=>{if(S.stats.flips>=n)note=t});lg.textContent=note;
+  let note=LEDGER[0][1];if(S.loc==='stadium'){const done=LOCS.stadium.size-S.pile;note=STADIUM_LEDGER[0][1];STADIUM_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='rink'){const done=LOCS.rink.size-S.pile;note=RINK_LEDGER[0][1];RINK_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='basement'){const done=LOCS.basement.size-S.pile;note=BASEMENT_LEDGER[0][1];BASEMENT_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='garage'){const done=LOCS.garage.size-S.pile;note=GARAGE_LEDGER[0][1];GARAGE_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='barn'){const done=LOCS.barn.size-S.pile;note=BARN_LEDGER[0][1];BARN_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='attic'){const done=LOCS.attic.size-S.pile;note=ATTIC_LEDGER[0][1];ATTIC_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else LEDGER.forEach(([n,t])=>{if(S.stats.flips>=n)note=t});lg.textContent=note;
   const g=$('#goose');
   if(S.level<6)g.innerHTML=`<div class="goose locked"><div class="g">?</div><p><b>Not in reach yet</b>Grandpa hid his best card. Reach level 6 and it goes into the pile.</p></div>`;
+  else if(S.loc==='stadium'){const left=(S.sOnes||SOC_ONES).length,got=SOC_ONES.length-left;g.innerHTML=`<div class="goose"><div class="g">1/1</div><p><b>${got} of ${SOC_ONES.length} found</b>${left?`Twelve legends are hidden in the stadium: Messi, Ronaldo, Pele, Maradona, Mia Hamm and more. ${left} still out there, in any locker.`:'All twelve legends are safe in your PC.'}</p></div>`}
   else if(S.loc==='basement'){const left=(S.bOnes||[0,1,2]).length,got=3-left;g.innerHTML=`<div class="goose"><div class="g">1/1</div><p><b>${got} of 3 found</b>${left?`Three of Grandpa's lost-team one-of-ones are down here. ${left} still in the pile.`:'All three lost-team one-of-ones are safe in your PC.'}</p></div>`}
   else if((S.oneDone||{})[S.loc])g.innerHTML=`<div class="goose"><div class="g">1/1</div><p><b>Found it!</b>Grandpa's ${LOCS[S.loc].name.toLowerCase()} one-of-one is safe in your PC.</p></div>`;
   else if(S.oneLeft===null)g.innerHTML=`<div class="goose"><div class="g">1/1</div><p><b>Not in this pile</b>Keep sorting.</p></div>`;
@@ -6086,7 +6804,7 @@ function binderList(sp){
   return ks;
 }
 function statsHTML(total,worth){
-  let pcV=0,slabs=0,slabV=0,slabRaw=0,tens=0,best=null,bestV=0,ones=0;const spV={nba:0,mlb:0,nfl:0,nhl:0};
+  let pcV=0,slabs=0,slabV=0,slabRaw=0,tens=0,best=null,bestV=0,ones=0;const spV={nba:0,mlb:0,nfl:0,nhl:0,soc:0};
   for(const k in S.stacks){const c=fromKey(k),n=S.stacks[k],v=valueOf(c);
     if(v>bestV){bestV=v;best=c}if(S.pc[k])pcV+=v;spV[P[c.pid].sport]+=v*n;if(c.par===6)ones+=n;
     if(c.g){slabs+=n;slabV+=v*n;const r={...c};delete r.g;slabRaw+=valueOf(r)*n;if(c.g===10)tens+=n}}
@@ -6104,7 +6822,7 @@ function statsHTML(total,worth){
   </div></details>`;
 }
 // every sport you have cards in shows up, even one you haven't reached in the shed yet (gifts and trades)
-function binderSports(){const o=openSports().slice(),have=new Set();for(const k in S.stacks){const p=P[+k.split('.')[0]];if(p)have.add(p.sport)}['nba','mlb','nfl','nhl'].forEach(sp=>{if(have.has(sp)&&!o.includes(sp))o.push(sp)});return o}
+function binderSports(){const o=openSports().slice(),have=new Set();for(const k in S.stacks){const p=P[+k.split('.')[0]];if(p)have.add(p.sport)}['nba','mlb','nfl','nhl','soc'].forEach(sp=>{if(have.has(sp)&&!o.includes(sp))o.push(sp)});return o}
 function renderBinder(v){
   v=v||$('#view');
   const total=Object.values(S.stacks).reduce((a,b)=>a+b,0);
@@ -6271,16 +6989,16 @@ function renderPacks(v){
 /* ---------- team boxes: a box of loose cards from one team, sorted in that sport's room ---------- */
 const TB_PRICE={100:50,250:110,500:200};
 // a sport's team box goes to its boxed room (attic, barn, or the garage for basketball)
-const tbRoom=sp=>sp==='mlb'?(S.atticOpen?'attic':null):sp==='nfl'?(S.barnOpen?'barn':null):sp==='nhl'?(S.rinkOpen?'rink':null):(S.garageOpen?'garage':null);
+const tbRoom=sp=>sp==='mlb'?(S.atticOpen?'attic':null):sp==='nfl'?(S.barnOpen?'barn':null):sp==='nhl'?(S.rinkOpen?'rink':null):sp==='soc'?(S.stadiumOpen?'stadium':null):(S.garageOpen?'garage':null);
 const RIVALS={gscle:{sp:'nba',nick:'Warriors vs Cavs',codes:['GSW','SFW','PHW','CLE'],d:'Warriors and Cavaliers from every era, with a shot at their 2015 to 2018 Finals cards.'},
   sflad:{sp:'mlb',nick:'Giants vs Dodgers',codes:['M_SFG','M_NYG','M_LAD','M_BRO'],d:'Giants and Dodgers from New York to California, with a shot at Giants World Series Champs cards.'}};
 // a rivalry box goes to that sport's boxed room, or to any boxed room you have open
-const rivRoom=sp=>tbRoom(sp)||(S.atticOpen?'attic':S.barnOpen?'barn':S.garageOpen?'garage':S.rinkOpen?'rink':null);
+const rivRoom=sp=>tbRoom(sp)||(S.atticOpen?'attic':S.barnOpen?'barn':S.garageOpen?'garage':S.rinkOpen?'rink':S.stadiumOpen?'stadium':null);
 function rivalHTML(){const ok=Object.keys(RIVALS).filter(id=>rivRoom(RIVALS[id].sp));if(!ok.length)return '';
   return `<h3 class="sech">Rivalry boxes</h3><p class="note" style="margin:-4px 0 12px">${ok.map(id=>`<b>${RIVALS[id].nick}:</b> ${RIVALS[id].d}`).join(' ')} Each one shows up as its own box to sort.</p>
   <div class="pk tbox"><div class="tbrow"><label>Rivalry <select id="rvPick">${ok.map(id=>`<option value="${id}">${esc(RIVALS[id].nick)}</option>`).join('')}</select></label>
   <label>Size <select id="rvSize">${Object.keys(TB_PRICE).map(n=>`<option value="${n}">${n} cards</option>`).join('')}</select></label><button class="btn go" id="rvBuy">Buy</button></div></div>`}
-function teamGroups(){const g={};P.forEach(p=>{const t=TEAMS[p.team];if(!t||!tbRoom(p.sport))return;const k=p.sport+':'+t[1];(g[k]=g[k]||{sp:p.sport,nick:t[1],codes:new Set(),n:0}).codes.add(p.team);g[k].n++});
+function teamGroups(){const g={};P.forEach(p=>{const t=TEAMS[p.team];if(!t||!tbRoom(p.sport))return;const k=p.sport==='soc'?'soc:'+t[0]+' '+t[1]:p.sport+':'+t[1];(g[k]=g[k]||{sp:p.sport,nick:p.sport==='soc'?t[0]+' '+t[1]:t[1],codes:new Set(),n:0}).codes.add(p.team);g[k].n++});
   return Object.values(g).map(x=>({...x,codes:[...x.codes]})).sort((a,b)=>a.sp.localeCompare(b.sp)||a.nick.localeCompare(b.nick))}
 function teamBoxHTML(){const gs=teamGroups();if(!gs.length)return '';
   const sports=[...new Set(gs.map(x=>x.sp))];
@@ -6290,7 +7008,7 @@ function teamBoxHTML(){const gs=teamGroups();if(!gs.length)return '';
 function buyTeamBox(val,n){const rv=RIVALS[val];const g=rv?{...rv,riv:val}:teamGroups().find(x=>x.sp+':'+x.nick===val);const cost=TB_PRICE[n];if(!g||!cost)return;
   if(S.cash<cost){toast(`That box costs ${money(cost)}.`);return}
   const loc=g.riv?rivRoom(g.sp):tbRoom(g.sp);if(!loc)return;ensureBoxes();const rb=roomBoxes(loc);if(!rb)return;
-  S.cash-=cost;const id={attic:'b',barn:'f',garage:'g',rink:'r'}[loc]+'t'+Date.now().toString(36);
+  S.cash-=cost;const id={attic:'b',barn:'f',garage:'g',rink:'r',stadium:'z'}[loc]+'t'+Date.now().toString(36);
   rb.push({id,label:`${g.nick} box from Lenny's`,teams:g.codes,tm:g.codes[g.codes.length-1],total:n,left:n,...(g.riv?{riv:g.riv,sp:g.sp}:{})});
   if(S.loc===loc)S.pile+=n;else{S.places[loc]=S.places[loc]||{pile:0,oneLeft:null};S.places[loc].pile+=n}
   save('now');updateHeader();
@@ -6420,11 +7138,11 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-11.1624';
+const APP_VERSION = '2026-11-12.1902';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
-    const m=(await r.text()).match(/const APP_VERSION = '([^']+)'/);if(!m||m[1]<=APP_VERSION)return;
+    const m=(await r.text()).match(/const APP_VERSION = '2026-11-12.1902']+)'/);if(!m||m[1]<=APP_VERSION)return;
     updateShown=true;const b=document.createElement('button');b.textContent='New version ready · tap to update';
     b.style.cssText='position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 14px);transform:translateX(-50%);z-index:2147483000;background:#ffc65c;color:#15181e;border:0;border-radius:14px;padding:14px 20px;font:800 16px -apple-system,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.45)';
     b.onclick=()=>{b.textContent='Saving, then updating…';try{if(PROFILE)save('now')}catch(e){}setTimeout(()=>location.replace(location.pathname+'?v='+encodeURIComponent(m[1])),1500)};document.body.appendChild(b)}catch(e){}}
