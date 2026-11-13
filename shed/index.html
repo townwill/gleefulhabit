@@ -3334,7 +3334,22 @@ Wendie Renard|S_OL|3|DF|2006|2026|3||run||FRA|W
 Vivianne Miedema|S_ARS|11|FW|2013|2026|3||kick||NED|W
 Asisat Oshoala|S_BAR|9|FW|2013|2026|3||run||NGA|W
 Barbra Banda|S_ORP|22|FW|2018|2026|3||run||ZAM|W
-Linda Caicedo|S_RMA|18|FW|2019|2026|2||stiff||COL|W`;
+Linda Caicedo|S_RMA|18|FW|2019|2026|2||stiff||COL|W
+Landon Donovan|S_SJE|10|FW|2001|2004|4||run|A|USA|
+George Best|S_SJE|7|FW|1980|1981|5|M|stiff|A|NIR|
+Eric Wynalda|S_SJE|11|FW|1990|2002|2||kick||USA|
+Dwayne De Rosario|S_SJE|7|MF|1999|2015|2||kick||CAN|
+Jeff Agoos|S_SJE|12|DF|1985|2005|2||stiff||USA|
+Pat Onstad|S_SJE|18|GK|1988|2011|1||catch||CAN|
+Troy Dayak|S_SJE|4|DF|1993|2005|1||stiff||USA|
+Ramiro Corrales|S_SJE|13|MF|1996|2012|1||run||USA|
+Shea Salinas|S_SJE|6|MF|2009|2022|1||run||USA|
+Alan Gordon|S_SJE|16|FW|2004|2017|1||kick||USA|
+Steven Lenhart|S_SJE|24|FW|2008|2015|1||run||USA|
+Jackson Yueill|S_SJE|14|MF|2017|2026|1||kick||USA|
+Tommy Thompson|S_SJE|22|MF|2015|2023|1||run||USA|
+Cristian Espinoza|S_SJE|10|FW|2015|2026|2||run||ARG|
+Paul Child|S_SJE|9|FW|1970|1983|1||kick||ENG|`;
 const P = (RAW+'\n'+RAW_MLB+'\n'+RAW_NFL+'\n'+RAW_EXTRA+'\n'+RAW_SOC).split('\n').map((l,i,arr)=>{
   const [name,team,num,pos,s,e,tier,m,pose,x,nat,wm]=l.split('|');
   const o={id:i,name,team,num,pos,start:+s,end:+e,tier:+tier,mvp:m==='M',pose,alt:x==='A',sport:team.startsWith('M_')?'mlb':team.startsWith('F_')?'nfl':team.startsWith('H_')?'nhl':team.startsWith('S_')?'soc':'nba'};
@@ -4306,7 +4321,7 @@ const RINK_LEDGER=[
   [220000,"Almost through the rink. Lace up and go skate somewhere real when you're done."],
 ];
 /* ---------- the old stadium: lockers of soccer cards ---------- */
-const SOC_NOT_CLUBS=['S_USA','S_USW','S_NOR','S_SHF','S_BRN','S_WAN','S_REG','S_QPK','S_DKL','S_BLF','S_PNE','S_BLP','S_WOL','S_ESS','S_KAI','S_REI','S_DYN','S_CAG','S_FIO','S_LAZ','S_DEP','S_TBM','S_SJC','S_WFR','S_BBR','S_INK','S_FFC','S_VFL','S_ANS','S_GAL','S_CRU','S_PEN','S_NAC','S_BLA','S_FUL','S_LEI','S_HSV','S_NFO','S_LEE','S_ATH','S_VAL','S_SJE','S_ATL','S_NER','S_DCU','S_CLB','S_SEA','S_KCC','S_WSP','S_NCC','S_SDW','S_ANG','S_CHR'];
+const SOC_NOT_CLUBS=['S_USA','S_USW','S_NOR','S_SHF','S_BRN','S_WAN','S_REG','S_QPK','S_DKL','S_BLF','S_PNE','S_BLP','S_WOL','S_ESS','S_KAI','S_REI','S_DYN','S_CAG','S_FIO','S_LAZ','S_DEP','S_TBM','S_SJC','S_WFR','S_BBR','S_INK','S_FFC','S_VFL','S_ANS','S_GAL','S_CRU','S_PEN','S_NAC','S_BLA','S_FUL','S_LEI','S_HSV','S_NFO','S_LEE','S_ATH','S_VAL','S_ATL','S_NER','S_DCU','S_CLB','S_SEA','S_KCC','S_WSP','S_NCC','S_SDW','S_ANG','S_CHR'];
 const SOC_CLUBS=Object.keys(TEAMS).filter(k=>k.startsWith('S_')&&!SOC_NOT_CLUBS.includes(k)&&P.filter(p=>p.team===k).length>=3);
 const SOC_MLS=['S_LAG','S_MIA','S_SEA','S_ATL','S_LAFC','S_NYRB','S_TFC','S_CLB','S_DCU','S_NER','S_SJE','S_TBM','S_COS'];
 const SOC_NWSL=['S_POT','S_NCC','S_ORP','S_SDW','S_GFC','S_WSP','S_SRF','S_CHR','S_ANG','S_KCC','S_WFR','S_SJC','S_BBR'];
@@ -4409,6 +4424,8 @@ function ensureBoxes(){
   if(S.rinkOpen&&!S.rinkBoxes){const pile=S.loc==='rink'?S.pile:(S.places.rink?S.places.rink.pile:LOCS.rink.size);S.rinkBoxes=makeBoxes(Math.max(1,pile),RINK_TEMPLATES,'r');S.rinkBoxes.forEach(b=>{if(b.loose0){b.loose=true;b.id='rloose'}});S.rinkCur=null;
     const tot=S.rinkBoxes.reduce((a,b)=>a+b.left,0);if(S.loc==='rink')S.pile=tot;else if(S.places.rink)S.places.rink.pile=tot}
   addVault();
+  if(S.stadiumBoxes&&!S.stadiumBoxes.some(b=>b.tm==='S_SJE')){const cur=getCur('stadium'),don=S.stadiumBoxes.filter(b=>b.id!==cur&&!b.loose&&b.left===b.total).sort((a,b)=>b.left-a.left)[0];
+    if(don){const n=Math.min(7000,don.left-30);don.left-=n;don.total-=n;const at=S.stadiumBoxes.reduce((k,b,i)=>b.crate?i+1:k,0);S.stadiumBoxes.splice(at,0,{id:'zsje',label:'San Jose Earthquakes',teams:['S_SJE'],crate:true,tm:'S_SJE',total:n,left:n})}}
   if(S.stadiumOpen&&!S.stadiumBoxes){const pile=S.loc==='stadium'?S.pile:(S.places.stadium?S.places.stadium.pile:LOCS.stadium.size);S.stadiumBoxes=makeBoxes(Math.max(1,pile),STADIUM_TEMPLATES,'z');S.stadiumBoxes.forEach(b=>{if(b.loose0){b.loose=true;b.id='zloose'}});S.stadiumCur=null;
     const tot=S.stadiumBoxes.reduce((a,b)=>a+b.left,0);if(S.loc==='stadium')S.pile=tot;else if(S.places.stadium)S.places.stadium.pile=tot}
   if(S.garageOpen&&!S.garageBoxes){const pile=S.loc==='garage'?S.pile:(S.places.garage?S.places.garage.pile:LOCS.garage.size);S.garageBoxes=makeBoxes(Math.max(1,pile),GARAGE_TEMPLATES,'g');S.garageCur=null;
@@ -7138,11 +7155,11 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-12.1902';
+const APP_VERSION = '2026-11-12.1911';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
-    const m=(await r.text()).match(/const APP_VERSION = '2026-11-12.1902']+)'/);if(!m||m[1]<=APP_VERSION)return;
+    const m=(await r.text()).match(/const APP_VERSION = '([^']+)'/);if(!m||m[1]<=APP_VERSION)return;
     updateShown=true;const b=document.createElement('button');b.textContent='New version ready · tap to update';
     b.style.cssText='position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 14px);transform:translateX(-50%);z-index:2147483000;background:#ffc65c;color:#15181e;border:0;border-radius:14px;padding:14px 20px;font:800 16px -apple-system,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.45)';
     b.onclick=()=>{b.textContent='Saving, then updating…';try{if(PROFILE)save('now')}catch(e){}setTimeout(()=>location.replace(location.pathname+'?v='+encodeURIComponent(m[1])),1500)};document.body.appendChild(b)}catch(e){}}
