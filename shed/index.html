@@ -159,7 +159,8 @@ button:focus-visible, input:focus-visible, select:focus-visible{outline:2px soli
 .boxtile.done{opacity:.45;filter:grayscale(.6)}
 .gpanel{margin-bottom:12px}.gq{display:flex;flex-wrap:wrap;gap:10px}
 .gi{display:flex;gap:10px;align-items:center;background:var(--panel2);border-radius:10px;padding:8px 12px 8px 8px}
-.gi canvas{width:44px;height:62px}.gi b{display:block}.gi span{display:block;font-size:13px;color:var(--muted)}.gi .gt{color:var(--bulb);font-variant-numeric:tabular-nums}
+.gi canvas{width:44px;height:62px}.gi.gwait{opacity:.6}
+.gtiers{display:flex;gap:8px;flex-wrap:wrap}.gtier{flex:1;min-width:96px;min-height:44px;background:var(--panel2);border:2px solid transparent;border-radius:10px;padding:6px 10px;color:inherit;font:inherit;text-align:left;cursor:pointer}.gtier b{display:block;font-size:16px}.gtier span{display:block;font-size:12px;color:var(--muted)}.gtier.on{border-color:var(--bulb)}.gi b{display:block}.gi span{display:block;font-size:13px;color:var(--muted)}.gi .gt{color:var(--bulb);font-variant-numeric:tabular-nums}
 .gbadge{display:inline-block;margin-left:6px;font-family:var(--display);font-size:11px;padding:1px 6px;border-radius:4px;background:#f8f7f2;color:#1a1a1a}
 .gbadge.g10{background:#ff7a1a;color:#fff}.gbadge.g9{background:#ffd9b8}
 .slabspot canvas{display:block;margin:0 auto;filter:drop-shadow(0 12px 22px rgba(0,0,0,.5))}
@@ -3778,7 +3779,7 @@ const UPGRADES = [
   {id:'case',name:'Bigger Showcase',cost:600,max:3,grow:2.2,lv:5,desc:'Two more spots in your showcase for visitors to tip on.'},
   {id:'line',name:'Waiting Line',cost:1500,max:1,grow:1,lv:5,desc:"Customers with offers get in line instead of leaving. When 5 or more are waiting you get a heads-up, and one button sells to all of them."},
   {id:'clerk',name:'Shop Clerk',cost:500,max:2,grow:3,lv:5,desc:"Colton's idea. Level 1: keeps the shelf stocked with your duplicate cards, best ones first. Level 2: also sells automatically when a customer offers at least 1.5× book value."},
-  {id:'express',name:'Express Grading',cost:300,max:2,grow:2.5,lv:3,desc:'Grades come back faster (90 seconds, then 45), and the grader takes 2 more cards per level.'},
+  {id:'express',name:'Bigger Grader',cost:300,max:2,grow:2.5,lv:3,desc:'Grades come back faster (90 seconds, then 45), and the grader takes 2 more cards per level.'},
   {id:'doctor',name:'Card Doctor',cost:1500,max:2,grow:2.5,lv:5,desc:'A pro cleans, flattens and checks every card before it goes to Slab Happy. More 10s on new grades, and resubmits lean your way (55% up, then 60%). All legit.'},
   {id:'regrade',name:'Crack & Resubmit',cost:2000,max:1,lv:5,desc:'Crack a slab and send the card back to Slab Happy. It\'s a coin flip: the grade goes up or down. Resubmit as many times as you dare.'},
   {id:'sleeves',name:'Sleeves & Toploaders',cost:250,max:1,lv:3,desc:'Protect cards before they go to the grader. Much better odds of 9s and 10s.'},
@@ -5628,7 +5629,7 @@ function sortHand(mode='keep',silent){
   hand.forEach(c=>challengeEvent('find',c));
   hand.forEach((c,i)=>{const toBulk=!locked(c)&&(mode==='marks'?marks[i]==='bulk':mode==='bulk'&&bulkable(c));
     if(toBulk){bn++;bv+=valueOf(c)*rate}else{addCard(c,'hand');if(mode==='marks'&&marks[i]==='pc'&&c.par!==6){S.pc[key(c)]=true;pcGrade.push(key(c))}}});
-  pcGrade.forEach(k=>{if((S.grading||[]).length>=gradeMax())toast('The grader is full, so that PC card stays raw for now.');else if(S.cash<gradeFee(fromKey(k)))toast(`Not enough cash to grade (${money(gradeFee(fromKey(k)))}). It stays raw in your PC.`);else sendToGrader(k,{pc:true})});
+  pcGrade.forEach(k=>{if((S.grading||[]).length>=GQ_MAX)toast('Slab Happy is full, so that PC card stays raw for now.');else if(S.cash<tierFee(fromKey(k),'value'))toast(`Not enough cash to grade (${money(tierFee(fromKey(k),'value'))}). It stays raw in your PC.`);else sendToGrader(k,{pc:true,tier:'value'})});
   if(bn){bv=Math.round(bv*100)/100;S.cash+=bv;S.stats.sold+=bn;S.stats.earned+=bv;floatMoney('+'+money(bv))}
   S.stats.flips+=hand.length;addXP(hand.length);tickStock(hand.length);challengeEvent('sort',hand.length);
   hand=[];phase='empty';gStar=-1;
@@ -5733,6 +5734,31 @@ function sizeCheck(bytes){lastPack=bytes;const n=$('#saveSize');if(n)n.textConte
   queueModal(()=>{const m=modal(`<h2>Your save file is getting big</h2><p>${esc(PROFILE.name)}'s binder has ${num(Object.values(S.stacks).reduce((a,b)=>a+b,0))} cards and the save is ${Math.round(bytes/1024)} KB. Big saves take longer and could stop saving online. Selling some cheap cards first keeps it small.</p><div class="row2">${ci.n?`<button class="btn go" id="szCheap">Sell under $1 · ${num(ci.n)} · ${money(ci.v)}</button>`:''}${di.n?`<button class="btn" id="szDupe">Sell dupes · ${num(di.n)}</button>`:''}<button class="btn" data-close>Later</button></div>`);
     const a=$('#szCheap',m);if(a)a.onclick=()=>{closeModal(true);sellCheap()};const b=$('#szDupe',m);if(b)b.onclick=()=>{closeModal(true);sellDupes()}})}
 const gradeMs=()=>180000/Math.pow(2,up('express')),gradeMax=()=>5+2*up('express');
+// three service levels: Value is the old grader; Priority costs more and comes back faster; Express is about 10 seconds
+const GTIERS={value:{name:'Value',fee:1,ms:()=>gradeMs()},priority:{name:'Priority',fee:2.5,ms:()=>Math.max(15000,Math.round(gradeMs()/5))},express:{name:'Express',fee:5,ms:()=>10000}};
+const gTier=t=>GTIERS[t]?t:'value';
+const tierFee=(c,t)=>Math.round(gradeFee(c)*GTIERS[gTier(t)].fee);
+const msText=ms=>ms>=60000?`${Math.round(ms/6000)/10} min`.replace('.0 ',' '):`${Math.round(ms/1000)} sec`;
+const GQ_MAX=300;
+// cards past the grader's slots wait in line; each starts the moment a slot frees up (works while the game was closed too)
+function runGradeQueue(now=Date.now()){
+  const q=S.grading||[];let moved=false;
+  q.forEach(x=>{if(!x.wait&&x.st==null)x.st=x.ready-(x.ms||gradeMs())});
+  for(;;){const w=q.find(x=>x.wait);if(!w)break;const max=gradeMax();
+    const busy=t=>q.filter(x=>!x.wait&&x.st<=t&&x.ready>t).length;
+    const cands=[w.at||0,...q.filter(x=>!x.wait&&x.ready>=(w.at||0)).map(x=>x.ready)].filter(t=>t<=now).sort((a,b)=>a-b);
+    const t=cands.find(t=>busy(t)<max);if(t==null)break;
+    w.wait=false;w.st=t;w.ready=t+w.ms;moved=true}
+  return moved}
+const gradeActive=()=>(S.grading||[]).filter(x=>!x.wait&&x.ready>Date.now()).length;
+const gradeWaiting=()=>(S.grading||[]).filter(x=>x.wait).length;
+function queueGrade(item,tier){tier=gTier(tier);const ms=GTIERS[tier].ms();S.grading=S.grading||[];
+  const it={...item,tier,ms,at:Date.now(),wait:true,ready:Infinity};
+  // Express and Priority cut in line ahead of slower cards that haven't started yet
+  const rank=t=>t==='express'?0:t==='priority'?1:2;let i=S.grading.length;
+  while(i>0&&S.grading[i-1].wait&&rank(S.grading[i-1].tier)>rank(tier))i--;
+  S.grading.splice(i,0,it);runGradeQueue();return it}
+function gradeEta(it){return it.wait?'waiting in line':`back in ${msText(Math.max(0,it.ready-Date.now()))}`}
 function gradeFee(c){return Math.min(60,Math.round(8+valueOf(c)*.05))}
 function rollGrade(c,fresh){
   // newer cards are in better shape; pack-fresh cards best of all
@@ -5747,43 +5773,57 @@ function rollGrade(c,fresh){
   if(isOne(c)){w={...w};[1,2,3,4,5,6,7].forEach(g=>delete w[g])} // a 1/1 always comes back an 8 or better
   return +wpick(Object.keys(w),g=>w[g]);
 }
-function sendToGrader(k,opt={}){
+function sendToGrader(k,opt={}){const tier=gTier(opt.tier||S.gradeTier);
   const c=fromKey(k);const free=(S.stacks[k]||0)-shelfCount(k)-(S.showcase||[]).filter(x=>x===k).length;if(c.g||free<=0)return;S.grading=S.grading||[];
-  if(S.grading.length>=gradeMax()){if(!opt.quiet)toast(`The grader only takes ${gradeMax()} cards at a time.`);return 'full'}
-  const fee=gradeFee(c);if(S.cash<fee){if(!opt.quiet)toast(`Grading costs ${money(fee)}.`);return 'cash'}
+  if(S.grading.length>=GQ_MAX){if(!opt.quiet)toast(`That's ${GQ_MAX} cards at Slab Happy already. Reveal some first.`);return 'full'}
+  const fee=tierFee(c,tier);if(S.cash<fee){if(!opt.quiet)toast(`${GTIERS[tier].name} grading costs ${money(fee)}.`);return 'cash'}
   const fresh=(S.fresh||{})[k]>0;if(fresh){S.fresh[k]--;if(!S.fresh[k])delete S.fresh[k]}
-  const fromPC=opt.pc||(avail(k)<=0&&!!S.pc[k]);S.cash-=fee;S.stats.gradeFees=(S.stats.gradeFees||0)+fee;removeCards(k,1);if(fromPC&&(opt.pc||!S.stacks[k]))delete S.pc[k];S.grading.push({k,g:rollGrade(c,fresh),ready:Date.now()+gradeMs(),pc:fromPC});
-  if(!opt.quiet)toast(`Sent ${P[c.pid].name} to Slab Happy for grading. Back in about ${Math.round(gradeMs()/60000*10)/10>=1?Math.round(gradeMs()/60000)+' minutes':Math.round(gradeMs()/1000)+' seconds'}.`);save(true);updateHeader();renderTabs();return true;
+  const fromPC=opt.pc||(avail(k)<=0&&!!S.pc[k]);S.cash-=fee;S.stats.gradeFees=(S.stats.gradeFees||0)+fee;removeCards(k,1);if(fromPC&&(opt.pc||!S.stacks[k]))delete S.pc[k];const it=queueGrade({k,g:rollGrade(c,fresh),pc:fromPC},tier);
+  if(!opt.quiet)toast(`Sent ${P[c.pid].name} to Slab Happy (${GTIERS[tier].name}). ${it.wait?`The grader is full, so it's in line. ${GTIERS[tier].ms()>=60000?'':'It grades in '+msText(it.ms)+' once it starts.'}`:`Back in ${msText(it.ms)}.`}`);save(true);updateHeader();renderTabs();return true;
 }
-function gradeReady(){return (S.grading||[]).filter(x=>Date.now()>=x.ready)}
-function tickGrading(){(S.grading||[]).forEach(x=>{if(!x.told&&Date.now()>=x.ready){x.told=true;toast(`${P[fromKey(x.k).pid].name} is back from the grader! Reveal it in your Binder.`,'gold',7000);renderTabs();if(tab==='binder')renderGrader()}})}
+function gradeReady(){return (S.grading||[]).filter(x=>!x.wait&&Date.now()>=x.ready)}
+function tickGrading(){if(runGradeQueue()&&tab==='binder')renderGrader();(S.grading||[]).forEach(x=>{if(!x.told&&!x.wait&&Date.now()>=x.ready){x.told=true;toast(`${P[fromKey(x.k).pid].name} is back from the grader! Reveal it in your Binder.`,'gold',7000);renderTabs();if(tab==='binder')renderGrader()}})}
 // crack the slab and try again: 50/50 the grade goes up or down (usually by 1, sometimes 2)
-function resubmit(k){
+function resubmit(k,tier){tier=gTier(tier||S.gradeTier);
   const c=fromKey(k);if(!c.g||!up('regrade'))return false;S.grading=S.grading||[];
   if((S.stacks[k]||0)-shelfCount(k)-scCount(k)<=0){toast('Take it off the shelf or out of the showcase first.');return false}
-  if(S.grading.length>=gradeMax()){toast(`The grader only takes ${gradeMax()} cards at a time.`);return false}
-  const raw={...c};delete raw.g;const fee=gradeFee(raw);if(S.cash<fee){toast(`Resubmitting costs ${money(fee)}.`);return false}
+  if(S.grading.length>=GQ_MAX){toast(`That's ${GQ_MAX} cards at Slab Happy already. Reveal some first.`);return false}
+  const raw={...c};delete raw.g;const fee=tierFee(raw,tier);if(S.cash<fee){toast(`Resubmitting costs ${money(fee)}.`);return false}
   const step=Math.random()<.2?2:1,upOrDown=Math.random()<.5+.05*up('doctor')?1:-1,ng=Math.max(isOne(c)?8:1,Math.min(10,c.g+upOrDown*step));
   const pc=!!S.pc[k]&&S.stacks[k]<=1;S.cash-=fee;S.stats.gradeFees=(S.stats.gradeFees||0)+fee;removeCards(k,1);if(pc)delete S.pc[k];
-  S.grading.push({k:key(raw),g:ng,ready:Date.now()+gradeMs(),pc,re:c.g});
-  toast(`Cracked the ${c.g} and sent it back to Slab Happy. Fingers crossed.`);save(true);updateHeader();renderTabs();return true}
+  const it=queueGrade({k:key(raw),g:ng,pc,re:c.g},tier);
+  toast(`Cracked the ${c.g} and sent it back to Slab Happy (${GTIERS[tier].name}). ${it.wait?'It\'s in line.':'Fingers crossed.'}`);save(true);updateHeader();renderTabs();return true}
 function revealGrade(i){
-  const x=S.grading[i];if(!x||Date.now()<x.ready)return;S.grading.splice(i,1);
+  const x=S.grading[i];if(!x||x.wait||Date.now()<x.ready)return;S.grading.splice(i,1);
   const raw=fromKey(x.k),c={...raw,g:x.g};
   const w=Math.min(250,window.innerWidth-90);
-  const m=modal(`<h2>Slab Happy results</h2><div id="slabSpot" class="slabspot"></div><div id="gradeTxt" class="gradetxt">Grading…</div><div class="row2"><button class="btn go" data-close>${x.re?'Keep it':'Nice'}</button>${up('regrade')?`<button class="btn" id="reAgain" hidden>Resubmit again · ${money(gradeFee(raw))}</button>`:''}</div>`);
+  const m=modal(`<h2>Slab Happy results</h2><div id="slabSpot" class="slabspot"></div><div id="gradeTxt" class="gradetxt">Grading…</div><div class="row2"><button class="btn go" data-close>${x.re?'Keep it':'Nice'}</button>${up('regrade')?`<button class="btn" id="reAgain" hidden>Resubmit again · ${GTIERS[gTier(S.gradeTier)].name} · ${money(tierFee(raw,S.gradeTier))}</button>`:''}</div>`);
   const cv=document.createElement('canvas');drawCard(cv,raw,w,true);cv.style.width=w+'px';$('#slabSpot',m).appendChild(cv);
   setTimeout(()=>{drawCard(cv,c,w);cv.classList.add('slabpop');const t=$('#gradeTxt',m);if(t){t.innerHTML=`<b class="g${x.g}">${x.g} ${GRADE_WORD[x.g]}</b>${x.re?`<span style="font-weight:800;color:${x.g>x.re?'var(--good)':x.g<x.re?'#ff8a7a':'var(--muted)'}">${x.g>x.re?`Up from a ${x.re}!`:x.g<x.re?`Down from a ${x.re}. Ouch.`:`Still a ${x.re}.`}</span>`:''}<span>${esc(cardTitle(raw))} is now worth ${money(valueOf(c))} (${x.re?`was ${money(valueOf({...raw,g:x.re}))}`:`raw: ${money(valueOf(raw))}`})</span>`}if(x.g===10){fanfare();toast('GEM MINT 10!','gold')}const ra=$('#reAgain',m);if(ra){ra.hidden=false;ra.onclick=()=>{if(resubmit(key(c))){closeModal(true);if(tab==='binder')renderBinder()}}}},1300);
   if(!x.re)S.stats.slabbed=(S.stats.slabbed||0)+1;S.stats.gradeGain=(S.stats.gradeGain||0)+valueOf(c)-valueOf(raw);
   addCard(c,'grade');if(x.pc)S.pc[key(c)]=true;challengeEvent('grade',c);save(true);renderTabs();if(tab==='binder')renderGrader();
 }
+function tierPick(){const t=gTier(S.gradeTier);return `<div class="gtiers">${Object.entries(GTIERS).map(([id,o])=>`<button class="gtier${id===t?' on':''}" data-gtier="${id}"><b>${o.name}</b><span>${msText(o.ms())}</span><span>${o.fee===1?'normal price':o.fee+'× price'}</span></button>`).join('')}</div>`}
 function renderGrader(){
-  const b=$('#grader');if(!b)return;const q=S.grading||[];
-  if(!q.length){b.innerHTML=`<div class="panel gpanel"><h3>At the grader</h3><p class="note" style="margin:0">Send a card to Slab Happy with the Grade button. You get a grade from 1 to 10, and a 10 is worth 8× the raw card. Vintage cards are hard to get high grades on.</p></div>`;return}
-  b.innerHTML=`<div class="panel gpanel"><h3>At the grader (${q.length}/${gradeMax()})</h3><div class="gq">${q.map((x,i)=>{const c=fromKey(x.k),left=Math.max(0,Math.ceil((x.ready-Date.now())/1000));return `<div class="gi"><canvas data-gk="${x.k}"></canvas><div><b>${esc(P[c.pid].name)}</b><span>${c.year} ${brand(c.year,P[c.pid].sport)}</span>${left?`<span class="gt" data-gt="${i}">Back in ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}</span>`:`<button class="btn go sm" data-reveal="${i}">Reveal grade</button>`}</div></div>`}).join('')}</div></div>`;
+  const b=$('#grader');if(!b)return;runGradeQueue();const q=S.grading||[];
+  const pick=`<p class="note" style="margin:0 0 6px">Grading speed for the Binder's Grade buttons:</p>${tierPick()}`;
+  if(!q.length){b.innerHTML=`<div class="panel gpanel"><h3>At the grader</h3>${pick}<p class="note" style="margin:8px 0 0">Send a card to Slab Happy with the Grade button. You get a grade from 1 to 10, and a 10 is worth 8× the raw card. Vintage cards are hard to get high grades on. The grader works on ${gradeMax()} cards at a time; send as many as you like and the rest wait in line.</p></div>`}
+  else{const order=q.map((x,i)=>i).sort((a,b)=>{const A=q[a],B=q[b],r=x=>x.wait?2:Date.now()>=x.ready?0:1;return r(A)-r(B)||(A.wait?0:A.ready-B.ready)});
+  const done=q.filter(x=>!x.wait&&Date.now()>=x.ready).length;
+  b.innerHTML=`<div class="panel gpanel"><h3>At the grader (${gradeActive()}/${gradeMax()} grading${gradeWaiting()?` · ${gradeWaiting()} in line`:''}${done?` · ${done} ready`:''})</h3>${pick}${done>1?`<div style="margin:8px 0"><button class="btn go sm" id="revealAll">Reveal all ${done}</button></div>`:''}<div class="gq" style="margin-top:8px">${order.map(i=>{const x=q[i],c=fromKey(x.k),left=x.wait?0:Math.max(0,Math.ceil((x.ready-Date.now())/1000));return `<div class="gi${x.wait?' gwait':''}"><canvas data-gk="${x.k}"></canvas><div><b>${esc(P[c.pid].name)}</b><span>${c.year} ${brand(c.year,P[c.pid].sport)} · ${GTIERS[gTier(x.tier)].name}</span>${x.wait?`<span class="gt">In line</span>`:left?`<span class="gt" data-gt="${i}">Back in ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}</span>`:`<button class="btn go sm" data-reveal="${i}">Reveal grade</button>`}</div></div>`}).join('')}</div></div>`}
   b.querySelectorAll('canvas[data-gk]').forEach(cv=>{drawCard(cv,fromKey(cv.dataset.gk),44,true);cv.style.width='44px'});
   b.querySelectorAll('[data-reveal]').forEach(bt=>bt.onclick=()=>revealGrade(+bt.dataset.reveal));
+  b.querySelectorAll('[data-gtier]').forEach(bt=>bt.onclick=()=>{S.gradeTier=bt.dataset.gtier;save(true);renderGrader();if(tab==='binder')renderBinder()});
+  const ra=$('#revealAll',b);if(ra)ra.onclick=revealAll;
 }
+// show every finished slab in one go, best grade first
+function revealAll(){const q=S.grading||[],now=Date.now();const ready=q.filter(x=>!x.wait&&now>=x.ready);if(!ready.length)return;
+  S.grading=q.filter(x=>!ready.includes(x));const out=[];
+  ready.forEach(x=>{const raw=fromKey(x.k),c={...raw,g:x.g};if(!x.re)S.stats.slabbed=(S.stats.slabbed||0)+1;S.stats.gradeGain=(S.stats.gradeGain||0)+valueOf(c)-valueOf(raw);addCard(c,'grade');if(x.pc)S.pc[key(c)]=true;challengeEvent('grade',c);out.push({c,x})});
+  out.sort((a,b)=>b.c.g-a.c.g||valueOf(b.c)-valueOf(a.c));
+  const m=modal(`<h2>Slab Happy results</h2><p>${out.length} cards back.${out.some(o=>o.c.g===10)?' <b class="g10">Gem Mint 10!</b>':''}</p><div class="gq" id="raGrid" style="justify-content:center;max-height:55vh;overflow:auto"></div><div class="row2"><button class="btn go" data-close>Nice</button></div>`);
+  const g=$('#raGrid',m);out.forEach(({c,x})=>{const d=document.createElement('div');d.className='gi';const cv=document.createElement('canvas');drawCard(cv,c,70);cv.style.cssText='width:70px;height:auto';d.appendChild(cv);d.insertAdjacentHTML('beforeend',`<div><b>${esc(P[c.pid].name)}</b><span><b class="g${c.g}">${c.g} ${GRADE_WORD[c.g]}</b>${x.re?` (was ${x.re})`:''}</span><span>${money(valueOf(c))}</span></div>`);g.appendChild(d)});
+  if(out.some(o=>o.c.g===10))fanfare();save(true);renderTabs();if(tab==='binder'){renderGrader();renderBinder()}}
 function tradeUp(k){
   if(S.level<4||avail(k)<3||fromKey(k).g)return;const c=fromKey(k);const p=P[c.pid];
   removeCards(k,3);
@@ -6922,7 +6962,7 @@ function cardActions(k){
     <p class="note" style="margin:6px 0 0">${S.pc[k]?'★ In your PC. ':''}${scCount(k)?'In the showcase. ':''}${shelfCount(k)?'On the shelf. ':''}${a>0?`${a} free to sell or trade.`:one?(c.par===10||c.par===15?'Superfractor 1/1. Like Grandpa\'s 1/1s, it never leaves.':'Grandpa\'s 1/1. It never leaves.'):'Nothing free to sell: it\'s starred, shelved or showcased.'}</p></div>
     <div class="caacts">
       ${one?'':btn('sell',`Sell · ${money(valueOf(c))}`,a>0,true)}
-      ${!c.g?btn('grade',`Grade · ${money(gradeFee(c))}`,n-shelfCount(k)-scCount(k)>0):up('regrade')?btn('regrade',`Resubmit · ${money(gradeFee({...c,g:0}))}`,n-shelfCount(k)-scCount(k)>0):''}
+      ${!c.g?Object.entries(GTIERS).map(([id,o])=>btn('grade:'+id,`Grade ${o.name} · ${money(tierFee(c,id))} · ${msText(o.ms())}`,n-shelfCount(k)-scCount(k)>0,false)).join(''):up('regrade')?Object.entries(GTIERS).map(([id,o])=>btn('regrade:'+id,`Resubmit ${o.name} · ${money(tierFee({...c,g:0},id))} · ${msText(o.ms())}`,n-shelfCount(k)-scCount(k)>0)).join(''):''}
       ${S.level>=4&&!one&&!c.g?btn('trade','Trade 3 for 1',a>=3):''}
       ${S.level>=5&&!one?btn('shelf','Put on shelf',a>0&&S.shelf.length<shelfCap()):''}
       ${S.level>=5?btn('case','Showcase',n-shelfCount(k)-scCount(k)>0&&(S.showcase||[]).length<scSlots()):''}
@@ -6935,8 +6975,8 @@ function cardActions(k){
   const cv=cardCanvas(c,w);cv.style.display='block';cv.style.width='100%';cv.style.height='auto';d.appendChild(cv);$('#caSpot',m).appendChild(d);addFlip(d,cv,c,w);
   m.querySelectorAll('[data-tobot]').forEach(b=>b.onclick=()=>{closeModal(true);pickTrader([k])});
   m.querySelectorAll('[data-send],[data-offer]').forEach(b=>b.onclick=()=>{const to=allProfiles().find(x=>x.id===(b.dataset.send||b.dataset.offer));if(!to)return;closeModal(true);if(b.dataset.send)giftBuilder(to,[k]);else playerBuilder(to,null,[k])});
-  m.querySelectorAll('[data-ca]').forEach(b=>b.onclick=()=>{const x=b.dataset.ca;
-    if(x==='sell')sell(k);else if(x==='regrade'){const V=valueOf(c);if(V>=1000){const m2=modal(`<h2>Crack this slab?</h2><p>Your ${esc(cardTitle(c))} is worth <b style="color:var(--good)">${money(V)}</b>. It's a coin flip: the grade could go up, or it could go down.</p><div class="row2"><button class="btn go" id="reYes">Crack it and resubmit</button><button class="btn" data-close>Keep the ${c.g}</button></div>`);$('#reYes',m2).onclick=()=>{resubmit(k);closeModal(true);renderBinder()};return}resubmit(k);renderGrader()}else if(x==='grade'){sendToGrader(k);renderGrader()}else if(x==='trade'){closeModal(true);tradeUp(k);renderBinder();return}else if(x==='shelf')toShelf(k);else if(x==='case')toShowcase(k);else if(x==='pc')togglePC(k);
+  m.querySelectorAll('[data-ca]').forEach(b=>b.onclick=()=>{let x=b.dataset.ca,gt;if(x.includes(':')){[x,gt]=x.split(':');S.gradeTier=gt}
+    if(x==='sell')sell(k);else if(x==='regrade'){const V=valueOf(c);if(V>=1000){const m2=modal(`<h2>Crack this slab?</h2><p>Your ${esc(cardTitle(c))} is worth <b style="color:var(--good)">${money(V)}</b>. It's a coin flip: the grade could go up, or it could go down.</p><div class="row2"><button class="btn go" id="reYes">Crack it and resubmit</button><button class="btn" data-close>Keep the ${c.g}</button></div>`);$('#reYes',m2).onclick=()=>{resubmit(k,gt);closeModal(true);renderBinder()};return}resubmit(k,gt);renderGrader()}else if(x==='grade'){sendToGrader(k,{tier:gt});renderGrader()}else if(x==='trade'){closeModal(true);tradeUp(k);renderBinder();return}else if(x==='shelf')toShelf(k);else if(x==='case')toShowcase(k);else if(x==='pc')togglePC(k);
     save(true);if(S.stacks[k]&&x!=='sell'&&x!=='grade')cardActions(k);else{closeModal(true);renderBinder()}});
 }
 function renderSelBar(){
@@ -6952,7 +6992,7 @@ function renderSelBar(){
     <button class="btn sm" data-s="all">Select all</button><button class="btn sm" data-s="none" ${dis}>Clear</button><button class="btn sm" data-s="done">Done</button></div>`;
   b.onclick=e=>{const x=e.target.closest('[data-s]');if(!x||x.disabled)return;selAct(x.dataset.s)};
 }
-function selAct(a){
+function selAct(a,opt={}){
   const ks=[...sel].filter(k=>S.stacks[k]);
   const redraw=()=>{renderBinder($('#view'))};
   if(a==='done'){selMode=false;sel.clear();redraw();return}
@@ -6967,9 +7007,12 @@ function selAct(a){
       closeModal(true);can.forEach(k=>sel.delete(k));toast(`Sold ${can.length} card${can.length>1?'s':''} for ${money(got)}`,'good');save(true);updateHeader();redraw()};
     return;
   }
+  if(a==='grade'&&!opt.tier){const raw=ks.filter(k=>!fromKey(k).g);if(!raw.length){toast('Slabs are already graded.');return}
+    const m=modal(`<h2>Grade ${raw.length} card${raw.length>1?'s':''}</h2><p>How fast? The grader works on ${gradeMax()} at a time; the rest wait in line and start as slots open.</p><div class="caacts">${Object.entries(GTIERS).map(([id,o])=>{const tot=raw.reduce((a,k)=>a+tierFee(fromKey(k),id),0);return `<button class="btn${id===gTier(S.gradeTier)?' go':''}" data-bt="${id}">${o.name} · ${money(tot)} · ${msText(o.ms())} each</button>`}).join('')}</div><div class="row2"><button class="btn" data-close>Cancel</button></div>`);
+    m.querySelectorAll('[data-bt]').forEach(b=>b.onclick=()=>{S.gradeTier=b.dataset.bt;closeModal(true);selAct(a,{tier:b.dataset.bt})});return}
   if(a==='grade'){let sent=0,full=false,broke=false;
-    for(const k of ks){if(fromKey(k).g)continue;const r=sendToGrader(k,{quiet:true});if(r===true){sent++;sel.delete(k)}else if(r==='full'){full=true;break}else if(r==='cash'){broke=true;break}}
-    toast(sent?`Sent ${sent} card${sent>1?'s':''} to Slab Happy.${full?` The grader is full (${gradeMax()} at a time).`:''}${broke?' Ran out of cash for the rest.':''}`:full?`The grader is full (${gradeMax()} at a time).`:broke?'Not enough cash to grade.':'Slabs are already graded.','good');renderGrader();redraw();return}
+    for(const k of ks){if(fromKey(k).g)continue;const r=sendToGrader(k,{quiet:true,tier:opt.tier});if(r===true){sent++;sel.delete(k)}else if(r==='full'){full=true;break}else if(r==='cash'){broke=true;break}}
+    toast(sent?`Sent ${sent} card${sent>1?'s':''} to Slab Happy (${GTIERS[gTier(opt.tier)].name}).${gradeWaiting()?` ${gradeWaiting()} waiting in line.`:''}${full?` Slab Happy is full (${GQ_MAX}).`:''}${broke?' Ran out of cash for the rest.':''}`:full?`Slab Happy is full (${GQ_MAX} cards).`:broke?'Not enough cash to grade.':'Slabs are already graded.','good');renderGrader();redraw();return}
   if(a==='shelf'){let n=0;for(const k of ks){if(S.shelf.length>=shelfCap())break;if(isOne(fromKey(k))||avail(k)<=0)continue;S.shelf.push(k);n++;sel.delete(k)}
     toast(n?`Put ${n} card${n>1?'s':''} on the shelf.${S.shelf.length>=shelfCap()?' The shelf is full now.':''}`:S.shelf.length>=shelfCap()?'The shelf is full.':'None of those are free to put out.');save(true);redraw();return}
   if(a==='case'){S.showcase=S.showcase||[];let n=0;for(const k of ks){if(S.showcase.length>=scSlots())break;if((S.stacks[k]||0)-shelfCount(k)-scCount(k)<=0)continue;S.showcase.push(k);n++;sel.delete(k)}
@@ -7155,7 +7198,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-12.1911';
+const APP_VERSION = '2026-11-13.0619';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
