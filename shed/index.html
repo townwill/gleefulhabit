@@ -4352,6 +4352,12 @@ const STADIUM_LEDGER=[
 ];
 const STADIUM_NOTES=["Locker done. That one smelled like old shin guards.","Another locker empty. I found that one behind the snack stand.","Good work. The label on that one was in Portuguese. I never learned what it said.","Done. A groundskeeper gave me that locker in 1977 for a jar of pickles.","That's a locker. You're faster than a counterattack.","Finished. I used to eat my lunch on that one during halftime."];
 // twelve 1/1s hidden in the stadium: each counter ticks down only on cards YOU pull
+function boxSocOnes(){if(S.sOnesBoxed||!S.stadiumBoxes)return;
+  if(!S.sOnes){const n=S.loc==='stadium'?S.pile:(S.places.stadium?S.places.stadium.pile:LOCS.stadium.size);S.sOnes=SOC_ONES.map((_,i)=>({i,left:Math.floor(n*rnd(.02+i*.078,.07+i*.078))}))}
+  S.sOnes.forEach(o=>{if(o.box)return;const p=P[socOne(o.i).pid],tms=P.filter(q=>q.sport==='soc'&&q.name===p.name).map(q=>q.team),ok=b=>b.left>(b.sones||[]).length;
+    // their own club first, then another club they played for, then the women's game or their country's locker
+    const b=S.stadiumBoxes.find(b=>b.crate&&b.tm===p.team&&ok(b))||S.stadiumBoxes.find(b=>b.crate&&tms.includes(b.tm)&&ok(b))||(p.women&&S.stadiumBoxes.find(b=>b.women&&!b.nat&&ok(b)))||S.stadiumBoxes.find(b=>b.nat&&b.nat.includes(p.nat)&&ok(b));if(b){(b.sones=b.sones||[]).push(o.i);o.box=b.id}});
+  S.sOnesBoxed=true}
 function hideSocOnes(){if(S.sOnes)return;const n=S.pile||LOCS.stadium.size;S.sOnes=SOC_ONES.map((_,i)=>({i,left:Math.floor(n*rnd(.02+i*.078,.07+i*.078))}))}
 function checkStadium(){
   if(S.stadiumOpen||!S.rinkOpen)return;
@@ -4425,6 +4431,7 @@ function ensureBoxes(){
   if(S.rinkOpen&&!S.rinkBoxes){const pile=S.loc==='rink'?S.pile:(S.places.rink?S.places.rink.pile:LOCS.rink.size);S.rinkBoxes=makeBoxes(Math.max(1,pile),RINK_TEMPLATES,'r');S.rinkBoxes.forEach(b=>{if(b.loose0){b.loose=true;b.id='rloose'}});S.rinkCur=null;
     const tot=S.rinkBoxes.reduce((a,b)=>a+b.left,0);if(S.loc==='rink')S.pile=tot;else if(S.places.rink)S.places.rink.pile=tot}
   addVault();
+  boxSocOnes();
   if(S.stadiumBoxes&&!S.stadiumBoxes.some(b=>b.tm==='S_SJE')){const cur=getCur('stadium'),don=S.stadiumBoxes.filter(b=>b.id!==cur&&!b.loose&&b.left===b.total).sort((a,b)=>b.left-a.left)[0];
     if(don){const n=Math.min(7000,don.left-30);don.left-=n;don.total-=n;const at=S.stadiumBoxes.reduce((k,b,i)=>b.crate?i+1:k,0);S.stadiumBoxes.splice(at,0,{id:'zsje',label:'San Jose Earthquakes',teams:['S_SJE'],crate:true,tm:'S_SJE',total:n,left:n})}}
   if(S.stadiumOpen&&!S.stadiumBoxes){const pile=S.loc==='stadium'?S.pile:(S.places.stadium?S.places.stadium.pile:LOCS.stadium.size);S.stadiumBoxes=makeBoxes(Math.max(1,pile),STADIUM_TEMPLATES,'z');S.stadiumBoxes.forEach(b=>{if(b.loose0){b.loose=true;b.id='zloose'}});S.stadiumCur=null;
@@ -4538,9 +4545,12 @@ function drawFromPile(auto){
     else{const f=B.find(o=>o.left<=0)||(S.pile<B.length?B[0]:null);if(f){S.bOnes=B.filter(o=>o!==f);const c=lostOne(f.i);S.onePids.push(c.pid);return c}B.forEach(o=>o.left--)}
     EYE=eyeMul();try{return lostCard(.8*EYE)}finally{EYE=1}}
   const bx=curBox();if(boxedRoom(S.loc)&&roomBoxes()&&(!bx||bx.left<=0))return null;
-  if(S.loc==='stadium'){hideSocOnes();const B=S.sOnes;
+  if(S.loc==='stadium'){hideSocOnes();boxSocOnes();
+    // a locker's own 1/1s are its last cards
+    if(bx.sones&&bx.sones.length&&bx.left<=bx.sones.length){const i=bx.sones.shift();S.pile--;bx.left--;S.sOnes=S.sOnes.filter(o=>o.i!==i);const c=socOne(i);S.onePids.push(c.pid);if(bx.left<=0)boxDone(bx);return c}
+    const B=S.sOnes.filter(o=>!o.box);
     if(auto){if(B.length&&S.pile<=B.length)return null;B.forEach(o=>{if(o.left>S.pile-1-B.length)o.left=Math.max(0,S.pile-1-B.length)})}
-    else{const f=B.find(o=>o.left<=0)||(S.pile<=B.length?B[0]:null);if(f){S.pile--;bx.left--;S.sOnes=B.filter(o=>o!==f);const c=socOne(f.i);S.onePids.push(c.pid);if(bx.left<=0)boxDone(bx);return c}B.forEach(o=>o.left--)}}
+    else{const f=B.find(o=>o.left<=0)||(S.pile<=B.length?B[0]:null);if(f){S.pile--;bx.left--;S.sOnes=S.sOnes.filter(o=>o!==f);const c=socOne(f.i);S.onePids.push(c.pid);if(bx.left<=0)boxDone(bx);return c}B.forEach(o=>o.left--)}}
   if(bx&&bx.one&&bx.left<=1){if(auto)return null;S.pile--;bx.left=0;delete bx.one;if(getCur()===bx.id)setCur(null);return oneOfOne()}
   if(auto&&S.oneLeft!==null&&S.pile<=1)return null;
   S.pile--;
@@ -6839,7 +6849,7 @@ function refreshSide(){
   let note=LEDGER[0][1];if(S.loc==='stadium'){const done=LOCS.stadium.size-S.pile;note=STADIUM_LEDGER[0][1];STADIUM_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='rink'){const done=LOCS.rink.size-S.pile;note=RINK_LEDGER[0][1];RINK_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='basement'){const done=LOCS.basement.size-S.pile;note=BASEMENT_LEDGER[0][1];BASEMENT_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='garage'){const done=LOCS.garage.size-S.pile;note=GARAGE_LEDGER[0][1];GARAGE_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='barn'){const done=LOCS.barn.size-S.pile;note=BARN_LEDGER[0][1];BARN_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='attic'){const done=LOCS.attic.size-S.pile;note=ATTIC_LEDGER[0][1];ATTIC_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else LEDGER.forEach(([n,t])=>{if(S.stats.flips>=n)note=t});lg.textContent=note;
   const g=$('#goose');
   if(S.level<6)g.innerHTML=`<div class="goose locked"><div class="g">?</div><p><b>Not in reach yet</b>Grandpa hid his best card. Reach level 6 and it goes into the pile.</p></div>`;
-  else if(S.loc==='stadium'){const left=(S.sOnes||SOC_ONES).length,got=SOC_ONES.length-left;g.innerHTML=`<div class="goose"><div class="g">1/1</div><p><b>${got} of ${SOC_ONES.length} found</b>${left?`Twelve legends are hidden in the stadium: Messi, Ronaldo, Pele, Maradona, Mia Hamm and more. ${left} still out there, in any locker.`:'All twelve legends are safe in your PC.'}</p></div>`}
+  else if(S.loc==='stadium'){const left=(S.sOnes||SOC_ONES).length,got=SOC_ONES.length-left;g.innerHTML=`<div class="goose"><div class="g">1/1</div><p><b>${got} of ${SOC_ONES.length} found</b>${left?`Twelve legends are hidden in the stadium: Messi, Ronaldo, Pele, Maradona, Mia Hamm and more. Each one is the last card in a locker that fits them: their club, the women's game or their country. ${left} still out there.`:'All twelve legends are safe in your PC.'}</p></div>`}
   else if(S.loc==='basement'){const left=(S.bOnes||[0,1,2]).length,got=3-left;g.innerHTML=`<div class="goose"><div class="g">1/1</div><p><b>${got} of 3 found</b>${left?`Three of Grandpa's lost-team one-of-ones are down here. ${left} still in the pile.`:'All three lost-team one-of-ones are safe in your PC.'}</p></div>`}
   else if((S.oneDone||{})[S.loc])g.innerHTML=`<div class="goose"><div class="g">1/1</div><p><b>Found it!</b>Grandpa's ${LOCS[S.loc].name.toLowerCase()} one-of-one is safe in your PC.</p></div>`;
   else if(S.oneLeft===null)g.innerHTML=`<div class="goose"><div class="g">1/1</div><p><b>Not in this pile</b>Keep sorting.</p></div>`;
@@ -7210,7 +7220,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-14.0620';
+const APP_VERSION = '2026-11-14.0731';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
