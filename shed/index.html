@@ -4530,6 +4530,7 @@ const eyeMul=()=>1+.04*Math.min(eyeStreak,15);
 // the 1/1 only turns up when YOU pull from the pile; helpers skip past it
 function drawFromPile(auto){
   if(S.pile<=0)return null;
+  auto=false; // auto-sort finds 1/1s like a hand draw; the loop puts them on the set-aside pile for you to flip
   if(S.loc==='basement'){hideLostOnes();const B=S.bOnes;
     if(auto&&B.length&&S.pile<=B.length)return null;
     S.pile--;
@@ -5699,16 +5700,20 @@ function sellBulk(){
   toast(`Sold ${num(n)} bulk cards for ${money(v)}. Kept one of each.`,'good');save(true);updateHeader();
 }
 // every extra copy of every card, hits included, at full price
+// copies you always keep when selling dupes: one, or more if starred / in the showcase. Counter copies ARE dupes.
+function dupeKeep(k){return Math.max(1,S.pc[k]?1:0,caseCount(k))}
+// after selling dupes, take sold copies off the Counter shelf so the copy you keep stays in the binder
+function trimShelf(k){const room=Math.max(0,(S.stacks[k]||0)-dupeKeep(k));let extra=shelfCount(k)-room;for(let i=S.shelf.length-1;i>=0&&extra>0;i--)if(S.shelf[i]===k){S.shelf.splice(i,1);extra--}}
 function dupeInfo(){
   let n=0,v=0;const list=[];
-  for(const k in S.stacks){const c=fromKey(k);if(isOne(c))continue;const extra=S.stacks[k]-keepOf(k);if(extra>0){const val=valueOf(c);n+=extra;v+=extra*val;list.push({k,extra,val})}}
+  for(const k in S.stacks){const c=fromKey(k);if(isOne(c))continue;const extra=S.stacks[k]-dupeKeep(k);if(extra>0){const val=valueOf(c);n+=extra;v+=extra*val;list.push({k,extra,val})}}
   list.sort((a,b)=>b.val-a.val);return {n,v:Math.round(v*100)/100,list};
 }
 function sellDupes(){
   const d=dupeInfo();if(!d.n)return;
   const top=d.list.slice(0,6).map(x=>`<li>${esc(cardTitle(fromKey(x.k)))}${x.extra>1?` ×${x.extra}`:''} <b>${money(x.val*x.extra)}</b></li>`).join('');
-  const m=modal(`<h2>Sell all your dupes?</h2><p>This sells <b>${num(d.n)}</b> extra copies for <b style="color:var(--good)">${money(d.v)}</b>, hits included, at full price. You keep one of every card, plus anything starred, on your shelf or in the showcase. 1/1s are never sold.</p>${top?`<p class="note" style="margin:0">Biggest ones going:</p><ul class="dupelist">${top}</ul>`:''}<div class="row2"><button class="btn go" id="dupeYes">Sell ${num(d.n)} for ${money(d.v)}</button><button class="btn" data-close>Keep them</button></div>`);
-  $('#dupeYes',m).onclick=()=>{for(const x of d.list)removeCards(x.k,x.extra);S.cash+=d.v;S.stats.sold+=d.n;S.stats.earned+=d.v;addXP(Math.max(1,Math.round(d.n*.3)));
+  const m=modal(`<h2>Sell all your dupes?</h2><p>This sells <b>${num(d.n)}</b> extra copies for <b style="color:var(--good)">${money(d.v)}</b>, hits included, at full price. Extra copies on the Counter shelf count too. You keep one of every card in your binder, plus anything starred or in the showcase. 1/1s are never sold.</p>${top?`<p class="note" style="margin:0">Biggest ones going:</p><ul class="dupelist">${top}</ul>`:''}<div class="row2"><button class="btn go" id="dupeYes">Sell ${num(d.n)} for ${money(d.v)}</button><button class="btn" data-close>Keep them</button></div>`);
+  $('#dupeYes',m).onclick=()=>{for(const x of d.list){removeCards(x.k,x.extra);trimShelf(x.k)}S.cash+=d.v;S.stats.sold+=d.n;S.stats.earned+=d.v;addXP(Math.max(1,Math.round(d.n*.3)));
     closeModal(true);toast(`Sold ${num(d.n)} dupes for ${money(d.v)}. Kept one of each.`,'good');save(true);updateHeader();if(tab==='binder')render()};
 }
 // cheap singles: every free copy worth under $1, never autos, relics, slabs, numbered cards, 1/1s,
@@ -5784,22 +5789,22 @@ function sendToGrader(k,opt={}){const tier=gTier(opt.tier||S.gradeTier);
 function gradeReady(){return (S.grading||[]).filter(x=>!x.wait&&Date.now()>=x.ready)}
 function tickGrading(){if(runGradeQueue()&&tab==='binder')renderGrader();(S.grading||[]).forEach(x=>{if(!x.told&&!x.wait&&Date.now()>=x.ready){x.told=true;toast(`${P[fromKey(x.k).pid].name} is back from the grader! Reveal it in your Binder.`,'gold',7000);renderTabs();if(tab==='binder')renderGrader()}})}
 // crack the slab and try again: 50/50 the grade goes up or down (usually by 1, sometimes 2)
-function resubmit(k,tier){tier=gTier(tier||S.gradeTier);
+function resubmit(k,tier,quiet){tier=gTier(tier||S.gradeTier);const say=quiet?()=>{}:toast;
   const c=fromKey(k);if(!c.g||!up('regrade'))return false;S.grading=S.grading||[];
-  if((S.stacks[k]||0)-shelfCount(k)-scCount(k)<=0){toast('Take it off the shelf or out of the showcase first.');return false}
-  if(S.grading.length>=GQ_MAX){toast(`That's ${GQ_MAX} cards at Slab Happy already. Reveal some first.`);return false}
-  const raw={...c};delete raw.g;const fee=tierFee(raw,tier);if(S.cash<fee){toast(`Resubmitting costs ${money(fee)}.`);return false}
+  if((S.stacks[k]||0)-shelfCount(k)-scCount(k)<=0){say('Take it off the shelf or out of the showcase first.');return false}
+  if(S.grading.length>=GQ_MAX){say(`That's ${GQ_MAX} cards at Slab Happy already. Reveal some first.`);return false}
+  const raw={...c};delete raw.g;const fee=tierFee(raw,tier);if(S.cash<fee){say(`Resubmitting costs ${money(fee)}.`);return 'cash'}
   const step=Math.random()<.2?2:1,upOrDown=Math.random()<.5+.05*up('doctor')?1:-1,ng=Math.max(isOne(c)?8:1,Math.min(10,c.g+upOrDown*step));
   const pc=!!S.pc[k]&&S.stacks[k]<=1;S.cash-=fee;S.stats.gradeFees=(S.stats.gradeFees||0)+fee;removeCards(k,1);if(pc)delete S.pc[k];
   const it=queueGrade({k:key(raw),g:ng,pc,re:c.g},tier);
-  toast(`Cracked the ${c.g} and sent it back to Slab Happy (${GTIERS[tier].name}). ${it.wait?'It\'s in line.':'Fingers crossed.'}`);save(true);updateHeader();renderTabs();return true}
+  say(`Cracked the ${c.g} and sent it back to Slab Happy (${GTIERS[tier].name}). ${it.wait?'It\'s in line.':'Fingers crossed.'}`);save(true);updateHeader();renderTabs();return true}
 function revealGrade(i){
   const x=S.grading[i];if(!x||x.wait||Date.now()<x.ready)return;S.grading.splice(i,1);
   const raw=fromKey(x.k),c={...raw,g:x.g};
   const w=Math.min(250,window.innerWidth-90);
   const m=modal(`<h2>Slab Happy results</h2><div id="slabSpot" class="slabspot"></div><div id="gradeTxt" class="gradetxt">Grading…</div><div class="row2"><button class="btn go" data-close>${x.re?'Keep it':'Nice'}</button>${up('regrade')?`<button class="btn" id="reAgain" hidden>Resubmit again · ${GTIERS[gTier(S.gradeTier)].name} · ${money(tierFee(raw,S.gradeTier))}</button>`:''}</div>`);
   const cv=document.createElement('canvas');drawCard(cv,raw,w,true);cv.style.width=w+'px';$('#slabSpot',m).appendChild(cv);
-  setTimeout(()=>{drawCard(cv,c,w);cv.classList.add('slabpop');const t=$('#gradeTxt',m);if(t){t.innerHTML=`<b class="g${x.g}">${x.g} ${GRADE_WORD[x.g]}</b>${x.re?`<span style="font-weight:800;color:${x.g>x.re?'var(--good)':x.g<x.re?'#ff8a7a':'var(--muted)'}">${x.g>x.re?`Up from a ${x.re}!`:x.g<x.re?`Down from a ${x.re}. Ouch.`:`Still a ${x.re}.`}</span>`:''}<span>${esc(cardTitle(raw))} is now worth ${money(valueOf(c))} (${x.re?`was ${money(valueOf({...raw,g:x.re}))}`:`raw: ${money(valueOf(raw))}`})</span>`}if(x.g===10){fanfare();toast('GEM MINT 10!','gold')}const ra=$('#reAgain',m);if(ra){ra.hidden=false;ra.onclick=()=>{if(resubmit(key(c))){closeModal(true);if(tab==='binder')renderBinder()}}}},1300);
+  setTimeout(()=>{drawCard(cv,c,w);cv.classList.add('slabpop');const t=$('#gradeTxt',m);if(t){t.innerHTML=`<b class="g${x.g}">${x.g} ${GRADE_WORD[x.g]}</b>${x.re?`<span style="font-weight:800;color:${x.g>x.re?'var(--good)':x.g<x.re?'#ff8a7a':'var(--muted)'}">${x.g>x.re?`Up from a ${x.re}!`:x.g<x.re?`Down from a ${x.re}. Ouch.`:`Still a ${x.re}.`}</span>`:''}<span>${esc(cardTitle(raw))} is now worth ${money(valueOf(c))} (${x.re?`was ${money(valueOf({...raw,g:x.re}))}`:`raw: ${money(valueOf(raw))}`})</span>`}if(x.g===10){fanfare();toast('GEM MINT 10!','gold')}const ra=$('#reAgain',m);if(ra){ra.hidden=false;ra.onclick=()=>{if(resubmit(key(c))===true){closeModal(true);if(tab==='binder')renderBinder()}}}},1300);
   if(!x.re)S.stats.slabbed=(S.stats.slabbed||0)+1;S.stats.gradeGain=(S.stats.gradeGain||0)+valueOf(c)-valueOf(raw);
   addCard(c,'grade');if(x.pc)S.pc[key(c)]=true;challengeEvent('grade',c);save(true);renderTabs();if(tab==='binder')renderGrader();
 }
@@ -6847,7 +6852,7 @@ function refreshSide(){
 const BVIEWS=[['all','All'],['hits','Hits'],['one','1/1s'],['graded','Graded'],['raw','Not graded'],['rc','Rookies'],['num','Numbered'],['ar','Autos & relics'],['case','Showcase'],['pc','★ PC'],['dupes','Dupes'],['usa','Team USA'],['col','College'],['oly','Olympics'],['wnba','WNBA']];
 const VSTEPS=[0,1,5,10,25,50,100,250,500,1000,2000,5000,10000,25000,100000];
 const minV=()=>VSTEPS[binderF.vi||0];const vtxt=v=>'$'+v.toLocaleString('en-US');
-const BVF={all:()=>true,hits:c=>isHit(c),one:c=>c.par===6,hv:c=>valueOf(c)>=100,graded:c=>!!c.g&&(!binderF.g||(binderF.g===6?c.g<=6:c.g===binderF.g)),raw:c=>!c.g,rc:c=>isRC(c),num:c=>isNumbered(c),ar:c=>c.par>=7&&c.par<=9||c.par===15,case:(c,k)=>scCount(k)>0,pc:(c,k)=>!!S.pc[k],dupes:(c,k)=>S.stacks[k]-keepOf(k)>0,usa:c=>c.par===12,col:c=>c.par===13,oly:c=>c.par===14,wnba:c=>isWNBA(P[c.pid])};
+const BVF={all:()=>true,hits:c=>isHit(c),one:c=>c.par===6,hv:c=>valueOf(c)>=100,graded:c=>!!c.g&&(!binderF.g||(binderF.g===6?c.g<=6:c.g===binderF.g)),raw:c=>!c.g,rc:c=>isRC(c),num:c=>isNumbered(c),ar:c=>c.par>=7&&c.par<=9||c.par===15,case:(c,k)=>scCount(k)>0,pc:(c,k)=>!!S.pc[k],dupes:(c,k)=>S.stacks[k]-dupeKeep(k)>0,usa:c=>c.par===12,col:c=>c.par===13,oly:c=>c.par===14,wnba:c=>isWNBA(P[c.pid])};
 function binderList(sp){
   const q=binderF.q.trim().toLowerCase(),fs=(binderF.fs||[]).map(id=>BVF[id]).filter(Boolean);sp=sp||binderF.sp;
   const ks=Object.keys(S.stacks).filter(k=>{const c=fromKey(k),p=P[c.pid];if(!p)return false;
@@ -6907,7 +6912,7 @@ function renderBinder(v){
     <span class="bspace"></span>
     <button class="btn go" id="bulkBtn" ${bi.n?'':'disabled'} title="Extra base cards and anything under $1. Keeps one of each.">Sell bulk · ${num(bi.n)} · ${money(bi.v)}</button>
     <button class="btn" id="cheapBtn" ${ci.n?'':'disabled'} title="Every card under $1, even your only copy. Never autos, relics, slabs, numbered cards or set needs.">Sell under $1 · ${num(ci.n)} · ${money(ci.v)}</button>
-    <button class="btn" id="dupeBtn" ${di.n?'':'disabled'} title="Every extra copy, hits included, at full price. Keeps one of each.">Sell all dupes · ${num(di.n)} · ${money(di.v)}</button>
+    <button class="btn" id="dupeBtn" ${di.n?'':'disabled'} title="Every extra copy, hits included, Counter copies too, at full price. Keeps one of each.">Sell all dupes · ${num(di.n)} · ${money(di.v)}</button>
   </div>
   ${statsHTML(total,worth)}
   <div id="grader"></div>
@@ -6987,6 +6992,7 @@ function renderSelBar(){
   b.innerHTML=`<div class="selinfo"><b>${n} selected</b><span>${money(val)}</span></div><div class="selacts">
     <button class="btn sm go" data-s="sell" ${dis}>Sell</button>
     <button class="btn sm" data-s="grade" ${dis}>Grade</button>
+    ${up('regrade')?`<button class="btn sm" data-s="regrade" ${ks.some(k=>fromKey(k).g)?'':'disabled'}>Resubmit</button>`:''}
     ${S.level>=5?`<button class="btn sm" data-s="shelf" ${dis}>Shelf</button><button class="btn sm" data-s="case" ${dis}>Showcase</button>`:''}
     <button class="btn sm" data-s="pc" ${dis}>${allPC?'Un-★ PC':'★ PC'}</button>
     <button class="btn sm" data-s="all">Select all</button><button class="btn sm" data-s="none" ${dis}>Clear</button><button class="btn sm" data-s="done">Done</button></div>`;
@@ -7007,6 +7013,12 @@ function selAct(a,opt={}){
       closeModal(true);can.forEach(k=>sel.delete(k));toast(`Sold ${can.length} card${can.length>1?'s':''} for ${money(got)}`,'good');save(true);updateHeader();redraw()};
     return;
   }
+  if(a==='regrade'){const slabs=ks.filter(k=>fromKey(k).g&&(S.stacks[k]||0)-shelfCount(k)-scCount(k)>0);if(!slabs.length){toast('Pick some graded slabs to resubmit. Take them off the shelf or out of the showcase first.');return}
+    if(!opt.tier){const big=slabs.filter(k=>valueOf(fromKey(k))>=1000).length;
+      const m=modal(`<h2>Resubmit ${slabs.length} slab${slabs.length>1?'s':''}?</h2><p>Each one gets cracked and graded again. It's a coin flip: every grade could go up, or down.${big?` <b>${big} of them ${big>1?'are':'is'} worth $1,000 or more.</b>`:''}</p><div class="caacts">${Object.entries(GTIERS).map(([id,o])=>{const tot=slabs.reduce((a,k)=>a+tierFee({...fromKey(k),g:0},id),0);return `<button class="btn${id===gTier(S.gradeTier)?' go':''}" data-bt="${id}">${o.name} · ${money(tot)} · ${msText(o.ms())} each</button>`}).join('')}</div><div class="row2"><button class="btn" data-close>Keep them</button></div>`);
+      m.querySelectorAll('[data-bt]').forEach(b=>b.onclick=()=>{S.gradeTier=b.dataset.bt;closeModal(true);selAct(a,{tier:b.dataset.bt})});return}
+    let sent=0,broke=false;for(const k of slabs){const r=resubmit(k,opt.tier,true);if(r===true){sent++;sel.delete(k)}else if(r==='cash'){broke=true;break}}
+    toast(sent?`Cracked ${sent} slab${sent>1?'s':''} and sent ${sent>1?'them':'it'} back to Slab Happy (${GTIERS[gTier(opt.tier)].name}).${gradeWaiting()?` ${gradeWaiting()} waiting in line.`:''}${broke?' Ran out of cash for the rest.':''}`:broke?'Not enough cash to resubmit.':'Nothing could be resubmitted.','good');save(true);updateHeader();renderGrader();redraw();return}
   if(a==='grade'&&!opt.tier){const raw=ks.filter(k=>!fromKey(k).g);if(!raw.length){toast('Slabs are already graded.');return}
     const m=modal(`<h2>Grade ${raw.length} card${raw.length>1?'s':''}</h2><p>How fast? The grader works on ${gradeMax()} at a time; the rest wait in line and start as slots open.</p><div class="caacts">${Object.entries(GTIERS).map(([id,o])=>{const tot=raw.reduce((a,k)=>a+tierFee(fromKey(k),id),0);return `<button class="btn${id===gTier(S.gradeTier)?' go':''}" data-bt="${id}">${o.name} · ${money(tot)} · ${msText(o.ms())} each</button>`}).join('')}</div><div class="row2"><button class="btn" data-close>Cancel</button></div>`);
     m.querySelectorAll('[data-bt]').forEach(b=>b.onclick=()=>{S.gradeTier=b.dataset.bt;closeModal(true);selAct(a,{tier:b.dataset.bt})});return}
@@ -7167,7 +7179,7 @@ function loop(){
     while(n-->0&&S.pile>0&&S.aside.length<asideMax()){const c=drawFromPile(true);if(!c)break;
       if(isHit(c)){const kk=key(c);
         if(!isOne(c)&&!isSteam(c)&&(S.stacks[kk]>0||S.aside.some(x=>key(x)===kk))){addCard(c,'auto');if(S.level>=5&&S.shelf.length<shelfCap()&&avail(kk)>0){S.shelf.push(kk);dShelf++}else dBind++}
-        else{S.aside.push(c);seen.add(c.pid)}}
+        else{S.aside.push(c);seen.add(c.pid);if(isOne(c))toast(`${helperWho()} stopped and set one card aside very, very carefully. Go flip it!`,'gold',9000)}}
       else if(helpsSet(c)||isSteam(c)){addCard(c,'auto')}
       else{bv+=valueOf(c)*rate;bn++}
       S.stats.flips++;addXP(1)}
@@ -7198,7 +7210,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-13.0619';
+const APP_VERSION = '2026-11-14.0620';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
