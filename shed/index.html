@@ -6021,11 +6021,12 @@ function genPackRaw(pk){
 const PACK_MAX={sretail:6,shobby:3,svintage:2,sblaster:3,smega:2,shobbybox:1,dsoc:1,dnfl:1,gscle:3,hretail:6,hhobby:3,hvintage:2,hblaster:3,hmega:2,hhobbybox:1,dnhl:1,sfg:3,dnba:1,dmlb:1,retail:6,hobby:3,vintage:2,bretail:6,bhobby:3,bvintage:2,fretail:6,fhobby:3,fvintage:2,fblaster:3,fmega:2,fhobbybox:1,blaster:3,mega:2,hobbybox:1,bblaster:3,bmega:2,bhobbybox:1},RESTOCK=150;
 function packMax(id){return PACK_MAX[id]+2*up('vip')}
 function packCost(pk){return Math.round(pk.cost*(up('vip')?.8:1)*100)/100}
-function stockOf(id){S.stock=S.stock||{};return S.stock[id]??packMax(id)}
+const NO_LIMIT=new Set(['gscle','sfg']); // rivalry / dynasty packs never sell out
+function stockOf(id){S.stock=S.stock||{};if(NO_LIMIT.has(id))return 99;return S.stock[id]??packMax(id)}
 function tickStock(n){S.stockCtr=(S.stockCtr||0)+n;let got=false;while(S.stockCtr>=RESTOCK){S.stockCtr-=RESTOCK;PACKS.forEach(pk=>{const c=stockOf(pk.id);if(c<packMax(pk.id)){S.stock[pk.id]=c+1;got=true}})}if(got&&tab==='packs')render()}
 function openPack(id){
   const pk=PACKS.find(p=>p.id===id);if(S.level<pk.lv||S.cash<packCost(pk)||stockOf(id)<=0)return;
-  S.stock[id]=stockOf(id)-1;challengeEvent('pack',pk);
+  if(!NO_LIMIT.has(id))S.stock[id]=stockOf(id)-1;challengeEvent('pack',pk);
   S.cash-=packCost(pk);S.stats.packs++;updateHeader();
   const cards=genPack(pk);
   // split into packs; inside each pack the base cards come first and the good stuff sits at the back
@@ -6066,7 +6067,7 @@ function openPack(id){
     stage.innerHTML=`<div class="reveal" id="pkAll"></div><p>${kept.length} ${kept.length===1?'card':'cards'} went in your binder. ${tossed} base ${tossed===1?'card':'cards'} got tossed on the pile.</p>`;
     const all=$('#pkAll',stage);
     (pk.box?[...kept].sort((a,b)=>valueOf(b)-valueOf(a)):cards).forEach(c=>{const d=document.createElement('div');const keep=kept.includes(c);d.className='mini'+(keep?'':' dim');d.appendChild(cardCanvas(c,70));d.insertAdjacentHTML('beforeend',`<span>${keep?money(valueOf(c)):'to the pile'}</span>`);all.appendChild(d)});
-    btns.innerHTML=`<button class="btn go" data-close>Done</button>${S.cash>=packCost(pk)&&stockOf(id)>0?`<button class="btn" id="pkAgain">Rip another (${money(packCost(pk))}, ${stockOf(id)} left)</button>`:''}`;
+    btns.innerHTML=`<button class="btn go" data-close>Done</button>${S.cash>=packCost(pk)&&stockOf(id)>0?`<button class="btn" id="pkAgain">Rip another (${money(packCost(pk))}${NO_LIMIT.has(id)?'':`, ${stockOf(id)} left`})</button>`:''}`;
     const again=$('#pkAgain',m);if(again)again.onclick=()=>{closeModal();openPack(id)};
     updateHeader();refreshSide();
   }
@@ -7049,7 +7050,7 @@ function renderUpgrades(v){
   v.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{buyUp(b.dataset.buy);renderUpgrades(v)});
 }
 function renderPacks(v){
-  v.innerHTML=`<p class="note" style="margin:0 0 14px">Lenny's Cards on Route 9. Good cards go in your binder. Base cards get tossed on the pile, so every pack pushes the finish line back.</p><p class="note" style="margin:-6px 0 14px">Lenny only gets so many packs. He restocks everything each time you level up, and a new delivery of each comes in every ${RESTOCK} cards you sort. Next one in <b style="color:var(--ink)">${RESTOCK-(S.stockCtr||0)}</b> cards.</p><h3 class="sech">Packs</h3><div class="packs">${PACKS.filter(pk=>!pk.box&&openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen)).map(pk=>{const st=stockOf(pk.id),ok=S.cash>=packCost(pk)&&st>0;return `<div class="pk"><div class="wrapper ${pk.cls}"><b>${pk.title}</b><span>${pk.sub}</span></div><h4>${esc(pk.name)}</h4><p>${esc(pk.desc)}</p><div class="stock">${Array.from({length:packMax(pk.id)},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}<span>${st?`${st} left`:'Sold out'}</span></div><button class="btn ${ok?'go':''}" data-pk="${pk.id}" ${ok?'':'disabled'}>${st?`Buy &amp; rip · ${money(packCost(pk))}`:'Sold out'}</button></div>`}).join('')}</div><h3 class="sech">Boxes</h3><p class="note" style="margin:-4px 0 12px">Big boxes of new cards, packed like the real thing. Lenny only gets a few.</p><div class="packs">${PACKS.filter(pk=>pk.box&&(pk.kind==='delight'||openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen))).map(pk=>{const st=stockOf(pk.id),ok=S.cash>=packCost(pk)&&st>0;return `<div class="pk"><div class="wrapper ${pk.cls}"><b>${pk.title}</b><span>${pk.sub}</span></div><h4>${esc(pk.name)}</h4><p>${esc(pk.desc)}</p><div class="stock">${Array.from({length:packMax(pk.id)},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}<span>${st?`${st} left`:'Sold out'}</span></div><button class="btn ${ok?'go':''}" data-pk="${pk.id}" ${ok?'':'disabled'}>${st?`Buy &amp; rip · ${money(packCost(pk))}`:'Sold out'}</button></div>`}).join('')}</div>${teamBoxHTML()}${rivalHTML()}<p class="note" style="margin-top:16px">${num(S.stats.packs)} packs ripped so far.</p>`;
+  v.innerHTML=`<p class="note" style="margin:0 0 14px">Lenny's Cards on Route 9. Good cards go in your binder. Base cards get tossed on the pile, so every pack pushes the finish line back.</p><p class="note" style="margin:-6px 0 14px">Lenny only gets so many packs. He restocks everything each time you level up, and a new delivery of each comes in every ${RESTOCK} cards you sort. Next one in <b style="color:var(--ink)">${RESTOCK-(S.stockCtr||0)}</b> cards.</p><h3 class="sech">Packs</h3><div class="packs">${PACKS.filter(pk=>!pk.box&&openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen)).map(pk=>{const st=stockOf(pk.id),ok=S.cash>=packCost(pk)&&st>0;return `<div class="pk"><div class="wrapper ${pk.cls}"><b>${pk.title}</b><span>${pk.sub}</span></div><h4>${esc(pk.name)}</h4><p>${esc(pk.desc)}</p><div class="stock">${NO_LIMIT.has(pk.id)?'<span>Always in stock</span>':`${Array.from({length:packMax(pk.id)},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}<span>${st?`${st} left`:'Sold out'}</span>`}</div><button class="btn ${ok?'go':''}" data-pk="${pk.id}" ${ok?'':'disabled'}>${st?`Buy &amp; rip · ${money(packCost(pk))}`:'Sold out'}</button></div>`}).join('')}</div><h3 class="sech">Boxes</h3><p class="note" style="margin:-4px 0 12px">Big boxes of new cards, packed like the real thing. Lenny only gets a few.</p><div class="packs">${PACKS.filter(pk=>pk.box&&(pk.kind==='delight'||openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen))).map(pk=>{const st=stockOf(pk.id),ok=S.cash>=packCost(pk)&&st>0;return `<div class="pk"><div class="wrapper ${pk.cls}"><b>${pk.title}</b><span>${pk.sub}</span></div><h4>${esc(pk.name)}</h4><p>${esc(pk.desc)}</p><div class="stock">${NO_LIMIT.has(pk.id)?'<span>Always in stock</span>':`${Array.from({length:packMax(pk.id)},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}<span>${st?`${st} left`:'Sold out'}</span>`}</div><button class="btn ${ok?'go':''}" data-pk="${pk.id}" ${ok?'':'disabled'}>${st?`Buy &amp; rip · ${money(packCost(pk))}`:'Sold out'}</button></div>`}).join('')}</div>${teamBoxHTML()}${rivalHTML()}<p class="note" style="margin-top:16px">${num(S.stats.packs)} packs ripped so far.</p>`;
   v.querySelectorAll('[data-pk]').forEach(b=>b.onclick=()=>openPack(b.dataset.pk));
   const tb=$('#tbBuy',v);if(tb){const upd=()=>{const n=+$('#tbSize',v).value;tb.textContent=`Buy · ${money(TB_PRICE[n])}`;tb.disabled=S.cash<TB_PRICE[n]};$('#tbSize',v).onchange=upd;upd();
     tb.onclick=()=>buyTeamBox($('#tbTeam',v).value,+$('#tbSize',v).value)}
@@ -7209,7 +7210,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-15.0634';
+const APP_VERSION = '2026-11-15.0735';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
