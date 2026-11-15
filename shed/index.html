@@ -3783,7 +3783,7 @@ const UPGRADES = [
   {id:'clerk',name:'Shop Clerk',cost:500,max:2,grow:3,lv:5,desc:"Colton's idea. Level 1: keeps the shelf stocked with your duplicate cards, best ones first. Level 2: also sells automatically when a customer offers at least 1.5× book value."},
   {id:'express',name:'Bigger Grader',cost:300,max:2,grow:2.5,lv:3,desc:'Grades come back faster (90 seconds, then 45), and the grader takes 2 more cards per level.'},
   {id:'doctor',name:'Card Doctor',cost:1500,max:2,grow:2.5,lv:5,desc:'A pro cleans, flattens and checks every card before it goes to Slab Happy. More 10s on new grades, and resubmits lean your way (55% up, then 60%). All legit.'},
-  {id:'regrade',name:'Crack & Resubmit',cost:2000,max:1,lv:5,desc:'Crack a slab and send the card back to Slab Happy. It\'s a coin flip: the grade goes up or down. Resubmit as many times as you dare.'},
+  {id:'regrade',name:'Crack & Resubmit',cost:2000,max:1,lv:5,desc:'Crack a slab and send the card back to Slab Happy. It\'s a coin flip: the grade goes up or down. A slab graded 6 or lower usually comes back 7 or better. Resubmit as many times as you dare.'},
   {id:'sleeves',name:'Sleeves & Toploaders',cost:250,max:1,lv:3,desc:'Protect cards before they go to the grader. Much better odds of 9s and 10s.'},
   {id:'vip',name:"Lenny's VIP Card",cost:400,max:1,lv:4,desc:'Lenny holds 2 extra of every pack for you, and packs cost 20% less.'},
   {id:'pizza',name:'Pizza Punch Card',cost:350,max:2,grow:2.5,lv:3,desc:'Longer helper shifts (3 minutes, then 4), and pizza costs half as much.'},
@@ -5793,7 +5793,9 @@ function resubmit(k,tier,quiet){tier=gTier(tier||S.gradeTier);const say=quiet?()
   if((S.stacks[k]||0)-shelfCount(k)-scCount(k)<=0){say('Take it off the shelf or out of the showcase first.');return false}
   if(S.grading.length>=GQ_MAX){say(`That's ${GQ_MAX} cards at Slab Happy already. Reveal some first.`);return false}
   const raw={...c};delete raw.g;const fee=tierFee(raw,tier);if(S.cash<fee){say(`Resubmitting costs ${money(fee)}.`);return 'cash'}
-  const step=Math.random()<.2?2:1,upOrDown=Math.random()<.5+.05*up('doctor')?1:-1,ng=Math.max(isOne(c)?8:1,Math.min(10,c.g+upOrDown*step));
+  const step=Math.random()<.2?2:1,upOrDown=Math.random()<.5+.05*up('doctor')?1:-1;let ng=Math.max(isOne(c)?8:1,Math.min(10,c.g+upOrDown*step));
+  // low slabs get a real second chance: about 2 in 3 come back 7 or better
+  if(c.g<=6&&Math.random()<.65+.03*up('doctor')){const r=Math.random();ng=r<.42?7:r<.77?8:r<.95?9:10}
   const pc=!!S.pc[k]&&S.stacks[k]<=1;S.cash-=fee;S.stats.gradeFees=(S.stats.gradeFees||0)+fee;removeCards(k,1);if(pc)delete S.pc[k];
   const it=queueGrade({k:key(raw),g:ng,pc,re:c.g},tier);
   say(`Cracked the ${c.g} and sent it back to Slab Happy (${GTIERS[tier].name}). ${it.wait?'It\'s in line.':'Fingers crossed.'}`);save(true);updateHeader();renderTabs();return true}
@@ -5808,9 +5810,16 @@ function revealGrade(i){
   addCard(c,'grade');if(x.pc)S.pc[key(c)]=true;challengeEvent('grade',c);save(true);renderTabs();if(tab==='binder')renderGrader();
 }
 function tierPick(){const t=gTier(S.gradeTier);return `<div class="gtiers">${Object.entries(GTIERS).map(([id,o])=>`<button class="gtier${id===t?' on':''}" data-gtier="${id}"><b>${o.name}</b><span>${msText(o.ms())}</span><span>${o.fee===1?'normal price':o.fee+'× price'}</span></button>`).join('')}</div>`}
+// every slab graded 6 or lower that's free (not on the shelf, in the showcase or a 1/1)
+function lowSlabs(){return Object.keys(S.stacks).filter(k=>{const c=fromKey(k);return c.g&&c.g<=6&&!isOne(c)&&(S.stacks[k]||0)-shelfCount(k)-scCount(k)>0})}
+function regradeLow(){const ks=lowSlabs();let sent=0,broke=false;
+  for(const k of ks){let n=(S.stacks[k]||0)-shelfCount(k)-scCount(k);while(n-->0){const r=resubmit(k,S.gradeTier,true);if(r===true)sent++;else{if(r==='cash')broke=true;break}}if(broke)break}
+  toast(sent?`Sent ${sent} slab${sent>1?'s':''} graded 6 or lower back to Slab Happy (${GTIERS[gTier(S.gradeTier)].name}). Most come back 7 or better.${broke?' Ran out of cash for the rest.':''}`:broke?'Not enough cash to regrade.':'No slabs graded 6 or lower.','good');
+  save(true);updateHeader();renderGrader();if(tab==='binder')renderBinder()}
 function renderGrader(){
   const b=$('#grader');if(!b)return;runGradeQueue();const q=S.grading||[];
-  const pick=`<p class="note" style="margin:0 0 6px">Grading speed for the Binder's Grade buttons:</p>${tierPick()}`;
+  const low=up('regrade')?lowSlabs().reduce((a,k)=>a+(S.stacks[k]||0)-shelfCount(k)-scCount(k),0):0,lowCost=low?lowSlabs().reduce((a,k)=>a+tierFee({...fromKey(k),g:0},S.gradeTier)*((S.stacks[k]||0)-shelfCount(k)-scCount(k)),0):0;
+  const pick=`<p class="note" style="margin:0 0 6px">Grading speed for the Binder's Grade buttons:</p>${tierPick()}${low?`<div style="margin-top:8px"><button class="btn go sm" id="regLow">Regrade all 6 and under (${low}) · ${money(lowCost)}</button></div>`:''}`;
   if(!q.length){b.innerHTML=`<div class="panel gpanel"><h3>At the grader</h3>${pick}<p class="note" style="margin:8px 0 0">Send a card to Slab Happy with the Grade button. You get a grade from 1 to 10, and a 10 is worth 8× the raw card. Vintage cards are hard to get high grades on. The grader works on ${gradeMax()} cards at a time; send as many as you like and the rest wait in line.</p></div>`}
   else{const order=q.map((x,i)=>i).sort((a,b)=>{const A=q[a],B=q[b],r=x=>x.wait?2:Date.now()>=x.ready?0:1;return r(A)-r(B)||(A.wait?0:A.ready-B.ready)});
   const done=q.filter(x=>!x.wait&&Date.now()>=x.ready).length;
@@ -5818,7 +5827,7 @@ function renderGrader(){
   b.querySelectorAll('canvas[data-gk]').forEach(cv=>{drawCard(cv,fromKey(cv.dataset.gk),44,true);cv.style.width='44px'});
   b.querySelectorAll('[data-reveal]').forEach(bt=>bt.onclick=()=>revealGrade(+bt.dataset.reveal));
   b.querySelectorAll('[data-gtier]').forEach(bt=>bt.onclick=()=>{S.gradeTier=bt.dataset.gtier;save(true);renderGrader();if(tab==='binder')renderBinder()});
-  const ra=$('#revealAll',b);if(ra)ra.onclick=revealAll;
+  const ra=$('#revealAll',b);if(ra)ra.onclick=revealAll;const rl=$('#regLow',b);if(rl)rl.onclick=regradeLow;
 }
 // show every finished slab in one go, best grade first
 function revealAll(){const q=S.grading||[],now=Date.now();const ready=q.filter(x=>!x.wait&&now>=x.ready);if(!ready.length)return;
@@ -6022,7 +6031,7 @@ function genPackRaw(pk){
 const PACK_MAX={sretail:6,shobby:3,svintage:2,sblaster:3,smega:2,shobbybox:1,dsoc:1,dnfl:1,gscle:3,hretail:6,hhobby:3,hvintage:2,hblaster:3,hmega:2,hhobbybox:1,dnhl:1,sfg:3,dnba:1,dmlb:1,retail:6,hobby:3,vintage:2,bretail:6,bhobby:3,bvintage:2,fretail:6,fhobby:3,fvintage:2,fblaster:3,fmega:2,fhobbybox:1,blaster:3,mega:2,hobbybox:1,bblaster:3,bmega:2,bhobbybox:1},RESTOCK=150;
 function packMax(id){return PACK_MAX[id]+2*up('vip')}
 function packCost(pk){return Math.round(pk.cost*(up('vip')?.8:1)*100)/100}
-const NO_LIMIT=new Set(['gscle','sfg']); // rivalry / dynasty packs never sell out
+const NO_LIMIT={has:()=>true}; // Lenny never runs out of anything
 function stockOf(id){S.stock=S.stock||{};if(NO_LIMIT.has(id))return 99;return S.stock[id]??packMax(id)}
 function tickStock(n){S.stockCtr=(S.stockCtr||0)+n;let got=false;while(S.stockCtr>=RESTOCK){S.stockCtr-=RESTOCK;PACKS.forEach(pk=>{const c=stockOf(pk.id);if(c<packMax(pk.id)){S.stock[pk.id]=c+1;got=true}})}if(got&&tab==='packs')render()}
 function openPack(id){
@@ -7055,7 +7064,7 @@ function renderUpgrades(v){
   v.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{buyUp(b.dataset.buy);renderUpgrades(v)});
 }
 function renderPacks(v){
-  v.innerHTML=`<p class="note" style="margin:0 0 14px">Lenny's Cards on Route 9. Good cards go in your binder. Base cards get tossed on the pile, so every pack pushes the finish line back.</p><p class="note" style="margin:-6px 0 14px">Lenny only gets so many packs. He restocks everything each time you level up, and a new delivery of each comes in every ${RESTOCK} cards you sort. Next one in <b style="color:var(--ink)">${RESTOCK-(S.stockCtr||0)}</b> cards.</p><h3 class="sech">Packs</h3><div class="packs">${PACKS.filter(pk=>!pk.box&&openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen)).map(pk=>{const st=stockOf(pk.id),ok=S.cash>=packCost(pk)&&st>0;return `<div class="pk"><div class="wrapper ${pk.cls}"><b>${pk.title}</b><span>${pk.sub}</span></div><h4>${esc(pk.name)}</h4><p>${esc(pk.desc)}</p><div class="stock">${NO_LIMIT.has(pk.id)?'<span>Always in stock</span>':`${Array.from({length:packMax(pk.id)},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}<span>${st?`${st} left`:'Sold out'}</span>`}</div><button class="btn ${ok?'go':''}" data-pk="${pk.id}" ${ok?'':'disabled'}>${st?`Buy &amp; rip · ${money(packCost(pk))}`:'Sold out'}</button></div>`}).join('')}</div><h3 class="sech">Boxes</h3><p class="note" style="margin:-4px 0 12px">Big boxes of new cards, packed like the real thing. Lenny only gets a few.</p><div class="packs">${PACKS.filter(pk=>pk.box&&(pk.kind==='delight'||openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen))).map(pk=>{const st=stockOf(pk.id),ok=S.cash>=packCost(pk)&&st>0;return `<div class="pk"><div class="wrapper ${pk.cls}"><b>${pk.title}</b><span>${pk.sub}</span></div><h4>${esc(pk.name)}</h4><p>${esc(pk.desc)}</p><div class="stock">${NO_LIMIT.has(pk.id)?'<span>Always in stock</span>':`${Array.from({length:packMax(pk.id)},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}<span>${st?`${st} left`:'Sold out'}</span>`}</div><button class="btn ${ok?'go':''}" data-pk="${pk.id}" ${ok?'':'disabled'}>${st?`Buy &amp; rip · ${money(packCost(pk))}`:'Sold out'}</button></div>`}).join('')}</div>${teamBoxHTML()}${rivalHTML()}<p class="note" style="margin-top:16px">${num(S.stats.packs)} packs ripped so far.</p>`;
+  v.innerHTML=`<p class="note" style="margin:0 0 14px">Lenny's Cards on Route 9. Good cards go in your binder. Base cards get tossed on the pile, so every pack pushes the finish line back.</p><h3 class="sech">Packs</h3><div class="packs">${PACKS.filter(pk=>!pk.box&&openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen)).map(pk=>{const st=stockOf(pk.id),ok=S.cash>=packCost(pk)&&st>0;return `<div class="pk"><div class="wrapper ${pk.cls}"><b>${pk.title}</b><span>${pk.sub}</span></div><h4>${esc(pk.name)}</h4><p>${esc(pk.desc)}</p><div class="stock">${NO_LIMIT.has(pk.id)?'<span>Always in stock</span>':`${Array.from({length:packMax(pk.id)},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}<span>${st?`${st} left`:'Sold out'}</span>`}</div><button class="btn ${ok?'go':''}" data-pk="${pk.id}" ${ok?'':'disabled'}>${st?`Buy &amp; rip · ${money(packCost(pk))}`:'Sold out'}</button></div>`}).join('')}</div><h3 class="sech">Boxes</h3><p class="note" style="margin:-4px 0 12px">Big boxes of new cards, packed like the real thing.</p><div class="packs">${PACKS.filter(pk=>pk.box&&(pk.kind==='delight'||openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen))).map(pk=>{const st=stockOf(pk.id),ok=S.cash>=packCost(pk)&&st>0;return `<div class="pk"><div class="wrapper ${pk.cls}"><b>${pk.title}</b><span>${pk.sub}</span></div><h4>${esc(pk.name)}</h4><p>${esc(pk.desc)}</p><div class="stock">${NO_LIMIT.has(pk.id)?'<span>Always in stock</span>':`${Array.from({length:packMax(pk.id)},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}<span>${st?`${st} left`:'Sold out'}</span>`}</div><button class="btn ${ok?'go':''}" data-pk="${pk.id}" ${ok?'':'disabled'}>${st?`Buy &amp; rip · ${money(packCost(pk))}`:'Sold out'}</button></div>`}).join('')}</div>${teamBoxHTML()}${rivalHTML()}<p class="note" style="margin-top:16px">${num(S.stats.packs)} packs ripped so far.</p>`;
   v.querySelectorAll('[data-pk]').forEach(b=>b.onclick=()=>openPack(b.dataset.pk));
   const tb=$('#tbBuy',v);if(tb){const upd=()=>{const n=+$('#tbSize',v).value;tb.textContent=`Buy · ${money(TB_PRICE[n])}`;tb.disabled=S.cash<TB_PRICE[n]};$('#tbSize',v).onchange=upd;upd();
     tb.onclick=()=>buyTeamBox($('#tbTeam',v).value,+$('#tbSize',v).value)}
@@ -7215,7 +7224,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-15.0753';
+const APP_VERSION = '2026-11-15.0756';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
