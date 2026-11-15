@@ -133,6 +133,13 @@
   <div id="backupBox" style="display:none;margin-top:8px"><p id="backupMsg" style="margin:0 0 6px;font-size:12.5px"></p>
     <textarea id="backupText" rows="4" style="width:100%;box-sizing:border-box;font-size:11px;border-radius:10px;border:2px solid #dcd3bf;padding:6px"></textarea>
     <div class="row" style="margin-top:6px;gap:8px"><button class="sm" id="backupGo">Copy</button><button class="alt sm" id="backupClose">Close</button></div></div>
+  <div id="syncRow" style="margin-top:12px;padding:10px;border-radius:12px;background:#ece5d3">
+    <div id="syncStatus" style="font-size:13px;font-weight:700;margin-bottom:8px"></div>
+    <div class="row" style="gap:8px"><button class="sm" id="syncGo">Turn on</button><button class="alt sm" id="syncShow">Family code</button></div>
+    <div id="syncBox" style="display:none;margin-top:8px"><p id="syncMsg" style="margin:0 0 6px;font-size:12.5px"></p>
+      <input id="syncCode" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;box-sizing:border-box;font-size:14px;padding:8px;border-radius:10px;border:2px solid #dcd3bf">
+      <div class="row" style="margin-top:6px;gap:8px"><button class="sm" id="syncA"></button><button class="alt sm" id="syncB"></button></div></div>
+  </div>
   <div class="wf" id="vtag" style="text-align:center"></div>
 </div></div>
 <div id="toast" style="position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 12px);transform:translateX(-50%);background:#2b3a2f;color:#f4efe4;padding:10px 16px;border-radius:12px;font:600 14px -apple-system,sans-serif;z-index:99;display:none;box-shadow:0 4px 16px rgba(0,0,0,.3)"></div>
@@ -156,7 +163,7 @@
 <script>
 (()=>{
 // ---------- constants ----------
-const APP_VERSION = '2026-11-10.1030';
+const APP_VERSION = '2026-11-14.1200';
 const W=360, LH=560, H=700, CS=4, GW=W/CS, GH=LH/CS;
 const EMPTY=0, DIRT=1, ROCK=2;
 const MAXP=600, PR=3.2, HR=6.2;        // particle draw radius, interaction radius
@@ -170,7 +177,7 @@ let grid=new Uint8Array(GW*GH);
 const px=new Float32Array(MAXP), py=new Float32Array(MAXP), vx=new Float32Array(MAXP), vy=new Float32Array(MAXP);
 let np=0;
 let hardMode=false, waterScale=1; try{hardMode=localStorage.getItem('capy_hard')==='1';}catch(e){}
-const HARD_SCALE=/*HARD*/{"First Dig": 0.35, "Around the Rocks": 0.35, "Plug the Leak": 0.55, "Rockslide": 1, "Two Pools": 0.75, "Thirsty Moss": 0.7, "Bucket Gate": 0.6, "Floodgate": 0.65, "Leaf Lever": 0.6, "Spring Garden": 0.75, "Bamboo Bends": 0.45, "Pipe Puzzle": 0.4, "The Leap": 0.5, "Leap and Land": 0.65, "Balancing Act": 1, "Tortoise Crossing": 0.7, "Rush Hour": 0.75, "Tip and Jump": 0.95, "Two Springs": 1, "The Grand Spring": 0.7, "Uninvited Guest": 0.8, "Cat Nap": 0.55, "Paw Patrol": 0.95, "Moving Target": 0.85}/*END*/;
+const HARD_SCALE=/*HARD*/{"First Dig": 0.35, "Around the Rocks": 0.35, "Plug the Leak": 0.55, "Rockslide": 1, "Two Pools": 0.75, "Thirsty Moss": 0.7, "Bucket Gate": 0.6, "Floodgate": 0.65, "Leaf Lever": 0.6, "Spring Garden": 0.75, "Bamboo Bends": 0.45, "Pipe Puzzle": 0.4, "The Leap": 0.5, "Leap and Land": 0.65, "Balancing Act": 1, "Tortoise Crossing": 0.7, "Rush Hour": 0.75, "Tip and Jump": 0.95, "Two Springs": 1, "The Grand Spring": 0.7, "Uninvited Guest": 0.8, "Cat Nap": 0.55, "Paw Patrol": 0.95, "Moving Target": 0.85, "Bamboo Shower": 1.0, "Light Sleeper": 0.8, "Rush Hour Rumble": 0.9, "Cannonball": 1.0, "Leaf Ambush": 0.85, "Jaguar's Den": 0.8}/*END*/;
 const lvKey=n=>hardMode?n+' (hard)':n;
 function hardUnlocked(){ return unlockAll||allScores().some(v=>v.level==='The Grand Spring')||profiles.some(p=>!!(LS.get('capy_best_'+p.id,{})['The Grand Spring'])); }
 let L=null, levelIdx=0, fill=0, terrainDirty=true, fieldDirty=true, state='play', stateT=0, showLabels=false, frame=0;
@@ -240,6 +247,47 @@ if(!localStorage.getItem('capy_seeded')){ try{
   localStorage.setItem('capy_scores',JSON.stringify(localScores)); localStorage.setItem('capy_seeded','1');
 }catch(e){} }
 try{ if(navigator.storage&&navigator.storage.persist)navigator.storage.persist(); }catch(e){}
+// ---------- family sync (Supabase, plain fetch) ----------
+// Every winning run is a row; progress is rebuilt from rows, so syncing rows syncs everything.
+// Rows are tied to a private family code kept only on each device (capy_fam).
+const SYNC_URL='', SYNC_KEY='';
+const SEED_AT=1794284800000;                       // filled in once the Supabase project exists
+let famCode=''; try{famCode=localStorage.getItem('capy_fam')||'';}catch(e){}
+let syncState={busy:false, last:+(localStorage.getItem('capy_synced_at')||0), err:'', timer:0};
+const rowKey=v=>(v.player||'')+'|'+v.level+'|'+Number(v.time).toFixed(1)+'|'+(v.at||0);
+async function rpc(fn,body){
+  const h={'Content-Type':'application/json','apikey':SYNC_KEY}; if(/^eyJ/.test(SYNC_KEY))h.Authorization='Bearer '+SYNC_KEY;
+  const r=await fetch(SYNC_URL.replace(/\/$/,'')+'/rest/v1/rpc/'+fn,{method:'POST',headers:h,body:JSON.stringify(body),cache:'no-store'});
+  if(!r.ok)throw new Error('HTTP '+r.status); return r.json(); }
+const syncOn=()=>!!(SYNC_URL&&SYNC_KEY&&famCode);
+async function syncNow(){
+  if(!syncOn()||syncState.busy)return; syncState.busy=true;
+  try{
+    const remote=(await rpc('capy_get',{p_fam:famCode})).map(r=>({player:r.player,level:r.level,time:Math.round(r.secs*10)/10,stars:r.stars,at:+r.at}));
+    const rset=new Set(remote.map(rowKey)), last=syncState.last;
+    // new here since the last sync -> upload; older and missing from the cloud -> it was reset on another device, drop it
+    const up=localScores.filter(v=>!rset.has(rowKey(v))&&(!last||(v.at||0)>last)&&(v.at!==SEED_AT||syncState.starting)); // built-in starting scores go up once, from the device that starts the family
+    for(let i=0;i<up.length;i+=200) await rpc('capy_add',{p_fam:famCode,p_rows:up.slice(i,i+200).map(v=>({player:v.player||v.initials||'?',level:v.level,time:v.time,stars:v.stars,at:v.at||0}))});
+    const merged=remote.concat(up), seen=new Set(); localScores=[];
+    for(const v of merged){const k=rowKey(v); if(seen.has(k))continue; seen.add(k); localScores.push(v);}
+    LS.set('capy_scores',localScores);
+    syncState.last=Date.now(); syncState.err=''; syncState.starting=false; try{localStorage.setItem('capy_synced_at',String(syncState.last));}catch(e){}
+    mergeFromDb(); loadProfileData(); refreshVisible();
+  }catch(e){ syncState.err=navigator.onLine===false?'offline':'couldn\'t reach the cloud'; }
+  syncState.busy=false; drawSyncRow();
+}
+function syncSoon(ms){ clearTimeout(syncState.timer); syncState.timer=setTimeout(syncNow,ms||800); }
+function refreshVisible(){ const on=id=>document.getElementById(id).classList.contains('show');
+  if(on('leader'))buildLeader(); else if(on('profiles'))buildProfiles(); else if(on('menu'))buildMenu(menuTab); else if(on('result'))renderBoard(); }
+function newFamCode(){ const a='abcdefghjkmnpqrstuvwxyz23456789', b=new Uint8Array(18); crypto.getRandomValues(b); let s='capy-'; b.forEach((x,i)=>{s+=a[x%a.length]; if(i%6===5&&i<17)s+='-';}); return s; }
+function ago(t){ const s=(Date.now()-t)/1000; return s<60?'just now':s<3600?Math.round(s/60)+' min ago':s<86400?Math.round(s/3600)+' h ago':Math.round(s/86400)+' d ago'; }
+function drawSyncRow(){ const el=document.getElementById('syncStatus'); if(!el)return;
+  const go=document.getElementById('syncGo'), show=document.getElementById('syncShow');
+  document.getElementById('syncRow').style.display=SYNC_URL?'':'none'; if(!SYNC_URL)return;
+  if(!famCode){ el.textContent='☁️ Family sync is off on this device'; go.textContent='Turn on'; go.style.display=''; show.style.display='none'; return; }
+  const players=new Set(localScores.map(v=>v.player)).size;
+  el.textContent='☁️ '+(syncState.busy?'Syncing…':syncState.err?'Sync: '+syncState.err+', will retry':'Synced '+(syncState.last?ago(syncState.last):'')+' · '+players+' players');
+  go.textContent='Sync now'; go.style.display=''; show.style.display=''; }
 function allScores(){ const seen=new Set(), out=[];
   for(const v of (dbScores||localScores)){ const p=v.player||v.initials||'?'; const k=p+'|'+v.level+'|'+v.time+'|'+(v.at||0); if(seen.has(k))continue; seen.add(k); out.push({...v,player:p}); }
   return out; }
@@ -628,7 +676,7 @@ const LEVELS=[
      balances:[{x:180,y:186,half:106,floor:262,need:30,tol:7,door:'flower'}],
      doors:[{id:'flower',x:88,y:336,w:40,h:11,dx:-42,dy:0}]};
  }},
- {name:'Two Springs', hint:'The second spring is locked. Lead the first spring to the bucket to open it.', need:90, build(){
+ {name:'Two Springs', hint:'The second spring is locked. Lead the first spring to the bucket to open it.', need:85, build(){
    grid.fill(DIRT); border();
    rect(174,8,12,400,ROCK);                                     // wall between the two springs
    blob(60,24,60,50,ROCK); rect(82,64,16,10,EMPTY);             // spring one
@@ -764,6 +812,133 @@ const LEVELS=[
    return {intake:it, yuzu:yz, gates:[], boulders:[], moss:[],
      jaguars:[{kind:'patrol',x:150,y:290,dir:1,x0:70,x1:290,speed:0.8,away:720}]};
  }},
+ {name:'Bamboo Shower', hint:'Send your pool down the tunnel, but he drinks as he paces. Tap the bamboo when he\'s right under it.', need:120, build(){
+   grid.fill(DIRT); border();
+   blob(24,24,120,84,EMPTY);                                     // your pool
+   blob(204,22,92,62,EMPTY);                                     // shower pool
+   rect(186,84,128,40,ROCK);                                     // rock with a bamboo valve
+   rect(236,124,28,112,EMPTY);                                   // shower shaft
+   rect(24,236,316,54,EMPTY); rect(24,290,316,10,ROCK);          // his tunnel
+   rect(306,290,30,10,EMPTY);                                    // drain
+   blob(40,380,110,60,ROCK);
+   const it=lake(200,320);
+   const yz=[{x:150,y:268},{x:321,y:340},{x:250,y:200}];
+   yz.forEach(p=>circ(p.x,p.y,9,EMPTY));
+   yz.push({x:40,y:520,hidden:true});
+   spawnWater(34,104,100,200); spawnWater(210,80,80,70);
+   return {intake:it, yuzu:yz, gates:[], boulders:[], moss:[],
+     pipes:[{x:230,y:84,kind:'s',r:0,rot:true,slow:3}],
+     jaguars:[{kind:'patrol',x:150,y:290,dir:1,x0:70,x1:290,speed:0.75,away:720}]};
+ }},
+ {name:'Light Sleeper', hint:'Balance the gourds to open the pool. Plan your tunnel around his circle first: he naps right by the pond.', need:80, build(){
+   grid.fill(DIRT); border();
+   blob(150,24,60,50,ROCK); rect(172,64,16,10,EMPTY);           // spring rock
+   rect(30,100,300,196,EMPTY); rect(30,296,300,10,ROCK);         // balance cave
+   rect(40,306,280,96,ROCK); blob(52,314,256,76,EMPTY);          // the pool, sealed in rock
+   rect(160,384,40,18,EMPTY);                                    // trapdoor hole
+   rect(214,470,72,10,ROCK);                                     // his napping ledge
+   const it=lake(250,340);
+   const yz=[{x:110,y:440},{x:160,y:510},{x:232,y:538}];
+   yz.forEach(p=>circ(p.x,p.y,9,EMPTY));
+   yz.push({x:24,y:520,hidden:true});
+   spawnWater(66,384,228,170);
+   return {intake:it, yuzu:yz, gates:[], boulders:[], moss:[],
+     springs:[{x:180,y:68,total:115,every:3,mech:true}],
+     leaves:[{x:180,y:142,len:100,angA:-0.34,angB:0.34}],
+     balances:[{x:180,y:210,half:106,floor:296,need:30,tol:7,door:'flower'}],
+     doors:[{id:'flower',x:158,y:388,w:44,h:12,dx:-46,dy:0}],
+     jaguars:[{kind:'sleep',x:250,y:470,dir:-1,wakeR:56,away:1e9}]};
+ }},
+ {name:'Rush Hour Rumble', hint:'The tortoise drinks, and the jaguar paws the right crack shut. Watch them both, or splash the cat.', need:120, build(){
+   grid.fill(DIRT); border();
+   blob(26,44,104,70,EMPTY); blob(186,26,150,92,EMPTY);          // a little pool and a big one
+   rect(8,200,344,56,EMPTY);                                     // the tunnel
+   rect(8,256,344,12,ROCK); rect(84,256,32,12,EMPTY); rect(244,256,32,12,EMPTY);
+   blob(120,340,120,70,ROCK);
+   const it=lake(130,230);
+   const yz=[{x:180,y:244},{x:100,y:320},{x:260,y:300}];
+   yz.forEach(p=>circ(p.x,p.y,9,EMPTY));
+   yz.push({x:30,y:500,hidden:true});
+   spawnWater(34,110,88,60); spawnWater(196,116,130,160);
+   return {intake:it, yuzu:yz, gates:[], boulders:[], moss:[],
+     movers:[{x0:12,x1:348,y:256,speed:0.6,x:170,dir:1}],
+     jaguars:[{kind:'prowl',x:300,y:256,dir:-1,x0:150,x1:330,speed:0.6,every:380,warnT:100,zone:{x:232,y:262,w:56,h:56},away:720}]};
+ }},
+ {name:'Cannonball', hint:'He\'s drinking on the landing ledge. A short jump runs straight to his mouth. Leap far enough to land on his back!', need:80, build(){
+   grid.fill(DIRT); border();
+   blob(26,26,150,96,EMPTY);
+   rect(196,8,60,142,ROCK);                                      // wall above the gap
+   rect(204,150,40,340,EMPTY);                                   // the gap
+   rect(244,150,12,100,ROCK);
+   rect(244,250,100,100,EMPTY);                                  // landing ledge
+   rect(196,330,8,230,ROCK); rect(244,330,12,230,ROCK); rect(196,490,60,70,ROCK);
+   rect(256,350,60,12,ROCK);                                     // ledge floor: the way down is behind him
+   const it=lake(264,340);
+   const yz=[{x:150,y:176},{x:330,y:330},{x:310,y:460}];
+   yz.forEach(p=>circ(p.x,p.y,9,EMPTY));
+   yz.push({x:60,y:420,hidden:true});
+   spawnWater(32,120,138,200);
+   return {intake:it, yuzu:yz, gates:[], boulders:[], moss:[{x:204,y:440,w:40,h:50,cap:9999,got:0,drain:true}],
+     jaguars:[{kind:'drink',x:282,y:350,dir:-1,away:900}]};
+ }},
+ {name:'Leaf Ambush', hint:'He paces the tunnel below. Tip the leaf so the spring pours on whichever side he\'s on.', need:90, build(){
+   grid.fill(DIRT); border();
+   blob(150,40,60,50,ROCK); rect(172,80,16,10,EMPTY);           // spring rock
+   rect(30,124,300,110,EMPTY);                                   // leaf cave
+   rect(172,200,16,34,ROCK);                                     // divider under the pivot
+   rect(30,234,300,12,ROCK); rect(70,234,40,12,EMPTY); rect(250,234,40,12,EMPTY);   // two holes
+   rect(24,300,316,52,EMPTY); rect(24,352,316,10,ROCK);          // his tunnel
+   rect(306,352,30,10,EMPTY);                                    // drain at the far end
+   const it=lake(240,340);
+   const yz=[{x:90,y:272},{x:270,y:272},{x:321,y:440}];
+   yz.forEach(p=>circ(p.x,p.y,9,EMPTY));
+   yz.push({x:330,y:180,hidden:true});
+   return {intake:it, yuzu:yz, gates:[], boulders:[], moss:[],
+     springs:[{x:180,y:84,total:240,every:2}],
+     leaves:[{x:180,y:172,len:132,angA:-0.34,angB:0.34}],
+     jaguars:[{kind:'patrol',x:100,y:352,dir:1,x0:50,x1:310,speed:0.7,away:600}]};
+ }},
+ {name:"Jaguar's Den", hint:'Three layers, a jaguar in every one. Fill each stone pool, then send the water down.', need:65, tiers:[
+  {hint:'Layer 1 of 3: he\'s drinking in the tunnel. Splash his back, then send your pool past him.', build(n){
+   grid.fill(DIRT); border();
+   blob(24,24,130,86,EMPTY);                                     // your pool
+   blob(180,40,80,46,EMPTY);                                     // little pool above him
+   rect(24,236,316,54,EMPTY); rect(24,290,316,10,ROCK);          // his tunnel
+   rect(300,290,30,10,EMPTY);                                    // drain at the far end
+   rect(150,462,10,88,ROCK); rect(14,460,146,8,ROCK); rect(40,460,90,8,EMPTY); rect(22,468,128,82,EMPTY); // stone pool
+   const yz=[{x:220,y:170}];
+   yz.forEach(p=>circ(p.x,p.y,9,EMPTY));
+   yz.push({x:330,y:520,hidden:true});
+   spawnWater(34,106,112,200); spawnWater(186,84,68,50);
+   return {intake:{x:-99,y:-99,w:0,h:0}, stage:{x:22,y:468,w:128,h:82,max:220}, yuzu:yz, gates:[], boulders:[], moss:[],
+     jaguars:[{kind:'drink',x:220,y:290,dir:-1,away:660}]};
+  }},
+  {hint:'Layer 2 of 3: he paws the gap shut every few seconds. Dig right after he swipes, and re-dig if you have to.', build(n){
+   grid.fill(DIRT); border();
+   blob(20,24,120,80,EMPTY);                                     // your water arrives here
+   rect(150,146,200,50,EMPTY); rect(150,196,200,8,ROCK);         // his tunnel
+   rect(8,330,344,14,ROCK); rect(220,330,40,14,EMPTY);           // rock band with one gap
+   rect(150,462,10,88,ROCK); rect(14,460,146,8,ROCK); rect(40,460,90,8,EMPTY); rect(22,468,128,82,EMPTY); // stone pool
+   const yz=[{x:60,y:260}];
+   yz.forEach(p=>circ(p.x,p.y,9,EMPTY));
+   spawnWater(30,100,100,n,true);
+   return {intake:{x:-99,y:-99,w:0,h:0}, stage:{x:22,y:468,w:128,h:82,max:200}, yuzu:yz, gates:[], boulders:[], moss:[],
+     jaguars:[{kind:'prowl',x:250,y:196,dir:1,x0:180,x1:320,speed:0.7,every:360,warnT:100,zone:{x:206,y:300,w:68,h:60},away:720}]};
+  }},
+  {hint:'Layer 3 of 3: shh, he\'s asleep in his den. Go around his circle, or pour down the crack to chase him off for good.', build(n){
+   grid.fill(DIRT); border();
+   blob(110,24,140,80,EMPTY);                                    // your water arrives here
+   rect(150,252,70,48,EMPTY); rect(140,300,90,10,ROCK);          // his den
+   rect(181,186,8,66,EMPTY);                                     // a crack right above his back
+   blob(250,360,90,60,ROCK); blob(20,250,40,90,ROCK);
+   const it=lake(140,220);
+   const yz=[{x:200,y:262}];
+   yz.forEach(p=>circ(p.x,p.y,9,EMPTY));
+   spawnWater(120,100,120,n,true);
+   return {intake:it, yuzu:yz, gates:[], boulders:[],
+     moss:[{x:276,y:300,w:44,h:40,cap:60,got:0}],
+     jaguars:[{kind:'sleep',x:185,y:300,dir:1,wakeR:62,away:1e9}]};
+  }}]},
 ];
 
 function loadLevel(i){
@@ -1542,11 +1717,11 @@ function renderBoard(){
     rows.map((v,i)=>`<li class="${lastRun&&v.player===lastRun.player?'me':''}"><span class="rk">${i===0?'👑':i+1}</span><span class="in">${esc(v.player)}</span><span class="st">${'★'.repeat(Math.min(v.stars,4))}</span><span>${fmtTime(v.time)}</span></li>`).join('');
 }
 async function saveRun(row){
-  localScores.push(row); LS.set('capy_scores',localScores.slice(-2000));
+  localScores.push(row); LS.set('capy_scores',localScores.slice(-4000)); syncSoon(600);
   renderBoard();
 }
 // ---------- profiles screen ----------
-function buildProfiles(){
+function buildProfiles(){ setTimeout(drawSyncRow,0);
   hide('menu'); hide('leader');
   const list=document.getElementById('profList'); list.innerHTML='';
   if(!profiles.length)list.innerHTML='<p style="margin:0 0 10px">Add a player to start. Each player gets their own levels, stars and times.</p>';
@@ -1578,6 +1753,7 @@ function buildProfiles(){
 function resetPlayer(p){ // wipe one player's stars, unlocks and times (on this phone and on the shared board)
   LS.set('capy_best_'+p.id,{}); if(p.id===curId)best={};
   localScores=localScores.filter(v=>(v.player||v.initials)!==p.name); LS.set('capy_scores',localScores);
+  if(syncOn())rpc('capy_forget',{p_fam:famCode,p_player:p.name}).then(()=>syncSoon(100)).catch(()=>{});
 }
 function nextLevelFor(){ for(let i=0;i<LEVELS.length;i++)if(!best[lvKey(LEVELS[i].name)])return i; return 0; }
 document.getElementById('addProf').onclick=()=>{ const inp=document.getElementById('newName'); const p=addProfile(inp.value); if(!p){inp.focus();return;} inp.value=''; setProfile(p.id); SFX.ensure(); SFX.tap(); loadLevel(0); buildMenu(); };
@@ -1731,6 +1907,20 @@ function restoreBackup(code){ const j=JSON.parse(decodeURIComponent(escape(atob(
   go.onclick=async()=>{ if(mode==='copy'){ try{ await navigator.clipboard.writeText(txt.value); toast('Backup copied. Paste it into Notes.'); }catch(e){ txt.select(); toast('Select the code and copy it.'); } return; }
     try{ restoreBackup(txt.value); box.style.display='none'; buildProfiles(); toast('Save restored!'); }catch(e){ toast('That code didn\'t work. Check you copied all of it.'); } };
 }
+{ const box=document.getElementById('syncBox'), msg=document.getElementById('syncMsg'), inp=document.getElementById('syncCode'), A=document.getElementById('syncA'), B=document.getElementById('syncB');
+  const open=(m,v,a,b,fa,fb)=>{ box.style.display=''; msg.textContent=m; inp.value=v; A.textContent=a; B.textContent=b; A.onclick=fa; B.onclick=fb; };
+  const close=()=>{ box.style.display='none'; };
+  const join=(code,starting)=>{ code=code.trim(); syncState.starting=!!starting; if(code.length<16){toast('That code looks too short.');return;} famCode=code; try{localStorage.setItem('capy_fam',code);}catch(e){} syncState.last=0; try{localStorage.removeItem('capy_synced_at');}catch(e){} close(); drawSyncRow(); syncNow().then(()=>toast(syncState.err?'Couldn\'t reach the cloud. Try again in a bit.':'Family sync is on ☁️')); };
+  document.getElementById('syncGo').onclick=()=>{ SFX.ensure(); SFX.tap();
+    if(famCode){ syncNow(); return; }
+    open('First device? Tap "Start new". Already started on another device? Paste its family code here and tap "Join".','', 'Join', 'Start new',
+      ()=>join(inp.value), ()=>join(newFamCode(),true)); };
+  document.getElementById('syncShow').onclick=()=>{ SFX.ensure(); SFX.tap();
+    open('Put this code on the other device (Family sync → Turn on → paste → Join). Keep it private: it unlocks your scores.', famCode, 'Copy', 'Turn off here',
+      async()=>{ try{await navigator.clipboard.writeText(famCode); toast('Code copied');}catch(e){inp.select(); toast('Select the code and copy it.');} },
+      ()=>{ famCode=''; try{localStorage.removeItem('capy_fam');}catch(e){} close(); drawSyncRow(); toast('Sync is off on this device. Your scores stay here.'); }); };
+}
+setInterval(()=>{ if(document.visibilityState==='visible')syncNow(); },45000);
 let updateShown=false;
 async function checkForUpdate(){ if(updateShown||location.protocol==='file:')return;
   try{ const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'}); if(!r.ok)return;
@@ -1739,8 +1929,8 @@ async function checkForUpdate(){ if(updateShown||location.protocol==='file:')ret
     b.style.cssText='position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 14px);transform:translateX(-50%);z-index:98;background:#e98d2b;color:#fff;border:0;border-radius:14px;padding:12px 18px;font:700 14px -apple-system,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.3)';
     b.onclick=()=>location.replace(location.pathname+'?v='+encodeURIComponent(m[1])); document.body.appendChild(b);
   }catch(e){} }
-document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible')checkForUpdate(); });
-mergeFromDb(); loadProfileData();
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){checkForUpdate(); syncSoon(300);} });
+mergeFromDb(); loadProfileData(); drawSyncRow(); syncSoon(500);
 resize(); loadLevel(curProfile()?nextLevelFor():0); buildMenu();
 requestAnimationFrame(loop);
 { const lastV=localStorage.getItem('capy_lastVersion'); if(lastV&&lastV!==APP_VERSION)toast('Updated to version '+APP_VERSION+' 🎉',4000);
