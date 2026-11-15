@@ -159,7 +159,8 @@ button:focus-visible, input:focus-visible, select:focus-visible{outline:2px soli
 .boxtile.done{opacity:.45;filter:grayscale(.6)}
 .gpanel{margin-bottom:12px}.gq{display:flex;flex-wrap:wrap;gap:10px}
 .gi{display:flex;gap:10px;align-items:center;background:var(--panel2);border-radius:10px;padding:8px 12px 8px 8px}
-.gi canvas{width:44px;height:62px}.gi.gwait{opacity:.6}
+.gi canvas{width:44px;height:62px}
+.pkset{display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center;padding:10px 14px;border-radius:12px;background:var(--panel2);font-size:15px}.pkset.fin{background:linear-gradient(135deg,#ffe14d,#ffb02e);color:#2a1d00}.pkset.fin b{font-size:20px}.pkset span{opacity:.85}.gi.gwait{opacity:.6}
 .gtiers{display:flex;gap:8px;flex-wrap:wrap}.gtier{flex:1;min-width:96px;min-height:44px;background:var(--panel2);border:2px solid transparent;border-radius:10px;padding:6px 10px;color:inherit;font:inherit;text-align:left;cursor:pointer}.gtier b{display:block;font-size:16px}.gtier span{display:block;font-size:12px;color:var(--muted)}.gtier.on{border-color:var(--bulb)}.gi b{display:block}.gi span{display:block;font-size:13px;color:var(--muted)}.gi .gt{color:var(--bulb);font-variant-numeric:tabular-nums}
 .gbadge{display:inline-block;margin-left:6px;font-family:var(--display);font-size:11px;padding:1px 6px;border-radius:4px;background:#f8f7f2;color:#1a1a1a}
 .gbadge.g10{background:#ff7a1a;color:#fff}.gbadge.g9{background:#ffd9b8}
@@ -6060,11 +6061,15 @@ function openPack(id){
   function finish(){
     if(finished)return;finished=true;
     cards.forEach(c=>challengeEvent('find',c));
-    let tossed=0,kept=[];
+    let tossed=0,kept=[];const haveB={};SETS.forEach(st=>{if(S.sets[st.id]!=='claimed')haveB[st.id]=st.pids.filter(pid=>setHave(st,pid)).length});
     S.fresh=S.fresh||{};cards.forEach(c=>{if(c.par>0||valueOf(c)>=3){addCard(c,'pack');kept.push(c);const fk=key(c);S.fresh[fk]=(S.fresh[fk]||0)+1}else tossed++});
     addToPile(packLoc(pk.sport||'nba'),tossed);
-    addXP(cards.length*3);
-    stage.innerHTML=`<div class="reveal" id="pkAll"></div><p>${kept.length} ${kept.length===1?'card':'cards'} went in your binder. ${tossed} base ${tossed===1?'card':'cards'} got tossed on the pile.</p>`;
+    addXP(cards.length*3);checkSets();
+    // which of your sets this pack moved forward, and any it finished
+    const moved=SETS.filter(st=>haveB[st.id]!=null&&st.pids.filter(pid=>setHave(st,pid)).length>haveB[st.id]),fin=moved.filter(st=>S.sets[st.id]==='ready');
+    const setNote=moved.length?`<div class="pkset${fin.length?' fin':''}">${fin.map(st=>`<b>🏆 Set complete: ${esc(st.name)}!</b>`).join('')}${fin.length?'<span>Claim it in the Sets tab.</span>':''}${(fin.length?[]:moved).slice(0,3).map(st=>`<span>Closer: ${esc(st.name)} · ${st.pids.filter(pid=>setHave(st,pid)).length}/${st.pids.length}</span>`).join('')}</div>`:'';
+    if(fin.length)fanfare();
+    stage.innerHTML=`${setNote}<div class="reveal" id="pkAll"></div><p>${kept.length} ${kept.length===1?'card':'cards'} went in your binder. ${tossed} base ${tossed===1?'card':'cards'} got tossed on the pile.</p>`;
     const all=$('#pkAll',stage);
     (pk.box?[...kept].sort((a,b)=>valueOf(b)-valueOf(a)):cards).forEach(c=>{const d=document.createElement('div');const keep=kept.includes(c);d.className='mini'+(keep?'':' dim');d.appendChild(cardCanvas(c,70));d.insertAdjacentHTML('beforeend',`<span>${keep?money(valueOf(c)):'to the pile'}</span>`);all.appendChild(d)});
     btns.innerHTML=`<button class="btn go" data-close>Done</button>${S.cash>=packCost(pk)&&stockOf(id)>0?`<button class="btn" id="pkAgain">Rip another (${money(packCost(pk))}${NO_LIMIT.has(id)?'':`, ${stockOf(id)} left`})</button>`:''}`;
@@ -7210,7 +7215,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-15.0735';
+const APP_VERSION = '2026-11-15.0753';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
