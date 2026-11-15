@@ -3768,6 +3768,7 @@ const UPGRADES = [
   {id:'fan',name:'Fan Grip',cost:25,max:1,lv:2,desc:'Pick up 3 cards at a time.'},
   {id:'loupe',name:"Jeweler's Loupe",cost:40,max:1,lv:2,desc:'You can check corners and centering now. Hits are worth 25% more.'},
   {id:'colton',name:"Colton's Help",cost:120,max:10,grow:2.1,lv:2,desc:'Sorts about 1 card every 7 seconds per level, in 2-minute shifts. Files set cards, bulks the junk and sets every hit aside face down for you. Works for pizza.'},
+  {id:'mash',name:'Better Mashing',cost:3000,max:1,grow:1,lv:5,desc:'Your helper puts every 1/1 it finds straight into your binder, no set-aside pile. You still get the big moment and Grandpa\'s letter.'},
   {id:'nopizza',name:'Pizza Remover',cost:5000,max:2,grow:4,lv:6,desc:'No more shift timer. Level 1: your helper works with no clock, and pizza breaks just happen at random. Level 2: no pizza, no timer, no shifts. Your helper sorts until the pile is empty.'},
   {id:'flipplus',name:'Flip Plus',cost:2500,max:2,grow:4,lv:6,desc:'A bigger set-aside pile for your helper. Level 1 holds 50 cards instead of 30. Level 2 holds 100.'},
   {id:'bulk',name:"Bulk Buyer's Number",cost:100,max:1,lv:3,desc:'A guy two towns over buys base cards at full price instead of half.'},
@@ -4533,7 +4534,7 @@ const lostOne=i=>{const [n,t,y]=LOST_ONES[i];return {pid:P.find(p=>p.name===n&&p
 function hideLostOnes(){if(S.bOnes)return;const n=S.pile||LOCS.basement.size;S.bOnes=[0,1,2].map(i=>({i,left:Math.floor(n*rnd(.08+i*.28,.3+i*.28))}))}
 // careful sorting: looking at your cards builds a Sharp Eye streak that makes hits more likely
 let EYE=1,flipAt=0,eyeStreak=0,gStar=-1,gStarGot=false;
-const eyeMul=()=>1+.04*Math.min(eyeStreak,15);
+const eyeMul=()=>1; // Sharp Eye was removed
 // the 1/1 only turns up when YOU pull from the pile; helpers skip past it
 function drawFromPile(auto){
   if(S.pile<=0)return null;
@@ -5582,7 +5583,6 @@ function flip(){
   if(big.length)toast(`${parName(big[0])}! ${cardTitle(big[0])}`,'gold');
   marks=defaultMarks();
   flipAt=performance.now()+Math.min(els.length*45,600);gStarGot=false;gStar=-1;
-  if(!one&&hand.length&&Math.random()<.1+Math.min(eyeStreak,10)*.01)gStar=Math.floor(Math.random()*hand.length);
   if(one){updatePrimary();renderSummary();setTimeout(()=>{if(hand.includes(one))sortHand('keep',true)},1200);return}
   setTimeout(renderMarks,Math.min(els.length*45,600)+200);
   updatePrimary();renderSummary();
@@ -5653,20 +5653,8 @@ function primary(){
   catch(e){showErr(e,'sort');if(phase==='up'&&hand.length){hand=[];phase='empty';try{renderHand();updateHeader()}catch(_){}}}
 }
 // Sharp Eye: a hand you actually looked at counts; mashing through resets it
-function judgePace(){
-  if(!hand.length||hand.some(c=>c.par===6)||!flipAt)return;
-  const need=500+40*hand.length,dt=performance.now()-flipAt;
-  if(gStar>=0&&!gStarGot&&hand[gStar])toast("You sorted right past a card Grandpa marked! Look before you sort.",'',3500);
-  if(dt>=need){eyeStreak=Math.min(eyeStreak+1,30);S.bestEye=Math.max(S.bestEye||0,eyeStreak);addXP(Math.round(hand.length*Math.min(eyeStreak,15)*.1));
-    if([5,10,15,25].includes(eyeStreak))toast(`Sharp Eye ×${eyeStreak}! Hits are ${Math.round((eyeMul()-1)*100)}% more likely while you keep looking.`,'good')}
-  else{if(eyeStreak>=3)floatMoney('Too fast! Sharp Eye reset');eyeStreak=0}
-  flipAt=0;updateEye();
-}
-function updateEye(){const el=$('#eye');if(!el)return;
-  if(S.stats.flips<10){el.innerHTML='';return}
-  const n=Math.min(eyeStreak,15),pct=Math.round((eyeMul()-1)*100);
-  el.className='eye'+(n>=10?' hot':'');
-  el.innerHTML=eyeStreak?`<span>👀 <b>Sharp Eye ×${eyeStreak}</b> · hits +${pct}%</span><span class="pips">${Array.from({length:15},(_,i)=>`<i class="${i<n?'on':''}"></i>`).join('')}</span>`:`<span>👀 Look at your cards before you sort to build <b>Sharp Eye</b>. Mashing resets it.</span>`}
+function judgePace(){} // Sharp Eye was removed
+function updateEye(){const el=$('#eye');if(el)el.style.display='none'}
 function claimStar(i){
   if(gStarGot||i!==gStar||phase!=='up')return;gStarGot=true;S.stats.stars=(S.stats.stars||0)+1;eyeStreak=Math.min(eyeStreak+2,30);
   if(Math.random()<.3){const c=roomSport()==='mix'?{...lostCard(),par:pick([1,2,3,7,8])}:rollCard({sport:roomSport(),tw:[0,10,35,35,20],par:pick([1,2,3,7,8])});if(c.par===8&&c.year<1997)c.par=1;addCard(c,'star');toast(`Grandpa tucked a card behind it: ${cardTitle(c)}, ${parName(c)}! It's in your binder.`,'gold',5500)}
@@ -7189,6 +7177,7 @@ function loop(){
     while(n-->0&&S.pile>0&&S.aside.length<asideMax()){const c=drawFromPile(true);if(!c)break;
       if(isHit(c)){const kk=key(c);
         if(!isOne(c)&&!isSteam(c)&&(S.stacks[kk]>0||S.aside.some(x=>key(x)===kk))){addCard(c,'auto');if(S.level>=5&&S.shelf.length<shelfCap()&&avail(kk)>0){S.shelf.push(kk);dShelf++}else dBind++}
+        else if(isOne(c)&&up('mash')){addCard(c,'auto');S.finds.unshift({k:kk,src:'auto'});S.finds=S.finds.slice(0,8);if(c.par!==6)toast(`${helperWho()} found a ${parName(c)} 1/1 of ${cardTitle(c)} and put it straight in your binder!`,'gold',9000)}
         else{S.aside.push(c);seen.add(c.pid);if(isOne(c))toast(`${helperWho()} stopped and set one card aside very, very carefully. Go flip it!`,'gold',9000)}}
       else if(helpsSet(c)||isSteam(c)){addCard(c,'auto')}
       else{bv+=valueOf(c)*rate;bn++}
@@ -7220,7 +7209,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-14.0731';
+const APP_VERSION = '2026-11-15.0631';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
