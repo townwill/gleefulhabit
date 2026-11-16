@@ -22,6 +22,7 @@
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
+@media (display-mode:standalone){html{min-height:calc(100% + env(safe-area-inset-top,0px))}html #stage{width:100vw;height:100vh;bottom:auto;right:auto}}
 body{background:var(--stage);color:var(--ink);font-family:var(--font-ui);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 #stage{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
 button{font-family:inherit;color:inherit;cursor:pointer}
@@ -35,8 +36,9 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 #b-menu{pointer-events:auto;flex:none;width:44px;height:40px;border-radius:10px;background:var(--panel);border:1px solid var(--line);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0}
 #b-menu svg{width:22px;height:22px}
 #b-view{position:fixed;right:12px;top:calc(60px + env(safe-area-inset-top,0px));display:none;font:600 13px/1 var(--font-ui);letter-spacing:.1em;text-transform:uppercase;padding:9px 12px;border-radius:999px;background:var(--panel);border:1px solid var(--accent);color:var(--accent)}
-#menu{top:50%;transform:translate(-50%,-50%);display:none;z-index:6;width:min(380px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;text-align:left}
-#menu h2{margin:0 0 10px;font:700 22px/1.1 var(--font-display);letter-spacing:.14em;text-transform:uppercase}
+#menu,#statcard{top:calc(50% + 20px);transform:translate(-50%,-50%);display:none;z-index:6;width:min(380px,calc(100% - 24px));max-height:calc(100% - 150px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow:auto;-webkit-overflow-scrolling:touch;text-align:left}
+#statcard{z-index:7}
+#menu h2,#statcard h2{margin:0 0 10px;font:700 22px/1.1 var(--font-display);letter-spacing:.14em;text-transform:uppercase}
 #menu h3{margin:16px 0 0;font:600 14px/1 var(--font-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim)}
 .mrow{display:flex;gap:8px;margin:8px 0}
 .mrow button{flex:1;min-width:0;font:600 15px/1.1 var(--font-ui);letter-spacing:.1em;text-transform:uppercase;padding:13px 10px;border-radius:10px;background:var(--panel);border:1px solid var(--line);color:var(--ink)}
@@ -46,7 +48,7 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 #stats{display:grid;grid-template-columns:1fr auto;gap:7px 14px;margin:10px 0 14px;font:500 16px/1.2 var(--font-ui)}
 #stats dt{color:var(--ink-dim)}
 #stats dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
-#menu .go{width:100%}
+#menu .go,#statcard .go{width:100%}
 #w-tabs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:14px}
 #w-tabs button{font:600 14px/1 var(--font-ui);letter-spacing:.08em;text-transform:uppercase;padding:10px 12px;border-radius:999px;background:var(--panel);border:1px solid var(--line);color:var(--ink-dim)}
 #w-tabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#04121a}
@@ -130,11 +132,14 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   <div class="mrow"><button id="b-music" type="button" aria-pressed="true">Music</button><button id="b-sfx" type="button" aria-pressed="true">SFX</button></div>
   <div class="mrow"><button id="b-track" type="button"></button></div>
   <div class="mrow"><button id="b-reset" type="button">Restart level</button><button id="b-view2" type="button">Reset view</button></div>
-  <div class="mrow"><button id="m-levels" type="button">Level select</button></div>
-  <h3>Stats</h3>
-  <dl id="stats"></dl>
+  <div class="mrow"><button id="m-levels" type="button">Level select</button><button id="m-stats" type="button">Stats</button></div>
   <div class="mrow"><button id="b-erase" type="button">Erase progress</button></div>
   <button class="go" id="m-close" type="button">Close</button>
+</div>
+<div class="card" id="statcard" role="dialog" aria-label="Stats">
+  <h2>Stats</h2>
+  <dl id="stats"></dl>
+  <button class="go" id="s-close" type="button">Back</button>
 </div>
 <div class="card" id="picker" role="dialog" aria-label="Level select">
   <div class="row" id="modes"><button class="ghost" id="b-daily" type="button"></button><button class="ghost" id="b-endless" type="button"></button></div>
@@ -355,7 +360,7 @@ var M={
   silver:share(new THREE.MeshLambertMaterial({map:mirrorTex,emissive:0xffffff,emissiveMap:mirrorTex,emissiveIntensity:0.45})),
   stripe:share(new THREE.MeshStandardMaterial({map:hazardTex,emissive:0xffffff,emissiveMap:hazardTex,emissiveIntensity:0.35,metalness:0.2,roughness:0.6,envMapIntensity:0.2})),
   stop:share(new THREE.MeshBasicMaterial({color:0xff3344})),
-  half:share(new THREE.MeshLambertMaterial({color:0x9fe8ff,emissive:0x2a9fc0,emissiveIntensity:0.6,transparent:true,opacity:0.5,side:THREE.DoubleSide,depthWrite:false})),
+  half:share(new THREE.MeshLambertMaterial({color:0xbff2ff,emissive:0x2a9fc0,emissiveIntensity:0.35,transparent:true,opacity:0.16,side:THREE.DoubleSide,depthWrite:false})),
   glass:share(new THREE.MeshPhysicalMaterial({color:0xcfe4ff,metalness:0.1,roughness:0.02,transparent:true,opacity:0.34,clearcoat:1,clearcoatRoughness:0.02,envMapIntensity:1.0,side:THREE.DoubleSide,depthWrite:false})),
   edge:share(new THREE.LineBasicMaterial({color:0xdfeaff,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending,depthWrite:false})),
   trim:share(new THREE.MeshBasicMaterial({color:0x38d8ff})),
@@ -464,7 +469,8 @@ function buildLevel(i,def,m){
     PARENT=decks[ly(m.x)];var g=new THREE.Group();g.position.set(wx(m.x),0,wz(m.z));
     if(m.fixed){mesh(new THREE.BoxGeometry(0.5,0.1,0.5),M.gun,0,0.05,0,g);mesh(new THREE.BoxGeometry(0.1,0.2,0.1),M.gun,0,0.15,0,g);}
     else{mesh(new THREE.CylinderGeometry(0.2,0.25,0.08,28),M.dark,0,0.04,0,g);mesh(new THREE.CylinderGeometry(0.26,0.26,0.02,28),m.half?M.trim:M.brass,0,0.085,0,g);mesh(new THREE.CylinderGeometry(0.04,0.04,0.2,12),M.brass,0,0.15,0,g);}
-    mesh(new THREE.BoxGeometry(1.1,0.62,0.04),m.fixed?M.gun:m.half?M.trim:M.brass,0,H+0.02,0,g);
+    if(m.half){[[1.1,0.05,0,0.285],[1.1,0.05,0,-0.285],[0.05,0.62,0.525,0],[0.05,0.62,-0.525,0]].forEach(function(b){mesh(new THREE.BoxGeometry(b[0],b[1],0.07),M.trim,b[2],H+0.02+b[3],0,g).castShadow=false;});}
+    else mesh(new THREE.BoxGeometry(1.1,0.62,0.04),m.fixed?M.gun:M.brass,0,H+0.02,0,g);
     var gl=mesh(new THREE.BoxGeometry(1.02,0.54,0.062),m.half?M.half:M.silver,0,H+0.02,0,g);if(m.half)gl.castShadow=false;
     if(m.fixed){[-0.5,0.5].forEach(function(sx){mesh(new THREE.BoxGeometry(0.06,0.7,0.09),M.dark,sx,H+0.02,0,g);});}
     var k=m.fixed?m.k:st[m.idx];m.rot=m.dial?-k*Math.PI/8:-Math.PI/4+k*Math.PI/2;g.rotation.y=m.rot;m.group=g;PARENT.add(g);
@@ -995,7 +1001,10 @@ function renderStats(){
   rows.push(['Daily streak',liveStreak()+(ds.best?' (best '+ds.best+')':'')],['Endless depth',es.depth+(es.best?' (best '+es.best+')':'')],['Endless rating',es.rating||0],['Levels won, with replays',stats.wins],['Moves made',stats.moves]);
   $('stats').innerHTML=rows.map(function(r){return '<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>';}).join('');
 }
-function openMenu(on){menuOpen=on;if(on){openPicker(false);renderStats();applyTrack();}$('menu').style.display=on?'block':'none';}
+function openStats(on){if(on)renderStats();$('statcard').style.display=on?'block':'none';$('menu').style.display=(menuOpen&&!on)?'block':'none';}
+function openMenu(on){menuOpen=on;if(on){openPicker(false);applyTrack();}$('statcard').style.display='none';$('menu').style.display=on?'block':'none';}
+$('m-stats').addEventListener('click',function(){openStats(true);});
+$('s-close').addEventListener('click',function(){openStats(false);});
 $('b-menu').addEventListener('click',function(){openMenu(!menuOpen);});
 $('m-close').addEventListener('click',function(){openMenu(false);});
 $('m-levels').addEventListener('click',function(){openMenu(false);openPicker(true);});
@@ -1078,7 +1087,7 @@ function showDots(force){
 function icon(o){
   var base='<ellipse cx="20" cy="34" rx="9" ry="3.2" fill="#d9ad4e"/><rect x="18.6" y="25" width="2.8" height="8" fill="#d9ad4e"/>';
   if(o.t==='prism')return '<svg viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="20" cy="33" rx="13" ry="3.5" fill="#d9ad4e"/><polygon points="20,5 34,31 6,31" fill="rgba(207,228,255,.35)" stroke="#eaf2ff" stroke-width="1.8" stroke-linejoin="round"/><path d="M20 5V31" stroke="#eaf2ff" stroke-width="1" opacity=".6"/></svg>';
-  if(o.half)return '<svg viewBox="0 0 40 40" aria-hidden="true">'+base+'<g transform="rotate(-18 20 16)"><rect x="5" y="8" width="30" height="16" rx="1.5" fill="rgba(120,225,255,.4)" stroke="#d9ad4e" stroke-width="2.2" stroke-dasharray="4 2.5"/></g></svg>';
+  if(o.half)return '<svg viewBox="0 0 40 40" aria-hidden="true">'+base+'<g transform="rotate(-18 20 16)"><rect x="5" y="8" width="30" height="16" rx="1.5" fill="rgba(120,225,255,.14)" stroke="#45f0ff" stroke-width="2.2"/></g></svg>';
   return '<svg viewBox="0 0 40 40" aria-hidden="true">'+base+'<g transform="rotate(-18 20 16)"><rect x="5" y="8" width="30" height="16" rx="1.5" fill="#bcd4f6" stroke="#d9ad4e" stroke-width="2.4"/><path d="M11 23 19 9h5L16 23z" fill="#fff" opacity=".75"/></g></svg>';
 }
 var floorPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),floorHit=new THREE.Vector3();
@@ -1156,16 +1165,18 @@ function pickCellNdc(){
 }
 function resize(){
   var w=canvas.clientWidth||window.innerWidth,h=canvas.clientHeight||window.innerHeight;
+  if(!(w>0&&h>0))return;sizeW=w;sizeH=h;
   renderer.setSize(w,h,false);view.aspect=w/h;cam.aspect=view.aspect;cam.updateProjectionMatrix();if(L)fitCamera();
 }
-window.addEventListener('resize',resize);
+var sizeW=0,sizeH=0;window.addEventListener('resize',resize);window.addEventListener('orientationchange',function(){setTimeout(resize,250);});
+function checkSize(){var w=canvas.clientWidth,h=canvas.clientHeight;if(w>0&&h>0&&(w!==sizeW||h!==sizeH))resize();}
 
 /* ---------------- loop ---------------- */
 window.applyTrackHook=function(){applyTrack();};
 resize();(function(){var i=Math.min(LEVELS.length-1,Math.max(0,store.get('prism.level.v3',0)|0));buildLevel(unlocked(i)?i:0);})();
 var last=performance.now(),T=0;
 function loop(now){
-  var dt=Math.min(0.05,(now-last)/1000);last=now;T+=dt;
+  var dt=Math.min(0.05,(now-last)/1000);last=now;T+=dt;checkSize();
   tgt.yaw+=spinV*dt;var k=Math.min(1,dt*9);
   view.yaw+=(tgt.yaw-view.yaw)*k;view.pitch+=(tgt.pitch-view.pitch)*k;view.zoom+=(tgt.zoom-view.zoom)*k;view.px+=(tgt.px-view.px)*k;view.pz+=(tgt.pz-view.pz)*k;
   var moved=Math.abs(tgt.px)+Math.abs(tgt.pz)>0.25||Math.abs(tgt.zoom-1)>0.06;if(moved!==viewShown){viewShown=moved;$('b-view').style.display=moved?'block':'none';}
