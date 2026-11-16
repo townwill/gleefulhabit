@@ -1099,6 +1099,7 @@ function renderStats(){
   var ds=dailyState(),es=endState(),rows=[['Levels cleared',cleared+' of '+LEVELS.length],['Stars',stars+' of '+LEVELS.length*3],['Gold (first try)',gold]];
   WORLDS.forEach(function(wd,wi){rows.push([(wd.pack?'Pack':'World '+(wi+1))+' · '+wd.name,worldStars(wi)+' / 60']);});
   rows.push(['Version',APP_VERSION]);
+  rows.push(['Screen',(window.screen?screen.width+'×'+screen.height:'?')+' · page '+window.innerWidth+'×'+window.innerHeight+' · board '+canvas.clientWidth+'×'+canvas.clientHeight+(standalone?' · app':'')]);
   rows.push(['Daily streak',liveStreak()+(ds.best?' (best '+ds.best+')':'')],['Endless depth',es.depth+(es.best?' (best '+es.best+')':'')],['Endless rating',es.rating||0],['Levels won, with replays',stats.wins],['Moves made',stats.moves]);
   $('stats').innerHTML=rows.map(function(r){return '<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>';}).join('');
 }
@@ -1270,7 +1271,18 @@ function resize(){
   renderer.setSize(w,h,false);view.aspect=w/h;cam.aspect=view.aspect;cam.updateProjectionMatrix();if(L)fitCamera();
 }
 var sizeW=0,sizeH=0;window.addEventListener('resize',resize);window.addEventListener('orientationchange',function(){setTimeout(resize,250);});
-function checkSize(){var w=canvas.clientWidth,h=canvas.clientHeight;if(w>0&&h>0&&(w!==sizeW||h!==sizeH))resize();}
+/* iPhone home-screen apps can report a page shorter than the screen. Pin the page to the real screen size so nothing is left uncovered. */
+var standalone=!!((window.navigator||{}).standalone||(window.matchMedia&&window.matchMedia('(display-mode:standalone)').matches)),fullH=0;
+function fitScreen(){
+  if(!standalone||!window.screen)return;
+  var sw=screen.width,sh=screen.height,port=window.innerHeight>=window.innerWidth,want=port?Math.max(sw,sh):Math.min(sw,sh);
+  if(!(want>0)||window.innerHeight>=want-2)want=0;
+  if(want===fullH)return;fullH=want;
+  var de=document.documentElement.style,b=document.body.style,v=want?want+'px':'';
+  de.height=v;de.minHeight=v;b.height=v;b.position=want?'fixed':'';b.top=want?'0':'';b.left=want?'0':'';b.width=want?'100%':'';b.transform=want?'translateZ(0)':'';
+  canvas.style.height=v;
+}
+function checkSize(){fitScreen();var w=canvas.clientWidth,h=canvas.clientHeight;if(w>0&&h>0&&(w!==sizeW||h!==sizeH))resize();}
 
 /* ---------------- loop ---------------- */
 window.applyTrackHook=function(){applyTrack();};
@@ -1317,7 +1329,7 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
-const APP_VERSION = '2026-11-15.1850';
+const APP_VERSION = '2026-11-15.2002';
 (function(){
   if(typeof location==='undefined')return;
   var live=/github\.io$|townwill\.com$/.test(location.hostname),shown=false;
