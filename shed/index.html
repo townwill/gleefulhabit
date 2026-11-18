@@ -3775,6 +3775,7 @@ const UPGRADES = [
   {id:'megacounter',name:'Mega Counter',cost:250000,max:1,lv:5,desc:'Ten more spots on the Counter shelf.'},
   {id:'gemhunter',name:'Gem Hunter',cost:300000,max:1,lv:5,desc:'Slab Happy never gives you a grade below 5 again.'},
   {id:'brainboost',name:'Brain Boost',cost:350000,max:1,lv:5,desc:'Every bit of XP you earn counts 25% more.'},
+  {id:'spectrade',name:'Special Traders',cost:250000,max:1,lv:5,desc:'Two new traders show up in the Trade tab: High Roller Harry, who only deals in gem mints, autos and superstars, and Mystery Mo, whose cards stay face down until they\'re yours.'},
   {id:'goldpass',name:'Golden Grader Pass',cost:400000,max:1,lv:5,desc:'Grading costs half price at every speed, Express too.'},
   {id:'nopizza',name:'Pizza Remover',cost:5000,max:2,grow:4,lv:6,desc:'No more shift timer. Level 1: your helper works with no clock, and pizza breaks just happen at random. Level 2: no pizza, no timer, no shifts. Your helper sorts until the pile is empty.'},
   {id:'flipplus',name:'Flip Plus',cost:2500,max:2,grow:4,lv:6,desc:'A bigger set-aside pile for your helper. Level 1 holds 50 cards instead of 30. Level 2 holds 100.'},
@@ -5561,11 +5562,12 @@ function pairToast(pid){const o=FS[pid];if(o!==undefined&&S.owned[o]){const a=SE
 function removeCards(k,n){if(n<=0)return;S.stacks[k]-=n;if(S.stacks[k]<=0)delete S.stacks[k];const pid=+k.split('.')[0];{const kc=fromKey(k);if(kc.par===12||kc.par===13||kc.par===14){vkAdd(kc,-n);if(!VK[kc.pid+'.'+kc.year+'.'+kc.par])checkSets()}}if(+k.split('.')[1]===P[pid].start&&RCO[pid]){RCO[pid]-=n;if(RCO[pid]<=0){delete RCO[pid];checkSets()}}if(+k.split('.')[2]===11&&CHO[pid]){CHO[pid]-=n;const cy=pid+'.'+k.split('.')[1];if(CHY[cy]){CHY[cy]-=n;if(CHY[cy]<=0)delete CHY[cy]}if(CHO[pid]<=0)delete CHO[pid];checkSets()}S.owned[pid]=(S.owned[pid]||0)-n;if(S.owned[pid]<=0){delete S.owned[pid];checkSets()}}
 function addCard(c,src){
   // about half the 1/1s found from now on are million-dollar cards (more often for the biggest stars)
-  if(isOne(c)&&src!=='grade'&&src!=='gift'&&src!=='trade'){S.bigOnes=S.bigOnes||{};const bk=c.pid+'.'+c.year+'.'+c.par;if(S.bigOnes[bk]==null&&Math.random()<(P[c.pid].tier>=5?.6:.4)){S.bigOnes[bk]=Math.round((1+Math.random()*2.5)*200)*5000;setTimeout(()=>toast(`The appraiser called. ${cardTitle(c)} is worth ${money(valueOf(c))}!`,'gold',10000),2500)}}
+  if(isOne(c)&&src!=='grade'&&src!=='gift'&&src!=='trade'&&src!=='test'){S.bigOnes=S.bigOnes||{};const bk=c.pid+'.'+c.year+'.'+c.par;if(S.bigOnes[bk]==null&&Math.random()<(P[c.pid].tier>=5?.6:.4)){S.bigOnes[bk]=Math.round((1+Math.random()*2.5)*200)*5000;setTimeout(()=>toast(`The appraiser called. ${cardTitle(c)} is worth ${money(valueOf(c))}!`,'gold',10000),2500)}}
   const k=key(c);S.stacks[k]=(S.stacks[k]||0)+1;
   const had=S.owned[c.pid]||0;S.owned[c.pid]=had+1;let rcNew=false;if(isRC(c)){rcNew=!RCO[c.pid];RCO[c.pid]=(RCO[c.pid]||0)+1}if(c.par===12||c.par===13||c.par===14){if(!VK[c.pid+'.'+c.par]||!VK[c.pid+'.'+c.year+'.'+c.par])rcNew=true;vkAdd(c,1)}if(c.par===11){const cy=c.pid+'.'+c.year;if(!CHY[cy])rcNew=true;CHO[c.pid]=(CHO[c.pid]||0)+1;CHY[cy]=(CHY[cy]||0)+1}if(!had||rcNew){checkSets();if(!had)pairToast(c.pid)}
   if(c.par===10||c.par===15)S.pc[k]=true;
   if(c.par===6){S.pc[k]=true;
+    if(src==='gift'||src==='trade')return;
     // coming back from the grader: it's the same 1/1 in a new slab, so just swap it in (no second celebration)
     if(src==='grade'){const j=S.oneFound.findIndex(x=>{const o=fromKey(x);return o.pid===c.pid&&o.year===c.year&&o.par===6});if(j>=0)S.oneFound[j]=k;else S.oneFound.push(k);return}
     S.oneFound.push(k);foundOne(c);return}
@@ -6373,21 +6375,31 @@ function renderTrade(v){
   try{renderMailbox($('#mailbox',v))}catch(e){console.error(e)}
 }
 /* ---------- Mailbox: gifts and trades between players, plus offers from the traders ---------- */
-const BOT_X={sal:{n:'Big Sal',ico:'🧢',col:'#5a4a3a',d:'Flea market regular. Loves a swap.',hi:["Got anything good? I always got something good.","Let's make a deal, kid."]}};
+const BOT_X={sal:{n:'Big Sal',ico:'🧢',col:'#5a4a3a',d:'Flea market regular. Loves a swap.',hi:["Got anything good? I always got something good.","Let's make a deal, kid."]},
+  harry:{n:'High Roller Harry',ico:'🎩',col:'#6b4f00',d:'Only deals in the big stuff.',hi:["I don't do bargain bins, kid. Show me the good stuff.","Gem mints, autos, superstars. That's my game."]},
+  mo:{n:'Mystery Mo',ico:'🕶️',col:'#3d2a5c',d:'Every card face down.',hi:["Pick a card, any card. You won't know till it's yours.","Could be junk. Could be a jackpot. That's the fun."]}};
 const botInfo=id=>DEALERS[id]||BOT_X[id];
-const botList=()=>['tom','sal','rita','vic','mike','sally','nba','mlb','nfl','nhl','soc'].filter(id=>botInfo(id)&&(!['nba','mlb','nfl','nhl','soc'].includes(id)||openSports().includes(id)));
+const botList=()=>['tom','sal','rita','vic','mike','sally','nba','mlb','nfl','nhl','soc'].concat(up('spectrade')?['harry','mo']:[]).filter(id=>botInfo(id)&&(!['nba','mlb','nfl','nhl','soc'].includes(id)||openSports().includes(id)));
 const cleanC=c=>{if(c.par===6)c.par=2;if(c.par===8&&c.year<1997)c.par=1;if(c.par===9&&c.year<2000)c.par=7;return c};
 function botCard(id){const sports=openSports(),sp=sports.includes(id)?id:pick(sports);
+  if(id==='harry'){let best=null;for(let t=0;t<40;t++){const c=cleanC(rollCard({sport:sp,tw:[0,0,5,35,60],parMul:8}));if(Math.random()<.6)c.g=wpick([9,10],x=>({9:60,10:40})[x]);if(!best||valueOf(c)>valueOf(best))best=c;if(valueOf(c)>=150)return c}return best}
+  if(id==='mo'){const r=Math.random(),c=cleanC(rollCard({sport:sp,tw:r<.6?[40,30,20,8,2]:r<.92?[0,10,30,35,25]:[0,0,0,30,70],parMul:r<.6?1:r<.92?3:10}));if(r>=.92&&Math.random()<.5)c.g=10;return c}
   if(id==='vic')return cleanC(rollCard({sport:sp,yHi:1989,tw:[0,15,35,30,20],parMul:1.5,filter:p=>p.start<=1989}));
   if(id==='rita'){const p=wpick(P.filter(q=>sports.includes(q.sport)&&q.start<=2026),q=>[0,1,4,4,3,2][q.tier]);return {pid:p.id,year:p.start,par:Math.random()<.75?0:pick([1,2])}}
   const c=cleanC(rollCard({sport:sp,tw:[0,10,30,35,25],parMul:3}));if(id==='sally'&&Math.random()<.6)c.g=wpick([8,9,10],x=>({8:40,9:40,10:20})[x]);return c}
 function botBinder(id){S.botBin=S.botBin||{};let b=S.botBin[id];
   if(!b||!b.it||!b.it.length||Date.now()>b.until)b=S.botBin[id]={it:Array.from({length:8},()=>key(botCard(id))),until:Date.now()+30*60000};return b}
 const freeCount=k=>{if(!S.stacks[k])return 0;const c=fromKey(k);if(isOne(c)||S.pc[k]||isSteam(c))return 0;return Math.max(0,avail(k)-scCount(k))};
-function haveFree(keys){const need={};keys.forEach(k=>need[k]=(need[k]||0)+1);for(const k in need)if(freeCount(k)<need[k])return false;return true}
+// between players (family), 1/1s can be traded or sent too, starred or not; traders never get them
+const freeCountP=k=>{if(!S.stacks[k])return 0;const c=fromKey(k);if(isSteam(c))return 0;if(isOne(c))return Math.max(0,S.stacks[k]-shelfCount(k)-scCount(k));return freeCount(k)};
+function haveFree(keys,players){const f=players?freeCountP:freeCount,need={};keys.forEach(k=>need[k]=(need[k]||0)+1);for(const k in need)if(f(k)<need[k])return false;return true}
+// a trade is fair when the smaller side is worth at least 2/3 of the bigger side
+const FAIR=2/3;const isFair=(a,b)=>!(a>0&&b>0)||Math.min(a,b)/Math.max(a,b)>=FAIR;
+const bigOf=(ks,src)=>{const o={};(ks||[]).forEach(k=>{const c=fromKey(k),bk=c.pid+'.'+c.year+'.'+c.par;if(isOne(c)&&src&&src[bk])o[bk]=src[bk]});return o};
+const takeBig=o=>{if(o&&Object.keys(o).length){S.bigOnes=Object.assign(S.bigOnes||{},o)}};
 const keysVal=ks=>ks.reduce((a,k)=>a+valueOf(fromKey(k)),0);
 function itemsFrom(keys){const m={};keys.forEach(k=>m[k]=(m[k]||0)+1);return Object.keys(m).map(k=>{const c=fromKey(k);return {k,n:m[k],v:valueOf(c),t:capTxt(c).toLowerCase()}})}
-function myItems(){const out=[];for(const k in S.stacks){const n=freeCount(k);if(n>0){const c=fromKey(k);out.push({k,n,v:valueOf(c),t:capTxt(c).toLowerCase()})}}return out}
+function myItems(players){const out=[];for(const k in S.stacks){const n=players?freeCountP(k):freeCount(k);if(n>0){const c=fromKey(k);out.push({k,n,v:valueOf(c),t:capTxt(c).toLowerCase()})}}return out}
 const expand=sel=>Object.entries(sel).flatMap(([k,n])=>Array(n).fill(k));
 const cardsTxt=ks=>{const it=itemsFrom(ks);return it.slice(0,3).map(x=>cardTitle(fromKey(x.k))+(x.n>1?' ×'+x.n:'')).join(', ')+(it.length>3?` and ${it.length-3} more`:'')};
 function mailLog(msg){S.mail=[{t:Date.now(),msg}].concat(S.mail||[]).slice(0,12)}
@@ -6402,20 +6414,26 @@ function openBuilder(o){
     <p class="note" id="tbMsg">Tap cards to add them. Tap again to take them off. Up to 10 a side.</p>
     <div class="row2"><button class="btn go" id="tbSend">${esc(o.sendLabel)}</button><button class="btn" data-close>Cancel</button></div>`);
   $('.mbox',m).classList.add('wide');
-  const tot=sel=>Object.entries(sel).reduce((a,[k,n])=>a+valueOf(fromKey(k))*n,0);
+  const vOf=k=>{const c=fromKey(k),bk=c.pid+'.'+c.year+'.'+c.par;if(o.theirBig&&o.theirBig[bk]&&!(S.bigOnes&&S.bigOnes[bk])){const keep=S.bigOnes;S.bigOnes={[bk]:o.theirBig[bk]};const v=valueOf(c);S.bigOnes=keep;return v}return valueOf(c)};
+  if(o.theirBig&&o.theirs)o.theirs.forEach(it=>it.v=vOf(it.k));
+  const tot=sel=>Object.entries(sel).reduce((a,[k,n])=>a+vOf(k)*n,0);
   const grid=(el,items,sel,q)=>{if(!el)return;const show=items.filter(it=>sel[it.k]).concat(items.filter(it=>!sel[it.k]&&(!q||it.t.includes(q))).sort((a,b)=>b.v-a.v).slice(0,40));
-    el.innerHTML=show.map(it=>`<button class="tbc${sel[it.k]?' on':''}" data-k="${it.k}"><canvas></canvas><span>${esc(capTxt(fromKey(it.k)))}</span><b>${money(it.v)}</b>${sel[it.k]?`<i>${it.n>1?'×'+sel[it.k]:'✓'}</i>`:it.n>1?`<em>have ${it.n}</em>`:''}</button>`).join('')||`<p class="note">${q?'No cards match.':'No spare cards to trade.'}</p>`;
-    el.querySelectorAll('canvas').forEach((cv,i)=>drawCard(cv,fromKey(show[i].k),104));
+    const hid=o.mystery&&el.id==='tbT';
+    el.innerHTML=show.map(it=>`<button class="tbc${sel[it.k]?' on':''}" data-k="${it.k}"><canvas></canvas><span>${hid?`Mystery ${esc(SPORT_WORD[P[fromKey(it.k).pid].sport]||'')} card`:esc(capTxt(fromKey(it.k)))}</span><b>${hid?`${money(Math.max(.05,Math.round(it.v*40)/100))}–${money(Math.max(.25,Math.round(it.v*220)/100))}`:money(it.v)}</b>${sel[it.k]?`<i>${it.n>1?'×'+sel[it.k]:'✓'}</i>`:it.n>1?`<em>have ${it.n}</em>`:''}</button>`).join('')||`<p class="note">${q?'No cards match.':'No spare cards to trade.'}</p>`;
+    el.querySelectorAll('canvas').forEach((cv,i)=>hid?cardBackMystery(cv,104):drawCard(cv,fromKey(show[i].k),104));
     el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{const it=items.find(x=>x.k===b.dataset.k),cur=sel[it.k]||0,n=Object.values(sel).reduce((a,x)=>a+x,0);
       if(cur>=it.n)delete sel[it.k];else if(n>=10){toast('Up to 10 cards on each side.');return}else sel[it.k]=cur+1;
       grid(el,items,sel,el===$('#tbM',m)?qM:qT);totals()})};
-  const totals=()=>{$('#tbGV',m).textContent=money(tot(selM));if(o.theirs)$('#tbRV',m).textContent=money(tot(selT))};
+  const fairOK=()=>!o.fair||isFair(tot(selM),tot(selT));
+  const totals=()=>{$('#tbGV',m).textContent=money(tot(selM));if(o.theirs)$('#tbRV',m).textContent=o.mystery?'???':money(tot(selT));
+    if(o.fair&&o.theirs){const a=tot(selM),b=tot(selT),e=$('#tbMsg',m);if(a>0&&b>0)e.innerHTML=isFair(a,b)?'<b style="color:var(--good)">✓ Fair trade</b>':`<b style="color:var(--bad,#e66)">Not fair:</b> ${a>b?'you give':'you get'} a lot more. Even it out to send it.`}};
   grid($('#tbM',m),o.mine,selM,'');if(o.theirs)grid($('#tbT',m),o.theirs,selT,'');totals();
   $('#tbQM',m).oninput=e=>{qM=e.target.value.trim().toLowerCase();grid($('#tbM',m),o.mine,selM,qM)};
   const qt=$('#tbQT',m);if(qt)qt.oninput=e=>{qT=e.target.value.trim().toLowerCase();grid($('#tbT',m),o.theirs,selT,qT)};
   $('#tbSend',m).onclick=async()=>{if(busy)return;const give=expand(selM),get=expand(selT);
     if(o.theirs&&(!give.length||!get.length)){$('#tbMsg',m).textContent='Pick at least one card on each side.';return}
     if(!o.theirs&&!give.length){$('#tbMsg',m).textContent='Pick at least one card to send.';return}
+    if(!fairOK()){$('#tbMsg',m).innerHTML=`<b>That's not a fair trade.</b> ${money(tot(selM))} for ${money(tot(selT))}. Add or take off cards until both sides are close.`;return}
     busy=true;$('#tbSend',m).disabled=true;let ok=false;try{ok=await o.onSend(give,get,t=>{const e=$('#tbMsg',m);if(e)e.textContent=t})}catch(e){}
     busy=false;const sb=$('#tbSend',m);if(sb)sb.disabled=false;if(ok)closeModal()};
 }
@@ -6426,19 +6444,20 @@ function botDo(id,give,get){
   give.forEach(k=>removeCards(k,1));get.forEach(k=>addCard(fromKey(k),'trade'));
   const B=botBinder(id);get.forEach(k=>{const j=B.it.indexOf(k);if(j>=0)B.it.splice(j,1)});
   S.stats.trades++;addXP(15);const b=botInfo(id);mailLog(`Traded with ${b.n}. You got ${cardsTxt(get)}.`);
+  if(id==='mo')setTimeout(()=>{const c=fromKey(get[0]);const m=modal(`<h2>Mystery Mo flips them over…</h2><div class="gq" id="moGrid" style="justify-content:center"></div><p>Worth ${money(keysVal(get))} in all.</p><div class="row2"><button class="btn go" data-close>Nice</button></div>`);const g=$('#moGrid',m);get.forEach(k=>{const cv=document.createElement('canvas');drawCard(cv,fromKey(k),110);cv.style.width='110px';g.appendChild(cv)})},300);
   toast(`${b.n}: "${pick(['Pleasure doing business.','Deal!','You drive a fair bargain.'])}" You got ${cardsTxt(get)}.`,'good',6000);
   save('now');updateHeader();renderTabs();return true}
 function pickTrader(pre){const m=modal(`<h2>Which trader?</h2><p>They'll open their binder. Pick what you want for your ${esc(cardTitle(fromKey(pre[0])))}.</p><div class="mbtns" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${botList().map(id=>`<button class="btn" data-pt="${id}">${botInfo(id).ico} ${esc(botInfo(id).n)}</button>`).join('')}</div><div class="row2"><button class="btn" data-close>Cancel</button></div>`);
   m.querySelectorAll('[data-pt]').forEach(b=>b.onclick=()=>{closeModal(true);botBuilder(b.dataset.pt,null,pre)})}
 function botBuilder(id,offer,pre){const b=botInfo(id);let tries=0;const B=botBinder(id);
   const theirs=itemsFrom((offer?offer.get:[]).concat(B.it));
-  openBuilder({title:offer?`Counter ${b.n}`:`Trade with ${b.n}`,sub:`${b.ico} ${esc(offer?'"Alright, what did you have in mind?"':pick(b.hi))}`,mine:myItems(),theirs,give:offer?offer.want:(pre||[]),get:offer?offer.get:[],sendLabel:'Offer this trade',
+  openBuilder({title:offer?`Counter ${b.n}`:`Trade with ${b.n}`,sub:`${b.ico} ${esc(offer?'"Alright, what did you have in mind?"':pick(b.hi))}`+(id==='mo'?' His cards stay face down until the trade is done; you only see a price range.':''),mine:myItems(),theirs,fair:id!=='mo',mystery:id==='mo',give:offer?offer.want:(pre||[]),get:offer?offer.get:[],sendLabel:'Offer this trade',
     onSend:async(give,get,msg)=>{
       if(botDecide(give,get,offer)){const ok=botDo(id,give,get);if(ok&&offer){const i=(S.inbox||[]).indexOf(offer);if(i>=0)S.inbox.splice(i,1)}if(ok)render();return ok}
       tries++;if(tries>=3){if(offer){const i=(S.inbox||[]).indexOf(offer);if(i>=0)S.inbox.splice(i,1)}toast(`${b.n}: "We're too far apart. Maybe next time."`);save(true);render();return true}
       msg(`${b.n}: "${pick(['Nah, that\'s not enough for me.','Ha! Try again.','Close, but no.','I need a little more than that.'])}" (${3-tries} ${3-tries===1?'try':'tries'} left)`);return false}})}
-function makeBotOffer(){const bots=botList();if(!bots.length)return;const id=pick(bots),b=botInfo(id);
-  const pool=myItems().filter(x=>x.v>=.5);if(pool.length<2)return;
+function makeBotOffer(){const bots=botList().filter(id=>id!=='mo');if(!bots.length)return;const id=pick(bots),b=botInfo(id);
+  const pool=myItems().filter(x=>x.v>=(id==='harry'?50:.5));if(pool.length<2)return;
   const wp=()=>wpick(pool,x=>Math.sqrt(x.v)).k;const want=[wp()];if(Math.random()<.4){const k2=wp();if(k2!==want[0])want.push(k2)}
   const V=keysVal(want);let best=null;
   for(let t=0;t<150;t++){const c=botCard(id),v=valueOf(c);if(v>=V*1.05&&v<=V*1.6){best=c;break}if(!best||Math.abs(v-V*1.25)<Math.abs(valueOf(best)-V*1.25))best=c}
@@ -6460,22 +6479,22 @@ function watchOffers(id){if(!dbNS||!id||offersFor===id)return;offerUnsubs.forEac
 function markDone(id){S.offerDone=S.offerDone||{};S.offerDone[id]=1;const ks=Object.keys(S.offerDone);if(ks.length>300)delete S.offerDone[ks[0]]}
 async function settleOffers(){if(!PROFILE||!dbNS)return;const me=PROFILE.id;S.offerDone=S.offerDone||{};let changed=false;
   for(const o of OFF_IN){if(!(o.gift&&o.status==='open')||S.offerDone[o.id]||offerBusy.has(me+':'+o.id)||PROFILE.id!==me)continue;offerBusy.add(me+':'+o.id);
-    markDone(o.id);(o.give||[]).forEach(k=>addCard(fromKey(k),'gift'));changed=true;
+    markDone(o.id);takeBig(o.big);(o.give||[]).forEach(k=>addCard(fromKey(k),'gift'));changed=true;
     mailLog(`🎁 ${o.fromName} sent you ${cardsTxt(o.give)}.`);toast(`🎁 ${o.fromName} sent you ${plural(o.give.length,'card')}: ${cardsTxt(o.give)}!`,'gold',8000);
     try{await dbNS.doc('offers/'+o.id).update({status:'accepted',doneAt:Date.now()})}catch(e){}}
   for(const o of OFF_OUT){if(o.status==='open'||S.offerDone[o.id]||offerBusy.has(me+':'+o.id)||PROFILE.id!==me)continue;offerBusy.add(me+':'+o.id);markDone(o.id);changed=true;const nm=o.toName||'They';
-    if(o.status==='accepted'){if(!o.gift){(o.want||[]).forEach(k=>addCard(fromKey(k),'trade'));S.stats.trades++;addXP(15);mailLog(`${nm} took your trade. You got ${cardsTxt(o.want)}.`);toast(`${nm} took your trade! You got ${cardsTxt(o.want)}.`,'gold',8000)}
+    if(o.status==='accepted'){if(!o.gift){takeBig(o.wantBig);(o.want||[]).forEach(k=>addCard(fromKey(k),'trade'));S.stats.trades++;addXP(15);mailLog(`${nm} took your trade. You got ${cardsTxt(o.want)}.`);toast(`${nm} took your trade! You got ${cardsTxt(o.want)}.`,'gold',8000)}
       else mailLog(`${nm} got the ${plural(o.give.length,'card')} you sent.`)}
     else{(o.give||[]).forEach(k=>addCard(fromKey(k),'trade'));const why=o.status==='passed'?`${nm} passed on your trade.`:o.status==='countered'?`${nm} sent back a counter offer.`:'You canceled your offer.';
       mailLog(why);toast(`${why} Your cards are back in your binder.`,'',6000)}
     try{await dbNS.doc('offers/'+o.id).delete()}catch(e){}}
   if(changed){save('now');updateHeader()}renderTabs();if(tab==='trade'&&!modalOpen)render()}
-async function sendOffer(to,give,want,gift){
+async function sendOffer(to,give,want,gift,theirBig){
   if(!dbNS){toast('Trading between players needs the online save.');return false}
-  if(!haveFree(give)){toast("Some of those cards aren't free anymore.");return false}
+  if(!haveFree(give,true)){toast("Some of those cards aren't free anymore.");return false}
   const id='o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   give.forEach(k=>removeCards(k,1));save('now');
-  try{await dbNS.doc('offers/'+id).set({from:PROFILE.id,fromName:PROFILE.name,to:to.id,toName:to.name,give,want:want||[],gift:!!gift,status:'open',at:Date.now()})}
+  try{await dbNS.doc('offers/'+id).set({from:PROFILE.id,fromName:PROFILE.name,to:to.id,toName:to.name,give,want:want||[],gift:!!gift,status:'open',at:Date.now(),big:bigOf(give,S.bigOnes),wantBig:bigOf(want,theirBig)})}
   catch(e){give.forEach(k=>addCard(fromKey(k),'trade'));save('now');toast("Couldn't send it. Your cards are still yours.");return false}
   if(gift)mailLog(`You sent ${to.name} ${cardsTxt(give)}.`);
   toast(gift?`🎁 Sent ${plural(give.length,'card')} to ${to.name}.`:`Trade offer sent to ${to.name}. Your cards wait in the mailbox until they answer.`,'good',6000);
@@ -6485,8 +6504,8 @@ async function playerItems(id,extra){let st=null;
   try{const loc=lsGet(LS_SAVE+id);let cl=null;if(dbNS){const d=await dbNS.doc('profiles/'+id).get();if(d.exists){const x={...d.data()};cl=await docState(id,x);if(cl)cl._t=Math.max(cl._t||0,x.updated||0)}}
     st=cl&&loc?((cl.stats&&cl.stats.flips||0)>=(loc.stats&&loc.stats.flips||0)?cl:loc):(cl||loc)}catch(e){}
   if(!st||!st.stacks)return null;const keep=S;let items;
-  try{S={...st,showcase:st.showcase||[],shelf:st.shelf||[],pc:st.pc||{}};items=myItems()}finally{S=keep}
-  if(extra&&extra.length){const add=itemsFrom(extra);add.forEach(a=>{const f=items.find(x=>x.k===a.k);if(f)f.n+=a.n;else items.push(a)})}
+  try{S={...st,showcase:st.showcase||[],shelf:st.shelf||[],pc:st.pc||{}};items=myItems(true);items.big=st.bigOnes||{}}finally{S=keep}
+  if(extra&&extra.length){const big=items.big;const add=itemsFrom(extra);items.big=big;add.forEach(a=>{const f=items.find(x=>x.k===a.k);if(f)f.n+=a.n;else items.push(a)})}
   return items}
 const pName=id=>{const p=allProfiles().find(x=>x.id===id);return p?p.name:'them'};
 async function playerBuilder(to,counter,pre){
@@ -6495,15 +6514,16 @@ async function playerBuilder(to,counter,pre){
   if(!theirs){$('.mbox',m).innerHTML=`<h2>Couldn't open ${esc(to.name)}'s binder</h2><p>Their save isn't online yet. Have ${esc(to.name)} play for a minute, then try again.</p><div class="row2"><button class="btn" data-close>OK</button></div>`;return}
   closeModal(true);
   openBuilder({title:counter?`Counter ${to.name}'s offer`:`Propose a trade to ${to.name}`,sub:`Pick your cards on the left and ${esc(to.name)}'s on the right. Your cards wait in the mailbox until ${esc(to.name)} answers.`,
-    mine:myItems(),theirs,give:counter?counter.want.filter(k=>freeCount(k)>0):(pre||[]),get:counter?counter.give:[],sendLabel:counter?'Send counter offer':'Send trade offer',
-    onSend:async(give,get)=>{const ok=await sendOffer(to,give,get,false);if(ok&&counter){try{await dbNS.doc('offers/'+counter.id).update({status:'countered',doneAt:Date.now()})}catch(e){}}return ok}})}
-function giftBuilder(to,pre){openBuilder({give:pre||[],title:`Send cards to ${to.name}`,sub:`Free! Pick spare cards to give ${esc(to.name)}. They show up in ${esc(to.name)}'s binder next time they play.`,mine:myItems(),theirs:null,sendLabel:'Send gift',onSend:give=>sendOffer(to,give,[],true)})}
+    mine:myItems(true),theirs,theirBig:theirs.big,fair:true,give:counter?counter.want.filter(k=>freeCountP(k)>0):(pre||[]),get:counter?counter.give:[],sendLabel:counter?'Send counter offer':'Send trade offer',
+    onSend:async(give,get)=>{const ok=await sendOffer(to,give,get,false,theirs.big);if(ok&&counter){try{await dbNS.doc('offers/'+counter.id).update({status:'countered',doneAt:Date.now()})}catch(e){}}return ok}})}
+function giftBuilder(to,pre){openBuilder({give:pre||[],title:`Send cards to ${to.name}`,sub:`Free! Pick spare cards to give ${esc(to.name)}. They show up in ${esc(to.name)}'s binder next time they play. 1/1s can go to family too.`,mine:myItems(true),theirs:null,sendLabel:'Send gift',onSend:give=>sendOffer(to,give,[],true)})}
 async function pAccept(o){
-  if(!haveFree(o.want)){toast("You don't have those cards free to trade anymore. Try a counter offer.");return}
+  if(!haveFree(o.want,true)){toast("You don't have those cards free to trade anymore. Try a counter offer.");return}
+  {const keep=S.bigOnes;S.bigOnes=Object.assign({},keep||{},o.big||{});const gv=keysVal(o.want),rv=keysVal(o.give);S.bigOnes=keep;if(!isFair(gv,rv)){toast(`That trade isn't fair: ${money(gv)} for ${money(rv)}. Pass or send a counter offer.`,'',7000);return}}
   const ref=dbNS.doc('offers/'+o.id);
   try{const d=await ref.get();if(!d.exists||d.data().status!=='open'){toast('That offer is gone.');return}await ref.update({status:'accepted',doneAt:Date.now()})}
   catch(e){toast("Couldn't reach the mailbox. Try again.");return}
-  markDone(o.id);o.want.forEach(k=>removeCards(k,1));o.give.forEach(k=>addCard(fromKey(k),'trade'));S.stats.trades++;addXP(15);
+  markDone(o.id);o.want.forEach(k=>removeCards(k,1));takeBig(o.big);o.give.forEach(k=>addCard(fromKey(k),'trade'));S.stats.trades++;addXP(15);
   mailLog(`Traded with ${o.fromName}. You got ${cardsTxt(o.give)}.`);toast(`Traded with ${o.fromName}! You got ${cardsTxt(o.give)}.`,'gold',7000);
   save('now');updateHeader();renderTabs();render()}
 async function pSet(o,status,msg){try{const ref=dbNS.doc('offers/'+o.id);const d=await ref.get();if(!d.exists||d.data().status!=='open')return;await ref.update({status,doneAt:Date.now()});if(msg)toast(msg)}catch(e){toast("Couldn't reach the mailbox. Try again.")}}
@@ -7057,7 +7077,7 @@ function cardActions(k){
   const m=modal(`<div id="caSpot"></div>
     <div><div style="font-weight:700;font-size:22px">${esc(p.name)}${n>1?` <span class="note">×${n}</span>`:''}</div><div class="note">${c.year} ${brand(c.year,p.sport)} · ${esc(t[0]+' '+t[1])} · #${esc(p.num)} · ${p.pos}${isRC(c)?' · Rookie card':''}</div>
     <div style="margin-top:6px">${c.par?`<span class="tag p${c.par}" style="font-size:13px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:rgba(0,0,0,.35)">${esc(parName(c))}</span> `:''}${isNumbered(c)?`<span class="serial" style="font-size:15px">#${serialText(c)}</span> `:''}${c.g?`<b class="g${c.g}">Slab Happy ${c.g}</b> `:''}<b style="color:var(--good);font-size:20px">${money(valueOf(c))}</b></div>
-    <p class="note" style="margin:6px 0 0">${S.pc[k]?'★ In your PC. ':''}${scCount(k)?'In the showcase. ':''}${shelfCount(k)?'On the shelf. ':''}${a>0?`${a} free to sell or trade.`:one?(c.par===10||c.par===15?'Superfractor 1/1. Like Grandpa\'s 1/1s, it never leaves.':'Grandpa\'s 1/1. It never leaves.'):'Nothing free to sell: it\'s starred, shelved or showcased.'}</p></div>
+    <p class="note" style="margin:6px 0 0">${S.pc[k]?'★ In your PC. ':''}${scCount(k)?'In the showcase. ':''}${shelfCount(k)?'On the shelf. ':''}${a>0?`${a} free to sell or trade.`:one?(c.par===10||c.par===15?'Superfractor 1/1. Never sold or traded to the traders, but family can have it.':'Grandpa\'s 1/1. Never sold or traded to the traders, but family can have it.'):'Nothing free to sell: it\'s starred, shelved or showcased.'}</p></div>
     <div class="caacts">
       ${one?'':btn('sell',`Sell · ${money(valueOf(c))}`,a>0,true)}
       ${!c.g?Object.entries(GTIERS).map(([id,o])=>btn('grade:'+id,`Grade ${o.name} · ${money(tierFee(c,id))} · ${msText(o.ms())}`,n-shelfCount(k)-scCount(k)>0,false)).join(''):up('regrade')?Object.entries(GTIERS).map(([id,o])=>btn('regrade:'+id,`Resubmit ${o.name} · ${money(tierFee({...c,g:0},id))} · ${msText(o.ms())}`,n-shelfCount(k)-scCount(k)>0)).join(''):''}
@@ -7066,8 +7086,8 @@ function cardActions(k){
       ${S.level>=5?btn('case','Showcase',n-shelfCount(k)-scCount(k)>0&&(S.showcase||[]).length<scSlots()):''}
       ${one?'':`<button class="btn pcstar" data-ca="pc" aria-pressed="${!!S.pc[k]}">${S.pc[k]?'★ In PC':'☆ Add to PC'}</button>`}
     </div>
-    ${one||!PROFILE||S.level<4?'':(()=>{const os=allProfiles().filter(x=>x.id!==PROFILE.id),free=freeCount(k)>0,ok=dbNS&&free;
-      return `<div class="caacts">${os.map(x=>`<button class="btn" data-send="${esc(x.id)}" ${ok?'':'disabled'}>🎁 Send to ${esc(x.name)}</button><button class="btn" data-offer="${esc(x.id)}" ${ok?'':'disabled'}>🔄 Trade with ${esc(x.name)}</button>`).join('')}<button class="btn" data-tobot="1" ${free?'':'disabled'}>🤝 Trade with a trader</button></div>${free&&(ok||!os.length)?'':`<p class="note" style="margin:0">${!free?(isSteam(c)?'Steamroller cards stay in your binder.':'Only free spare cards can be traded. Take it out of your PC, shelf or showcase first.'):'Sending cards to players needs the online save.'}</p>`}`})()}
+    ${!PROFILE||S.level<4?'':(()=>{const os=allProfiles().filter(x=>x.id!==PROFILE.id),free=freeCountP(k)>0,ok=dbNS&&free;if(one&&!os.length)return '';
+      return `<div class="caacts">${os.map(x=>`<button class="btn" data-send="${esc(x.id)}" ${ok?'':'disabled'}>🎁 Send to ${esc(x.name)}</button><button class="btn" data-offer="${esc(x.id)}" ${ok?'':'disabled'}>🔄 Trade with ${esc(x.name)}</button>`).join('')}${one?'':`<button class="btn" data-tobot="1" ${freeCount(k)>0?'':'disabled'}>🤝 Trade with a trader</button>`}</div>${one?'<p class="note" style="margin:0">1/1s can go to family, but never to the traders.</p>':''}${free&&(ok||!os.length)?'':`<p class="note" style="margin:0">${!free?(isSteam(c)?(isSteamTeam(c)?'Steamroller cards stay in your binder.':'This card is on your Save list, so it stays.'):'Only free spare cards can be traded. Take it out of your PC, shelf or showcase first.'):'Sending cards to players needs the online save.'}</p>`}`})()}
     <div class="row2"><button class="btn" data-close>Close</button></div>`);
   const d=document.createElement('div');d.className=c.par>=2?'fx'+(c.par===2&&modern(c)?' refr':''):'';d.style.cssText=`position:relative;width:${w}px;border-radius:${w*.045}px;overflow:hidden;box-shadow:0 10px 26px rgba(0,0,0,.5);margin:0 auto`;
   const cv=cardCanvas(c,w);cv.style.display='block';cv.style.width='100%';cv.style.height='auto';d.appendChild(cv);$('#caSpot',m).appendChild(d);addFlip(d,cv,c,w);
@@ -7138,7 +7158,7 @@ function showCardModal(c,o={}){
 }
 
 function renderUpgrades(v){
-  const groups=[['Sorting by hand',['bins','fan','stack','brick']],['Help around the shed',['colton','machine','pizza','nopizza','mash','flipplus']],['Getting better money',['loupe','bulk','vip']],['Grading',['doctor','regrade','sleeves','express']],['The shop',['shelf','sign','signplus','counterpp','clerk','line','case']],['Miscellaneous',['randbreak','recliner','megacounter','gemhunter','brainboost','goldpass']]];
+  const groups=[['Sorting by hand',['bins','fan','stack','brick']],['Help around the shed',['colton','machine','pizza','nopizza','mash','flipplus']],['Getting better money',['loupe','bulk','vip']],['Grading',['doctor','regrade','sleeves','express']],['The shop',['shelf','sign','signplus','counterpp','clerk','line','case']],['Miscellaneous',['randbreak','recliner','megacounter','gemhunter','brainboost','goldpass','spectrade']]];
   v.innerHTML=groups.map(([g,ids])=>`<h3 class="sech">${g}</h3><div class="grid">${ids.map(id=>{const u=UPGRADES.find(x=>x.id===id);const l=up(id),ru=u.req&&UPGRADES.find(x=>x.id===u.req),needs=ru&&up(u.req)<ru.max,locked=S.level<u.lv||needs,maxed=l>=u.max,cost=upCost(u);
     return `<div class="up${locked?' locked':''}${maxed?' maxed':''}"><h4>${esc(upName(u))}${u.max>1?`<small>Lv ${l}/${u.max}</small>`:maxed?'<small style="color:var(--good)">Owned</small>':''}</h4><p>${esc(u.desc)}</p>${locked?`<button class="btn" disabled>${needs?`Needs ${esc(ru.name)} level ${ru.max} first`:`Unlocks at level ${u.lv}`}</button>`:maxed?'':`<button class="btn ${S.cash>=cost?'go':''}" data-buy="${id}" ${S.cash>=cost?'':'disabled'}>Buy · ${money(cost)}</button>`}</div>`}).join('')}</div>`).join('');
   v.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{buyUp(b.dataset.buy);renderUpgrades(v)});
@@ -7305,7 +7325,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-18.0631';
+const APP_VERSION = '2026-11-18.1238';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
