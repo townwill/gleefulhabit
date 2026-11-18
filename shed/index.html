@@ -4042,6 +4042,64 @@ function wpick(items,wf){let tot=0;const w=items.map(i=>{const x=wf(i);tot+=x;re
 function money(v){if(v>=10000)return '$'+Math.round(v).toLocaleString('en-US');return '$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
 const num=n=>Math.floor(n).toLocaleString('en-US');
 const up=id=>S.up[id]||0;
+/* ---------- make your own upgrade: Colton designs it, Will approves it ---------- */
+const CU_FX={
+  sort:{t:'Helpers sort faster',u:'%',lo:5,hi:50,step:5,per:8000,cap:100,d:a=>`Your helpers sort ${a}% faster.`},
+  cust:{t:'Customers come sooner',u:'%',lo:5,hi:40,step:5,per:8000,cap:60,d:a=>`Customers come in ${a}% sooner.`},
+  xp:{t:'More XP',u:'%',lo:5,hi:50,step:5,per:7000,cap:100,d:a=>`Every bit of XP counts ${a}% more.`},
+  gradefee:{t:'Cheaper grading',u:'%',lo:5,hi:50,step:5,per:5000,cap:75,d:a=>`Grading costs ${a}% less.`},
+  gradefast:{t:'Faster grading',u:'%',lo:10,hi:70,step:10,per:4000,cap:80,d:a=>`Value and Priority grading come back ${a}% faster.`},
+  shelf:{t:'More Counter spots',u:' spots',lo:1,hi:10,step:1,per:25000,cap:20,d:a=>`${a} more spot${a>1?'s':''} on the Counter shelf.`},
+  packs:{t:'Cheaper packs',u:'%',lo:5,hi:40,step:5,per:9000,cap:60,d:a=>`Every pack and box at Lenny's costs ${a}% less.`}};
+const CU_ICONS=['🚀','⚡','🔥','💎','🧲','🎯','🛠️','🍀','👑','🦖','🤖','🌟'];
+const cuPrice=(fx,a)=>Math.round(CU_FX[fx].per*a/1000)*1000;
+const cuClean=u=>{if(!u||!CU_FX[u.fx])return null;const f=CU_FX[u.fx];const a=Math.max(f.lo,Math.min(f.hi,Math.round(+u.amt||0)));
+  return {fx:u.fx,amt:a,name:String(u.name||f.t).slice(0,40),ico:CU_ICONS.includes(u.ico)?u.ico:'🛠️',cost:Math.max(1000,Math.min(5e7,Math.round(+u.cost||cuPrice(u.fx,a))))}};
+// total of one effect from the custom upgrades you've bought
+function cuAmt(fx){if(typeof S==='undefined'||!S||!S.customUps)return 0;let t=0;for(const u of S.customUps)if(u.fx===fx&&S.up[u.id])t+=u.amt;return Math.min(t,CU_FX[fx].cap)}
+const approver=()=>allProfiles().find(p=>(p.name||'').trim().toLowerCase()==='will');
+const isApprover=()=>{const a=approver();return !!(a&&PROFILE&&a.id===PROFILE.id)};
+function cuSettle(o){const nm=o.toName||'Will';
+  if(o.status==='accepted'){const u=cuClean(o.up);if(!u)return;S.customUps=S.customUps||[];const id='cu_'+o.id;if(!S.customUps.some(x=>x.id===id))S.customUps.push({id,...u,by:PROFILE.name});
+    toast(`✅ ${nm} approved your upgrade "${u.name}"! It's in Upgrades for ${money(u.cost)}.`,'gold',9000);mailLog(`${nm} approved your upgrade "${u.name}".`)}
+  else{toast(`${nm} said no to "${(o.up&&o.up.name)||'your upgrade'}" this time.${o.note?' "'+o.note+'"':''}`,'',8000);mailLog(`${nm} passed on your upgrade "${(o.up&&o.up.name)||''}".`)}}
+async function cuSend(u){const a=approver();if(!dbNS||!a){toast('Making upgrades needs the online save.');return false}
+  const id='o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  try{await dbNS.doc('offers/'+id).set({kind:'upgrade',from:PROFILE.id,fromName:PROFILE.name,to:a.id,toName:a.name,up:u,give:[],want:[],gift:false,status:'open',at:Date.now()})}catch(e){toast("Couldn't send it. Try again.");return false}
+  OFF_OUT=OFF_OUT.concat({id,kind:'upgrade',from:PROFILE.id,to:a.id,toName:a.name,up:u,status:'open'});toast(`Sent "${u.name}" to ${a.name} to approve.`,'good',6000);return true}
+async function cuAnswer(o,ok,u,note){try{const ref=dbNS.doc('offers/'+o.id);const d=await ref.get();if(!d.exists||d.data().status!=='open'){toast('That request is gone.');return}
+    await ref.update(ok?{status:'accepted',up:u,doneAt:Date.now()}:{status:'passed',note:note||'',doneAt:Date.now()})}catch(e){toast("Couldn't reach the mailbox. Try again.");return}
+  OFF_IN=OFF_IN.filter(x=>x.id!==o.id);toast(ok?`Approved "${u.name}" for ${o.fromName}.`:`Told ${o.fromName} no on "${o.up.name}".`,'good');render()}
+function cuHTML(){
+  if(!PROFILE)return '';const ap=approver();const mine=(S.customUps||[]);let h='';
+  if(isApprover()){const req=OFF_IN.filter(o=>o.kind==='upgrade'&&o.status==='open');
+    h+=`<h3 class="sech">Upgrade requests</h3>`+(req.length?`<div class="grid">${req.map(o=>{const u=cuClean(o.up)||{};const f=CU_FX[u.fx];return `<div class="up" data-cur="${esc(o.id)}"><h4>${u.ico} <input class="cuN" value="${esc(u.name)}" maxlength="40" style="font:inherit;width:70%;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:8px;padding:4px 6px"></h4>
+      <p class="note">From ${esc(o.fromName)}. ${esc(f?f.t:'')}</p><label>Amount <b class="cuAv">${u.amt}${f.u}</b><input type="range" class="cuA" min="${f.lo}" max="${f.hi}" step="${f.step}" value="${u.amt}" style="width:100%"></label>
+      <label>Price $<input type="number" class="cuC" value="${u.cost}" min="1000" step="1000" style="font:inherit;width:9em;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:8px;padding:4px 6px"></label>
+      <div class="row2" style="justify-content:flex-start"><button class="btn go sm" data-cuok="${esc(o.id)}">Approve</button><button class="btn sm" data-cuno="${esc(o.id)}">Say no</button></div></div>`}).join('')}</div>`:`<p class="note">When Colton designs an upgrade, it shows up here for you to approve, change or turn down.</p>`)}
+  else if(ap){const wait=OFF_OUT.filter(o=>o.kind==='upgrade'&&o.status==='open');
+    h+=`<h3 class="sech">Make your own upgrade</h3><div class="up" id="cuMake"><p>Design an upgrade and send it to ${esc(ap.name)}. ${esc(ap.name)} can change it, then it shows up here to buy. Breaks always stay, so there's no break upgrade.</p>
+      <label>Name <input id="cuName" maxlength="40" placeholder="Turbo Sorter" style="font:inherit;width:100%;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:8px;padding:8px"></label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">${CU_ICONS.map((ic,i)=>`<button class="btn sm${i?'':' go'}" data-cui="${ic}">${ic}</button>`).join('')}</div>
+      <label>What it does <select id="cuFx" style="font:inherit;padding:8px;border-radius:8px;background:var(--panel2);color:inherit">${Object.entries(CU_FX).map(([k,f])=>`<option value="${k}">${f.t}</option>`).join('')}</select></label>
+      <label style="display:block;margin-top:8px">How much: <b id="cuAv"></b><input type="range" id="cuAmt" style="width:100%"></label>
+      <p id="cuSum" class="note"></p><button class="btn go" id="cuSend">Send to ${esc(ap.name)}</button></div>`
+      +(wait.length?`<p class="note">Waiting for ${esc(ap.name)}: ${wait.map(o=>`${o.up.ico} ${esc(o.up.name)}`).join(', ')}</p>`:'')}
+  if(mine.length)h+=`<h3 class="sech">Made by ${esc(mine[0].by||'you')}</h3><div class="grid">${mine.map(u=>{const own=up(u.id)>0;return `<div class="up${own?' maxed':''}"><h4>${u.ico} ${esc(u.name)}${own?'<small style="color:var(--good)">Owned</small>':''}</h4><p>${esc(CU_FX[u.fx].d(u.amt))}</p>${own?'':`<button class="btn ${S.cash>=u.cost?'go':''}" data-cubuy="${esc(u.id)}" ${S.cash>=u.cost?'':'disabled'}>Buy · ${money(u.cost)}</button>`}</div>`}).join('')}</div>`;
+  return h}
+// don't redraw the Upgrades page while someone is typing in a custom-upgrade form
+function cuBusy(){const a=document.activeElement,n=$('#cuName');return !!(a&&a.closest&&a.closest('#cuMake,[data-cur]'))||!!(n&&n.value.trim())}
+function cuWire(v){
+  v.querySelectorAll('[data-cubuy]').forEach(b=>b.onclick=()=>{const u=(S.customUps||[]).find(x=>x.id===b.dataset.cubuy);if(!u||up(u.id)||S.cash<u.cost)return;S.cash-=u.cost;S.up[u.id]=1;toast(`Bought ${u.ico} ${u.name}!`,'good');save('now');updateHeader();renderUpgrades(v)});
+  const mk=$('#cuMake',v);if(mk){let ico=CU_ICONS[0];const fx=$('#cuFx',v),am=$('#cuAmt',v);
+    const draw=()=>{const f=CU_FX[fx.value];if(+am.min!==f.lo||+am.max!==f.hi){am.min=f.lo;am.max=f.hi;am.step=f.step;am.value=f.lo}const a=+am.value;$('#cuAv',v).textContent=a+f.u;$('#cuSum',v).textContent=`${f.d(a)} Price: ${money(cuPrice(fx.value,a))} (${approver().name} can change it).`};
+    fx.onchange=()=>{am.min=0;draw()};am.oninput=draw;am.min=0;draw();
+    mk.querySelectorAll('[data-cui]').forEach(b=>b.onclick=()=>{ico=b.dataset.cui;mk.querySelectorAll('[data-cui]').forEach(x=>x.classList.toggle('go',x===b))});
+    $('#cuSend',v).onclick=async()=>{const name=$('#cuName',v).value.trim();if(!name){toast('Give your upgrade a name.');return}const u=cuClean({fx:fx.value,amt:+am.value,name,ico});if(await cuSend(u))renderUpgrades(v)}}
+  v.querySelectorAll('[data-cur]').forEach(card=>{const o=OFF_IN.find(x=>x.id===card.dataset.cur);if(!o)return;const u0=cuClean(o.up),f=CU_FX[u0.fx];
+    const a=$('.cuA',card),c=$('.cuC',card);a.oninput=()=>{$('.cuAv',card).textContent=a.value+f.u;c.value=cuPrice(u0.fx,+a.value)};
+    $('[data-cuok]',card).onclick=()=>cuAnswer(o,true,cuClean({...u0,name:$('.cuN',card).value.trim()||u0.name,amt:+a.value,cost:+c.value}));
+    $('[data-cuno]',card).onclick=()=>cuAnswer(o,false,null,'')})}
 const key=c=>`${c.pid}.${c.year}.${c.par}${c.g?'.'+c.g:''}`;
 function fromKey(k){const [pid,year,par,g]=k.split('.').map(Number);const c={pid,year,par};if(g)c.g=g;return c}
 const GRADE_MULT={10:8,9:3,8:1.6,7:1.1,6:.9,5:.7,4:.55,3:.45,2:.35,1:.25};
@@ -4100,12 +4158,12 @@ function loadAside(){
   save(true);
 }
 function batchSize(){return up('brick')?8:up('stack')?6:up('fan')?3:1}
-function autoRate(){return (up('colton')*.15+up('machine')*.6)*(up('recliner')?1.25:1)}
+function autoRate(){return (up('colton')*.15+up('machine')*.6)*(up('recliner')?1.25:1)*(1+cuAmt('sort')/100)}
 const SHIFT=120;const shiftLen=()=>SHIFT+60*up('pizza');
 function crewName(){return up('colton')?helperWho():'The machine'}
 function pizzaCost(){return Math.round((3+autoRate()*12)*(up('pizza')?.5:1))}
 function orderPizza(){const c=pizzaCost();if(S.cash<c){toast(`Pizza costs ${money(c)}. Sell a few cards first.`);return}S.cash-=c;S.shift=shiftLen();save(true);updateHeader();updatePile();toast(up('colton')?`Pizza's here. ${crewName()} is back to work.`:'The machine is humming again.','good')}
-function shelfCap(){return 4+up('shelf')*3+(up('megacounter')?10:0)}
+function shelfCap(){return 4+up('shelf')*3+(up('megacounter')?10:0)+cuAmt('shelf')}
 function upCost(u){return Math.round(u.cost*Math.pow(u.grow||1,up(u.id)))}
 function shelfCount(k){return S.shelf.filter(x=>x===k).length}
 function caseCount(k){return (S.showcase||[]).filter(x=>x===k).length}
@@ -5554,7 +5612,7 @@ function lazyCanvas(k,w){const cv=document.createElement('canvas');cv.dataset.k=
    ========================================================= */
 let hand=[],phase='empty',tab='shed',binderF={fs:[],sort:'value',q:'',limit:48,sp:'all',lims:{}},selMode=false,sel=new Set();
 function addXP(n){
-  if(up('brainboost'))n=Math.round(n*1.25);S.xp+=n;
+  if(up('brainboost'))n=Math.round(n*1.25);if(cuAmt('xp'))n=Math.round(n*(1+cuAmt('xp')/100));S.xp+=n;
   while(S.xp>=xpNeed(S.level+1)){S.level++;onLevel(S.level)}
 }
 const FS=(()=>{const m=SETS.find(x=>x.id==='fathers').pids,map={};for(let i=0;i<m.length;i+=2){map[m[i]]=m[i+1];map[m[i+1]]=m[i]}return map})();
@@ -5814,11 +5872,11 @@ function saveSizeHelp(bytes=lastPack){
   const m=modal(`<h2>Your save file is getting big</h2><p>${esc(PROFILE.name)}'s save is ${Math.round(bytes/1024)} KB. Big saves take longer and could stop saving online. The biggest parts: ${top}.</p><ul style="text-align:left;line-height:1.45;padding-left:20px">${tips.join('')}</ul>
     <div class="row2">${ci.n?`<button class="btn go" id="szCheap">Sell cheap cards…</button>`:''}<button class="btn" data-close>Later</button></div>`);
   const a=$('#szCheap',m);if(a)a.onclick=()=>{closeModal(true);if(cheapMax()<2)S.cheapMax=2;sellCheap()}}
-const gradeMs=()=>180000/Math.pow(2,up('express')),gradeMax=()=>5+2*up('express');
+const gradeMs=()=>180000/Math.pow(2,up('express'))*(1-cuAmt('gradefast')/100),gradeMax=()=>5+2*up('express');
 // three service levels: Value is the old grader; Priority costs more and comes back faster; Express is about 10 seconds
 const GTIERS={value:{name:'Value',fee:1,ms:()=>gradeMs()},priority:{name:'Priority',fee:2.5,ms:()=>Math.max(15000,Math.round(gradeMs()/5))},express:{name:'Express',fee:5,ms:()=>10000}};
 const gTier=t=>GTIERS[t]?t:'value';
-const tierFee=(c,t)=>Math.round(gradeFee(c)*GTIERS[gTier(t)].fee*(up('goldpass')?.5:1));
+const tierFee=(c,t)=>Math.round(gradeFee(c)*GTIERS[gTier(t)].fee*(up('goldpass')?.5:1)*(1-cuAmt('gradefee')/100));
 const msText=ms=>ms>=60000?`${Math.round(ms/6000)/10} min`.replace('.0 ',' '):`${Math.round(ms/1000)} sec`;
 const GQ_MAX=300;
 // cards past the grader's slots wait in line; each starts the moment a slot frees up (works while the game was closed too)
@@ -6108,7 +6166,7 @@ function genPackRaw(pk){
 }
 const PACK_MAX={sretail:6,shobby:3,svintage:2,sblaster:3,smega:2,shobbybox:1,dsoc:1,dnfl:1,gscle:3,hretail:6,hhobby:3,hvintage:2,hblaster:3,hmega:2,hhobbybox:1,dnhl:1,sfg:3,dnba:1,dmlb:1,retail:6,hobby:3,vintage:2,bretail:6,bhobby:3,bvintage:2,fretail:6,fhobby:3,fvintage:2,fblaster:3,fmega:2,fhobbybox:1,blaster:3,mega:2,hobbybox:1,bblaster:3,bmega:2,bhobbybox:1},RESTOCK=150;
 function packMax(id){return PACK_MAX[id]+2*up('vip')}
-function packCost(pk){return Math.round(pk.cost*(up('vip')?.8:1)*100)/100}
+function packCost(pk){return Math.round(pk.cost*(up('vip')?.8:1)*(1-cuAmt('packs')/100)*100)/100}
 const NO_LIMIT={has:()=>true}; // Lenny never runs out of anything
 function stockOf(id){S.stock=S.stock||{};if(NO_LIMIT.has(id))return 99;return S.stock[id]??packMax(id)}
 function tickStock(n){S.stockCtr=(S.stockCtr||0)+n;let got=false;while(S.stockCtr>=RESTOCK){S.stockCtr-=RESTOCK;PACKS.forEach(pk=>{const c=stockOf(pk.id);if(c<packMax(pk.id)){S.stock[pk.id]=c+1;got=true}})}if(got&&tab==='packs')render()}
@@ -6478,17 +6536,18 @@ function watchOffers(id){if(!dbNS||!id||offersFor===id)return;offerUnsubs.forEac
   sub('to',x=>OFF_IN=x);sub('from',x=>OFF_OUT=x)}
 function markDone(id){S.offerDone=S.offerDone||{};S.offerDone[id]=1;const ks=Object.keys(S.offerDone);if(ks.length>300)delete S.offerDone[ks[0]]}
 async function settleOffers(){if(!PROFILE||!dbNS)return;const me=PROFILE.id;S.offerDone=S.offerDone||{};let changed=false;
-  for(const o of OFF_IN){if(!(o.gift&&o.status==='open')||S.offerDone[o.id]||offerBusy.has(me+':'+o.id)||PROFILE.id!==me)continue;offerBusy.add(me+':'+o.id);
+  for(const o of OFF_IN){if(o.kind==='upgrade')continue;if(!(o.gift&&o.status==='open')||S.offerDone[o.id]||offerBusy.has(me+':'+o.id)||PROFILE.id!==me)continue;offerBusy.add(me+':'+o.id);
     markDone(o.id);takeBig(o.big);(o.give||[]).forEach(k=>addCard(fromKey(k),'gift'));changed=true;
     mailLog(`🎁 ${o.fromName} sent you ${cardsTxt(o.give)}.`);toast(`🎁 ${o.fromName} sent you ${plural(o.give.length,'card')}: ${cardsTxt(o.give)}!`,'gold',8000);
     try{await dbNS.doc('offers/'+o.id).update({status:'accepted',doneAt:Date.now()})}catch(e){}}
-  for(const o of OFF_OUT){if(o.status==='open'||S.offerDone[o.id]||offerBusy.has(me+':'+o.id)||PROFILE.id!==me)continue;offerBusy.add(me+':'+o.id);markDone(o.id);changed=true;const nm=o.toName||'They';
+  for(const o of OFF_OUT){if(o.status==='open'||S.offerDone[o.id]||offerBusy.has(me+':'+o.id)||PROFILE.id!==me)continue;offerBusy.add(me+':'+o.id);markDone(o.id);changed=true;
+    if(o.kind==='upgrade'){cuSettle(o);try{await dbNS.doc('offers/'+o.id).delete()}catch(e){}continue}const nm=o.toName||'They';
     if(o.status==='accepted'){if(!o.gift){takeBig(o.wantBig);(o.want||[]).forEach(k=>addCard(fromKey(k),'trade'));S.stats.trades++;addXP(15);mailLog(`${nm} took your trade. You got ${cardsTxt(o.want)}.`);toast(`${nm} took your trade! You got ${cardsTxt(o.want)}.`,'gold',8000)}
       else mailLog(`${nm} got the ${plural(o.give.length,'card')} you sent.`)}
     else{(o.give||[]).forEach(k=>addCard(fromKey(k),'trade'));const why=o.status==='passed'?`${nm} passed on your trade.`:o.status==='countered'?`${nm} sent back a counter offer.`:'You canceled your offer.';
       mailLog(why);toast(`${why} Your cards are back in your binder.`,'',6000)}
     try{await dbNS.doc('offers/'+o.id).delete()}catch(e){}}
-  if(changed){save('now');updateHeader()}renderTabs();if(tab==='trade'&&!modalOpen)render()}
+  if(changed){save('now');updateHeader()}renderTabs();if((tab==='trade'||tab==='upgrades'&&!cuBusy())&&!modalOpen)render()}
 async function sendOffer(to,give,want,gift,theirBig){
   if(!dbNS){toast('Trading between players needs the online save.');return false}
   if(!haveFree(give,true)){toast("Some of those cards aren't free anymore.");return false}
@@ -6531,12 +6590,12 @@ function offerRowHTML(x){const strip=ks=>itemsFrom(ks).map(it=>`<figure><canvas 
   return `<div class="orow"><div class="ohead"><span class="fico">${x.ico}</span><b>${esc(x.who)}</b>${x.note?`<span class="note">"${esc(x.note)}"</span>`:''}</div>
     <div class="oswap"><div class="oside"><small>You give · ${money(keysVal(x.give))}</small><div>${strip(x.give)}</div></div><div class="tarrow">⇄</div><div class="oside"><small>You get · ${money(keysVal(x.get))}</small><div>${strip(x.get)}</div></div></div>
     <div class="obtns">${x.btns}</div></div>`}
-function mailCount(){return (S.inbox||[]).length+OFF_IN.filter(o=>o.status==='open'&&!o.gift).length}
+function mailCount(){return (S.inbox||[]).length+OFF_IN.filter(o=>o.status==='open'&&!o.gift&&o.kind!=='upgrade').length}
 function renderMailbox(el){const me=PROFILE.id,others=allProfiles().filter(p=>p.id!==me);
   const rows=[];
   (S.inbox||[]).forEach((o,i)=>{const b=botInfo(o.bot);rows.push(offerRowHTML({who:`${b.n} wants to trade`,ico:b.ico,note:o.note,give:o.want,get:o.get,btns:`<button class="btn go sm" data-ba="${i}">Trade</button><button class="btn sm" data-bc="${i}">Counter</button><button class="btn sm" data-bp="${i}">Pass</button>`}))});
-  OFF_IN.filter(o=>o.status==='open'&&!o.gift).forEach(o=>rows.push(offerRowHTML({who:`${o.fromName} wants to trade`,ico:'📨',give:o.want,get:o.give,btns:`<button class="btn go sm" data-pa="${o.id}">Trade</button><button class="btn sm" data-pc="${o.id}">Counter</button><button class="btn sm" data-pp="${o.id}">Pass</button>`})));
-  const sent=OFF_OUT.filter(o=>o.status==='open'&&!o.gift).map(o=>offerRowHTML({who:`Waiting for ${o.toName}`,ico:'⏳',give:o.give,get:o.want,btns:`<button class="btn sm" data-px="${o.id}">Cancel offer</button>`}));
+  OFF_IN.filter(o=>o.status==='open'&&!o.gift&&o.kind!=='upgrade').forEach(o=>rows.push(offerRowHTML({who:`${o.fromName} wants to trade`,ico:'📨',give:o.want,get:o.give,btns:`<button class="btn go sm" data-pa="${o.id}">Trade</button><button class="btn sm" data-pc="${o.id}">Counter</button><button class="btn sm" data-pp="${o.id}">Pass</button>`})));
+  const sent=OFF_OUT.filter(o=>o.status==='open'&&!o.gift&&o.kind!=='upgrade').map(o=>offerRowHTML({who:`Waiting for ${o.toName}`,ico:'⏳',give:o.give,get:o.want,btns:`<button class="btn sm" data-px="${o.id}">Cancel offer</button>`}));
   const pBtns=!dbNS?'<p class="note">Trading between players needs the online save.</p>':others.length?others.map(p=>`<button class="btn go" data-gift="${esc(p.id)}">🎁 Send cards to ${esc(p.name)}</button><button class="btn go" data-prop="${esc(p.id)}">🔄 Trade with ${esc(p.name)}</button>`).join(''):'<p class="note">Add another player to trade with them.</p>';
   el.innerHTML=`<div class="panel mail"><h3 class="sech" style="margin:0 0 6px">📬 Trade mailbox</h3>
     <div class="mbtns" style="margin-bottom:8px">${pBtns}</div>
@@ -6697,7 +6756,7 @@ function renderShowcase(){
   $('#collect').onclick=collectTips;$('#fillCase').onclick=()=>{const n=autoFillCase();toast(n?`Put your ${n} best slabs in the showcase.`:'No graded cards yet. Send some to Slab Happy first.');renderShowcase()};
 }
 
-function custInterval(){return showOn()?rnd(3500,6500):(26000-up('sign')*5500)*(1-.2*up('signplus'))*rnd(.6,1.4)}
+function custInterval(){return showOn()?rnd(3500,6500):(26000-up('sign')*5500)*(1-.2*up('signplus'))*(1-cuAmt('cust')/100)*rnd(.6,1.4)}
 function genWant(forced){
   const shelfCards=S.shelf.map(fromKey);
   const base=forced||(Math.random()<.65&&shelfCards.length?pick(shelfCards):rollCard({sport:pick(openSports())}));
@@ -7161,6 +7220,7 @@ function renderUpgrades(v){
   const groups=[['Sorting by hand',['bins','fan','stack','brick']],['Help around the shed',['colton','machine','pizza','nopizza','mash','flipplus']],['Getting better money',['loupe','bulk','vip']],['Grading',['doctor','regrade','sleeves','express']],['The shop',['shelf','sign','signplus','counterpp','clerk','line','case']],['Miscellaneous',['randbreak','recliner','megacounter','gemhunter','brainboost','goldpass','spectrade']]];
   v.innerHTML=groups.map(([g,ids])=>`<h3 class="sech">${g}</h3><div class="grid">${ids.map(id=>{const u=UPGRADES.find(x=>x.id===id);const l=up(id),ru=u.req&&UPGRADES.find(x=>x.id===u.req),needs=ru&&up(u.req)<ru.max,locked=S.level<u.lv||needs,maxed=l>=u.max,cost=upCost(u);
     return `<div class="up${locked?' locked':''}${maxed?' maxed':''}"><h4>${esc(upName(u))}${u.max>1?`<small>Lv ${l}/${u.max}</small>`:maxed?'<small style="color:var(--good)">Owned</small>':''}</h4><p>${esc(u.desc)}</p>${locked?`<button class="btn" disabled>${needs?`Needs ${esc(ru.name)} level ${ru.max} first`:`Unlocks at level ${u.lv}`}</button>`:maxed?'':`<button class="btn ${S.cash>=cost?'go':''}" data-buy="${id}" ${S.cash>=cost?'':'disabled'}>Buy · ${money(cost)}</button>`}</div>`}).join('')}</div>`).join('');
+  v.insertAdjacentHTML('beforeend',cuHTML());cuWire(v);
   v.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{buyUp(b.dataset.buy);renderUpgrades(v)});
 }
 function renderPacks(v){
@@ -7309,7 +7369,7 @@ function loop(){
   }
   tickCounter(Date.now());if(now-lastSlow>1000){tickGrading();if(tab==='binder')document.querySelectorAll('[data-gt]').forEach(el=>{const x=(S.grading||[])[+el.dataset.gt];if(!x)return;const left=Math.max(0,Math.ceil((x.ready-Date.now())/1000));if(!left)renderGrader();else el.textContent=`Back in ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`})}
   if(now-lastUi>250){lastUi=now;updateHeader();if(tab==='counter')updateTimer()}
-  if(now-lastSlow>1000){lastSlow=now;if(tab==='shed'&&r>0)refreshSide();if(tab==='upgrades'||tab==='packs'){const sig=tab+S.level+UPGRADES.map(u=>(S.cash>=upCost(u)?1:0)+''+up(u.id)).join('')+PACKS.map(p=>S.cash>=packCost(p)?1:0).join('');if(sig!==lastSig){lastSig=sig;const v=$('#view');const y=window.scrollY;tab==='upgrades'?renderUpgrades(v):renderPacks(v);window.scrollTo(0,y)}}}
+  if(now-lastSlow>1000){lastSlow=now;if(tab==='shed'&&r>0)refreshSide();if((tab==='upgrades'&&!cuBusy())||tab==='packs'){const sig=tab+S.level+UPGRADES.map(u=>(S.cash>=upCost(u)?1:0)+''+up(u.id)).join('')+PACKS.map(p=>S.cash>=packCost(p)?1:0).join('');if(sig!==lastSig){lastSig=sig;const v=$('#view');const y=window.scrollY;tab==='upgrades'?renderUpgrades(v):renderPacks(v);window.scrollTo(0,y)}}}
   if(now-lastSave>4000){lastSave=now;save()}
   if(PROFILE){tickShowcase(dt);if(now-lastEvt>1000){lastEvt=now;tickEvents();const st=$('#showT');if(st){const left=Math.max(0,Math.ceil(((S.showUntil||0)-Date.now())/1000));st.textContent=`${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`;if(!left&&tab==='counter'){toast('The card show is over. Nice work!');render()}}}}
 }
@@ -7325,7 +7385,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-18.1238';
+const APP_VERSION = '2026-11-18.1405';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
