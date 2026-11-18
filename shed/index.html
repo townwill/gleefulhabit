@@ -3783,6 +3783,7 @@ const UPGRADES = [
   {id:'machine',name:'Card Counter Machine',cost:800,max:10,grow:2.2,lv:4,desc:'Adds about 1 card every 2 seconds per level to your crew. Runs during shifts, and good cards still get set aside for you.'},
   {id:'shelf',name:'Extra Shelf',cost:150,max:4,grow:2,lv:5,desc:'Three more spots on the shop shelf.'},
   {id:'sign',name:'Neon OPEN Sign',cost:300,max:3,grow:2.2,lv:5,desc:'Customers come in more often.'},
+  {id:'signplus',name:'Neon OPEN Sign Plus',cost:15000,max:3,grow:3,lv:5,req:'sign',desc:'A bigger, brighter sign out by the road. Customers come in even more often: each level is 20% sooner.'},
   {id:'brick',name:'Brick Grab',cost:1200,max:1,lv:6,desc:'Pick up 8 cards at a time.'},
   {id:'case',name:'Bigger Showcase',cost:600,max:3,grow:2.2,lv:5,desc:'Two more spots in your showcase for visitors to tip on.'},
   {id:'line',name:'Waiting Line',cost:1500,max:1,grow:1,lv:5,desc:"Customers with offers get in line instead of leaving. When 5 or more are waiting you get a heads-up, and one button sells to all of them."},
@@ -5924,7 +5925,7 @@ function togglePC(k){if(isOne(fromKey(k)))return;if(S.pc[k])delete S.pc[k];else 
 function toShelf(k){if(S.level<5)return;if(S.shelf.length>=shelfCap()){toast('The shelf is full. Buy an Extra Shelf or take a card down.');return}if(avail(k)<=0)return;S.shelf.push(k);toast(`Put ${cardTitle(fromKey(k))} on the shelf`)}
 function offShelf(i){S.shelf.splice(i,1)}
 function buyUp(id){
-  const u=UPGRADES.find(x=>x.id===id);if(!u||S.level<u.lv||up(id)>=u.max)return;
+  const u=UPGRADES.find(x=>x.id===id);if(!u||S.level<u.lv||up(id)>=u.max)return;if(u.req){const r=UPGRADES.find(x=>x.id===u.req);if(r&&up(u.req)<r.max)return}
   const cost=upCost(u);if(S.cash<cost)return;S.cash-=cost;S.up[id]=up(id)+1;if((id==='colton'||id==='machine'||id==='nopizza')&&!(S.shift>0))S.shift=shiftLen();
   toast(`Bought ${upName(u)}${u.max>1?' (level '+S.up[id]+')':''}`,'good');
   if(id==='fan'||id==='stack'||id==='brick'){if(phase==='empty')renderHand()}
@@ -6675,7 +6676,7 @@ function renderShowcase(){
   $('#collect').onclick=collectTips;$('#fillCase').onclick=()=>{const n=autoFillCase();toast(n?`Put your ${n} best slabs in the showcase.`:'No graded cards yet. Send some to Slab Happy first.');renderShowcase()};
 }
 
-function custInterval(){return showOn()?rnd(3500,6500):(26000-up('sign')*5500)*rnd(.6,1.4)}
+function custInterval(){return showOn()?rnd(3500,6500):(26000-up('sign')*5500)*(1-.2*up('signplus'))*rnd(.6,1.4)}
 function genWant(){
   const shelfCards=S.shelf.map(fromKey);
   const base=Math.random()<.65&&shelfCards.length?pick(shelfCards):rollCard({sport:pick(openSports())});
@@ -7134,9 +7135,9 @@ function showCardModal(c,o={}){
 }
 
 function renderUpgrades(v){
-  const groups=[['Sorting by hand',['bins','fan','stack','brick']],['Help around the shed',['colton','machine','pizza','nopizza','mash','flipplus']],['Getting better money',['loupe','bulk','vip']],['Grading',['doctor','regrade','sleeves','express']],['The shop',['shelf','sign','clerk','line','case']],['Miscellaneous',['randbreak','recliner','megacounter','gemhunter','brainboost','goldpass']]];
-  v.innerHTML=groups.map(([g,ids])=>`<h3 class="sech">${g}</h3><div class="grid">${ids.map(id=>{const u=UPGRADES.find(x=>x.id===id);const l=up(id),locked=S.level<u.lv,maxed=l>=u.max,cost=upCost(u);
-    return `<div class="up${locked?' locked':''}${maxed?' maxed':''}"><h4>${esc(upName(u))}${u.max>1?`<small>Lv ${l}/${u.max}</small>`:maxed?'<small style="color:var(--good)">Owned</small>':''}</h4><p>${esc(u.desc)}</p>${locked?`<button class="btn" disabled>Unlocks at level ${u.lv}</button>`:maxed?'':`<button class="btn ${S.cash>=cost?'go':''}" data-buy="${id}" ${S.cash>=cost?'':'disabled'}>Buy · ${money(cost)}</button>`}</div>`}).join('')}</div>`).join('');
+  const groups=[['Sorting by hand',['bins','fan','stack','brick']],['Help around the shed',['colton','machine','pizza','nopizza','mash','flipplus']],['Getting better money',['loupe','bulk','vip']],['Grading',['doctor','regrade','sleeves','express']],['The shop',['shelf','sign','signplus','clerk','line','case']],['Miscellaneous',['randbreak','recliner','megacounter','gemhunter','brainboost','goldpass']]];
+  v.innerHTML=groups.map(([g,ids])=>`<h3 class="sech">${g}</h3><div class="grid">${ids.map(id=>{const u=UPGRADES.find(x=>x.id===id);const l=up(id),ru=u.req&&UPGRADES.find(x=>x.id===u.req),needs=ru&&up(u.req)<ru.max,locked=S.level<u.lv||needs,maxed=l>=u.max,cost=upCost(u);
+    return `<div class="up${locked?' locked':''}${maxed?' maxed':''}"><h4>${esc(upName(u))}${u.max>1?`<small>Lv ${l}/${u.max}</small>`:maxed?'<small style="color:var(--good)">Owned</small>':''}</h4><p>${esc(u.desc)}</p>${locked?`<button class="btn" disabled>${needs?`Needs ${esc(ru.name)} level ${ru.max} first`:`Unlocks at level ${u.lv}`}</button>`:maxed?'':`<button class="btn ${S.cash>=cost?'go':''}" data-buy="${id}" ${S.cash>=cost?'':'disabled'}>Buy · ${money(cost)}</button>`}</div>`}).join('')}</div>`).join('');
   v.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{buyUp(b.dataset.buy);renderUpgrades(v)});
 }
 function renderPacks(v){
@@ -7301,7 +7302,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-17.1959';
+const APP_VERSION = '2026-11-17.2008';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
