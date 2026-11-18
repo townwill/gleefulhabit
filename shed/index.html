@@ -4082,7 +4082,7 @@ function cuHTML(){
   if(!PROFILE)return '';const ap=approver();const mine=(S.customUps||[]);let h='';
   if(isApprover()){const req=OFF_IN.filter(o=>o.kind==='upgrade'&&o.status==='open');
     h+=`<h3 class="sech">Upgrade requests</h3>`+(req.length?`<div class="grid">${req.map(o=>{const u=cuClean(o.up)||{};const f=CU_FX[u.fx];return `<div class="up" data-cur="${esc(o.id)}"><h4>${u.ico} <input class="cuN" value="${esc(u.name)}" maxlength="40" style="font:inherit;width:70%;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:8px;padding:4px 6px"></h4>
-      <p class="note">From ${esc(o.fromName)}. ${esc(f?f.t:'')}</p><label>Amount <b class="cuAv">${u.amt}${f.u}</b><input type="range" class="cuA" min="${f.lo}" max="${f.hi}" step="${f.step}" value="${u.amt}" style="width:100%"></label>
+      <p class="note">From ${esc(o.fromName)}. ${esc(f?f.t:'')}. ${esc(o.fromName)} asked ${money(u.cost)} (suggested ${money(cuPrice(u.fx,u.amt))}).</p><label>Amount <b class="cuAv">${u.amt}${f.u}</b><input type="range" class="cuA" min="${f.lo}" max="${f.hi}" step="${f.step}" value="${u.amt}" style="width:100%"></label>
       <label>Price $<input type="number" class="cuC" value="${u.cost}" min="1000" step="1000" style="font:inherit;width:9em;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:8px;padding:4px 6px"></label>
       <div class="row2" style="justify-content:flex-start"><button class="btn go sm" data-cuok="${esc(o.id)}">Approve</button><button class="btn sm" data-cuno="${esc(o.id)}">Say no</button></div></div>`}).join('')}</div>`:`<p class="note">When Colton designs an upgrade, it shows up here for you to approve, change or turn down.</p>`)}
   else if(ap){const wait=OFF_OUT.filter(o=>o.kind==='upgrade'&&o.status==='open');
@@ -4091,6 +4091,7 @@ function cuHTML(){
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">${CU_ICONS.map((ic,i)=>`<button class="btn sm${i?'':' go'}" data-cui="${ic}">${ic}</button>`).join('')}</div>
       <label>What it does <select id="cuFx" style="font:inherit;padding:8px;border-radius:8px;background:var(--panel2);color:inherit">${Object.entries(CU_FX).map(([k,f])=>`<option value="${k}">${f.t}</option>`).join('')}</select></label>
       <label style="display:block;margin-top:8px">How much: <b id="cuAv"></b><input type="range" id="cuAmt" style="width:100%"></label>
+      <label style="display:block;margin-top:8px">Your price $<input type="number" id="cuCost" min="1000" step="1000" inputmode="numeric" style="font:inherit;width:10em;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:8px;padding:6px 8px"></label>
       <p id="cuSum" class="note"></p><button class="btn go" id="cuSend">Send to ${esc(ap.name)}</button></div>`
       +(wait.length?`<p class="note">Waiting for ${esc(ap.name)}: ${wait.map(o=>`${o.up.ico} ${esc(o.up.name)}`).join(', ')}</p>`:'')}
   const inc=OFF_IN.filter(o=>o.kind==='upshare'&&o.status==='open');
@@ -4108,12 +4109,14 @@ function cuWire(v){
   v.querySelectorAll('[data-curm]').forEach(b=>b.onclick=()=>{if(b.dataset.sure!=='1'){b.dataset.sure='1';b.textContent='Tap again to remove';return}S.customUps=(S.customUps||[]).filter(x=>x.id!==b.dataset.curm);delete S.up[b.dataset.curm];toast('Removed it.');save('now');renderUpgrades(v)});
   v.querySelectorAll('[data-cubuy]').forEach(b=>b.onclick=()=>{const u=(S.customUps||[]).find(x=>x.id===b.dataset.cubuy);if(!u||up(u.id)||S.cash<u.cost)return;S.cash-=u.cost;S.up[u.id]=1;toast(`Bought ${u.ico} ${u.name}!`,'good');save('now');updateHeader();renderUpgrades(v)});
   const mk=$('#cuMake',v);if(mk){let ico=CU_ICONS[0];const fx=$('#cuFx',v),am=$('#cuAmt',v);
-    const draw=()=>{const f=CU_FX[fx.value];if(+am.min!==f.lo||+am.max!==f.hi){am.min=f.lo;am.max=f.hi;am.step=f.step;am.value=f.lo}const a=+am.value;$('#cuAv',v).textContent=a+f.u;$('#cuSum',v).textContent=`${f.d(a)} Price: ${money(cuPrice(fx.value,a))} (${approver().name} can change it).`};
+    const cc=$('#cuCost',v);let typed=false;cc.oninput=()=>{typed=true;draw()};
+    const draw=()=>{const f=CU_FX[fx.value];if(+am.min!==f.lo||+am.max!==f.hi){am.min=f.lo;am.max=f.hi;am.step=f.step;am.value=f.lo}const a=+am.value,sug=cuPrice(fx.value,a);if(!typed)cc.value=sug;$('#cuAv',v).textContent=a+f.u;
+      $('#cuSum',v).textContent=`${f.d(a)} You pick the price; the suggested price is ${money(sug)}. ${approver().name} can still change it.`};
     fx.onchange=()=>{am.min=0;draw()};am.oninput=draw;am.min=0;draw();
     mk.querySelectorAll('[data-cui]').forEach(b=>b.onclick=()=>{ico=b.dataset.cui;mk.querySelectorAll('[data-cui]').forEach(x=>x.classList.toggle('go',x===b))});
-    $('#cuSend',v).onclick=async()=>{const name=$('#cuName',v).value.trim();if(!name){toast('Give your upgrade a name.');return}const u=cuClean({fx:fx.value,amt:+am.value,name,ico});if(await cuSend(u))renderUpgrades(v)}}
+    $('#cuSend',v).onclick=async()=>{const name=$('#cuName',v).value.trim();if(!name){toast('Give your upgrade a name.');return}const cost=Math.round(+cc.value||0);if(!(cost>=1000)){toast('Pick a price of at least $1,000.');return}const u=cuClean({fx:fx.value,amt:+am.value,name,ico,cost});if(await cuSend(u))renderUpgrades(v)}}
   v.querySelectorAll('[data-cur]').forEach(card=>{const o=OFF_IN.find(x=>x.id===card.dataset.cur);if(!o)return;const u0=cuClean(o.up),f=CU_FX[u0.fx];
-    const a=$('.cuA',card),c=$('.cuC',card);a.oninput=()=>{$('.cuAv',card).textContent=a.value+f.u;c.value=cuPrice(u0.fx,+a.value)};
+    const a=$('.cuA',card),c=$('.cuC',card);a.oninput=()=>{$('.cuAv',card).textContent=a.value+f.u};
     $('[data-cuok]',card).onclick=()=>cuAnswer(o,true,cuClean({...u0,name:$('.cuN',card).value.trim()||u0.name,amt:+a.value,cost:+c.value}));
     $('[data-cuno]',card).onclick=()=>cuAnswer(o,false,null,'')})}
 const key=c=>`${c.pid}.${c.year}.${c.par}${c.g?'.'+c.g:''}`;
@@ -7402,7 +7405,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-18.1410';
+const APP_VERSION = '2026-11-18.1433';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
