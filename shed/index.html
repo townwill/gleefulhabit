@@ -4067,6 +4067,14 @@ async function cuSend(u){const a=approver();if(!dbNS||!a){toast('Making upgrades
   const id='o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   try{await dbNS.doc('offers/'+id).set({kind:'upgrade',from:PROFILE.id,fromName:PROFILE.name,to:a.id,toName:a.name,up:u,give:[],want:[],gift:false,status:'open',at:Date.now()})}catch(e){toast("Couldn't send it. Try again.");return false}
   OFF_OUT=OFF_OUT.concat({id,kind:'upgrade',from:PROFILE.id,to:a.id,toName:a.name,up:u,status:'open'});toast(`Sent "${u.name}" to ${a.name} to approve.`,'good',6000);return true}
+async function cuShare(u,to){if(!dbNS){toast('Sending upgrades needs the online save.');return}
+  const id='o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);const def={...cuClean(u),src:u.src||u.id,by:u.by||PROFILE.name};
+  try{await dbNS.doc('offers/'+id).set({kind:'upshare',from:PROFILE.id,fromName:PROFILE.name,to:to.id,toName:to.name,up:def,give:[],want:[],gift:false,status:'open',at:Date.now()})}catch(e){toast("Couldn't send it. Try again.");return}
+  OFF_OUT=OFF_OUT.concat({id,kind:'upshare',to:to.id,toName:to.name,up:def,status:'open'});toast(`Sent "${def.name}" to ${to.name}.`,'good')}
+async function cuTake(o,ok){try{const ref=dbNS.doc('offers/'+o.id);const d=await ref.get();if(!d.exists||d.data().status!=='open'){toast('That one is gone.');return}await ref.update({status:ok?'accepted':'passed',doneAt:Date.now()})}catch(e){toast("Couldn't reach the mailbox. Try again.");return}
+  OFF_IN=OFF_IN.filter(x=>x.id!==o.id);
+  if(ok){const u=cuClean(o.up);if(u){S.customUps=S.customUps||[];const id='cu_'+String(o.up.src||o.id).replace(/^cu_/,'');if(!S.customUps.some(x=>x.id===id))S.customUps.push({id,...u,by:o.up.by||o.fromName});toast(`Added ${u.ico} ${u.name}. It's in Upgrades for ${money(u.cost)}.`,'good');save('now')}}
+  else toast(`Passed on "${o.up.name}".`);render()}
 async function cuAnswer(o,ok,u,note){try{const ref=dbNS.doc('offers/'+o.id);const d=await ref.get();if(!d.exists||d.data().status!=='open'){toast('That request is gone.');return}
     await ref.update(ok?{status:'accepted',up:u,doneAt:Date.now()}:{status:'passed',note:note||'',doneAt:Date.now()})}catch(e){toast("Couldn't reach the mailbox. Try again.");return}
   OFF_IN=OFF_IN.filter(x=>x.id!==o.id);toast(ok?`Approved "${u.name}" for ${o.fromName}.`:`Told ${o.fromName} no on "${o.up.name}".`,'good');render()}
@@ -4085,11 +4093,19 @@ function cuHTML(){
       <label style="display:block;margin-top:8px">How much: <b id="cuAv"></b><input type="range" id="cuAmt" style="width:100%"></label>
       <p id="cuSum" class="note"></p><button class="btn go" id="cuSend">Send to ${esc(ap.name)}</button></div>`
       +(wait.length?`<p class="note">Waiting for ${esc(ap.name)}: ${wait.map(o=>`${o.up.ico} ${esc(o.up.name)}`).join(', ')}</p>`:'')}
-  if(mine.length)h+=`<h3 class="sech">Made by ${esc(mine[0].by||'you')}</h3><div class="grid">${mine.map(u=>{const own=up(u.id)>0;return `<div class="up${own?' maxed':''}"><h4>${u.ico} ${esc(u.name)}${own?'<small style="color:var(--good)">Owned</small>':''}</h4><p>${esc(CU_FX[u.fx].d(u.amt))}</p>${own?'':`<button class="btn ${S.cash>=u.cost?'go':''}" data-cubuy="${esc(u.id)}" ${S.cash>=u.cost?'':'disabled'}>Buy · ${money(u.cost)}</button>`}</div>`}).join('')}</div>`;
+  const inc=OFF_IN.filter(o=>o.kind==='upshare'&&o.status==='open');
+  if(inc.length)h+=`<h3 class="sech">Upgrades sent to you</h3><div class="grid">${inc.map(o=>{const u=cuClean(o.up)||{};return `<div class="up"><h4>${u.ico} ${esc(u.name)}</h4><p>${esc(CU_FX[u.fx]?CU_FX[u.fx].d(u.amt):'')} Made by ${esc(o.up.by||o.fromName)}, sent by ${esc(o.fromName)}. Costs ${money(u.cost)} to buy.</p><div class="row2" style="justify-content:flex-start"><button class="btn go sm" data-cutake="${esc(o.id)}">Add it</button><button class="btn sm" data-cupass="${esc(o.id)}">No thanks</button></div></div>`}).join('')}</div>`;
+  const others=allProfiles().filter(x=>x.id!==PROFILE.id);
+  if(mine.length)h+=`<h3 class="sech">Custom upgrades</h3><div class="grid">${mine.map(u=>{const own=up(u.id)>0,madeMe=(u.by||'')===PROFILE.name;return `<div class="up${own?' maxed':''}"><h4>${u.ico} ${esc(u.name)}${own?'<small style="color:var(--good)">Owned</small>':''}</h4><p>${esc(CU_FX[u.fx].d(u.amt))} <span class="note">Made by ${esc(u.by||'you')}.</span></p>${own?'':`<button class="btn ${S.cash>=u.cost?'go':''}" data-cubuy="${esc(u.id)}" ${S.cash>=u.cost?'':'disabled'}>Buy · ${money(u.cost)}</button>`}
+    ${madeMe&&others.length&&dbNS?`<div class="row2" style="justify-content:flex-start">${others.map(x=>`<button class="btn sm" data-cushare="${esc(u.id)}" data-to="${esc(x.id)}">Send to ${esc(x.name)}</button>`).join('')}</div>`:''}
+    ${madeMe?'':`<div class="row2" style="justify-content:flex-start"><button class="btn sm" data-curm="${esc(u.id)}">Remove</button></div>`}</div>`}).join('')}</div>`;
   return h}
 // don't redraw the Upgrades page while someone is typing in a custom-upgrade form
 function cuBusy(){const a=document.activeElement,n=$('#cuName');return !!(a&&a.closest&&a.closest('#cuMake,[data-cur]'))||!!(n&&n.value.trim())}
 function cuWire(v){
+  v.querySelectorAll('[data-cutake],[data-cupass]').forEach(b=>b.onclick=()=>{const o=OFF_IN.find(x=>x.id===(b.dataset.cutake||b.dataset.cupass));if(o)cuTake(o,!!b.dataset.cutake)});
+  v.querySelectorAll('[data-cushare]').forEach(b=>b.onclick=()=>{const u=(S.customUps||[]).find(x=>x.id===b.dataset.cushare),to=allProfiles().find(x=>x.id===b.dataset.to);if(u&&to)cuShare(u,to)});
+  v.querySelectorAll('[data-curm]').forEach(b=>b.onclick=()=>{if(b.dataset.sure!=='1'){b.dataset.sure='1';b.textContent='Tap again to remove';return}S.customUps=(S.customUps||[]).filter(x=>x.id!==b.dataset.curm);delete S.up[b.dataset.curm];toast('Removed it.');save('now');renderUpgrades(v)});
   v.querySelectorAll('[data-cubuy]').forEach(b=>b.onclick=()=>{const u=(S.customUps||[]).find(x=>x.id===b.dataset.cubuy);if(!u||up(u.id)||S.cash<u.cost)return;S.cash-=u.cost;S.up[u.id]=1;toast(`Bought ${u.ico} ${u.name}!`,'good');save('now');updateHeader();renderUpgrades(v)});
   const mk=$('#cuMake',v);if(mk){let ico=CU_ICONS[0];const fx=$('#cuFx',v),am=$('#cuAmt',v);
     const draw=()=>{const f=CU_FX[fx.value];if(+am.min!==f.lo||+am.max!==f.hi){am.min=f.lo;am.max=f.hi;am.step=f.step;am.value=f.lo}const a=+am.value;$('#cuAv',v).textContent=a+f.u;$('#cuSum',v).textContent=`${f.d(a)} Price: ${money(cuPrice(fx.value,a))} (${approver().name} can change it).`};
@@ -6529,18 +6545,19 @@ function botMailTick(){if(S.level<4||document.hidden)return;const now=Date.now()
 function botAccept(o){const i=(S.inbox||[]).indexOf(o);if(i<0)return;if(botDo(o.bot,o.want,o.get)){S.inbox.splice(i,1);save(true);render()}else{S.inbox.splice(i,1);save(true);render()}}
 function botPass(o){const i=(S.inbox||[]).indexOf(o);if(i>=0)S.inbox.splice(i,1);toast(`${botInfo(o.bot).n}: "${pick(['No problem.','Your loss, kid.','Maybe next time.'])}"`);save(true);renderTabs();render()}
 /* ---- trades and gifts between players (through the online store) ---- */
-let offerUnsubs=[],offersFor=null,OFF_IN=[],OFF_OUT=[];const offerBusy=new Set();
+let offerUnsubs=[],offersFor=null,OFF_IN=[],OFF_OUT=[];const cuTold=new Set();const offerBusy=new Set();
 function watchOffers(id){if(!dbNS||!id||offersFor===id)return;offerUnsubs.forEach(u=>{try{u()}catch(e){}});offerUnsubs=[];offersFor=id;OFF_IN=[];OFF_OUT=[];
   const col=dbNS.collection('offers');
   const sub=(field,set)=>{try{offerUnsubs.push(col.where(field,'==',id).onSnapshot(snap=>{if(!PROFILE||PROFILE.id!==id)return;set(snap.docs.filter(d=>d.exists).map(d=>({...d.data(),id:d.id})));settleOffers()},()=>{offersFor=null}))}catch(e){offersFor=null}};
   sub('to',x=>OFF_IN=x);sub('from',x=>OFF_OUT=x)}
 function markDone(id){S.offerDone=S.offerDone||{};S.offerDone[id]=1;const ks=Object.keys(S.offerDone);if(ks.length>300)delete S.offerDone[ks[0]]}
 async function settleOffers(){if(!PROFILE||!dbNS)return;const me=PROFILE.id;S.offerDone=S.offerDone||{};let changed=false;
-  for(const o of OFF_IN){if(o.kind==='upgrade')continue;if(!(o.gift&&o.status==='open')||S.offerDone[o.id]||offerBusy.has(me+':'+o.id)||PROFILE.id!==me)continue;offerBusy.add(me+':'+o.id);
+  for(const o of OFF_IN){if(o.kind){if(o.status==='open'&&!cuTold.has(o.id)){cuTold.add(o.id);toast(o.kind==='upshare'?`📬 ${o.fromName} sent you an upgrade: ${o.up&&o.up.name}. See Upgrades.`:`📬 ${o.fromName} made an upgrade for you to approve: ${o.up&&o.up.name}. See Upgrades.`,'gold',8000)}continue}if(!(o.gift&&o.status==='open')||S.offerDone[o.id]||offerBusy.has(me+':'+o.id)||PROFILE.id!==me)continue;offerBusy.add(me+':'+o.id);
     markDone(o.id);takeBig(o.big);(o.give||[]).forEach(k=>addCard(fromKey(k),'gift'));changed=true;
     mailLog(`🎁 ${o.fromName} sent you ${cardsTxt(o.give)}.`);toast(`🎁 ${o.fromName} sent you ${plural(o.give.length,'card')}: ${cardsTxt(o.give)}!`,'gold',8000);
     try{await dbNS.doc('offers/'+o.id).update({status:'accepted',doneAt:Date.now()})}catch(e){}}
   for(const o of OFF_OUT){if(o.status==='open'||S.offerDone[o.id]||offerBusy.has(me+':'+o.id)||PROFILE.id!==me)continue;offerBusy.add(me+':'+o.id);markDone(o.id);changed=true;
+    if(o.kind==='upshare'){const nm=o.toName||'They',n=(o.up&&o.up.name)||'your upgrade';toast(o.status==='accepted'?`${nm} added "${n}" to their Upgrades.`:`${nm} passed on "${n}".`,'good',6000);mailLog(o.status==='accepted'?`${nm} added your upgrade "${n}".`:`${nm} passed on your upgrade "${n}".`);try{await dbNS.doc('offers/'+o.id).delete()}catch(e){}continue}
     if(o.kind==='upgrade'){cuSettle(o);try{await dbNS.doc('offers/'+o.id).delete()}catch(e){}continue}const nm=o.toName||'They';
     if(o.status==='accepted'){if(!o.gift){takeBig(o.wantBig);(o.want||[]).forEach(k=>addCard(fromKey(k),'trade'));S.stats.trades++;addXP(15);mailLog(`${nm} took your trade. You got ${cardsTxt(o.want)}.`);toast(`${nm} took your trade! You got ${cardsTxt(o.want)}.`,'gold',8000)}
       else mailLog(`${nm} got the ${plural(o.give.length,'card')} you sent.`)}
@@ -6590,12 +6607,12 @@ function offerRowHTML(x){const strip=ks=>itemsFrom(ks).map(it=>`<figure><canvas 
   return `<div class="orow"><div class="ohead"><span class="fico">${x.ico}</span><b>${esc(x.who)}</b>${x.note?`<span class="note">"${esc(x.note)}"</span>`:''}</div>
     <div class="oswap"><div class="oside"><small>You give · ${money(keysVal(x.give))}</small><div>${strip(x.give)}</div></div><div class="tarrow">⇄</div><div class="oside"><small>You get · ${money(keysVal(x.get))}</small><div>${strip(x.get)}</div></div></div>
     <div class="obtns">${x.btns}</div></div>`}
-function mailCount(){return (S.inbox||[]).length+OFF_IN.filter(o=>o.status==='open'&&!o.gift&&o.kind!=='upgrade').length}
+function mailCount(){return (S.inbox||[]).length+OFF_IN.filter(o=>o.status==='open'&&!o.gift&&!o.kind).length}
 function renderMailbox(el){const me=PROFILE.id,others=allProfiles().filter(p=>p.id!==me);
   const rows=[];
   (S.inbox||[]).forEach((o,i)=>{const b=botInfo(o.bot);rows.push(offerRowHTML({who:`${b.n} wants to trade`,ico:b.ico,note:o.note,give:o.want,get:o.get,btns:`<button class="btn go sm" data-ba="${i}">Trade</button><button class="btn sm" data-bc="${i}">Counter</button><button class="btn sm" data-bp="${i}">Pass</button>`}))});
-  OFF_IN.filter(o=>o.status==='open'&&!o.gift&&o.kind!=='upgrade').forEach(o=>rows.push(offerRowHTML({who:`${o.fromName} wants to trade`,ico:'📨',give:o.want,get:o.give,btns:`<button class="btn go sm" data-pa="${o.id}">Trade</button><button class="btn sm" data-pc="${o.id}">Counter</button><button class="btn sm" data-pp="${o.id}">Pass</button>`})));
-  const sent=OFF_OUT.filter(o=>o.status==='open'&&!o.gift&&o.kind!=='upgrade').map(o=>offerRowHTML({who:`Waiting for ${o.toName}`,ico:'⏳',give:o.give,get:o.want,btns:`<button class="btn sm" data-px="${o.id}">Cancel offer</button>`}));
+  OFF_IN.filter(o=>o.status==='open'&&!o.gift&&!o.kind).forEach(o=>rows.push(offerRowHTML({who:`${o.fromName} wants to trade`,ico:'📨',give:o.want,get:o.give,btns:`<button class="btn go sm" data-pa="${o.id}">Trade</button><button class="btn sm" data-pc="${o.id}">Counter</button><button class="btn sm" data-pp="${o.id}">Pass</button>`})));
+  const sent=OFF_OUT.filter(o=>o.status==='open'&&!o.gift&&!o.kind).map(o=>offerRowHTML({who:`Waiting for ${o.toName}`,ico:'⏳',give:o.give,get:o.want,btns:`<button class="btn sm" data-px="${o.id}">Cancel offer</button>`}));
   const pBtns=!dbNS?'<p class="note">Trading between players needs the online save.</p>':others.length?others.map(p=>`<button class="btn go" data-gift="${esc(p.id)}">🎁 Send cards to ${esc(p.name)}</button><button class="btn go" data-prop="${esc(p.id)}">🔄 Trade with ${esc(p.name)}</button>`).join(''):'<p class="note">Add another player to trade with them.</p>';
   el.innerHTML=`<div class="panel mail"><h3 class="sech" style="margin:0 0 6px">📬 Trade mailbox</h3>
     <div class="mbtns" style="margin-bottom:8px">${pBtns}</div>
@@ -7385,7 +7402,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-18.1405';
+const APP_VERSION = '2026-11-18.1410';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
