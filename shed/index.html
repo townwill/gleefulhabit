@@ -3783,6 +3783,7 @@ const UPGRADES = [
   {id:'machine',name:'Card Counter Machine',cost:800,max:10,grow:2.2,lv:4,desc:'Adds about 1 card every 2 seconds per level to your crew. Runs during shifts, and good cards still get set aside for you.'},
   {id:'shelf',name:'Extra Shelf',cost:150,max:4,grow:2,lv:5,desc:'Three more spots on the shop shelf.'},
   {id:'sign',name:'Neon OPEN Sign',cost:300,max:3,grow:2.2,lv:5,desc:'Customers come in more often.'},
+  {id:'counterpp',name:'Counter Plus Plus',cost:50000,max:1,lv:5,desc:'Every customer who walks in wants something that\'s on your Counter shelf.'},
   {id:'signplus',name:'Neon OPEN Sign Plus',cost:15000,max:3,grow:3,lv:5,req:'sign',desc:'A bigger, brighter sign out by the road. Customers come in even more often: each level is 20% sooner.'},
   {id:'brick',name:'Brick Grab',cost:1200,max:1,lv:6,desc:'Pick up 8 cards at a time.'},
   {id:'case',name:'Bigger Showcase',cost:600,max:3,grow:2.2,lv:5,desc:'Two more spots in your showcase for visitors to tip on.'},
@@ -6677,9 +6678,9 @@ function renderShowcase(){
 }
 
 function custInterval(){return showOn()?rnd(3500,6500):(26000-up('sign')*5500)*(1-.2*up('signplus'))*rnd(.6,1.4)}
-function genWant(){
+function genWant(forced){
   const shelfCards=S.shelf.map(fromKey);
-  const base=Math.random()<.65&&shelfCards.length?pick(shelfCards):rollCard({sport:pick(openSports())});
+  const base=forced||(Math.random()<.65&&shelfCards.length?pick(shelfCards):rollCard({sport:pick(openSports())}));
   const p=P[base.pid],tm=TEAMS[p.team][1];
   const opts=[
     {text:`Got any ${tm}? I'll take anything.`,m:c=>TEAMS[P[c.pid].team][1]===tm},
@@ -6694,13 +6695,15 @@ function genWant(){
     {text:`Point guards. Floor generals only.`,m:c=>P[c.pid].pos==='PG'},
     {text:`Graded cards only. Nothing below an 8.`,m:c=>c.g>=8},
   ];
-  return pick(opts);
+  // Counter Plus Plus: the customer is always after something that's on your shelf
+  return pick(forced?opts.filter(o=>o.m(forced)):opts);
 }
 const LINE_MAX=12;
 function lineFree(){const pr={};(S.line||[]).forEach(e=>e.items.forEach(x=>pr[x.k]=(pr[x.k]||0)+1));const seen={};return S.shelf.map((k,i)=>{seen[k]=(seen[k]||0)+1;return seen[k]>(pr[k]||0)?i:-1}).filter(i=>i>=0)}
 function spawnCustomer(now){
-  const [name,color]=pick(CUSTOMERS);const want=genWant();
+  const [name,color]=pick(CUSTOMERS);
   const free=up('line')?lineFree():S.shelf.map((k,i)=>i);
+  const want=up('counterpp')&&free.length?genWant(fromKey(S.shelf[pick(free)])):genWant();
   const idxs=free.filter(i=>want.m(fromKey(S.shelf[i])));
   cust={name,color,want:want.text,arrived:now};
   if(idxs.length){
@@ -7135,7 +7138,7 @@ function showCardModal(c,o={}){
 }
 
 function renderUpgrades(v){
-  const groups=[['Sorting by hand',['bins','fan','stack','brick']],['Help around the shed',['colton','machine','pizza','nopizza','mash','flipplus']],['Getting better money',['loupe','bulk','vip']],['Grading',['doctor','regrade','sleeves','express']],['The shop',['shelf','sign','signplus','clerk','line','case']],['Miscellaneous',['randbreak','recliner','megacounter','gemhunter','brainboost','goldpass']]];
+  const groups=[['Sorting by hand',['bins','fan','stack','brick']],['Help around the shed',['colton','machine','pizza','nopizza','mash','flipplus']],['Getting better money',['loupe','bulk','vip']],['Grading',['doctor','regrade','sleeves','express']],['The shop',['shelf','sign','signplus','counterpp','clerk','line','case']],['Miscellaneous',['randbreak','recliner','megacounter','gemhunter','brainboost','goldpass']]];
   v.innerHTML=groups.map(([g,ids])=>`<h3 class="sech">${g}</h3><div class="grid">${ids.map(id=>{const u=UPGRADES.find(x=>x.id===id);const l=up(id),ru=u.req&&UPGRADES.find(x=>x.id===u.req),needs=ru&&up(u.req)<ru.max,locked=S.level<u.lv||needs,maxed=l>=u.max,cost=upCost(u);
     return `<div class="up${locked?' locked':''}${maxed?' maxed':''}"><h4>${esc(upName(u))}${u.max>1?`<small>Lv ${l}/${u.max}</small>`:maxed?'<small style="color:var(--good)">Owned</small>':''}</h4><p>${esc(u.desc)}</p>${locked?`<button class="btn" disabled>${needs?`Needs ${esc(ru.name)} level ${ru.max} first`:`Unlocks at level ${u.lv}`}</button>`:maxed?'':`<button class="btn ${S.cash>=cost?'go':''}" data-buy="${id}" ${S.cash>=cost?'':'disabled'}>Buy · ${money(cost)}</button>`}</div>`}).join('')}</div>`).join('');
   v.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{buyUp(b.dataset.buy);renderUpgrades(v)});
@@ -7302,7 +7305,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-17.2008';
+const APP_VERSION = '2026-11-18.0631';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
