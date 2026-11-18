@@ -6307,7 +6307,9 @@ function renderEvents(){
   const ss=$('#startShow');if(ss)ss.onclick=startShow;
 }
 /* ---------- Want list (trade requests) + Card show floor ---------- */
-const WANT_KINDS=[['any','Any card'],['base','Base card'],['rc','Rookie card'],['shiny','Refractor'],['num','Numbered'],['auto','Autograph'],['relic','Jersey relic']];
+const WANT_KINDS=[['any','Any card'],['base','Base card'],['rc','Rookie card'],['shiny','Refractor'],['num','Numbered'],['auto','Autograph'],['relic','Jersey relic'],['one','1/1 Superfractor']];
+const WANT_ONE_EVERY=10000; // one 1/1 on the want list per 10,000 cards sorted
+const wantOneLeft=()=>Math.max(0,(S.wantOneNext||0)-S.stats.flips);
 const WANT_MAX=5;
 function wantKindsFor(p){return WANT_KINDS.filter(([k])=>k!=='relic'||p.end>=1997).filter(([k])=>k!=='num'||p.end>=1996)}
 function capTxt(c){return `${c.year} ${P[c.pid].name}${isRC(c)?' RC':''}${c.par?' · '+parName(c):''}${c.g?' · SH '+c.g:''}`}
@@ -6319,6 +6321,7 @@ function wantCard(w){
   let par={base:0,rc:0,shiny:2,auto:7,relic:8}[w.kind];
   if(w.kind==='num')par=wpick([3,4,5],x=>({3:60,4:30,5:10})[x]);
   if(w.kind==='any'){par=rollPar(2);if(par===6)par=2;if(par===8&&year<1997)par=1;if(par===9&&year<2000)par=7}
+  if(w.kind==='one'){const ly=Math.max(lo,1996);return p.end>=1996?{pid:p.id,year:ly+Math.floor(Math.random()*(hi-ly+1)),par:10}:{pid:p.id,year,par:15}}
   if(w.kind==='rc'){par=Math.random()<.7?0:wpick([1,2,3,7],x=>({1:40,2:35,3:15,7:10})[x]);if((par===3)&&year<1996)par=2}
   return {pid:p.id,year,par};
 }
@@ -6340,6 +6343,7 @@ function tickWants(){
 }
 function addWant(pid,kind){
   S.wants=S.wants||[];if(S.wants.length>=WANT_MAX){toast(`Your want list holds ${WANT_MAX} cards. Remove one first.`);return}
+  if(kind==='one'){if(wantOneLeft()>0){toast(`You can ask for one 1/1 every ${num(WANT_ONE_EVERY)} cards sorted. Next one in ${num(wantOneLeft())} more cards.`,'',7000);return}S.wantOneNext=S.stats.flips+WANT_ONE_EVERY}
   // quicker answers when a Trade Night is on or a clerk is working the phones
   S.wants.push({pid,kind,at:S.stats.flips+Math.round(rnd(120,320)),offer:null});
   toast(`Posted ${P[pid].name} on the want list. Someone will get back to you as you keep sorting.`);save(true);render();
@@ -6363,7 +6367,7 @@ function renderWants(){
   const dsig=sports.join();let dl=document.getElementById('wantNames');
   if(!dl||dl.dataset.s!==dsig){if(!dl){dl=document.createElement('datalist');dl.id='wantNames';document.body.appendChild(dl)}dl.dataset.s=dsig;dl.innerHTML=P.filter(p=>sports.includes(p.sport)).map(p=>p.name).sort().map(n=>`<option value="${esc(n)}">`).join('')}
   let h=`<div class="panel evt"><h3>Want list <small class="note">${S.wants.length}/${WANT_MAX}</small></h3>
-  <p>Missing a card? Post it here. Collectors answer as you keep sorting, and you can trade for it or buy it.</p>
+  <p>Missing a card? Post it here. Collectors answer as you keep sorting, and you can trade for it or buy it. You can ask for one 1/1 Superfractor every ${num(WANT_ONE_EVERY)} cards sorted${wantOneLeft()?`: next one in <b>${num(wantOneLeft())}</b> more cards`:': <b>one is ready now</b>'}.</p>
   <form class="wantf" id="wantForm"><input id="wantName" list="wantNames" placeholder="Player name" autocomplete="off" aria-label="Player name">
   <select id="wantKind" aria-label="What kind of card">${WANT_KINDS.map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select><button class="btn go" type="submit">Post it</button></form>`;
   if(S.wants.length)h+=`<div class="wants">${S.wants.map((w,i)=>{const p=P[w.pid],kl=(WANT_KINDS.find(x=>x[0]===w.kind)||[,''])[1];
@@ -6421,7 +6425,7 @@ function genFloor(){
   add('mo',n(8,()=>{const c=mk(rollCard({sport:sp(),tw:[10,25,30,22,13],parMul:3})).c;return {c,p:25,h:2,sold:false,hidden:true}}));
   // dealers bring cards from your want list about half the time
   {const M=T.find(t=>t.id==='mo');const avg=M.it.reduce((a,x)=>a+valueOf(x.c),0)/M.it.length;const mp=Math.max(5,Math.round(avg*.9/5)*5);M.it.forEach(x=>x.p=mp);M.hi=[`${money(mp)} a card. No peeking. That's the whole fun.`,`Most are okay. Some are great. ${money(mp)} each.`]}
-  (S.wants||[]).forEach(w=>{if(Math.random()<.5){const c=wantCard(w);const id=c.g?'sally':c.year<1990?'vic':c.par?'mike':isRC(c)?'rita':P[c.pid].sport;const t=T.find(x=>x.id===id)||T[0];t.it.unshift({...mk(c,rnd(1.25,1.4)),want:true})}});
+  (S.wants||[]).forEach(w=>{if(w.kind!=='one'&&Math.random()<.5){const c=wantCard(w);const id=c.g?'sally':c.year<1990?'vic':c.par?'mike':isRC(c)?'rita':P[c.pid].sport;const t=T.find(x=>x.id===id)||T[0];t.it.unshift({...mk(c,rnd(1.25,1.4)),want:true})}});
   T.forEach(t=>t.greet=pick(t.hi));
   return {v:2,tables:T,until:Date.now()+20*60000};
 }
@@ -6437,7 +6441,7 @@ const tbl=t=>t==='tom'?S.tom:S.floor.tables[t];
 const TOM_MS=30*60000;
 function genTom(){const mk=c=>{if(c.par===6)c.par=2;if(c.par===8&&c.year<1997)c.par=1;if(c.par===9&&c.year<2000)c.par=7;return c};
   const it=Array.from({length:10},()=>{const c=mk(rollCard({sport:pick(openSports()),tw:[0,10,30,35,25],parMul:3}));return {c,p:price(c,1),h:2,sold:false,tradeOnly:true}});
-  (S.wants||[]).forEach(w=>{if(Math.random()<.35){const c=mk(wantCard(w));it.unshift({c,p:price(c,1),h:2,sold:false,tradeOnly:true,want:true})}});
+  (S.wants||[]).forEach(w=>{if(w.kind!=='one'&&Math.random()<.35){const c=mk(wantCard(w));it.unshift({c,p:price(c,1),h:2,sold:false,tradeOnly:true,want:true})}});
   return {...DEALERS.tom,id:'tom',it:it.slice(0,12),mood:0,greet:pick(DEALERS.tom.hi),until:Date.now()+TOM_MS}}
 function tomFresh(){if(!S.tom||!S.tom.it||Date.now()>=S.tom.until||S.tom.it.every(x=>x.sold)){S.tom=genTom();save(true)}return S.tom}
 function renderTrade(v){
@@ -6637,7 +6641,7 @@ function renderMailbox(el){const me=PROFILE.id,others=allProfiles().filter(p=>p.
   el.querySelectorAll('[data-bot]').forEach(b=>b.onclick=()=>botBuilder(b.dataset.bot,null));
 }
 function floorGot(t,i){const it=tbl(t).it[i];it.sold=true;it.hidden=false;addCard(it.c,'show');addXP(5);
-  if(it.want&&S.wants){const j=S.wants.findIndex(w=>w.pid===it.c.pid);if(j>=0)S.wants.splice(j,1)}}
+  if(it.want&&S.wants){const j=S.wants.findIndex(w=>w.pid===it.c.pid&&w.kind!=='one');if(j>=0)S.wants.splice(j,1)}}
 function floorBuy(t,i){const it=tbl(t)&&tbl(t).it[i];if(!it||it.sold||it.tradeOnly)return false;if(S.cash<it.p){toast(`You need ${money(it.p)}.`);return false}
   const wasHidden=it.hidden;S.cash-=it.p;floorGot(t,i);save(true);updateHeader();
   if(wasHidden)toast(`${tbl(t).n}: "Let's see what you got..." It's a ${cardTitle(it.c)} worth ${money(valueOf(it.c))}!`,valueOf(it.c)>=it.p?'gold':'good',6000);
@@ -7405,7 +7409,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-18.1433';
+const APP_VERSION = '2026-11-18.1437';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
