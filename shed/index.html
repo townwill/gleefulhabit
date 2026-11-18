@@ -4050,7 +4050,10 @@ const CU_FX={
   gradefee:{t:'Cheaper grading',u:'%',lo:5,hi:50,step:5,per:5000,cap:75,d:a=>`Grading costs ${a}% less.`},
   gradefast:{t:'Faster grading',u:'%',lo:10,hi:70,step:10,per:4000,cap:80,d:a=>`Value and Priority grading come back ${a}% faster.`},
   shelf:{t:'More Counter spots',u:' spots',lo:1,hi:10,step:1,per:25000,cap:20,d:a=>`${a} more spot${a>1?'s':''} on the Counter shelf.`},
-  packs:{t:'Cheaper packs',u:'%',lo:5,hi:40,step:5,per:9000,cap:60,d:a=>`Every pack and box at Lenny's costs ${a}% less.`}};
+  packs:{t:'Cheaper packs',u:'%',lo:5,hi:40,step:5,per:9000,cap:60,d:a=>`Every pack and box at Lenny's costs ${a}% less.`},
+  showcase:{t:'Bigger showcase',u:' spots',lo:1,hi:10,step:1,per:20000,cap:20,d:a=>`${a} more spot${a>1?'s':''} in the showcase.`},
+  hand:{t:'More cards when sorting',u:' cards',lo:1,hi:8,step:1,per:40000,cap:8,d:a=>`Pick up ${a} more card${a>1?'s':''} at a time in the shed.`},
+  instabox:{t:'Instant box',u:'%',lo:1,hi:5,step:1,per:60000,cap:10,d:a=>`When you open a new box, a ${a}% chance it sorts itself on the spot: hits go to your binder, the rest gets sold as bulk.`}};
 const CU_ICONS=['🚀','⚡','🔥','💎','🧲','🎯','🛠️','🍀','👑','🦖','🤖','🌟'];
 const cuPrice=(fx,a)=>Math.round(CU_FX[fx].per*a/1000)*1000;
 const cuClean=u=>{if(!u||!CU_FX[u.fx])return null;const f=CU_FX[u.fx];const a=Math.max(f.lo,Math.min(f.hi,Math.round(+u.amt||0)));
@@ -4176,7 +4179,7 @@ function loadAside(){
   setTimeout(flip,60);
   save(true);
 }
-function batchSize(){return up('brick')?8:up('stack')?6:up('fan')?3:1}
+function batchSize(){return (up('brick')?8:up('stack')?6:up('fan')?3:1)+cuAmt('hand')}
 function autoRate(){return (up('colton')*.15+up('machine')*.6)*(up('recliner')?1.25:1)*(1+cuAmt('sort')/100)}
 const SHIFT=120;const shiftLen=()=>SHIFT+60*up('pizza');
 function crewName(){return up('colton')?helperWho():'The machine'}
@@ -4590,7 +4593,19 @@ function vaultReveal(cards,i){
     <div class="row2"><button class="btn go" id="vNext">${i+1<cards.length?'Next card':'See them all'}</button><button class="btn" id="vSkip">Skip to the end</button></div>`);
   const w=Math.min(220,innerWidth-80);const fc=flipCard(c,w,true);$('#vCard',m).appendChild(fc);setTimeout(()=>fc.classList.add('flipped'),350);
   $('#vNext',m).onclick=()=>{closeModal(true);next()};$('#vSkip',m).onclick=()=>{closeModal(true);vaultReveal(cards,cards.length)};setTimeout(()=>$('#vNext',m)?.focus(),300)}
-function pickBox(id){const b=(roomBoxes()||[]).find(x=>x.id===id);if(!b||b.left<=0)return;if(b.vault){closeModal(true);openVault(b);return}setCur(id);save(true);closeModal(true);render();updateHeader();toast(`Opened the "${b.label}" ${BOXW[S.loc][0]}.`)}
+function pickBox(id){const b=(roomBoxes()||[]).find(x=>x.id===id);if(!b||b.left<=0)return;if(b.vault){closeModal(true);openVault(b);return}setCur(id);
+  // Instant box (a custom upgrade): rolled once per box, the first time it's opened
+  if(!b.ir&&!b.loose&&cuAmt('instabox')){b.ir=true;if(Math.random()<cuAmt('instabox')/100){closeModal(true);instaSort(b);return}}
+  save(true);closeModal(true);render();updateHeader();toast(`Opened the "${b.label}" ${BOXW[S.loc][0]}.`)}
+// sort a whole box at once: hits and set needs go to the binder, everything else is sold as bulk
+function instaSort(b){const rate=up('bulk')?1:.5;let n=0,keep=0,bv=0,bn=0;const hits=[];if(hand.length){hand=[];phase='empty'}
+  while(b.left>0&&S.pile>0){const c=drawFromPile(false);if(!c)break;n++;S.stats.flips++;
+    if(isHit(c)||isOne(c)||helpsSet(c)||isSteam(c)){addCard(c,'auto');keep++;if(isHit(c))hits.push(c)}else{bv+=valueOf(c)*rate;bn++}}
+  bv=Math.round(bv*100)/100;S.cash+=bv;S.stats.sold+=bn;S.stats.earned+=bv;addXP(Math.round(n/2));
+  hits.sort((a,c)=>valueOf(c)-valueOf(a));
+  queueModal(()=>{const m=modal(`<h2>⚡ Instant box!</h2><p>The whole "${esc(b.label)}" ${BOXW[S.loc][0]} sorted itself: <b>${num(n)}</b> cards. <b>${num(keep)}</b> went to your binder and <b>${num(bn)}</b> were sold as bulk for <b style="color:var(--good)">${money(bv)}</b>.</p>${hits.length?`<p class="note">Best finds:</p><div class="gq" id="ibGrid" style="justify-content:center"></div>`:''}<div class="row2"><button class="btn go" data-close>Awesome</button></div>`);
+    const g=$('#ibGrid',m);if(g)hits.slice(0,6).forEach(c=>{const cv=document.createElement('canvas');drawCard(cv,c,80);cv.style.width='80px';cv.onclick=()=>showCardModal(c);g.appendChild(cv)})});
+  fanfare();save('now');render();updateHeader();renderTabs()}
 function showBoxPicker(){
   ensureBoxes();reconcileBoxes(S.loc);const list=roomBoxes();if(!list)return;const barn=S.loc==='barn',gar=S.loc==='garage';
   const tiles=list.map(b=>{const done=b.left<=0,cur=b.id===getCur(),started=b.left<b.total;
@@ -6247,7 +6262,7 @@ function openPack(id){
    ========================================================= */
 let cust=null,nextCust=Date.now()+4000;
 /* ---------- Showcase, Trade Night, Card Show ---------- */
-const scSlots=()=>4+2*up('case');
+const scSlots=()=>4+2*up('case')+cuAmt('showcase');
 // fill the case with your most valuable slabs (1/1s first); you can swap cards after
 function autoFillCase(){const n=scSlots();
   const ks=Object.keys(S.stacks).filter(k=>fromKey(k).g&&(S.stacks[k]-shelfCount(k))>0).sort((a,b)=>valueOf(fromKey(b))-valueOf(fromKey(a)));
@@ -7409,7 +7424,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-18.1437';
+const APP_VERSION = '2026-11-18.1442';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
