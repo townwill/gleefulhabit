@@ -14,6 +14,10 @@
   --body:'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', sans-serif;
   --type:'Special Elite', 'Courier New', Courier, monospace;
 }
+body.gma{--bg:#24161d;--wall:#2e1c25;--panel:#36222d;--panel2:#432b38;--line:#5c3f4f;--bulb:#ff9ec7;--bulb2:#ff7aa8;--board:#c99bb4;--board2:#a3768f}
+body.gma::before{background:radial-gradient(ellipse 70% 42% at 50% -6%,rgba(255,158,199,.22),transparent 70%),radial-gradient(circle at 12px 12px,rgba(255,190,220,.07) 0 4px,transparent 5px) 0 0/32px 32px,radial-gradient(circle at 28px 28px,rgba(190,255,220,.05) 0 3px,transparent 4px) 0 0/32px 32px,var(--bg)}
+body.gma .logo{color:var(--bulb);text-shadow:0 0 18px rgba(255,158,199,.4)}
+.loc.house{border-style:dashed}
 *{box-sizing:border-box}
 html,body{height:100%}
 /* the backdrop lives on its own fixed layer so scrolling never repaints it (fixed backgrounds are slow on iPad) */
@@ -182,7 +186,10 @@ button:focus-visible, input:focus-visible, select:focus-visible{outline:2px soli
 .loc{flex:1 1 180px;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 12px;display:flex;flex-direction:column;gap:1px}
 .loc b{font-size:17px}.loc span{font-size:13px;color:var(--muted)}
 .loc[aria-selected="true"]{border-color:var(--bulb);background:linear-gradient(180deg,rgba(255,198,92,.16),var(--panel))}
-.w-delight{background:conic-gradient(from 20deg,#ff3ca8,#ffe14d,#3cf0ff,#7a3cff,#ff3ca8);width:170px;height:170px;box-shadow:0 0 30px rgba(255,200,80,.5)}.w-delight b{color:#fff;text-shadow:0 2px 4px #000}.w-sretail{background:linear-gradient(160deg,#1f7a3a,#0b3d1c 60%,#f2f2f2)}.w-svintage{background:repeating-linear-gradient(135deg,#1f6b3a 0 16px,#e8e0c8 16px 32px)}.w-svintage b{color:#fff5d6}
+.w-delight{background:conic-gradient(from 20deg,#ff3ca8,#ffe14d,#3cf0ff,#7a3cff,#ff3ca8);width:170px;height:170px;box-shadow:0 0 30px rgba(255,200,80,.5)}.w-delight b{color:#fff;text-shadow:0 2px 4px #000}.w-nretail{background:linear-gradient(160deg,#d63384,#5a1a3d 60%,#f5d76e)}.w-nvintage{background:repeating-linear-gradient(135deg,#7a0f2e 0 16px,#f2e8cf 16px 32px)}.w-nvintage b{color:#fff5d6}
+.w-nblaster{background:linear-gradient(160deg,#ff7ab8,#5a1a3d 60%,#111);width:150px;height:170px}.w-nmega{background:linear-gradient(160deg,#ffc2dd,#7a2a55 60%,#111);width:160px;height:190px}.w-nhobbybox{background:linear-gradient(160deg,#1a0a12,#5a1a3d 40%,#d4af37);width:180px;height:150px}
+.w-delightn{background:conic-gradient(from 70deg,#d63384,#ffe14d,#f2f2f2,#6f42c1,#d63384)}
+.w-sretail{background:linear-gradient(160deg,#1f7a3a,#0b3d1c 60%,#f2f2f2)}.w-svintage{background:repeating-linear-gradient(135deg,#1f6b3a 0 16px,#e8e0c8 16px 32px)}.w-svintage b{color:#fff5d6}
 .w-sblaster{background:linear-gradient(160deg,#2fae5a,#0c3c1f 60%,#111);width:150px;height:170px}.w-smega{background:linear-gradient(160deg,#9be38f,#1d5c2e 60%,#111);width:160px;height:190px}.w-shobbybox{background:linear-gradient(160deg,#0b1a10,#1f4a2c 40%,#c9a13b);width:180px;height:150px}
 .w-delights{background:conic-gradient(from 110deg,#1f7a3a,#ffe14d,#f2f2f2,#3cf0ff,#1f7a3a)}.w-delightf{background:conic-gradient(from 110deg,#6b3e1f,#ffe14d,#1f7a3a,#3cf0ff,#6b3e1f)}.w-delightb{background:conic-gradient(from 200deg,#1f6fd1,#ffe14d,#c8102e,#3cf0ff,#1f6fd1)}
 .w-gscle{background:linear-gradient(160deg,#1D428A,#FFC72C 46%,#860038)}.w-gscle b{color:#fff}
@@ -474,7 +481,7 @@ body:has(.selbar) .wrap{padding-bottom:110px}body:has(.selbar) #toasts{bottom:12
 
 <div class="wrap">
   <header class="top">
-    <div class="logo">Grandpa's Shed<small id="logoSub">10,000 cards. One of them is the one.</small></div>
+    <div class="logo"><span id="logoName">Grandpa's Shed</span><small id="logoSub">10,000 cards. One of them is the one.</small></div>
     <div class="stats">
       <button class="player" id="playerBtn" title="Switch player"><span class="av" id="pAv">?</span><span id="pName">Player</span></button>
       <div class="stat cash"><small>Cash</small><b id="cash">$0.00</b></div>
@@ -3352,15 +3359,534 @@ Jackson Yueill|S_SJE|14|MF|2017|2026|1||kick||USA|
 Tommy Thompson|S_SJE|22|MF|2015|2023|1||run||USA|
 Cristian Espinoza|S_SJE|10|FW|2015|2026|2||run||ARG|
 Paul Child|S_SJE|9|FW|1970|1983|1||kick||ENG|`;
-const P = (RAW+'\n'+RAW_MLB+'\n'+RAW_NFL+'\n'+RAW_EXTRA+'\n'+RAW_SOC).split('\n').map((l,i,arr)=>{
+const RAW_GMA = `George Washington|N_PRES|42|PRES|1789|1797|5||||colonial|
+John Adams|N_PRES|20|PRES|1797|1801|3||||colonial|
+Thomas Jefferson|N_PRES|51|PRES|1801|1809|4||book||colonial|
+James Madison|N_PRES|84|PRES|1809|1817|3||book||colonial|
+James Monroe|N_PRES|7|PRES|1817|1825|2||||colonial|
+John Quincy Adams|N_PRES|10|PRES|1825|1829|2||||colonial|
+Andrew Jackson|N_PRES|69|PRES|1829|1837|3||||colonial|
+Martin Van Buren|N_PRES|13|PRES|1837|1841|1||||colonial|
+William Henry Harrison|N_PRES|47|PRES|1841|1841|1||||colonial|
+John Tyler|N_PRES|75|PRES|1841|1845|1||||suit|
+James K. Polk|N_PRES|8|PRES|1845|1849|2||||suit|
+Zachary Taylor|N_PRES|65|PRES|1849|1850|1||||suit|
+Millard Fillmore|N_PRES|28|PRES|1850|1853|1||||suit|
+Franklin Pierce|N_PRES|5|PRES|1853|1857|1||||suit|
+James Buchanan|N_PRES|12|PRES|1857|1861|1||||suit|
+Abraham Lincoln|N_PRES|56|PRES|1861|1865|5||book||suit|
+Andrew Johnson|N_PRES|54|PRES|1865|1869|1||||suit|
+Ulysses S. Grant|N_PRES|9|PRES|1869|1877|3||||suit|
+Rutherford B. Hayes|N_PRES|31|PRES|1877|1881|1||||suit|
+James A. Garfield|N_PRES|12|PRES|1881|1881|1||||suit|
+Chester A. Arthur|N_PRES|71|PRES|1881|1885|1||||suit|
+Grover Cleveland|N_PRES|55|PRES|1885|1897|2||||suit|
+Benjamin Harrison|N_PRES|8|PRES|1889|1893|1||||suit|
+William McKinley|N_PRES|73|PRES|1897|1901|2||||suit|
+Theodore Roosevelt|N_PRES|16|PRES|1901|1909|5||||suit|
+William Howard Taft|N_PRES|29|PRES|1909|1913|2||||suit|
+Woodrow Wilson|N_PRES|81|PRES|1913|1921|2||||suit|
+Warren G. Harding|N_PRES|81|PRES|1921|1923|1||||suit|
+Calvin Coolidge|N_PRES|75|PRES|1923|1929|2||||suit|
+Herbert Hoover|N_PRES|8|PRES|1929|1933|1||||suit|
+Franklin D. Roosevelt|N_PRES|74|PRES|1933|1945|5||||suit|
+Harry S. Truman|N_PRES|75|PRES|1945|1953|3||||suit|
+Dwight D. Eisenhower|N_PRES|51|PRES|1953|1961|4||||suit|
+John F. Kennedy|N_PRES|7|PRES|1961|1963|5||||suit|
+Lyndon B. Johnson|N_PRES|29|PRES|1963|1969|3||||suit|
+Richard Nixon|N_PRES|6|PRES|1969|1974|3||||suit|
+Gerald Ford|N_PRES|72|PRES|1974|1977|2||||suit|
+Jimmy Carter|N_PRES|18|PRES|1977|1981|3||||suit|
+Ronald Reagan|N_PRES|38|PRES|1981|1989|4||||suit|
+George H. W. Bush|N_PRES|54|PRES|1989|1993|3||||suit|
+Bill Clinton|N_PRES|19|PRES|1993|2001|4||sax||suit|
+George W. Bush|N_PRES|70|PRES|2001|2009|3||||suit|
+Barack Obama|N_PRES|16|PRES|2009|2017|5||||suit|
+Donald Trump|N_PRES|74|PRES|2017|2021|4||||suit|
+Joe Biden|N_PRES|40|PRES|2021|2025|3||||suit|
+Benjamin Franklin|N_HIST|72|HIST|1730|1790|5||book||colonial|
+Alexander Hamilton|N_HIST|88|HIST|1775|1804|5||book||colonial|
+John Hancock|N_HIST|24|HIST|1765|1793|3||book||colonial|
+Paul Revere|N_HIST|14|HIST|1765|1818|3||||colonial|
+Samuel Adams|N_HIST|75|HIST|1765|1803|2||||colonial|
+Patrick Henry|N_HIST|74|HIST|1765|1799|2||||colonial|
+Marquis de Lafayette|N_HIST|82|HIST|1777|1834|3||||colonial|
+Betsy Ross|N_HIST|25|HIST|1776|1836|3||||colonial|
+Abigail Adams|N_HIST|48|HIST|1764|1818|3||book||colonial|
+Martha Washington|N_HIST|13|HIST|1759|1802|2||||colonial|
+Sacagawea|N_HIST|71|HIST|1804|1812|3||||colonial|
+Meriwether Lewis|N_HIST|92|HIST|1803|1809|2||||colonial|
+William Clark|N_HIST|9|HIST|1803|1838|2||||colonial|
+Frederick Douglass|N_HIST|73|HIST|1838|1895|4||book||suit|
+Harriet Tubman|N_HIST|8|HIST|1849|1913|5||||dress|
+Susan B. Anthony|N_HIST|80|HIST|1852|1906|3||book||dress|
+Clara Barton|N_HIST|27|HIST|1861|1912|2||||dress|
+Booker T. Washington|N_HIST|64|HIST|1881|1915|2||book||suit|
+Amelia Earhart|N_HIST|88|HIST|1921|1937|4||||dress|
+Eleanor Roosevelt|N_HIST|69|HIST|1933|1962|3||book||dress|
+Martin Luther King Jr.|N_HIST|55|HIST|1955|1968|5||mic||suit|
+Rosa Parks|N_HIST|41|HIST|1955|2005|4||||dress|
+John Lewis|N_HIST|60|HIST|1960|2020|3||||suit|
+Ruth Bader Ginsburg|N_HIST|75|HIST|1972|2020|3||book||dress|
+Thurgood Marshall|N_HIST|59|HIST|1940|1991|2||book||suit|
+Helen Keller|N_HIST|47|HIST|1904|1968|2||book||dress|
+Jackie Kennedy|N_HIST|39|HIST|1961|1994|2||||dress|
+Winston Churchill|N_HIST|32|HIST|1940|1955|4||||suit|
+Queen Elizabeth II|N_HIST|24|HIST|1952|2022|4||||dress|
+Nelson Mandela|N_HIST|90|HIST|1994|2013|4||||suit|
+Mahatma Gandhi|N_HIST|32|HIST|1915|1948|4||||suit|
+Malala Yousafzai|N_HIST|11|HIST|2012|2026|3||book||dress|
+Pocahontas|N_HIST|74|HIST|1607|1617|2||||colonial|
+Christopher Columbus|N_HIST|39|HIST|1492|1504|2||||colonial|
+Joan of Arc|N_HIST|68|HIST|1429|1431|2||||colonial|
+Napoleon Bonaparte|N_HIST|64|HIST|1796|1815|3||||colonial|
+William Shakespeare|N_HIST|44|HIST|1590|1613|4||book||colonial|
+Mark Twain|N_HIST|94|HIST|1865|1910|3||book||suit|
+Dr. Seuss|N_HIST|58|HIST|1937|1991|3||book||suit|
+Walt Whitman|N_HIST|37|HIST|1855|1892|1||book||suit|
+Louis Armstrong|N_JAZZ|78|SING|1922|1971|5||tpt||suit|
+Duke Ellington|N_JAZZ|10|PNO|1923|1974|5||pno||suit|
+Bessie Smith|N_JAZZ|16|SING|1923|1937|4||mic||dress|
+Jelly Roll Morton|N_JAZZ|66|PNO|1915|1941|3||pno||suit|
+King Oliver|N_JAZZ|54|TPT|1918|1937|2||tpt||suit|
+Bix Beiderbecke|N_JAZZ|22|TPT|1923|1931|3||tpt||suit|
+Sidney Bechet|N_JAZZ|97|SAX|1919|1959|2||sax||suit|
+Fats Waller|N_JAZZ|44|PNO|1922|1943|3||pno||suit|
+Cab Calloway|N_JAZZ|20|SING|1928|1994|4||mic||suit|
+Benny Goodman|N_JAZZ|63|CLR|1926|1986|4||clr||suit|
+Count Basie|N_JAZZ|54|PNO|1929|1984|4||pno||suit|
+Billie Holiday|N_JAZZ|6|SING|1933|1959|5||mic||dress|
+Ella Fitzgerald|N_JAZZ|86|SING|1934|1993|5||mic||dress|
+Coleman Hawkins|N_JAZZ|10|SAX|1921|1969|2||sax||suit|
+Earl Hines|N_JAZZ|98|PNO|1923|1983|2||pno||suit|
+Fletcher Henderson|N_JAZZ|72|PNO|1921|1952|2||pno||suit|
+Paul Whiteman|N_JAZZ|74|VLN|1920|1967|2||vln||suit|
+Ma Rainey|N_JAZZ|41|SING|1923|1935|3||mic||dress|
+Artie Shaw|N_JAZZ|44|CLR|1932|1954|2||clr||suit|
+Glenn Miller|N_JAZZ|89|TPT|1935|1944|4||tpt||suit|
+Django Reinhardt|N_JAZZ|45|GTR|1928|1953|3||gtr||suit|
+Lil Hardin Armstrong|N_JAZZ|77|PNO|1921|1971|2||pno||dress|
+Josephine Baker|N_JAZZ|64|SING|1925|1975|3||mic||dress|
+Chick Webb|N_JAZZ|75|DRM|1926|1939|2||drm||suit|
+Gene Krupa|N_JAZZ|59|DRM|1927|1973|2||drm||suit|
+Lester Young|N_JAZZ|9|SAX|1933|1959|2||sax||suit|
+Art Tatum|N_JAZZ|12|PNO|1932|1956|2||pno||suit|
+James P. Johnson|N_JAZZ|35|PNO|1917|1955|1||pno||suit|
+Scott Joplin|N_JAZZ|61|PNO|1899|1917|3||pno||suit|
+George Gershwin|N_JAZZ|90|PNO|1919|1937|4||pno||suit|
+Dizzy Gillespie|N_JAZZ|86|TPT|1937|1993|3||tpt||suit|
+Charlie Parker|N_JAZZ|9|SAX|1940|1955|4||sax||suit|
+Miles Davis|N_JAZZ|8|TPT|1945|1991|4||tpt||suit|
+Thelonious Monk|N_JAZZ|94|PNO|1941|1976|2||pno||suit|
+Nat King Cole|N_JAZZ|90|SING|1937|1965|4||pno||suit|
+Sarah Vaughan|N_JAZZ|40|SING|1942|1990|2||mic||dress|
+Chuck Berry|N_R50|83|GTR|1955|2017|5||gtr||suit|
+Elvis Presley|N_R50|74|SING|1954|1977|5||gtr||suit|
+Little Richard|N_R50|88|PNO|1955|2020|4||pno||suit|
+Buddy Holly|N_R50|58|GTR|1956|1959|4||gtr||suit|
+Jerry Lee Lewis|N_R50|37|PNO|1956|2022|3||pno||suit|
+Fats Domino|N_R50|92|PNO|1949|2017|3||pno||suit|
+Bo Diddley|N_R50|50|GTR|1955|2008|2||gtr||suit|
+Ritchie Valens|N_R50|86|GTR|1958|1959|2||gtr||suit|
+Bill Haley|N_R50|45|GTR|1952|1981|2||gtr||suit|
+Roy Orbison|N_R50|3|GTR|1956|1988|3||gtr||suit|
+The Everly Brothers|N_R50|60|SING|1957|2005|2||gtr||band|
+Sam Cooke|N_R50|46|SING|1951|1964|3||mic||suit|
+Ray Charles|N_R50|22|PNO|1949|2004|4||pno||suit|
+Patsy Cline|N_R50|79|SING|1955|1963|3||mic||dress|
+Sister Rosetta Tharpe|N_R50|15|GTR|1938|1973|3||gtr||dress|
+Carl Perkins|N_R50|64|GTR|1954|1998|2||gtr||suit|
+Eddie Cochran|N_R50|8|GTR|1955|1960|1||gtr||suit|
+Big Mama Thornton|N_R50|28|SING|1951|1984|1||mic||dress|
+The Beatles|N_BEAT|99|BAND|1962|1970|5||gtr||band|
+John Lennon|N_BEAT|37|GTR|1960|1980|5||gtr||suit|
+Paul McCartney|N_BEAT|17|BASS|1960|2026|5||bass||suit|
+George Harrison|N_BEAT|95|GTR|1960|2001|4||gtr||suit|
+Ringo Starr|N_BEAT|32|DRM|1962|2026|4||drm||suit|
+George Martin|N_BEAT|51|PROD|1962|2016|2||||suit|
+Brian Epstein|N_BEAT|51|MGR|1961|1967|1||||suit|
+Pete Best|N_BEAT|64|DRM|1960|1962|1||drm||suit|
+Stuart Sutcliffe|N_BEAT|11|BASS|1960|1961|1||bass||suit|
+Mick Jagger|N_R60|22|SING|1962|2026|5||mic||suit|
+Keith Richards|N_R60|58|GTR|1962|2026|4||gtr||suit|
+Jimi Hendrix|N_R60|52|GTR|1963|1970|5||gtr||suit|
+Janis Joplin|N_R60|71|SING|1966|1970|4||mic||dress|
+Jim Morrison|N_R60|36|SING|1965|1971|4||mic||suit|
+Brian Wilson|N_R60|18|PNO|1961|2025|4||pno||suit|
+Bob Dylan|N_R60|56|GTR|1961|2026|5||gtr||suit|
+Pete Townshend|N_R60|71|GTR|1964|2026|3||gtr||suit|
+Roger Daltrey|N_R60|36|SING|1964|2026|3||mic||suit|
+Keith Moon|N_R60|91|DRM|1964|1978|3||drm||suit|
+Jerry Garcia|N_R60|54|GTR|1965|1995|3||gtr||suit|
+Grace Slick|N_R60|46|SING|1965|1989|2||mic||dress|
+Eric Clapton|N_R60|88|GTR|1963|2026|4||gtr||suit|
+Simon & Garfunkel|N_R60|49|SING|1964|1970|4||gtr||band|
+Carlos Santana|N_R60|30|GTR|1966|2026|3||gtr||suit|
+Joni Mitchell|N_R60|20|GTR|1964|2026|3||gtr||dress|
+The Monkees|N_R60|11|BAND|1966|1971|2||gtr||band|
+Roy Wood|N_R60|23|GTR|1966|1980|1||gtr||suit|
+Ray Davies|N_R60|20|GTR|1963|2026|2||gtr||suit|
+John Fogerty|N_R60|30|GTR|1967|2026|3||gtr||suit|
+Neil Young|N_R60|85|GTR|1966|2026|3||gtr||suit|
+Cass Elliot|N_R60|30|SING|1965|1974|2||mic||dress|
+Tina Turner|N_R60|2|SING|1960|2009|5||mic||dress|
+Cher|N_R60|63|SING|1965|2026|4||mic||dress|
+Aretha Franklin|N_SOUL|76|SING|1956|2017|5||pno||dress|
+Stevie Wonder|N_SOUL|24|PNO|1961|2026|5||pno||suit|
+Marvin Gaye|N_SOUL|34|SING|1961|1984|4||mic||suit|
+Diana Ross|N_SOUL|37|SING|1961|2026|4||mic||dress|
+Smokey Robinson|N_SOUL|1|SING|1958|2026|3||mic||suit|
+Otis Redding|N_SOUL|19|SING|1960|1967|3||mic||suit|
+James Brown|N_SOUL|54|SING|1956|2006|4||mic||suit|
+The Temptations|N_SOUL|69|BAND|1961|2026|3||mic||band|
+The Supremes|N_SOUL|48|BAND|1961|1977|3||mic||band|
+Gladys Knight|N_SOUL|79|SING|1952|2026|2||mic||dress|
+Al Green|N_SOUL|73|SING|1967|2026|2||mic||suit|
+Etta James|N_SOUL|41|SING|1954|2011|3||mic||dress|
+Whitney Houston|N_SOUL|17|SING|1985|2012|5||mic||dress|
+Lionel Richie|N_SOUL|89|PNO|1968|2026|3||pno||suit|
+Earth, Wind & Fire|N_SOUL|66|BAND|1969|2026|3||mic||band|
+Prince|N_SOUL|80|GTR|1978|2016|5||gtr||suit|
+Freddie Mercury|N_ROCK|84|SING|1970|1991|5||mic||suit|
+Brian May|N_ROCK|87|GTR|1970|2026|3||gtr||suit|
+Robert Plant|N_ROCK|95|SING|1968|2026|4||mic||suit|
+Jimmy Page|N_ROCK|7|GTR|1963|2026|4||gtr||suit|
+David Bowie|N_ROCK|59|SING|1964|2016|5||mic||suit|
+Elton John|N_ROCK|88|PNO|1969|2026|5||pno||suit|
+Billy Joel|N_ROCK|72|PNO|1971|2026|4||pno||suit|
+Bruce Springsteen|N_ROCK|51|GTR|1973|2026|5||gtr||suit|
+Stevie Nicks|N_ROCK|51|SING|1975|2026|4||mic||dress|
+Tom Petty|N_ROCK|52|GTR|1976|2017|4||gtr||suit|
+Ozzy Osbourne|N_ROCK|51|SING|1968|2025|3||mic||suit|
+Eddie Van Halen|N_ROCK|14|GTR|1972|2020|4||gtr||suit|
+Steven Tyler|N_ROCK|62|SING|1970|2026|3||mic||suit|
+Joan Jett|N_ROCK|82|GTR|1975|2026|3||gtr||dress|
+Debbie Harry|N_ROCK|52|SING|1974|2026|3||mic||dress|
+Bono|N_ROCK|8|SING|1976|2026|4||mic||suit|
+Kurt Cobain|N_ROCK|25|GTR|1987|1994|4||gtr||suit|
+Dave Grohl|N_ROCK|9|DRM|1987|2026|4||drm||suit|
+Eddie Vedder|N_ROCK|27|SING|1990|2026|3||mic||suit|
+Axl Rose|N_ROCK|57|SING|1985|2026|3||mic||suit|
+Slash|N_ROCK|21|GTR|1985|2026|3||gtr||suit|
+Jon Bon Jovi|N_ROCK|15|SING|1983|2026|3||mic||suit|
+Pat Benatar|N_ROCK|44|SING|1979|2026|2||mic||dress|
+Chris Martin|N_ROCK|77|PNO|1996|2026|3||pno||suit|
+Gwen Stefani|N_ROCK|7|SING|1986|2026|5||mic||dress|
+Tony Kanal|N_ROCK|14|BASS|1987|2026|2||bass||suit|
+Tom Dumont|N_ROCK|1|GTR|1988|2026|2||gtr||suit|
+Adrian Young|N_ROCK|73|DRM|1989|2026|2||drm||suit|
+No Doubt|N_ROCK|20|BAND|1986|2026|4||mic||band|
+Queen|N_ROCK|69|BAND|1970|1991|5||gtr||band|
+Led Zeppelin|N_ROCK|13|BAND|1968|1980|4||gtr||band|
+Fleetwood Mac|N_ROCK|47|BAND|1967|2026|4||gtr||band|
+Hall & Oates|N_ROCK|79|BAND|1970|2022|3||mic||band|
+Michael Jackson|N_POP|4|SING|1964|2009|5||mic||suit|
+Madonna|N_POP|10|SING|1982|2026|5||mic||dress|
+George Michael|N_POP|27|SING|1981|2016|4||mic||suit|
+Andrew Ridgeley|N_POP|79|GTR|1981|1986|2||gtr||suit|
+Wham!|N_POP|49|BAND|1981|1986|5||mic||band|
+Cyndi Lauper|N_POP|20|SING|1983|2026|3||mic||dress|
+Janet Jackson|N_POP|82|SING|1982|2026|4||mic||dress|
+Britney Spears|N_POP|33|SING|1998|2016|4||mic||dress|
+Justin Timberlake|N_POP|45|SING|1995|2026|3||mic||suit|
+Christina Aguilera|N_POP|78|SING|1999|2026|3||mic||dress|
+Beyonce|N_POP|47|SING|1997|2026|5||mic||dress|
+Taylor Swift|N_POP|61|GTR|2006|2026|5||gtr||dress|
+Lady Gaga|N_POP|16|PNO|2008|2026|4||pno||dress|
+Katy Perry|N_POP|15|SING|2008|2026|3||mic||dress|
+Bruno Mars|N_POP|63|SING|2010|2026|4||mic||suit|
+Ed Sheeran|N_POP|60|GTR|2011|2026|3||gtr||suit|
+Adele|N_POP|62|SING|2008|2026|4||mic||dress|
+Rihanna|N_POP|62|SING|2005|2026|4||mic||dress|
+Ariana Grande|N_POP|40|SING|2013|2026|3||mic||dress|
+Billie Eilish|N_POP|11|SING|2016|2026|4||mic||dress|
+Olivia Rodrigo|N_POP|19|GTR|2021|2026|3||gtr||dress|
+Harry Styles|N_POP|14|SING|2011|2026|3||mic||suit|
+Sabrina Carpenter|N_POP|96|SING|2015|2026|3||mic||dress|
+Shakira|N_POP|44|SING|1991|2026|3||mic||dress|
+Celine Dion|N_POP|95|SING|1981|2026|3||mic||dress|
+ABBA|N_POP|34|BAND|1972|2022|4||mic||band|
+The Jackson 5|N_POP|62|BAND|1964|1990|3||mic||band|
+Elvis Costello|N_POP|89|GTR|1977|2026|1||gtr||suit|
+Dolly Parton|N_CTRY|21|GTR|1964|2026|5||gtr||dress|
+Johnny Cash|N_CTRY|67|GTR|1954|2003|5||gtr||suit|
+Willie Nelson|N_CTRY|3|GTR|1956|2026|4||gtr||suit|
+Loretta Lynn|N_CTRY|27|SING|1960|2022|3||mic||dress|
+Hank Williams|N_CTRY|68|GTR|1937|1952|3||gtr||suit|
+Garth Brooks|N_CTRY|47|GTR|1989|2026|4||gtr||suit|
+Shania Twain|N_CTRY|19|SING|1993|2026|3||mic||dress|
+Reba McEntire|N_CTRY|89|SING|1976|2026|3||mic||dress|
+George Strait|N_CTRY|70|GTR|1981|2026|3||gtr||suit|
+Kenny Rogers|N_CTRY|4|SING|1958|2020|3||mic||suit|
+Carrie Underwood|N_CTRY|98|SING|2005|2026|2||mic||dress|
+Blake Shelton|N_CTRY|68|GTR|2001|2026|2||gtr||suit|
+Tim McGraw|N_CTRY|39|SING|1990|2026|2||mic||suit|
+Faith Hill|N_CTRY|83|SING|1993|2026|2||mic||dress|
+Chris Stapleton|N_CTRY|12|GTR|2001|2026|2||gtr||suit|
+Kacey Musgraves|N_CTRY|90|GTR|2002|2026|2||gtr||dress|
+Bing Crosby|N_HOLI|34|SING|1926|1977|5||mic||suit|
+Mariah Carey|N_HOLI|67|SING|1990|2026|5||mic||dress|
+Brenda Lee|N_HOLI|47|SING|1955|2026|3||mic||dress|
+Bobby Helms|N_HOLI|22|GTR|1956|1997|2||gtr||suit|
+Burl Ives|N_HOLI|46|GTR|1930|1995|3||gtr||suit|
+Gene Autry|N_HOLI|99|GTR|1929|1998|3||gtr||suit|
+Andy Williams|N_HOLI|29|SING|1952|2012|3||mic||suit|
+Perry Como|N_HOLI|69|SING|1933|2001|2||mic||suit|
+Dean Martin|N_HOLI|70|SING|1946|1995|3||mic||suit|
+Frank Sinatra|N_HOLI|65|SING|1935|1995|5||mic||suit|
+Eartha Kitt|N_HOLI|43|SING|1950|2008|2||mic||dress|
+Judy Garland|N_HOLI|82|SING|1935|1969|4||mic||dress|
+Vince Guaraldi|N_HOLI|29|PNO|1953|1976|3||pno||suit|
+Bobby Darin|N_HOLI|79|SING|1956|1973|2||mic||suit|
+Darlene Love|N_HOLI|98|SING|1962|2026|2||mic||dress|
+Jose Feliciano|N_HOLI|25|GTR|1963|2026|2||gtr||suit|
+Michael Buble|N_HOLI|31|SING|2003|2026|3||mic||suit|
+Pentatonix|N_HOLI|52|BAND|2011|2026|2||mic||band|
+The Ronettes|N_HOLI|95|BAND|1963|1967|2||mic||band|
+Trans-Siberian Orchestra|N_HOLI|30|BAND|1996|2026|2||gtr||band|
+Kelly Clarkson|N_HOLI|26|SING|2002|2026|2||mic||dress|
+Charlie Chaplin|N_ACT|67|ACT|1914|1967|5||||suit|
+Buster Keaton|N_ACT|64|ACT|1917|1966|3||||suit|
+Marilyn Monroe|N_ACT|46|ACT|1947|1962|5||||dress|
+Audrey Hepburn|N_ACT|94|ACT|1951|1989|4||||dress|
+James Dean|N_ACT|4|ACT|1951|1955|4||||suit|
+Humphrey Bogart|N_ACT|4|ACT|1934|1956|3||||suit|
+Cary Grant|N_ACT|36|ACT|1932|1966|3||||suit|
+Jimmy Stewart|N_ACT|61|ACT|1935|1991|4||||suit|
+John Wayne|N_ACT|34|ACT|1926|1976|4||||suit|
+Shirley Temple|N_ACT|25|ACT|1932|1949|3||||dress|
+Lucille Ball|N_ACT|89|ACT|1933|1989|4||||dress|
+Elizabeth Taylor|N_ACT|78|ACT|1942|2003|3||||dress|
+Fred Astaire|N_ACT|45|ACT|1933|1981|3||||suit|
+Ginger Rogers|N_ACT|58|ACT|1930|1987|2||||dress|
+Sidney Poitier|N_ACT|93|ACT|1950|2001|3||||suit|
+Julie Andrews|N_ACT|45|ACT|1964|2026|4||||dress|
+Dick Van Dyke|N_ACT|47|ACT|1959|2026|3||||suit|
+Steve McQueen|N_ACT|11|ACT|1956|1980|2||||suit|
+Harrison Ford|N_ACT|29|ACT|1966|2026|5||||suit|
+Michael J. Fox|N_ACT|14|ACT|1979|2020|4||gtr||suit|
+Christopher Lloyd|N_ACT|30|ACT|1975|2026|3||||suit|
+Tom Hanks|N_ACT|61|ACT|1980|2026|5||||suit|
+Meryl Streep|N_ACT|26|ACT|1977|2026|4||||dress|
+Denzel Washington|N_ACT|44|ACT|1977|2026|4||||suit|
+Robin Williams|N_ACT|27|ACT|1977|2014|5||||suit|
+Will Smith|N_ACT|62|ACT|1990|2026|3||||suit|
+Julia Roberts|N_ACT|80|ACT|1987|2026|3||||dress|
+Morgan Freeman|N_ACT|79|ACT|1964|2026|3||||suit|
+Leonardo DiCaprio|N_ACT|1|ACT|1991|2026|4||||suit|
+Dwayne Johnson|N_ACT|62|ACT|1999|2026|3||||suit|
+Sandra Bullock|N_ACT|84|ACT|1987|2026|3||||dress|
+Tom Cruise|N_ACT|45|ACT|1981|2026|4||||suit|
+Keanu Reeves|N_ACT|83|ACT|1985|2026|3||||suit|
+Zendaya|N_ACT|11|ACT|2010|2026|3||||dress|
+Timothee Chalamet|N_ACT|85|ACT|2012|2026|3||||suit|
+Mark Hamill|N_ACT|16|ACT|1970|2026|4||||suit|
+Carrie Fisher|N_ACT|50|ACT|1975|2016|4||||dress|
+Steven Spielberg|N_ACT|92|DIR|1971|2026|5||||suit|
+George Lucas|N_ACT|97|DIR|1971|2012|4||||suit|
+Alfred Hitchcock|N_ACT|26|DIR|1925|1976|3||||suit|
+Jim Henson|N_ACT|62|DIR|1955|1990|4||||suit|
+Fred Rogers|N_ACT|23|ACT|1968|2001|4||||suit|
+Bill Murray|N_ACT|56|ACT|1975|2026|3||||suit|
+Macaulay Culkin|N_ACT|82|ACT|1984|2026|3||||suit|
+Gene Kelly|N_ACT|43|ACT|1942|1976|3||||suit|
+Jack Black|N_ACT|12|ACT|1992|2026|3||gtr||suit|
+Jim Carrey|N_ACT|93|ACT|1983|2026|3||||suit|
+Lin-Manuel Miranda|N_BWAY|51|SING|2008|2026|5||book||suit|
+Leslie Odom Jr.|N_BWAY|60|SING|2006|2026|3||mic||suit|
+Renee Elise Goldsberry|N_BWAY|52|SING|1996|2026|3||mic||dress|
+Phillipa Soo|N_BWAY|96|SING|2012|2026|3||mic||dress|
+Daveed Diggs|N_BWAY|11|SING|2008|2026|3||mic||suit|
+Jonathan Groff|N_BWAY|93|SING|2006|2026|3||mic||suit|
+Christopher Jackson|N_BWAY|21|SING|2000|2026|2||mic||suit|
+Anthony Ramos|N_BWAY|22|SING|2012|2026|2||mic||suit|
+Okieriete Onaodowan|N_BWAY|17|SING|2008|2026|1||mic||suit|
+Jasmine Cephas Jones|N_BWAY|4|SING|2012|2026|1||mic||dress|
+Idina Menzel|N_BWAY|20|SING|1995|2026|4||mic||dress|
+Kristin Chenoweth|N_BWAY|76|SING|1997|2026|3||mic||dress|
+Bernadette Peters|N_BWAY|60|SING|1967|2026|2||mic||dress|
+Audra McDonald|N_BWAY|84|SING|1994|2026|3||mic||dress|
+Hugh Jackman|N_BWAY|19|SING|1994|2026|3||mic||suit|
+Patti LuPone|N_BWAY|79|SING|1972|2026|2||mic||dress|
+Andrew Lloyd Webber|N_BWAY|77|PNO|1968|2026|3||pno||suit|
+Stephen Sondheim|N_BWAY|61|PNO|1957|2021|3||pno||suit|
+Ethel Merman|N_BWAY|85|SING|1930|1984|2||mic||dress|
+Ben Platt|N_BWAY|45|SING|2011|2026|2||mic||suit|
+Cynthia Erivo|N_BWAY|20|SING|2013|2026|3||mic||dress|
+Ariana DeBose|N_BWAY|71|SING|2009|2026|2||mic||dress|
+Walt Disney|N_ANIM|71|DIR|1923|1966|5||book||suit|
+Ub Iwerks|N_ANIM|17|DIR|1922|1971|2||book||suit|
+Roy O. Disney|N_ANIM|3|DIR|1923|1971|2||||suit|
+Mary Blair|N_ANIM|2|DIR|1940|1978|2||book||dress|
+Stan Lee|N_ANIM|93|DIR|1939|2018|5||book||suit|
+Jack Kirby|N_ANIM|84|DIR|1936|1994|4||book||suit|
+Steve Ditko|N_ANIM|14|DIR|1953|2018|2||book||suit|
+John Lasseter|N_ANIM|68|DIR|1979|2026|2||book||suit|
+Pete Docter|N_ANIM|96|DIR|1990|2026|2||book||suit|
+Brad Bird|N_ANIM|18|DIR|1987|2026|2||book||suit|
+Hayao Miyazaki|N_ANIM|56|DIR|1963|2026|3||book||suit|
+Charles Schulz|N_ANIM|25|DIR|1950|2000|4||book||suit|
+Jim Davis|N_ANIM|28|DIR|1978|2026|2||book||suit|
+Bill Watterson|N_ANIM|4|DIR|1985|1995|3||book||suit|
+Tim Allen|N_ANIM|33|ACT|1985|2026|3||||suit|
+Robert Downey Jr.|N_ANIM|28|ACT|1970|2026|5||||suit|
+Chris Evans|N_ANIM|38|ACT|2000|2026|4||||suit|
+Scarlett Johansson|N_ANIM|65|ACT|1994|2026|4||||dress|
+Chadwick Boseman|N_ANIM|31|ACT|2003|2020|4||||suit|
+Tom Holland|N_ANIM|98|ACT|2008|2026|4||||suit|
+Chris Hemsworth|N_ANIM|76|ACT|2002|2026|3||||suit|
+Mark Ruffalo|N_ANIM|42|ACT|1989|2026|3||||suit|
+Samuel L. Jackson|N_ANIM|34|ACT|1972|2026|3||||suit|
+Brie Larson|N_ANIM|70|ACT|1998|2026|3||||dress|
+Chris Pratt|N_ANIM|54|ACT|2000|2026|3||||suit|
+Benedict Cumberbatch|N_ANIM|17|ACT|2001|2026|3||||suit|
+Kristen Bell|N_ANIM|8|ACT|1998|2026|3||||dress|
+Auli'i Cravalho|N_ANIM|95|SING|2016|2026|2||mic||dress|
+Ellen DeGeneres|N_ANIM|46|ACT|1984|2026|2||||dress|
+John Ratzenberger|N_ANIM|59|ACT|1970|2026|2||||suit|
+Billy Crystal|N_ANIM|85|ACT|1975|2026|3||||suit|
+Craig T. Nelson|N_ANIM|75|ACT|1971|2026|1||||suit|
+Holly Hunter|N_ANIM|67|ACT|1981|2026|2||||dress|
+Alan Menken|N_ANIM|54|PNO|1979|2026|3||pno||suit|
+Howard Ashman|N_ANIM|65|PNO|1974|1991|2||book||suit|
+Randy Newman|N_ANIM|17|PNO|1962|2026|3||pno||suit|
+Phil Collins|N_ANIM|69|DRM|1970|2026|3||drm||suit|
+Snow White and the Seven Dwarfs|N_FILM|20|FILM|1937|1937|4||||film|
+Pinocchio|N_FILM|68|FILM|1940|1940|3||||film|
+Fantasia|N_FILM|66|FILM|1940|1940|3||||film|
+Cinderella|N_FILM|3|FILM|1950|1950|3||||film|
+Peter Pan|N_FILM|57|FILM|1953|1953|3||||film|
+Lady and the Tramp|N_FILM|24|FILM|1955|1955|2||||film|
+Sleeping Beauty|N_FILM|78|FILM|1959|1959|2||||film|
+One Hundred and One Dalmatians|N_FILM|1|FILM|1961|1961|2||||film|
+Mary Poppins|N_FILM|20|FILM|1964|1964|3||||film|
+The Jungle Book|N_FILM|23|FILM|1967|1967|2||||film|
+Robin Hood|N_FILM|19|FILM|1973|1973|4||||film|
+The Little Mermaid|N_FILM|61|FILM|1989|1989|3||||film|
+Beauty and the Beast|N_FILM|80|FILM|1991|1991|3||||film|
+Aladdin|N_FILM|93|FILM|1992|1992|3||||film|
+The Lion King|N_FILM|16|FILM|1994|1994|4||||film|
+Toy Story|N_FILM|72|FILM|1995|1995|5||||film|
+A Bug's Life|N_FILM|8|FILM|1998|1998|1||||film|
+Toy Story 2|N_FILM|42|FILM|1999|1999|3||||film|
+Monsters, Inc.|N_FILM|88|FILM|2001|2001|3||||film|
+Finding Nemo|N_FILM|67|FILM|2003|2003|3||||film|
+The Incredibles|N_FILM|68|FILM|2004|2004|3||||film|
+Cars|N_FILM|72|FILM|2006|2006|3||||film|
+Ratatouille|N_FILM|62|FILM|2007|2007|2||||film|
+WALL-E|N_FILM|14|FILM|2008|2008|3||||film|
+Up|N_FILM|72|FILM|2009|2009|3||||film|
+Toy Story 3|N_FILM|8|FILM|2010|2010|3||||film|
+Frozen|N_FILM|32|FILM|2013|2013|4||||film|
+Inside Out|N_FILM|25|FILM|2015|2015|3||||film|
+Moana|N_FILM|36|FILM|2016|2016|3||||film|
+Coco|N_FILM|6|FILM|2017|2017|3||||film|
+Encanto|N_FILM|99|FILM|2021|2021|3||||film|
+Inside Out 2|N_FILM|13|FILM|2024|2024|2||||film|
+Iron Man|N_FILM|65|FILM|2008|2008|3||||film|
+The Avengers|N_FILM|58|FILM|2012|2012|3||||film|
+Guardians of the Galaxy|N_FILM|72|FILM|2014|2014|2||||film|
+Black Panther|N_FILM|4|FILM|2018|2018|3||||film|
+Avengers: Endgame|N_FILM|98|FILM|2019|2019|4||||film|
+Spider-Man: No Way Home|N_FILM|9|FILM|2021|2021|3||||film|
+Star Wars|N_FILM|57|FILM|1977|1977|5||||film|
+The Empire Strikes Back|N_FILM|42|FILM|1980|1980|4||||film|
+Return of the Jedi|N_FILM|79|FILM|1983|1983|3||||film|
+Back to the Future|N_FILM|65|FILM|1985|1985|5||||film|
+E.T. the Extra-Terrestrial|N_FILM|78|FILM|1982|1982|4||||film|
+Jaws|N_FILM|66|FILM|1975|1975|3||||film|
+Raiders of the Lost Ark|N_FILM|26|FILM|1981|1981|4||||film|
+Jurassic Park|N_FILM|89|FILM|1993|1993|4||||film|
+The Wizard of Oz|N_FILM|36|FILM|1939|1939|4||||film|
+It's a Wonderful Life|N_FILM|58|FILM|1946|1946|3||||film|
+A Christmas Story|N_FILM|66|FILM|1983|1983|3||||film|
+Home Alone|N_FILM|69|FILM|1990|1990|4||||film|
+Elf|N_FILM|62|FILM|2003|2003|3||||film|
+The Muppet Movie|N_FILM|65|FILM|1979|1979|2||||film|
+Hamilton|N_FILM|32|FILM|2020|2020|4||||film|
+The Sound of Music|N_FILM|90|FILM|1965|1965|3||||film|
+Ghostbusters|N_FILM|67|FILM|1984|1984|3||||film|
+The Princess Bride|N_FILM|34|FILM|1987|1987|3||||film|
+Neil Armstrong|N_SPACE|72|ASTRO|1962|1971|5||||suit|
+Buzz Aldrin|N_SPACE|26|ASTRO|1963|1971|4||||suit|
+Michael Collins|N_SPACE|58|ASTRO|1963|1970|3||||suit|
+John Glenn|N_SPACE|18|ASTRO|1959|1998|4||||suit|
+Alan Shepard|N_SPACE|54|ASTRO|1959|1974|3||||suit|
+Yuri Gagarin|N_SPACE|16|ASTRO|1960|1968|4||||suit|
+Sally Ride|N_SPACE|51|ASTRO|1978|1987|4||||dress|
+Mae Jemison|N_SPACE|57|ASTRO|1987|1993|3||||dress|
+Katherine Johnson|N_SPACE|41|SCI|1953|1986|3||book||dress|
+Jim Lovell|N_SPACE|10|ASTRO|1962|1973|3||||suit|
+Gene Cernan|N_SPACE|86|ASTRO|1963|1976|2||||suit|
+Valentina Tereshkova|N_SPACE|31|ASTRO|1962|1997|2||||dress|
+Chris Hadfield|N_SPACE|55|ASTRO|1992|2013|2||gtr||suit|
+Peggy Whitson|N_SPACE|10|ASTRO|1996|2018|2||||dress|
+Christina Koch|N_SPACE|28|ASTRO|2013|2026|2||||dress|
+Wernher von Braun|N_SPACE|86|SCI|1945|1972|1||book||suit|
+Thomas Edison|N_SCI|39|SCI|1869|1931|5||book||suit|
+Nikola Tesla|N_SCI|16|SCI|1882|1943|4||book||suit|
+Albert Einstein|N_SCI|20|SCI|1905|1955|5||book||suit|
+Marie Curie|N_SCI|92|SCI|1896|1934|4||book||dress|
+Orville Wright|N_SCI|83|SCI|1899|1948|3||||suit|
+Wilbur Wright|N_SCI|85|SCI|1899|1912|3||||suit|
+Alexander Graham Bell|N_SCI|47|SCI|1874|1922|3||book||suit|
+Henry Ford|N_SCI|19|SCI|1896|1947|3||||suit|
+Isaac Newton|N_SCI|33|SCI|1665|1727|4||book||colonial|
+Galileo Galilei|N_SCI|18|SCI|1589|1642|3||book||colonial|
+Charles Darwin|N_SCI|60|SCI|1831|1882|3||book||suit|
+George Washington Carver|N_SCI|29|SCI|1896|1943|3||book||suit|
+Ada Lovelace|N_SCI|96|SCI|1833|1852|3||book||dress|
+Jane Goodall|N_SCI|13|SCI|1960|2025|3||book||dress|
+Steve Jobs|N_SCI|51|SCI|1976|2011|5||||suit|
+Steve Wozniak|N_SCI|63|SCI|1976|2026|3||||suit|
+Bill Gates|N_SCI|21|SCI|1975|2026|3||||suit|
+Grace Hopper|N_SCI|86|SCI|1944|1986|3||book||dress|
+Leonardo da Vinci|N_SCI|29|SCI|1472|1519|5||book||colonial|
+Stephen Hawking|N_SCI|21|SCI|1965|2018|4||book||suit|
+Carl Sagan|N_SCI|91|SCI|1960|1996|3||book||suit|
+Jonas Salk|N_SCI|56|SCI|1947|1995|2||book||suit|
+Hedy Lamarr|N_SCI|66|SCI|1933|1958|2||book||dress|
+Bill Nye|N_SCI|52|SCI|1986|2026|2||book||suit|
+Alexander Hamilton & Lin-Manuel Miranda|N_DUAL|44|DUAL|2015|2026|5||book||dual|
+George Washington & Christopher Jackson|N_DUAL|54|DUAL|2015|2026|3||||dual|
+Aaron Burr & Leslie Odom Jr.|N_DUAL|26|DUAL|2015|2026|3||mic||dual|
+Thomas Jefferson & Daveed Diggs|N_DUAL|46|DUAL|2015|2026|3||mic||dual|
+John Lennon & Paul McCartney|N_DUAL|41|DUAL|1962|1970|5||gtr||dual|
+George Michael & Andrew Ridgeley|N_DUAL|12|DUAL|1981|1986|4||mic||dual|
+Gwen Stefani & Tony Kanal|N_DUAL|93|DUAL|1987|2026|3||mic||dual|
+Lewis & Clark|N_DUAL|47|DUAL|1804|1806|3||||dual|
+Orville & Wilbur Wright|N_DUAL|3|DUAL|1903|1912|4||||dual|
+George Washington & Marquis de Lafayette|N_DUAL|44|DUAL|1777|1781|3||||dual|
+Abraham Lincoln & Frederick Douglass|N_DUAL|71|DUAL|1863|1865|4||book||dual|
+Neil Armstrong & Buzz Aldrin|N_DUAL|59|DUAL|1969|1969|5||||dual|
+Louis Armstrong & Ella Fitzgerald|N_DUAL|57|DUAL|1946|1957|4||tpt||dual|
+Bing Crosby & David Bowie|N_DUAL|91|DUAL|1977|1977|4||mic||dual|
+Johnny Cash & June Carter Cash|N_DUAL|3|DUAL|1961|2003|3||gtr||dual|
+Dolly Parton & Kenny Rogers|N_DUAL|50|DUAL|1983|1985|3||mic||dual|
+Lucille Ball & Desi Arnaz|N_DUAL|43|DUAL|1951|1960|3||||dual|
+Steve Jobs & Steve Wozniak|N_DUAL|67|DUAL|1976|1985|4||||dual|
+Fred Astaire & Ginger Rogers|N_DUAL|80|DUAL|1933|1949|3||||dual|
+Michael J. Fox & Christopher Lloyd|N_DUAL|38|DUAL|1985|1990|4||||dual|
+Walt Disney & Ub Iwerks|N_DUAL|66|DUAL|1928|1930|4||book||dual|
+Stan Lee & Jack Kirby|N_DUAL|9|DUAL|1961|1970|4||book||dual|
+Mariah Carey & Walter Afanasieff|N_DUAL|15|DUAL|1994|1994|3||mic||dual|
+Elton John & Bernie Taupin|N_DUAL|30|DUAL|1967|2026|3||pno||dual|
+Freddie Mercury & Brian May|N_DUAL|14|DUAL|1970|1991|4||gtr||dual|`;
+const P = (RAW+'\n'+RAW_MLB+'\n'+RAW_NFL+'\n'+RAW_EXTRA+'\n'+RAW_SOC+'\n'+RAW_GMA).split('\n').map((l,i,arr)=>{
   const [name,team,num,pos,s,e,tier,m,pose,x,nat,wm]=l.split('|');
-  const o={id:i,name,team,num,pos,start:+s,end:+e,tier:+tier,mvp:m==='M',pose,alt:x==='A',sport:team.startsWith('M_')?'mlb':team.startsWith('F_')?'nfl':team.startsWith('H_')?'nhl':team.startsWith('S_')?'soc':'nba'};
-  if(o.sport==='soc'){o.nat=nat;o.women=wm==='W'}return o;
+  const o={id:i,name,team,num,pos,start:+s,end:+e,tier:+tier,mvp:m==='M',pose,alt:x==='A',sport:team.startsWith('M_')?'mlb':team.startsWith('F_')?'nfl':team.startsWith('H_')?'nhl':team.startsWith('S_')?'soc':team.startsWith('N_')?'ns':'nba'};
+  if(o.sport==='soc'){o.nat=nat;o.women=wm==='W'}if(o.sport==='ns'){o.fig=nat||'suit';o.women=o.fig==='dress'}return o;
 });
 const BY_NAME = {};P.forEach(p=>{if(!(p.name in BY_NAME))BY_NAME[p.name]=p}); // first one wins (two Reggie Jacksons)
-const BY_TIER_S = {nba:{1:[],2:[],3:[],4:[],5:[]},mlb:{1:[],2:[],3:[],4:[],5:[]},nfl:{1:[],2:[],3:[],4:[],5:[]},nhl:{1:[],2:[],3:[],4:[],5:[]},soc:{1:[],2:[],3:[],4:[],5:[]}};
+const BY_TIER_S = {nba:{1:[],2:[],3:[],4:[],5:[]},mlb:{1:[],2:[],3:[],4:[],5:[]},nfl:{1:[],2:[],3:[],4:[],5:[]},nhl:{1:[],2:[],3:[],4:[],5:[]},soc:{1:[],2:[],3:[],4:[],5:[]},ns:{1:[],2:[],3:[],4:[],5:[]}};
 P.forEach(p=>BY_TIER_S[p.sport][p.tier].push(p));
 const BY_TIER = BY_TIER_S.nba;
+/* ---------- Grandma's collection: non-sports ---------- */
+Object.assign(TEAMS,{"N_PRES": ["American", "Presidents", "#1f3b73", "#b31942", "PRES"], "N_HIST": ["Founders &", "History Makers", "#6b4a2b", "#e8d8b0", "HIST"], "N_JAZZ": ["Jazz Age", "Legends", "#2a1a3d", "#d4a64a", "JAZZ"], "N_R50": ["Rock & Roll", "Pioneers", "#a3262a", "#f2c14e", "R&R"], "N_R60": ["Sixties", "Rock", "#e0662b", "#2a9d8f", "60s"], "N_BEAT": ["The", "Beatles", "#151515", "#e9e4d4", "BTLS"], "N_SOUL": ["Motown &", "Soul", "#5a2d82", "#f2b134", "SOUL"], "N_ROCK": ["Rock", "Legends", "#262626", "#c9c9c9", "ROCK"], "N_POP": ["Pop", "Stars", "#d63384", "#6f42c1", "POP"], "N_CTRY": ["Country", "Stars", "#8a5a2b", "#f3d9a4", "CTRY"], "N_HOLI": ["Holiday", "Hits", "#b3202b", "#1f6b3a", "XMAS"], "N_ACT": ["Hollywood", "Stars", "#1c1c1c", "#d4af37", "STAR"], "N_BWAY": ["Broadway", "Stars", "#7a0f2e", "#f5d76e", "BWAY"], "N_ANIM": ["Animation &", "Comics", "#0b4f9c", "#ffd23f", "TOON"], "N_FILM": ["Movie", "Posters", "#3b2f2f", "#f2e8cf", "FILM"], "N_SPACE": ["Space", "Explorers", "#0b1d3a", "#9ad1ff", "NASA"], "N_SCI": ["Inventors &", "Scientists", "#2d5a3d", "#f0e6c8", "SCI"], "N_DUAL": ["Dual", "Autographs", "#3a3a3a", "#ffd700", "DUAL"]});
+const NS_TW=[3,35,35,17,10];
+const GMA_ONES=[["The Beatles", 1964], ["Gwen Stefani", 1995], ["Alexander Hamilton & Lin-Manuel Miranda", 2015], ["Wham!", 1984], ["Chuck Berry", 1958], ["George Washington", 1789], ["Abraham Lincoln", 1863], ["Elvis Presley", 1956], ["Louis Armstrong", 1928], ["Mariah Carey", 1994], ["Bing Crosby", 1942], ["Michael Jackson", 1982], ["Walt Disney", 1928], ["Stan Lee", 1962], ["Frank Sinatra", 1955], ["Benjamin Franklin", 1776], ["Ella Fitzgerald", 1956], ["Jimi Hendrix", 1967], ["Dolly Parton", 1973], ["Taylor Swift", 2014]];
+const gmaOne=i=>{const [n,y]=GMA_ONES[i];return {pid:P.find(p=>p.name===n&&p.sport==='ns').id,year:y,par:6}};
+
 
 /* =========================================================
    THE OLD STADIUM: 500,000 soccer cards
@@ -3548,12 +4074,12 @@ function hockeyOlyCard(pid){if(pid==null||!HOLY[pid])pid=wpick(HOLY_PIDS,id=>[0,
 const tOf=c=>P[c.pid].sport==='soc'&&(c.par===11||c.par===12)?(c.par===12?SUSA_T:SOC_NAT_T[socChampNat(c.pid,c.year)]||TEAMS[P[c.pid].team]):c.par===14&&HNAT[c.pid]?OLY_T[HNAT[c.pid]]:c.par===12?USA_T:c.par===13&&COLLEGE_OF[c.pid]?COLLEGES[COLLEGE_OF[c.pid]]:TEAMS[P[c.pid].team];
 function usaCard(pid){if(pid==null||!OLY_OF[pid])pid=wpick(OLY_PIDS,id=>[0,1,2,3,4,6][P[id].tier]);return {pid,year:pick(OLY_OF[pid]),par:12}}
 function collegeCard(pid){if(pid==null||!COLLEGE_OF[pid])pid=wpick(COLLEGE_PIDS,id=>[0,1,2,3,4,6][P[id].tier]);return {pid,year:P[pid].start,par:13}}
-const LOCS={shed:{name:'Shed',long:"Grandpa's Shed",sport:'nba',size:10000,label:'Basketball'},attic:{name:'Attic',long:"Grandpa's Attic",sport:'mlb',size:25000,label:'Baseball'},barn:{name:'Barn',long:"Grandpa's Barn",sport:'nfl',size:50000,label:'Football'},garage:{name:'Garage',long:"Grandpa's Garage",sport:'nba',size:75000,label:'Basketball'},basement:{name:'Basement',long:"Grandpa's Basement",sport:'mix',size:100000,label:'Lost teams'},rink:{name:'Ice Rink',long:'The Old Ice Rink',sport:'nhl',size:250000,label:'Hockey'},stadium:{name:'Stadium',long:'The Old Stadium',sport:'soc',size:500000,label:'Soccer'}};
-const LOOSE_ID={attic:'loose',barn:'floose',garage:'gloose',rink:'rloose',stadium:'zloose'},BOXW={attic:['box','boxes'],barn:['crate','crates'],garage:['bin','bins'],rink:['box','boxes'],stadium:['locker','lockers']};
-const packLoc=sp=>sp==='nba'&&S.garageOpen?'garage':sp==='nhl'?(S.rinkOpen?'rink':null):sp==='soc'?(S.stadiumOpen?'stadium':null):SPORT_LOC[sp]||'shed';
-const SPORT_LOC={nba:'shed',mlb:'attic',nfl:'barn',nhl:'rink',soc:'stadium'},SPORT_WORD={nba:'Basketball',mlb:'Baseball',nfl:'Football',nhl:'Hockey',soc:'Soccer'},SPORT_ICON={nba:'🏀',mlb:'⚾',nfl:'🏈',nhl:'🏒',soc:'⚽'};
+const LOCS={shed:{name:'Shed',long:"Grandpa's Shed",sport:'nba',size:10000,label:'Basketball'},attic:{name:'Attic',long:"Grandpa's Attic",sport:'mlb',size:25000,label:'Baseball'},barn:{name:'Barn',long:"Grandpa's Barn",sport:'nfl',size:50000,label:'Football'},garage:{name:'Garage',long:"Grandpa's Garage",sport:'nba',size:75000,label:'Basketball'},basement:{name:'Basement',long:"Grandpa's Basement",sport:'mix',size:100000,label:'Lost teams'},rink:{name:'Ice Rink',long:'The Old Ice Rink',sport:'nhl',size:250000,label:'Hockey'},stadium:{name:'Stadium',long:'The Old Stadium',sport:'soc',size:500000,label:'Soccer'},grandma:{name:"Grandma's",long:"Grandma's House",sport:'ns',size:750000,label:'Non-sports'}};
+const LOOSE_ID={attic:'loose',barn:'floose',garage:'gloose',rink:'rloose',stadium:'zloose',grandma:'nloose'},BOXW={attic:['box','boxes'],barn:['crate','crates'],garage:['bin','bins'],rink:['box','boxes'],stadium:['locker','lockers'],grandma:['hatbox','hatboxes']};
+const packLoc=sp=>sp==='nba'&&S.garageOpen?'garage':sp==='nhl'?(S.rinkOpen?'rink':null):sp==='soc'?(S.stadiumOpen?'stadium':null):sp==='ns'?(S.gmaOpen?'grandma':null):SPORT_LOC[sp]||'shed';
+const SPORT_LOC={nba:'shed',mlb:'attic',nfl:'barn',nhl:'rink',soc:'stadium',ns:'grandma'},SPORT_WORD={nba:'Basketball',mlb:'Baseball',nfl:'Football',nhl:'Hockey',soc:'Soccer',ns:'Non-sports'},SPORT_ICON={nba:'🏀',mlb:'⚾',nfl:'🏈',nhl:'🏒',soc:'⚽',ns:'🎭'};
 const locOf=pid=>{const p=P[pid];if(p.sport==='nhl'&&typeof DEF!=='undefined'&&DEF[p.team])return 'basement';return SPORT_LOC[p.sport]||'shed'};
-function openSports(){return ['nba'].concat(S.atticOpen?['mlb']:[],S.barnOpen?['nfl']:[],S.basementOpen?['nhl']:[],S.stadiumOpen?['soc']:[])}
+function openSports(){return ['nba'].concat(S.atticOpen?['mlb']:[],S.barnOpen?['nfl']:[],S.basementOpen?['nhl']:[],S.stadiumOpen?['soc']:[],S.gmaOpen?['ns']:[])}
 
 // the Giants' three title teams (used by the Champs cards and the Champs sets)
 // ---- Warriors vs Cavs: four straight Finals, 2015 to 2018
@@ -3730,6 +4256,35 @@ const SETS = [
   ...Object.entries(SOC_WWC).map(([y,[cc,ns]])=>({id:'swwc'+y,sport:'soc',stad:1,champYr:+y,name:`${y} Women's World Cup: ${SOC_NAT_T[cc]?SOC_NAT_T[cc][0]:cc}`,hint:`The ${y} Women's World Cup winners, on their World Cup Champs cards.`,m:ns})),
   {id:'susmnt',sport:'soc',stad:1,vpar:12,name:'Team USA Soccer: Men',hint:'Team USA cards only.',m:SOC_USA_PIDS.filter(id=>!P[id].women).map(id=>P[id].name)},
   {id:'suswnt',sport:'soc',stad:1,vpar:12,name:'Team USA Soccer: Women',hint:'Team USA cards only. Four World Cups and counting.',m:SOC_USA_PIDS.filter(id=>P[id].women).map(id=>P[id].name)},
+  // ---------- Grandma's collection ----------
+  {id:'gbeat',gma:1,sport:'ns',name:'The Fab Four',hint:'John, Paul, George, Ringo, and the band itself.',m:['The Beatles','John Lennon','Paul McCartney','George Harrison','Ringo Starr']},
+  {id:'gbeat5',gma:1,sport:'ns',name:'The Fifth Beatles',hint:'The people who were almost Beatles, or made them sound like Beatles.',m:['George Martin','Brian Epstein','Pete Best','Stuart Sutcliffe']},
+  {id:'gham',gma:1,sport:'ns',name:'Hamilton: The Original Cast',hint:'The room where it happened.',m:['Lin-Manuel Miranda','Leslie Odom Jr.','Renee Elise Goldsberry','Phillipa Soo','Daveed Diggs','Jonathan Groff','Christopher Jackson','Anthony Ramos','Okieriete Onaodowan','Jasmine Cephas Jones','Hamilton']},
+  {id:'gham2',gma:1,sport:'ns',name:'Hamilton Dual Autos',hint:'A founding father and the actor who played him, both autographs, on one card.',vpar:7,m:['Alexander Hamilton & Lin-Manuel Miranda','George Washington & Christopher Jackson','Aaron Burr & Leslie Odom Jr.','Thomas Jefferson & Daveed Diggs']},
+  {id:'gfound',gma:1,sport:'ns',name:'The Founding Fathers',hint:'1776 and the years right after.',m:['George Washington','John Adams','Thomas Jefferson','James Madison','Benjamin Franklin','Alexander Hamilton','John Hancock','Samuel Adams']},
+  {id:'grush',gma:1,sport:'ns',name:'Mount Rushmore',hint:'Four faces carved in a mountain in South Dakota.',m:['George Washington','Thomas Jefferson','Theodore Roosevelt','Abraham Lincoln']},
+  {id:'gpres',gma:1,sport:'ns',name:'Every President',hint:'Washington to today. All of them.',m:P.filter(p=>p.team==='N_PRES').map(p=>p.name)},
+  {id:'gjazz',gma:1,sport:'ns',name:'The Jazz Age',hint:'The 1920s and 30s, when jazz was brand new.',m:['Louis Armstrong','Duke Ellington','Bessie Smith','Jelly Roll Morton','King Oliver','Bix Beiderbecke','Fats Waller','Cab Calloway','Benny Goodman','Count Basie','Billie Holiday','Ella Fitzgerald']},
+  {id:'grr',gma:1,sport:'ns',name:'The First Rock & Roll Hall of Fame Class',hint:'1986: the first ten in.',m:['Chuck Berry','James Brown','Ray Charles','Sam Cooke','Fats Domino','The Everly Brothers','Buddy Holly','Jerry Lee Lewis','Elvis Presley','Little Richard']},
+  {id:'gwham',gma:1,sport:'ns',name:'Wham!',hint:'George, Andrew, and the band.',m:['Wham!','George Michael','Andrew Ridgeley','George Michael & Andrew Ridgeley']},
+  {id:'gnodoubt',gma:1,sport:'ns',name:'No Doubt',hint:'Anaheim\'s finest. Gwen and the boys.',m:['No Doubt','Gwen Stefani','Tony Kanal','Tom Dumont','Adrian Young']},
+  {id:'gxmas',gma:1,sport:'ns',name:'The Christmas Playlist',hint:'Grandma plays these every December, in this order.',m:['Bing Crosby','Nat King Cole','Brenda Lee','Bobby Helms','Burl Ives','Gene Autry','Andy Williams','Wham!','Mariah Carey','Vince Guaraldi','Darlene Love','Jose Feliciano']},
+  {id:'gmoon',gma:1,sport:'ns',name:'Apollo 11',hint:'July 1969. One small step.',m:['Neil Armstrong','Buzz Aldrin','Michael Collins','Neil Armstrong & Buzz Aldrin']},
+  {id:'gbttf',gma:1,sport:'ns',name:'Great Scott!',hint:'1985. Where we\'re going, we don\'t need roads.',m:['Michael J. Fox','Christopher Lloyd','Back to the Future','Michael J. Fox & Christopher Lloyd']},
+  {id:'gpixar',gma:1,sport:'ns',name:'Pixar Movie Posters',hint:'From the first computer-animated movie on.',m:['Toy Story','A Bug\'s Life','Toy Story 2','Monsters, Inc.','Finding Nemo','The Incredibles','Cars','Ratatouille','WALL-E','Up','Toy Story 3','Inside Out','Coco','Inside Out 2']},
+  {id:'gdisney',gma:1,sport:'ns',name:'Disney Classics Posters',hint:'The movies Grandma saw at the theater downtown.',m:['Snow White and the Seven Dwarfs','Pinocchio','Fantasia','Cinderella','Peter Pan','Lady and the Tramp','Sleeping Beauty','One Hundred and One Dalmatians','Mary Poppins','The Jungle Book','Robin Hood']},
+  {id:'grenaiss',gma:1,sport:'ns',name:'The Disney Comeback',hint:'1989 to 1994, and lately too.',m:['The Little Mermaid','Beauty and the Beast','Aladdin','The Lion King','Frozen','Moana','Encanto']},
+  {id:'gmarvel',gma:1,sport:'ns',name:'The Superhero Movies',hint:'The posters and the actors who suited up.',m:['Iron Man','The Avengers','Guardians of the Galaxy','Black Panther','Avengers: Endgame','Spider-Man: No Way Home','Robert Downey Jr.','Chris Evans','Scarlett Johansson','Chadwick Boseman','Tom Holland','Chris Hemsworth','Mark Ruffalo']},
+  {id:'gcomics',gma:1,sport:'ns',name:'The People Who Drew It',hint:'Before the movies, somebody had to draw it.',m:['Walt Disney','Ub Iwerks','Mary Blair','Stan Lee','Jack Kirby','Steve Ditko','Charles Schulz','Bill Watterson','Jim Henson']},
+  {id:'gstarwars',gma:1,sport:'ns',name:'A Galaxy Far, Far Away',hint:'The first three, and the people who made them.',m:['Star Wars','The Empire Strikes Back','Return of the Jedi','George Lucas','Mark Hamill','Carrie Fisher','Harrison Ford']},
+  {id:'gwomen',gma:1,sport:'ns',name:'Women Who Changed the World',hint:'Grandma\'s heroes.',m:['Harriet Tubman','Susan B. Anthony','Amelia Earhart','Eleanor Roosevelt','Rosa Parks','Marie Curie','Sally Ride','Ruth Bader Ginsburg','Ada Lovelace','Katherine Johnson','Malala Yousafzai','Jane Goodall']},
+  {id:'ginvent',gma:1,sport:'ns',name:'It Was My Idea',hint:'The light bulb, the phone, the airplane, the computer.',m:['Thomas Edison','Nikola Tesla','Alexander Graham Bell','Orville Wright','Wilbur Wright','Henry Ford','Steve Jobs','Steve Wozniak','Grace Hopper']},
+  {id:'gdualall',gma:1,sport:'ns',name:'Better Together',hint:'Dual autographs only.',vpar:7,m:['John Lennon & Paul McCartney','George Michael & Andrew Ridgeley','Orville & Wilbur Wright','Neil Armstrong & Buzz Aldrin','Steve Jobs & Steve Wozniak','Walt Disney & Ub Iwerks','Stan Lee & Jack Kirby','Lucille Ball & Desi Arnaz']},
+  {id:'gqueen',gma:1,sport:'ns',name:'Queen',hint:'We will, we will...',m:['Queen','Freddie Mercury','Brian May','Freddie Mercury & Brian May']},
+  {id:'gmotown',gma:1,sport:'ns',name:'Hitsville U.S.A.',hint:'Detroit\'s Motown hit factory.',m:['Stevie Wonder','Marvin Gaye','Diana Ross','Smokey Robinson','The Temptations','The Supremes','The Jackson 5','Gladys Knight','Lionel Richie']},
+  {id:'gwoodstock',gma:1,sport:'ns',name:'Woodstock, 1969',hint:'Three days of peace and music.',m:['Jimi Hendrix','Janis Joplin','Jerry Garcia','Grace Slick','Roger Daltrey','Pete Townshend','Keith Moon','Carlos Santana','John Fogerty','Neil Young']},
+  {id:'gcountry',gma:1,sport:'ns',name:'Grand Ole Opry',hint:'Nashville royalty.',m:['Dolly Parton','Johnny Cash','Willie Nelson','Loretta Lynn','Hank Williams','Patsy Cline','Garth Brooks','Reba McEntire','George Strait']},
+  {id:'gswift',gma:1,sport:'ns',name:'Today\'s Pop Royalty',hint:'The ones on your playlist.',m:['Taylor Swift','Beyonce','Billie Eilish','Olivia Rodrigo','Sabrina Carpenter','Ariana Grande','Harry Styles','Bruno Mars','Lady Gaga','Adele']},
 ].map(s=>({...s,pids:s.m.map(n=>{const [nm,tm]=n.split('@');return tm?P.find(p=>p.name===nm&&p.team===tm)?.id:BY_NAME[nm]?.id}).filter(v=>v!==undefined)}));
 const SETD=Object.fromEntries(SETS.map(s=>[s.id,s]));
 // rookie cards held, by player (rebuilt from the binder on load)
@@ -3820,6 +4375,13 @@ const PACKS = [
   {id:'dmlb',sport:'mlb',kind:'delight',box:true,cls:'w-box w-delight w-delightb',title:"BREAKER'S DELIGHT",sub:'Baseball',name:"Breaker's Delight: Baseball",cost:4000,n:10,lv:3,desc:'10 cards, every one numbered, autographed or a relic, from today\'s stars. About 1 box in 40 has a Superfractor 1/1.'},
   {id:'sfg',sport:'mlb',kind:'sfg',cls:'w-sfg',title:'ORANGE & BLACK',sub:'Giants dynasty',name:'Giants Dynasty Pack',cost:45,n:6,lv:3,desc:'6 Giants cards from the 2010, 2012 and 2014 champions. One World Series Champs card guaranteed.'},
   {id:'gscle',sport:'nba',kind:'gscle',cls:'w-gscle',title:'THE FINALS',sub:'Warriors vs Cavs',name:'Warriors vs Cavs Rivalry Pack',cost:45,n:6,lv:3,desc:'6 cards from four straight Finals, 2015 to 2018. One NBA Champs card guaranteed.'},
+  {id:'nretail',sport:'ns',kind:'retail',cls:'w-nretail',title:'ENCORE',sub:'Non-sports hanger',name:'Non-sports Hanger',cost:8,n:6,lv:3,desc:'6 non-sports cards: singers, presidents, movie stars and more. Base cards go in Grandma\'s loose-card hatbox.'},
+  {id:'nhobby',sport:'ns',kind:'hobby',cls:'w-hobby',title:'CHROMIUM',sub:'Non-sports hobby',name:'Non-sports Hobby Pack',cost:35,n:8,lv:3,desc:'8 non-sports cards from any era. One hit guaranteed.'},
+  {id:'nvintage',sport:'ns',kind:'vintage',cls:'w-nvintage',title:'VICTROLA',sub:'Non-sports 1920–1969',name:'Non-sports Vintage Wax',cost:90,n:10,lv:3,desc:'10 cards from the 1920s to the 60s: jazz, early rock & roll, old Hollywood and the presidents of the day.'},
+  {id:'nblaster',sport:'ns',kind:'blaster',box:true,cls:'w-box w-nblaster',title:'ENCORE',sub:'Non-sports blaster',name:'Encore Non-sports Blaster',cost:90,n:24,lv:3,desc:'6 packs, 24 non-sports cards. About 3 refractors and 6 more inserts or parallels.'},
+  {id:'nmega',sport:'ns',kind:'mega',box:true,cls:'w-box w-nmega',title:'ENCORE',sub:'Non-sports mega',name:'Encore Non-sports Mega',cost:150,n:60,lv:3,desc:'6 packs, 60 non-sports cards. About 14 refractors and 6 inserts or parallels.'},
+  {id:'nhobbybox',sport:'ns',kind:'hobbybox',box:true,cls:'w-box w-nhobbybox',title:'ENCORE',sub:'Non-sports hobby box',name:'Encore Non-sports Hobby Box',cost:900,n:144,lv:3,desc:'12 packs, 144 non-sports cards. 2 autographs guaranteed, about 22 parallels and 10 inserts.'},
+  {id:'dns',sport:'ns',kind:'delight',box:true,cls:'w-box w-delight w-delightn',title:"BREAKER'S DELIGHT",sub:'Non-sports',name:"Breaker's Delight: Non-sports",cost:4000,n:10,lv:3,desc:'10 cards, every one numbered, autographed or a relic: stars, presidents, legends and dual autos. About 1 box in 40 has a Superfractor 1/1.'},
   {id:'sretail',sport:'soc',kind:'retail',cls:'w-sretail',title:'KICKOFF',sub:'Soccer hanger',name:'Soccer Hanger',cost:8,n:6,lv:3,desc:'6 soccer cards, 1996 to today. Base cards go in the stadium\'s loose locker.'},
   {id:'shobby',sport:'soc',kind:'hobby',cls:'w-hobby',title:'CHROMIUM',sub:'Soccer hobby',name:'Soccer Hobby Pack',cost:35,n:8,lv:3,desc:'8 soccer cards from any era. One hit guaranteed.'},
   {id:'svintage',sport:'soc',kind:'vintage',cls:'w-svintage',title:'TOUCHLINE',sub:'Soccer 1950–1979',name:'Soccer Vintage Wax',cost:90,n:10,lv:3,desc:'10 soccer cards from the 50s, 60s and 70s. Pele, Eusebio and Best live in here.'},
@@ -4126,13 +4688,13 @@ const key=c=>`${c.pid}.${c.year}.${c.par}${c.g?'.'+c.g:''}`;
 function fromKey(k){const [pid,year,par,g]=k.split('.').map(Number);const c={pid,year,par};if(g)c.g=g;return c}
 const GRADE_MULT={10:8,9:3,8:1.6,7:1.1,6:.9,5:.7,4:.55,3:.45,2:.35,1:.25};
 const GRADE_WORD={10:'GEM MT',9:'MINT',8:'NM-MT',7:'NM',6:'EX-MT',5:'EX',4:'VG-EX',3:'VG',2:'GOOD',1:'POOR'};
-const isRC=c=>c.year===P[c.pid].start&&!P[c.pid].alt;
+const isRC=c=>c.year===P[c.pid].start&&!P[c.pid].alt&&P[c.pid].fig!=='film'&&P[c.pid].fig!=='dual';
 const modern=c=>c.year>=1996;
-const parName=c=>c.par===11&&P[c.pid]&&P[c.pid].sport==='soc'?'World Cup Champs':c.par===12&&P[c.pid]&&P[c.pid].sport==='soc'?'Team USA':c.par===11&&P[c.pid]&&P[c.pid].sport==='nba'?'NBA Champs':(modern(c)?PAR_MODERN:PAR_VINTAGE)[c.par];
-function brand(y,sp){const e=eraOf(y);return (sp==='soc'?{V:'Grandstand',S:'Touchline',H:'Pitchside',C:'Golazo',X:'Chromium',B:'Kickoff',P:'Spectra'}:sp==='nhl'?{V:'Grandstand',S:'Faceoff',H:'Blue Line',C:'Power Play',X:'Chromium',B:'Breakaway',P:'Spectra'}:sp==='nfl'?{V:'Grandstand',S:'Gridiron',H:'Endzone',C:'Blitz',X:'Chromium',B:'Playbook',P:'Spectra'}:sp==='mlb'?{V:'Grandstand',S:'Leadoff',H:'Diamond',C:'Dugout',X:'Chromium',B:'Bullpen',P:'Spectra'}:{V:'Grandstand',S:'Tip-Off',H:'Hardwood',C:'Courtside',X:'Chromium',B:'Baseline',P:'Spectra'})[e]}
+const parName=c=>c.par===8&&P[c.pid]&&P[c.pid].sport==='ns'?'Costume Relic':c.par===7&&P[c.pid]&&P[c.pid].fig==='dual'?'Dual Auto':c.par===11&&P[c.pid]&&P[c.pid].sport==='soc'?'World Cup Champs':c.par===12&&P[c.pid]&&P[c.pid].sport==='soc'?'Team USA':c.par===11&&P[c.pid]&&P[c.pid].sport==='nba'?'NBA Champs':(modern(c)?PAR_MODERN:PAR_VINTAGE)[c.par];
+function brand(y,sp){const e=eraOf(y);return (sp==='ns'?{V:'Parlor',S:'Victrola',H:'Hit Parade',C:'Marquee',X:'Chromium',B:'Encore',P:'Spectra'}:sp==='soc'?{V:'Grandstand',S:'Touchline',H:'Pitchside',C:'Golazo',X:'Chromium',B:'Kickoff',P:'Spectra'}:sp==='nhl'?{V:'Grandstand',S:'Faceoff',H:'Blue Line',C:'Power Play',X:'Chromium',B:'Breakaway',P:'Spectra'}:sp==='nfl'?{V:'Grandstand',S:'Gridiron',H:'Endzone',C:'Blitz',X:'Chromium',B:'Playbook',P:'Spectra'}:sp==='mlb'?{V:'Grandstand',S:'Leadoff',H:'Diamond',C:'Dugout',X:'Chromium',B:'Bullpen',P:'Spectra'}:{V:'Grandstand',S:'Tip-Off',H:'Hardwood',C:'Courtside',X:'Chromium',B:'Baseline',P:'Spectra'})[e]}
 function eraOf(y){return y<1970?'V':y<1980?'S':y<1990?'H':y<1996?'C':y<2006?'X':y<2016?'B':'P'}
 // today's hottest names in the hobby
-const HOT={'Lionel Messi':3,'Cristiano Ronaldo':3,'Lamine Yamal':3,'Kylian Mbappe':2.5,'Erling Haaland':2.5,'Jude Bellingham':2,'Vinicius Junior':1.8,'Pele':2,'Diego Maradona':2,'Christian Pulisic':1.5,'Trinity Rodman':1.5,'Sophia Smith':1.5,'Alex Morgan':1.5,'Mia Hamm':1.5,'Caitlin Clark':4,'Paige Bueckers':3,"A'ja Wilson":1.6,'Angel Reese':1.6,'Matas Buzelis':1.3,'Jared McCain':1.3,'Cooper Flagg':6,'Victor Wembanyama':6,'LeBron James':3,'Stephen Curry':3,'AJ Dybantsa':3,'Kon Knueppel':2.5,'Shai Gilgeous-Alexander':2.5,'Luka Doncic':2.5,'Darryn Peterson':2.5,'Anthony Edwards':2.2,'Michael Jordan':2,'Kobe Bryant':2,'Giannis Antetokounmpo':2,'Nikola Jokic':2,'Cameron Boozer':2,'Kevin Durant':1.8,'Jayson Tatum':1.5,'Jalen Brunson':1.5,'Paolo Banchero':1.5,'Ja Morant':1.3,'Yaxel Lendeborg':1.5,
+const HOT={'The Beatles':3,'Gwen Stefani':2,'Taylor Swift':2.5,'Elvis Presley':2.5,'Michael Jackson':2,'Abraham Lincoln':2,'George Washington':2,'Alexander Hamilton & Lin-Manuel Miranda':3,'John Lennon & Paul McCartney':3,'Star Wars':2,'Back to the Future':1.8,'Toy Story':1.8,'Mariah Carey':1.6,'Wham!':1.8,'Lionel Messi':3,'Cristiano Ronaldo':3,'Lamine Yamal':3,'Kylian Mbappe':2.5,'Erling Haaland':2.5,'Jude Bellingham':2,'Vinicius Junior':1.8,'Pele':2,'Diego Maradona':2,'Christian Pulisic':1.5,'Trinity Rodman':1.5,'Sophia Smith':1.5,'Alex Morgan':1.5,'Mia Hamm':1.5,'Caitlin Clark':4,'Paige Bueckers':3,"A'ja Wilson":1.6,'Angel Reese':1.6,'Matas Buzelis':1.3,'Jared McCain':1.3,'Cooper Flagg':6,'Victor Wembanyama':6,'LeBron James':3,'Stephen Curry':3,'AJ Dybantsa':3,'Kon Knueppel':2.5,'Shai Gilgeous-Alexander':2.5,'Luka Doncic':2.5,'Darryn Peterson':2.5,'Anthony Edwards':2.2,'Michael Jordan':2,'Kobe Bryant':2,'Giannis Antetokounmpo':2,'Nikola Jokic':2,'Cameron Boozer':2,'Kevin Durant':1.8,'Jayson Tatum':1.5,'Jalen Brunson':1.5,'Paolo Banchero':1.5,'Ja Morant':1.3,'Yaxel Lendeborg':1.5,
   'Patrick Mahomes':3,'Tom Brady':2.5,'Josh Allen':2.5,'Lamar Jackson':2.5,'Jayden Daniels':2.5,'Joe Burrow':2,'Travis Hunter':2.5,'Fernando Mendoza':2.5,'Cam Ward':2,'Ashton Jeanty':2,'Jeremiyah Love':2,'Drake Maye':2,"Ja'Marr Chase":2,'Justin Jefferson':2,'Brock Bowers':1.8,'Puka Nacua':1.8,'Caleb Williams':1.8,'Malik Nabers':1.8,'Saquon Barkley':1.8,'Travis Kelce':2,'Micah Parsons':1.5,'C.J. Stroud':1.5,'Joe Montana':1.5,'Jerry Rice':1.5,'Jim Brown':1.5,'Walter Payton':1.5,'Johnny Unitas':1.5,
   'Shohei Ohtani':12.5,'Buster Posey':1.6,'Tim Lincecum':1.3,'Madison Bumgarner':1.3,'VJ Edgecombe':2,'Ace Bailey':1.5,'Koa Peat':1.3,'Caleb Wilson':1.8,'Mikel Brown Jr.':1.5,'Keaton Wagler':1.5,'Aaron Judge':3,'Paul Skenes':3,'Bobby Witt Jr.':2.2,'Juan Soto':2,'Elly De La Cruz':2,'Mike Trout':2,'Ken Griffey Jr.':1.8,'Julio Rodriguez':1.5,'Gunnar Henderson':1.5,'Cal Raleigh':1.5,'Mickey Mantle':1.5};
 const SF_TOP={'Caitlin Clark':120000,'Shohei Ohtani':300000,'Cooper Flagg':200000,'Victor Wembanyama':180000,'Stephen Curry':150000,'LeBron James':150000,'Kon Knueppel':100000};
@@ -4203,7 +4765,7 @@ function rollCard(o={}){
   const tw=o.tw||[45,30,15,7,3];
   let tier=wpick([1,2,3,4,5],t=>tw[t-1]);
   if(o.minTier)tier=Math.max(tier,o.minTier);
-  const sp=o.sport||'nba';if(sp==='soc'&&tier===1&&Math.random()<.95)tier=2;while(!BY_TIER_S[sp][tier].length&&tier<5)tier++;let pool=BY_TIER_S[sp][tier];if(o.filter){const f=pool.filter(o.filter);if(f.length)pool=f}
+  const sp=o.sport||'nba';if((sp==='soc'||sp==='ns')&&tier===1&&Math.random()<.95)tier=2;while(!BY_TIER_S[sp][tier].length&&tier<5)tier++;let pool=BY_TIER_S[sp][tier];if(o.filter){const f=pool.filter(o.filter);if(f.length)pool=f}
   const p=wpick(pool,q=>o.shed?(q.start<2000?2:1):1);
   let lo=Math.max(p.start,o.yLo||0),hi=Math.min(p.end,o.yHi||2026);if(lo>hi){lo=p.start;hi=p.end}
   const year=Math.random()<.15?lo:lo+Math.floor(Math.random()*(hi-lo+1));
@@ -4222,11 +4784,12 @@ function oneOfOne(){
   const year=p.start+Math.floor(Math.random()*Math.min(4,p.end-p.start+1));
   return {pid:p.id,year,par:6};
 }
-function hideOne(){if(S.loc==='basement'||S.loc==='stadium'||(S.loc==='rink'&&(S.rinkBoxes||[]).some(b=>b.one))){S.oneLeft=null;return}S.oneLeft=S.pile>1?Math.floor(S.pile*rnd(.15,.7)):0}
+function hideOne(){if(S.loc==='basement'||S.loc==='stadium'||S.loc==='grandma'||(S.loc==='rink'&&(S.rinkBoxes||[]).some(b=>b.one))){S.oneLeft=null;return}S.oneLeft=S.pile>1?Math.floor(S.pile*rnd(.15,.7)):0}
 function addToPile(loc,n){if(!n)return;const rb=boxedRoom(loc)&&roomBoxes(loc);if(rb){let lb=rb.find(b=>b.loose);if(!lb){lb={id:LOOSE_ID[loc],label:'Loose cards from packs',loose:true,total:0,left:0};rb.push(lb)}lb.total+=n;lb.left+=n}if(S.loc===loc){S.pile+=n;if(S.level>=6&&S.oneLeft===null&&S.pile>0&&!(S.oneDone||{})[loc])hideOne()}else{const pl=S.places[loc];if(pl)pl.pile+=n}}
 function switchLoc(to){
-  if(to===S.loc||(to==='attic'&&!S.atticOpen)||(to==='barn'&&!S.barnOpen)||(to==='garage'&&!S.garageOpen)||(to==='basement'&&!S.basementOpen)||(to==='rink'&&!S.rinkOpen)||(to==='stadium'&&!S.stadiumOpen))return;
+  if(to===S.loc||(to==='attic'&&!S.atticOpen)||(to==='barn'&&!S.barnOpen)||(to==='garage'&&!S.garageOpen)||(to==='basement'&&!S.basementOpen)||(to==='rink'&&!S.rinkOpen)||(to==='stadium'&&!S.stadiumOpen)||(to==='grandma'&&!S.gmaOpen))return;
   if(phase==='up')sortHand('marks',true);
+  if(to==='grandma')S.gpaLast=S.loc;
   S.places[S.loc]={pile:S.pile,oneLeft:S.oneLeft};
   const t=S.places[to]||{pile:LOCS[to].size,oneLeft:null};S.pile=t.pile;S.oneLeft=t.oneLeft;S.loc=to;
   if(to!=='shed'&&S.level>=6&&S.oneLeft===null&&!(S.oneDone||{})[to]&&S.pile>0)hideOne();
@@ -4271,7 +4834,7 @@ function checkRink(){
     const b=$('#goRink');if(b)b.onclick=()=>{closeModal(true);switchLoc('rink')}});
   renderTabs();
 }
-function checkAttic(){checkBarn();checkGarage();checkBasement();checkRink();checkStadium();
+function checkAttic(){checkBarn();checkGarage();checkBasement();checkRink();checkStadium();checkGrandma();
   if(S.atticOpen||S.loc!=='shed')return;
   if(S.pile<=2000&&S.pile>0&&!S.atticTease){S.atticTease=true;save(true);queueModal(()=>modal(`<h2>A note tucked in a box</h2><div class="letter">Almost there, kiddo. When you get to the very bottom of the last box, look close. I left something down there for you. Something that opens a door.<br><br>— Grandpa</div><p>${num(S.pile)} cards to go in the shed.</p><div class="row2"><button class="btn go" data-close>Keep sorting</button></div>`));return}
   if(S.pile>0)return;
@@ -4287,7 +4850,7 @@ function genChallenge(){
   const sp=roomSport(),have=(S.chal||[]).map(c=>c.t),r=Math.random;
   const opts=[];
   opts.push(()=>{const n=[60,90,120,150][(r()*4)|0];return {t:'sort',n,text:`Sort ${n} cards by hand`,reward:Math.round(n*.4)}});
-  opts.push(()=>{const pl=pick(roomPool(sp));const tm=TEAMS[pl.team];const n=2+((r()*3)|0);return {t:'team',team:pl.team,n,text:`Find ${n} ${pl.sport==='soc'?tm[0]+' '+tm[1]:tm[1]} cards`,reward:25+n*12}});
+  opts.push(()=>{const pl=pick(roomPool(sp));const tm=TEAMS[pl.team];const n=2+((r()*3)|0);return {t:'team',team:pl.team,n,text:`Find ${n} ${pl.sport==='soc'||pl.sport==='ns'?tm[0]+' '+tm[1]:tm[1]} cards`,reward:25+n*12}});
   opts.push(()=>{const n=3+((r()*4)|0);return {t:'rc',n,text:`Find ${n} rookie cards`,reward:20+n*10}});
   opts.push(()=>{const n=1+((r()*2)|0);return {t:'par',n,text:n===1?'Find a refractor, numbered card, auto or relic':`Find ${n} refractors, numbered cards, autos or relics`,reward:40+n*30}});
   opts.push(()=>{const decs=sp==='mix'?[1940,1950,1960,1970,1980,1990,2000]:sp==='mlb'?[1950,1960,1970,1980,1990,2000,2010]:[1960,1970,1980,1990,2000,2010,2020];const d=pick(decs),n=4+((r()*5)|0);return {t:'dec',d,n,text:`Find ${n} cards from the ${d}s`,reward:20+n*8}});
@@ -4413,6 +4976,80 @@ const RINK_LEDGER=[
   [170000,"Every NHL team, every era. Even the ones that moved. Hockey teams move a lot. Atlanta lost two of them."],
   [220000,"Almost through the rink. Lace up and go skate somewhere real when you're done."],
 ];
+/* ---------- Grandma's House: 750,000 non-sports cards in hatboxes ---------- */
+const GMA_TEMPLATES=[
+  ['The Presidents',{teams:['N_PRES'],crate:true,tm:'N_PRES'},50000],
+  ['Founders and history makers',{teams:['N_HIST'],crate:true,tm:'N_HIST'},45000],
+  ['Jazz, 1920s and 1930s',{teams:['N_JAZZ'],yHi:1939,crate:true,tm:'N_JAZZ'},40000],
+  ['Rock & roll pioneers',{teams:['N_R50'],crate:true,tm:'N_R50'},30000],
+  ['The Beatles',{teams:['N_BEAT'],crate:true,tm:'N_BEAT'},35000],
+  ['Sixties rock',{teams:['N_R60'],crate:true,tm:'N_R60'},40000],
+  ['Motown and soul',{teams:['N_SOUL'],crate:true,tm:'N_SOUL'},30000],
+  ['Rock legends',{teams:['N_ROCK'],crate:true,tm:'N_ROCK'},45000],
+  ['Pop stars',{teams:['N_POP'],crate:true,tm:'N_POP'},50000],
+  ['Country',{teams:['N_CTRY'],crate:true,tm:'N_CTRY'},25000],
+  ['Holiday music',{teams:['N_HOLI'],crate:true,tm:'N_HOLI'},40000],
+  ['Hollywood',{teams:['N_ACT'],crate:true,tm:'N_ACT'},50000],
+  ['Broadway and Hamilton',{teams:['N_BWAY'],crate:true,tm:'N_BWAY'},25000],
+  ['Animation, comics and superhero movies',{teams:['N_ANIM'],crate:true,tm:'N_ANIM'},35000],
+  ['Movie posters',{teams:['N_FILM'],crate:true,tm:'N_FILM'},35000],
+  ['Space',{teams:['N_SPACE'],crate:true,tm:'N_SPACE'},20000],
+  ['Inventors and scientists',{teams:['N_SCI'],crate:true,tm:'N_SCI'},30000],
+  ['Dual cards',{teams:['N_DUAL'],crate:true,tm:'N_DUAL'},25000],
+  ['Before 1900',{yHi:1899},15000],
+  ["Grandma's favorites",{minTier:4},20000],
+  ['A hatbox that smells like perfume',{parMul:2.5},10000],
+  ['Loose cards from packs',{loose0:true},15000],
+];
+const GMA_LEDGER=[
+  [0,"So you finally made it to my house, sweetheart. Your grandfather had his sports cards. I had everything else. Presidents, singers, movie stars, the Beatles. Three quarters of a million cards in hatboxes."],
+  [5000,"I saw the Beatles at the Cow Palace in 1964. I screamed so loud I couldn't talk for two days. Your grandpa still teases me about it."],
+  [25000,"Every president is in here. George Washington all the way up. Find Lincoln. He's my favorite."],
+  [60000,"Your grandfather and I danced to Glenn Miller at our wedding. Then Chuck Berry came on and he really let loose."],
+  [100000,"I hid twenty one-of-ones in these hatboxes. The Beatles. Gwen Stefani. Hamilton. Wham!. Elvis. Each one is the last card in its own hatbox. No peeking."],
+  [180000,"Every Christmas we played Bing Crosby, then Wham!, then Mariah. In that order. It's the law in this house."],
+  [260000,"Your grandfather and I saw Hamilton in New York. I cried at the end. Then I bought every card they made."],
+  [375000,"Halfway through my hatboxes. Your grandfather never got this far in mine. Don't tell him."],
+  [500000,"Those movie posters are from the theater downtown. I took them home when it closed. Back to the Future was my favorite."],
+  [650000,"Almost done, sweetheart. I'm proud of you. Now go put a record on."],
+  [730000,"The last few hatboxes. Your grandpa says he's jealous. He should be."],
+];
+const GMA_NOTES=["Hatbox done. That one held my wedding hat once.","Another hatbox empty. I found that one at an estate sale in 1971.","Good job, sweetheart. The tag on that one says '25 cents'.","Done. That hatbox has been under my bed since the Carter administration.","That's a hatbox. You sort faster than I knit.","Finished. I'll put a plant in that one."];
+const GMA_ONE_NOTES={
+  'The Beatles':"The Beatles, 1964. The year they came to America. I watched them on Ed Sullivan in my pajamas and decided right then I was going to see them live.",
+  'Gwen Stefani':"Gwen Stefani, 1995. Tragic Kingdom. I played it so loud the windows rattled. Your grandfather pretended to hate it. He didn't.",
+  'Alexander Hamilton & Lin-Manuel Miranda':"Alexander Hamilton and Lin-Manuel Miranda, on one card, both autographs. A founding father and the man who made him a star again. I waited a long time for this one.",
+  'Wham!':"Wham!, 1984. Last Christmas. Every December since, it's been the first song on in this house.",
+  'Chuck Berry':"Chuck Berry, 1958. Johnny B. Goode. Your grandfather tried to do the duck walk at our wedding and pulled something.",
+  'George Washington':"George Washington, 1789. The very first president. There's only one of him, and there's only one of this card.",
+  'Abraham Lincoln':"Abraham Lincoln, 1863. My favorite. He wrote the Gettysburg Address on a train, they say. I can't even write a grocery list on a train.",
+  'Elvis Presley':"Elvis, 1956. My mother wouldn't let me watch him on TV. I watched at my friend Carol's house.",
+  'Louis Armstrong':"Louis Armstrong, 1928. West End Blues. Listen to the first fifteen seconds and tell me that's not the best trumpet you've ever heard.",
+  'Mariah Carey':"Mariah Carey, 1994. All I Want for Christmas Is You. We play it in November. Don't tell your grandfather.",
+  'Bing Crosby':"Bing Crosby, 1942. White Christmas. The best-selling song ever, and it still makes me cry.",
+  'Michael Jackson':"Michael Jackson, 1982. Thriller. I learned the whole dance in the living room and broke a lamp.",
+  'Walt Disney':"Walt Disney, 1928. The year his little mouse first whistled on a steamboat. Everything started there.",
+  'Stan Lee':"Stan Lee, 1962. The year his friendly neighborhood hero first swung into a comic book. Stan signed everything with 'Excelsior!'",
+  'Frank Sinatra':"Frank Sinatra, 1955. Your grandfather thinks he sings like Frank in the shower. He does not.",
+  'Benjamin Franklin':"Benjamin Franklin, 1776. Inventor, writer, founding father, and he flew a kite in a thunderstorm. Don't do that.",
+  'Ella Fitzgerald':"Ella Fitzgerald, 1956. The First Lady of Song. Nobody ever sang a note more perfectly.",
+  'Jimi Hendrix':"Jimi Hendrix, 1967. Monterey Pop. He set his guitar on fire and I've never seen anything like it since.",
+  'Dolly Parton':"Dolly Parton, 1973. Jolene. She wrote it the same day as I Will Always Love You. Can you imagine?",
+  'Taylor Swift':"Taylor Swift, 2014. 1989. You and your cousin know every word. I know some of them too."};
+// each 1/1 is the last card in its own hatbox
+function boxGmaOnes(){if(S.gOnesBoxed||!S.gmaBoxes)return;S.gOnes=S.gOnes||GMA_ONES.map((_,i)=>i);
+  S.gOnes.forEach(i=>{const p=P[gmaOne(i).pid],ok=b=>b.left>(b.gones||[]).length;const b=S.gmaBoxes.find(b=>b.tm===p.team&&ok(b))||S.gmaBoxes.find(b=>!b.loose&&ok(b));if(b)(b.gones=b.gones||[]).push(i)});S.gOnesBoxed=true}
+function checkGrandma(){
+  if(S.gmaOpen||!S.stadiumOpen)return;
+  const sp=S.loc==='stadium'?S.pile:(S.places.stadium?S.places.stadium.pile:LOCS.stadium.size);
+  if(S.loc==='stadium'&&sp<=5000&&sp>0&&!S.gmaTease){S.gmaTease=true;save(true);queueModal(()=>modal(`<h2>A note in grandma's handwriting</h2><div class="letter">Sweetheart, when you're done with your grandfather's stadium, come see me. I have a few cards of my own.<br><br>— Grandma</div><p>${num(sp)} cards to go in the stadium.</p><div class="row2"><button class="btn go" data-close>Keep sorting</button></div>`));return}
+  if(sp>0||(S.loc==='stadium'&&(hand.length||S.aside.length)))return;
+  S.gmaOpen=true;S.stadiumEnd=true;S.places.grandma=S.places.grandma||{pile:LOCS.grandma.size,oneLeft:null};ensureBoxes();save('now');
+  queueModal(()=>{modal(`<h2>Come over to Grandma's</h2><div class="letter">A million and ten thousand sports cards, sweetheart. Your grandfather is beside himself.<br><br>Now it's my turn. I never cared much for box scores. I collected everything else. Presidents and founding fathers. Jazz from the twenties. The Beatles, Elvis, Wham!, Gwen Stefani. Movie stars, movie posters, astronauts, Christmas records. Even cards with two autographs on them, like Alexander Hamilton and Lin-Manuel Miranda.<br><br>Seven hundred and fifty thousand cards in my hatboxes, and twenty one-of-ones hidden at the bottom of them.<br><br>Come over any time. The cookies are on the counter.<br><br>— Grandma</div><p>Grandma's House is open: 750,000 non-sports cards in ${GMA_TEMPLATES.length} hatboxes, dual cards, non-sports packs at Lenny's and twenty hidden 1/1s. Use the 🏡 button to walk over, and the back button to come home to Grandpa's.</p><div class="row2"><button class="btn go" id="goGma">Walk over to Grandma's</button><button class="btn" data-close>Later</button></div>`);
+    const b=$('#goGma');if(b)b.onclick=()=>{closeModal(true);switchLoc('grandma')}});
+  renderTabs();
+}
+
 /* ---------- the old stadium: lockers of soccer cards ---------- */
 const SOC_NOT_CLUBS=['S_USA','S_USW','S_NOR','S_SHF','S_BRN','S_WAN','S_REG','S_QPK','S_DKL','S_BLF','S_PNE','S_BLP','S_WOL','S_ESS','S_KAI','S_REI','S_DYN','S_CAG','S_FIO','S_LAZ','S_DEP','S_TBM','S_SJC','S_WFR','S_BBR','S_INK','S_FFC','S_VFL','S_ANS','S_GAL','S_CRU','S_PEN','S_NAC','S_BLA','S_FUL','S_LEI','S_HSV','S_NFO','S_LEE','S_ATH','S_VAL','S_ATL','S_NER','S_DCU','S_CLB','S_SEA','S_KCC','S_WSP','S_NCC','S_SDW','S_ANG','S_CHR'];
 const SOC_CLUBS=Object.keys(TEAMS).filter(k=>k.startsWith('S_')&&!SOC_NOT_CLUBS.includes(k)&&P.filter(p=>p.team===k).length>=3);
@@ -4506,11 +5143,11 @@ function renderBoxBar(){
     :`<div class="bxlabel">Nothing open</div><div class="bxinfo"><span>${done}/${list.length} ${word} done. Pick one to keep sorting.</span></div><button class="btn go sm" id="boxSwitch">Pick one</button>`;
   $('#boxSwitch').onclick=showBoxPicker;
 }
-const boxedRoom=l=>l==='attic'||l==='barn'||l==='garage'||l==='rink'||l==='stadium';
-function roomBoxes(l=S.loc){return l==='attic'?S.boxes:l==='barn'?S.barnBoxes:l==='garage'?S.garageBoxes:l==='rink'?S.rinkBoxes:l==='stadium'?S.stadiumBoxes:null}
-function getCur(l=S.loc){return l==='barn'?S.barnCur:l==='garage'?S.garageCur:l==='rink'?S.rinkCur:l==='stadium'?S.stadiumCur:S.boxCur}
-function setCur(v,l=S.loc){if(l==='barn')S.barnCur=v;else if(l==='garage')S.garageCur=v;else if(l==='rink')S.rinkCur=v;else if(l==='stadium')S.stadiumCur=v;else S.boxCur=v}
-const boxRoom=b=>{const c=b&&String(b.id)[0];return c==='f'?'barn':c==='g'?'garage':c==='r'?'rink':c==='z'?'stadium':'attic'};
+const boxedRoom=l=>l==='attic'||l==='barn'||l==='garage'||l==='rink'||l==='stadium'||l==='grandma';
+function roomBoxes(l=S.loc){return l==='attic'?S.boxes:l==='barn'?S.barnBoxes:l==='garage'?S.garageBoxes:l==='rink'?S.rinkBoxes:l==='stadium'?S.stadiumBoxes:l==='grandma'?S.gmaBoxes:null}
+function getCur(l=S.loc){return l==='barn'?S.barnCur:l==='garage'?S.garageCur:l==='rink'?S.rinkCur:l==='stadium'?S.stadiumCur:l==='grandma'?S.gmaCur:S.boxCur}
+function setCur(v,l=S.loc){if(l==='barn')S.barnCur=v;else if(l==='garage')S.garageCur=v;else if(l==='rink')S.rinkCur=v;else if(l==='stadium')S.stadiumCur=v;else if(l==='grandma')S.gmaCur=v;else S.boxCur=v}
+const boxRoom=b=>{const c=b&&String(b.id)[0];return c==='f'?'barn':c==='g'?'garage':c==='r'?'rink':c==='z'?'stadium':c==='n'?'grandma':'attic'};
 // the room's card count and its boxes must agree; if they drift, the extra cards go in the loose box
 function reconcileBoxes(l){const rb=roomBoxes(l);if(!rb)return;const sum=rb.reduce((a,b)=>a+Math.max(0,b.left),0);
   const pile=l===S.loc?S.pile:(S.places[l]?S.places[l].pile:null);if(pile==null||pile===sum)return;
@@ -4526,6 +5163,9 @@ function ensureBoxes(){
   boxSocOnes();
   if(S.stadiumBoxes&&!S.stadiumBoxes.some(b=>b.tm==='S_SJE')){const cur=getCur('stadium'),don=S.stadiumBoxes.filter(b=>b.id!==cur&&!b.loose&&b.left===b.total).sort((a,b)=>b.left-a.left)[0];
     if(don){const n=Math.min(7000,don.left-30);don.left-=n;don.total-=n;const at=S.stadiumBoxes.reduce((k,b,i)=>b.crate?i+1:k,0);S.stadiumBoxes.splice(at,0,{id:'zsje',label:'San Jose Earthquakes',teams:['S_SJE'],crate:true,tm:'S_SJE',total:n,left:n})}}
+  if(S.gmaOpen&&!S.gmaBoxes){const pile=S.loc==='grandma'?S.pile:(S.places.grandma?S.places.grandma.pile:LOCS.grandma.size);S.gmaBoxes=makeBoxes(Math.max(1,pile),GMA_TEMPLATES,'n');S.gmaBoxes.forEach(b=>{if(b.loose0){b.loose=true;b.id='nloose'}});S.gmaCur=null;
+    const tot=S.gmaBoxes.reduce((a,b)=>a+b.left,0);if(S.loc==='grandma')S.pile=tot;else if(S.places.grandma)S.places.grandma.pile=tot}
+  boxGmaOnes();
   if(S.stadiumOpen&&!S.stadiumBoxes){const pile=S.loc==='stadium'?S.pile:(S.places.stadium?S.places.stadium.pile:LOCS.stadium.size);S.stadiumBoxes=makeBoxes(Math.max(1,pile),STADIUM_TEMPLATES,'z');S.stadiumBoxes.forEach(b=>{if(b.loose0){b.loose=true;b.id='zloose'}});S.stadiumCur=null;
     const tot=S.stadiumBoxes.reduce((a,b)=>a+b.left,0);if(S.loc==='stadium')S.pile=tot;else if(S.places.stadium)S.places.stadium.pile=tot}
   if(S.garageOpen&&!S.garageBoxes){const pile=S.loc==='garage'?S.pile:(S.places.garage?S.places.garage.pile:LOCS.garage.size);S.garageBoxes=makeBoxes(Math.max(1,pile),GARAGE_TEMPLATES,'g');S.garageCur=null;
@@ -4545,7 +5185,7 @@ function rollBoxCard(b){
   if(bsp==='soc'&&b.nat&&b.nat.includes('USA')&&Math.random()<.05)return socUsaCard();
   const cands=P.filter(p=>p.sport===bsp&&(room!=='garage'||b.teams||b.wnba?true:!isWNBA(p))&&(!b.wnba||isWNBA(p))&&(!b.fresh||p.id>=NEW_PID)&&(!b.teams||b.teams.includes(p.team))&&(!b.pos||b.pos.includes(p.pos))&&(!b.nat||b.nat.includes(p.nat))&&(!b.rookie||bsp!=='soc'||!p.alt)&&(!b.women||p.women)&&(!b.wc||(SOC_CHAMP[p.id]&&!p.alt))&&(!b.minTier||p.tier>=b.minTier)&&p.end>=(b.yLo||0)&&p.start<=(b.yHi||3000)&&(!b.rookie||p.start>=(b.yLo||0)));
   if(!cands.length||b.loose)return rollCard({shed:true,sport:bsp,parMul:.8*EYE});
-  const tw=b.tw||(bsp==='soc'?SOC_TW:[45,30,15,7,3]),cnt={};cands.forEach(p=>cnt[p.tier]=(cnt[p.tier]||0)+1);
+  const tw=b.tw||(bsp==='soc'?SOC_TW:bsp==='ns'?NS_TW:[45,30,15,7,3]),cnt={};cands.forEach(p=>cnt[p.tier]=(cnt[p.tier]||0)+1);
   const p=wpick(cands,q=>(tw[q.tier-1]||0)/cnt[q.tier]+.0001);
   const lo=Math.max(p.start,b.yLo||0),hi=Math.min(p.end,b.yHi||2026);
   const year=b.rookie?p.start:(Math.random()<.15?lo:lo+Math.floor(Math.random()*(hi-lo+1)));
@@ -4561,7 +5201,7 @@ function boxDone(b){
     queueModal(()=>modal(`<h2>All 30 NBA teams!</h2><div class="letter">Every team bin on the garage shelves, sorted. I labeled those bins with a marker in 1989 and some of the teams didn't even exist yet.<br><br>Here's a little something for the effort.<br><br>— Grandpa</div><p>+$10,000 and 800 XP.</p><div class="row2"><button class="btn go" data-close>Wow</button></div>`))}
   if(room==='stadium'&&b.crate&&!S.allClubs&&list.filter(x=>x.crate).every(x=>x.left<=0)){S.allClubs=true;S.cash+=50000;addXP(2500);
     queueModal(()=>modal(`<h2>Every club locker!</h2><div class="letter">Every club in the stadium, sorted. Manchester to Madrid to Buenos Aires to Los Angeles. You've been around the whole world without leaving the fairgrounds.<br><br>— Grandpa</div><p>+$50,000 and 2,500 XP.</p><div class="row2"><button class="btn go" data-close>Golazo</button></div>`))}
-  const notes=room==='stadium'?STADIUM_NOTES:room==='rink'?RINK_NOTES:barn?BARN_NOTES:gar?GARAGE_NOTES:BOX_NOTES;const note=notes[hash(b.id)%notes.length];const doneN=list.filter(x=>x.left<=0).length;
+  const notes=room==='grandma'?GMA_NOTES:room==='stadium'?STADIUM_NOTES:room==='rink'?RINK_NOTES:barn?BARN_NOTES:gar?GARAGE_NOTES:BOX_NOTES;const note=notes[hash(b.id)%notes.length];const doneN=list.filter(x=>x.left<=0).length;
   if(barn&&b.crate&&!S.allTeams&&list.filter(x=>x.crate).every(x=>x.left<=0)){S.allTeams=true;S.cash+=5000;addXP(500);
     queueModal(()=>modal(`<h2>All 32 teams!</h2><div class="letter">Every team crate in the barn, sorted. I started that project in 1971 and never finished it. You did.<br><br>Here's something I saved for whoever got this far.<br><br>— Grandpa</div><p>+$5,000 and 500 XP.</p><div class="row2"><button class="btn go" data-close>Wow</button></div>`))}
   queueModal(()=>{modal(`<h2>${W[0][0].toUpperCase()+W[0].slice(1)} finished: ${esc(b.label)}</h2><div class="letter">${esc(note)}<br><br>— Grandpa</div><p>+${money(cash)} and 50 XP. ${doneN} of ${list.length} ${W[1]} done.</p><div class="row2"><button class="btn go" id="pickNext">Pick the next ${W[0]}</button><button class="btn" data-close>Later</button></div>`);const pn=$('#pickNext');if(pn)pn.onclick=()=>{closeModal(true);showBoxPicker()}});
@@ -4610,7 +5250,7 @@ function showBoxPicker(){
   ensureBoxes();reconcileBoxes(S.loc);const list=roomBoxes();if(!list)return;const barn=S.loc==='barn',gar=S.loc==='garage';
   const tiles=list.map(b=>{const done=b.left<=0,cur=b.id===getCur(),started=b.left<b.total;
     return `<button class="boxtile${done?' done':''}${cur?' cur':''}" data-box="${b.id}" ${done?'disabled':''}${b.tm&&TEAMS[b.tm]?` style="box-shadow:inset 6px 0 0 ${TEAMS[b.tm][2]}"`:''}><span class="bl">${esc(b.label)}</span><span class="bn">${done?'Done ✓':`${num(b.left)} ${started?'left':'cards'}`}</span>${started&&!done?`<i class="bp"><b style="width:${(1-b.left/b.total)*100}%"></b></i>`:''}</button>`}).join('');
-  const m=modal(S.loc==='stadium'?`<h2>Which locker next?</h2><p>The locker rooms, the tunnels, under the stands. One locker for every big club, one for each country, the World Cups, the women's game, the founders, the goalkeepers, MLS and the NWSL, and a locker of loose cards from packs. The twelve 1/1s could be in any of them. ${list.filter(x=>x.crate&&x.left<=0).length} of ${list.filter(x=>x.crate).length} clubs done.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:S.loc==='rink'?`<h2>Which box next?</h2><p>The rink floor is covered in boxes: one for every NHL team (old cities included), the Original Six, goalies, the PWHL, rookies, and a box of loose cards from packs. Hockey packs you rip at Lenny's toss their base cards in that loose box. Finishing all 32 team boxes pays a big bonus. ${list.filter(x=>x.crate&&x.left<=0).length} of 32 teams done.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:gar?`<h2>Which bin next?</h2><p>The garage walls are lined with plastic bins: one for every NBA team, the WNBA teams, Team USA, college cards, and whatever else Grandpa couldn't fit in the house. Finishing a bin pays a bonus, and finishing all 30 NBA team bins pays a big one. ${list.filter(x=>x.crate&&x.left<=0).length} of 30 teams done.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:barn?`<h2>Which crate next?</h2><p>The barn is stacked with crates, one for every NFL team plus a few Grandpa never labeled right. Finishing a crate pays a bonus, and finishing all 32 team crates pays a big one. ${list.filter(x=>x.crate&&x.left<=0).length} of 32 teams done.</p><div class="boxgrid">${tiles}</div>`:`<h2>Which box next?</h2><p>Grandpa's attic is full of boxes. Each one has a different mix of cards, and finishing a box pays a bonus. You can switch boxes any time.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`);
+  const m=modal(S.loc==='grandma'?`<h2>Which hatbox next?</h2><p>Grandma's closets, the sewing room and under the beds. One hatbox for each kind of card, plus her favorites and the loose cards from packs. Every 1/1 is the last card in its hatbox.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:S.loc==='stadium'?`<h2>Which locker next?</h2><p>The locker rooms, the tunnels, under the stands. One locker for every big club, one for each country, the World Cups, the women's game, the founders, the goalkeepers, MLS and the NWSL, and a locker of loose cards from packs. The twelve 1/1s could be in any of them. ${list.filter(x=>x.crate&&x.left<=0).length} of ${list.filter(x=>x.crate).length} clubs done.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:S.loc==='rink'?`<h2>Which box next?</h2><p>The rink floor is covered in boxes: one for every NHL team (old cities included), the Original Six, goalies, the PWHL, rookies, and a box of loose cards from packs. Hockey packs you rip at Lenny's toss their base cards in that loose box. Finishing all 32 team boxes pays a big bonus. ${list.filter(x=>x.crate&&x.left<=0).length} of 32 teams done.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:gar?`<h2>Which bin next?</h2><p>The garage walls are lined with plastic bins: one for every NBA team, the WNBA teams, Team USA, college cards, and whatever else Grandpa couldn't fit in the house. Finishing a bin pays a bonus, and finishing all 30 NBA team bins pays a big one. ${list.filter(x=>x.crate&&x.left<=0).length} of 30 teams done.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:barn?`<h2>Which crate next?</h2><p>The barn is stacked with crates, one for every NFL team plus a few Grandpa never labeled right. Finishing a crate pays a bonus, and finishing all 32 team crates pays a big one. ${list.filter(x=>x.crate&&x.left<=0).length} of 32 teams done.</p><div class="boxgrid">${tiles}</div>`:`<h2>Which box next?</h2><p>Grandpa's attic is full of boxes. Each one has a different mix of cards, and finishing a box pays a bonus. You can switch boxes any time.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`);
   m.querySelectorAll('[data-box]').forEach(b=>b.onclick=()=>pickBox(b.dataset.box));
   $('.mbox',m).classList.add('wide');
 }
@@ -4649,6 +5289,7 @@ function drawFromPile(auto){
     else{const f=B.find(o=>o.left<=0)||(S.pile<B.length?B[0]:null);if(f){S.bOnes=B.filter(o=>o!==f);const c=lostOne(f.i);S.onePids.push(c.pid);return c}B.forEach(o=>o.left--)}
     EYE=eyeMul();try{return lostCard(.8*EYE)}finally{EYE=1}}
   const bx=curBox();if(boxedRoom(S.loc)&&roomBoxes()&&(!bx||bx.left<=0))return null;
+  if(S.loc==='grandma'){boxGmaOnes();if(bx&&bx.gones&&bx.gones.length&&bx.left<=bx.gones.length){const i=bx.gones.shift();S.pile--;bx.left--;S.gOnes=(S.gOnes||[]).filter(x=>x!==i);const c=gmaOne(i);S.onePids.push(c.pid);if(bx.left<=0)boxDone(bx);return c}}
   if(S.loc==='stadium'){hideSocOnes();boxSocOnes();
     // a locker's own 1/1s are its last cards
     if(bx.sones&&bx.sones.length&&bx.left<=bx.sones.length){const i=bx.sones.shift();S.pile--;bx.left--;S.sOnes=S.sOnes.filter(o=>o.i!==i);const c=socOne(i);S.onePids.push(c.pid);if(bx.left<=0)boxDone(bx);return c}
@@ -4688,14 +5329,14 @@ const F_DISP="#px 'Bungee', 'Arial Black', sans-serif";
 const F_TYPE="#px 'Special Elite', 'Courier New', monospace";
 const F_ANTON="#px 'Anton', Impact, 'Arial Narrow', sans-serif";
 const F_SCRIPT="#px 'Yellowtail', 'Brush Script MT', cursive";
-const POSN={GK:'GOALKEEPER',DF:'DEFENDER',MF:'MIDFIELDER',FW:'FORWARD',LW:'LEFT WING',RW:'RIGHT WING',D:'DEFENSE',G:'GOALIE',PG:'GUARD',SG:'GUARD',SF:'FORWARD',PF:'FORWARD',C:'CENTER',P:'PITCHER','1B':'FIRST BASE','2B':'SECOND BASE','3B':'THIRD BASE',SS:'SHORTSTOP',LF:'OUTFIELD',CF:'OUTFIELD',RF:'OUTFIELD',DH:'DESIG. HITTER',QB:'QUARTERBACK',RB:'RUNNING BACK',WR:'WIDE RECEIVER',TE:'TIGHT END',OL:'OFFENSIVE LINE',DE:'DEFENSIVE END',DT:'DEFENSIVE TACKLE',LB:'LINEBACKER',CB:'CORNERBACK',S:'SAFETY',K:'KICKER'};
+const POSN={PRES:'PRESIDENT',HIST:'HISTORY MAKER',SING:'VOCALS',GTR:'GUITAR',BASS:'BASS',DRM:'DRUMS',PNO:'PIANO',SAX:'SAXOPHONE',TPT:'TRUMPET',CLR:'CLARINET',VLN:'VIOLIN',BAND:'THE BAND',PROD:'PRODUCER',MGR:'MANAGER',ACT:'ON SCREEN',DIR:'CREATOR',FILM:'MOVIE POSTER',ASTRO:'ASTRONAUT',SCI:'INVENTOR',DUAL:'DUAL CARD',GK:'GOALKEEPER',DF:'DEFENDER',MF:'MIDFIELDER',FW:'FORWARD',LW:'LEFT WING',RW:'RIGHT WING',D:'DEFENSE',G:'GOALIE',PG:'GUARD',SG:'GUARD',SF:'FORWARD',PF:'FORWARD',C:'CENTER',P:'PITCHER','1B':'FIRST BASE','2B':'SECOND BASE','3B':'THIRD BASE',SS:'SHORTSTOP',LF:'OUTFIELD',CF:'OUTFIELD',RF:'OUTFIELD',DH:'DESIG. HITTER',QB:'QUARTERBACK',RB:'RUNNING BACK',WR:'WIDE RECEIVER',TE:'TIGHT END',OL:'OFFENSIVE LINE',DE:'DEFENSIVE END',DT:'DEFENSIVE TACKLE',LB:'LINEBACKER',CB:'CORNERBACK',S:'SAFETY',K:'KICKER'};
 let NOISE=null;
 function grain(ctx,a){
   if(!NOISE){NOISE=document.createElement('canvas');NOISE.width=NOISE.height=96;const g=NOISE.getContext('2d'),d=g.createImageData(96,96);for(let i=0;i<d.data.length;i+=4){const v=Math.random()*255;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255}g.putImageData(d,0,0)}
   ctx.save();ctx.globalAlpha=a;ctx.globalCompositeOperation='overlay';ctx.fillStyle=ctx.createPattern(NOISE,'repeat');ctx.fillRect(0,0,250,350);ctx.restore();
 }
 function gloss(ctx,a=.16){const g=ctx.createLinearGradient(0,0,250,350);g.addColorStop(.22,'rgba(255,255,255,0)');g.addColorStop(.4,`rgba(255,255,255,${a})`);g.addColorStop(.5,'rgba(255,255,255,0)');ctx.fillStyle=g;ctx.fillRect(0,0,250,350)}
-function splitName(n){const t=n.split(' ');if(t.length>2&&/^(Jr\.|Sr\.|II|III)$/.test(t[t.length-1]))return [t.slice(0,-2).join(' '),t.slice(-2).join(' ')];return [t.slice(0,-1).join(' '),t[t.length-1]]}
+function splitName(n){if(n.includes(' & ')){const [a,b]=n.split(' & ');return [a+' &',b]}const t=n.split(' ');if(t.length>2&&/^(Jr\.|Sr\.|II|III)$/.test(t[t.length-1]))return [t.slice(0,-2).join(' '),t.slice(-2).join(' ')];return [t.slice(0,-1).join(' '),t[t.length-1]]}
 const V={add:(a,b)=>[a[0]+b[0],a[1]+b[1]],sub:(a,b)=>[a[0]-b[0],a[1]-b[1]],mul:(a,s)=>[a[0]*s,a[1]*s],len:a=>Math.hypot(a[0],a[1]),norm:a=>{const l=Math.hypot(a[0],a[1])||1;return [a[0]/l,a[1]/l]},perp:a=>[-a[1],a[0]],lerp:(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]};
 
 function fillLimb(ctx,a,b,c,wa,wb,wc,bulge,col){
@@ -4761,6 +5402,7 @@ function shoe2(ctx,f,face,col,trim,mono,high){
 }
 function drawFigure(ctx,card,x,y,w,h,opt={}){
   if(P[card.pid].sport==='mlb')return drawBaseballFigure(ctx,card,x,y,w,h,opt);
+  if(P[card.pid].sport==='ns')return drawNSFigure(ctx,card,x,y,w,h,opt);
   if(P[card.pid].sport==='nfl'||P[card.pid].sport==='nhl'||P[card.pid].sport==='soc')return drawFootballFigure(ctx,card,x,y,w,h,opt);
   const p=P[card.pid],t=tOf(card),{k:poseKey,q,mir,hs}=poseInfo(card);
   const s=figScale(w,h),yr=card.year;
@@ -5254,6 +5896,95 @@ function drawFootballFigure(ctx,card,x,y,w,h,opt={}){
   ctx.save();place();body(null);ctx.restore();
   ctx.restore();
 }
+/* ---------- Grandma's cards: people (not athletes), bands, duals and movie posters ---------- */
+// figures are drawn like the sports ones: a stylized silhouette in the card's colours, never a real skin tone
+function nsBg(ctx,card,x,y,w,h){
+  const p=P[card.pid],t=tOf(card),r=srand(hash(key(card))+77),tm=p.team;
+  const g=(a,b)=>{const gr=ctx.createLinearGradient(0,y,0,y+h);gr.addColorStop(0,a);gr.addColorStop(1,b);ctx.fillStyle=gr;ctx.fillRect(x,y,w,h)};
+  if(tm==='N_PRES'){g('#f4efe2','#d9cfb8');for(let i=0;i<7;i++){ctx.fillStyle=i%2?'#f4efe2':'rgba(179,25,66,.16)';ctx.fillRect(x,y+h*.08+i*h*.05,w,h*.05)}
+    ctx.fillStyle='rgba(31,59,115,.22)';ctx.fillRect(x,y+h*.08,w*.38,h*.2);ctx.fillStyle='rgba(255,255,255,.7)';for(let i=0;i<12;i++)ctx.fillRect(x+w*.03+(i%4)*w*.09,y+h*.1+((i/4)|0)*h*.06,2,2);
+    ctx.fillStyle='rgba(120,110,90,.25)';for(let i=0;i<4;i++)ctx.fillRect(x+w*(.08+i*.26),y+h*.42,w*.07,h*.5)}
+  else if(tm==='N_HIST'){g('#efe2c0','#cdb98a');ctx.strokeStyle='rgba(90,60,30,.18)';ctx.lineWidth=1;for(let i=0;i<14;i++){ctx.beginPath();ctx.moveTo(x+w*.08,y+h*(.12+i*.055));ctx.lineTo(x+w*(.5+r()*.42),y+h*(.12+i*.055));ctx.stroke()}}
+  else if(tm==='N_SPACE'){g('#03060f','#14234a');ctx.fillStyle='#fff';for(let i=0;i<60;i++){ctx.globalAlpha=.3+r()*.7;ctx.fillRect(x+r()*w,y+r()*h*.8,r()<.1?2:1,r()<.1?2:1)}ctx.globalAlpha=1;
+    ctx.fillStyle='#d9dde6';ctx.beginPath();ctx.arc(x+w*.8,y+h*.18,w*.12,0,7);ctx.fill();ctx.fillStyle='rgba(0,0,0,.12)';ctx.beginPath();ctx.arc(x+w*.77,y+h*.16,w*.03,0,7);ctx.arc(x+w*.84,y+h*.22,w*.02,0,7);ctx.fill();
+    ctx.fillStyle='#8c8f99';ctx.beginPath();ctx.ellipse(x+w/2,y+h*1.02,w*.9,h*.18,0,0,7);ctx.fill()}
+  else if(tm==='N_SCI'){g('#24332b','#16221c');ctx.strokeStyle='rgba(240,240,230,.28)';ctx.lineWidth=1.2;ctx.font='10px serif';ctx.fillStyle='rgba(240,240,230,.3)';
+    ['E=mc²','F=ma','a²+b²','πr²','H₂O','∑','√2','λ'].forEach((s,i)=>ctx.fillText(s,x+w*(.06+(i%3)*.32),y+h*(.12+((i/3)|0)*.12)));ctx.fillStyle='#6b4a2b';ctx.fillRect(x,y+h*.92,w,h*.08)}
+  else if(tm==='N_FILM'||tm==='N_ACT'||tm==='N_ANIM'){g('#1a0f14','#3a1c24');for(let i=0;i<16;i++){ctx.fillStyle=i%2?'#ffd56a':'#fff3c4';ctx.globalAlpha=.85;ctx.beginPath();ctx.arc(x+w*(i+.5)/16,y+h*.05,1.8,0,7);ctx.fill();ctx.beginPath();ctx.arc(x+w*(i+.5)/16,y+h*.97,1.8,0,7);ctx.fill()}ctx.globalAlpha=1;
+    const sp=ctx.createRadialGradient(x+w/2,y+h*.35,4,x+w/2,y+h*.35,w*.7);sp.addColorStop(0,'rgba(255,230,170,.35)');sp.addColorStop(1,'rgba(255,230,170,0)');ctx.fillStyle=sp;ctx.fillRect(x,y,w,h)}
+  else if(tm==='N_HOLI'){g('#123b25','#0b2316');ctx.fillStyle='#fff';for(let i=0;i<40;i++){ctx.globalAlpha=.4+r()*.5;ctx.beginPath();ctx.arc(x+r()*w,y+r()*h,r()*1.8+.6,0,7);ctx.fill()}ctx.globalAlpha=1;
+    const cols=['#e63946','#ffd23f','#3a86ff','#f1faee'];for(let i=0;i<9;i++){ctx.fillStyle=cols[i%4];ctx.beginPath();ctx.arc(x+w*(i+.5)/9,y+h*.06+Math.sin(i)*3,2.6,0,7);ctx.fill()}}
+  else if(tm==='N_DUAL'){ctx.fillStyle=mixh(t[2],'#000000',.25);ctx.fillRect(x,y,w/2,h);ctx.fillStyle=mixh(t[3],'#000000',.55);ctx.fillRect(x+w/2,y,w/2,h);ctx.fillStyle='rgba(255,215,0,.5)';ctx.fillRect(x+w/2-1,y,2,h)}
+  else{ // a stage: curtains and spotlights
+    g(mixh(t[2],'#000000',.65),mixh(t[2],'#000000',.85));
+    ctx.fillStyle=mixh('#8a1020',t[2],.25);for(const side of [0,1]){ctx.beginPath();const cx=side?x+w:x;ctx.moveTo(cx,y);ctx.lineTo(cx+(side?-1:1)*w*.2,y);ctx.quadraticCurveTo(cx+(side?-1:1)*w*.08,y+h*.5,cx+(side?-1:1)*w*.16,y+h);ctx.lineTo(cx,y+h);ctx.fill()}
+    for(const f of [.3,.7]){const sp=ctx.createRadialGradient(x+w*f,y,2,x+w*f,y+h*.6,w*.5);sp.addColorStop(0,'rgba(255,245,210,.45)');sp.addColorStop(1,'rgba(255,245,210,0)');ctx.fillStyle=sp;ctx.fillRect(x,y,w,h)}
+    ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(x,y+h*.86,w,h*.14);ctx.fillStyle=mixh(t[3],'#000000',.3);ctx.fillRect(x,y+h*.86,w,2)}
+}
+// one person. cx,base = feet; u = size unit
+function nsPerson(ctx,cx,base,u,o){
+  const {fig,inst,c1,c2,ink,mir}=o,f=mir?-1:1;
+  const coat=fig==='colonial'?c1:fig==='dress'?c1:mixh(c1,'#0b0c10',.55),trim=c2;
+  ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+  const hipY=base-34*u,shY=base-62*u,headY=base-74*u;
+  // legs or skirt
+  if(fig==='dress'){ctx.fillStyle=coat;ctx.beginPath();ctx.moveTo(cx-9*u,hipY-4*u);ctx.lineTo(cx+9*u,hipY-4*u);ctx.lineTo(cx+17*u,base-6*u);ctx.lineTo(cx-17*u,base-6*u);ctx.fill();
+    ctx.strokeStyle=ink;ctx.lineWidth=4*u;ctx.beginPath();ctx.moveTo(cx-6*u,base-6*u);ctx.lineTo(cx-6*u,base);ctx.moveTo(cx+6*u,base-6*u);ctx.lineTo(cx+6*u,base);ctx.stroke()}
+  else{ctx.strokeStyle=fig==='colonial'?mixh(trim,'#ffffff',.3):mixh(coat,'#000000',.2);ctx.lineWidth=7*u;ctx.beginPath();ctx.moveTo(cx-5*u,hipY);ctx.lineTo(cx-7*u,base-3*u);ctx.moveTo(cx+5*u,hipY);ctx.lineTo(cx+7*u,base-3*u);ctx.stroke();
+    if(fig==='colonial'){ctx.strokeStyle='#f2eee2';ctx.lineWidth=5.5*u;ctx.beginPath();ctx.moveTo(cx-6.5*u,base-16*u);ctx.lineTo(cx-7*u,base-4*u);ctx.moveTo(cx+6.5*u,base-16*u);ctx.lineTo(cx+7*u,base-4*u);ctx.stroke()}
+    ctx.fillStyle='#121317';ctx.beginPath();ctx.ellipse(cx-8*u,base-1.5*u,5*u,2.4*u,0,0,7);ctx.ellipse(cx+8*u,base-1.5*u,5*u,2.4*u,0,0,7);ctx.fill()}
+  // body
+  ctx.fillStyle=coat;ctx.beginPath();ctx.moveTo(cx-12*u,shY);ctx.quadraticCurveTo(cx,shY-3*u,cx+12*u,shY);ctx.lineTo(cx+(fig==='colonial'?13:10)*u,hipY+(fig==='colonial'?10:2)*u);ctx.lineTo(cx-(fig==='colonial'?13:10)*u,hipY+(fig==='colonial'?10:2)*u);ctx.closePath();ctx.fill();
+  if(fig==='suit'){ctx.fillStyle='#f3f1ec';ctx.beginPath();ctx.moveTo(cx-4*u,shY-1*u);ctx.lineTo(cx+4*u,shY-1*u);ctx.lineTo(cx,shY+12*u);ctx.fill();ctx.fillStyle=trim;ctx.beginPath();ctx.moveTo(cx-1.6*u,shY+1*u);ctx.lineTo(cx+1.6*u,shY+1*u);ctx.lineTo(cx+2*u,shY+11*u);ctx.lineTo(cx,shY+13*u);ctx.lineTo(cx-2*u,shY+11*u);ctx.fill()}
+  if(fig==='colonial'){ctx.fillStyle='#f6f2e6';ctx.beginPath();ctx.moveTo(cx-4*u,shY-1*u);ctx.lineTo(cx+4*u,shY-1*u);ctx.lineTo(cx+2.5*u,shY+8*u);ctx.lineTo(cx-2.5*u,shY+8*u);ctx.fill();ctx.fillStyle=trim;for(let i=0;i<4;i++){ctx.beginPath();ctx.arc(cx+6*u,shY+8*u+i*6*u,1.2*u,0,7);ctx.fill()}}
+  if(fig==='dress'){ctx.strokeStyle=trim;ctx.lineWidth=2*u;ctx.beginPath();ctx.moveTo(cx-9*u,hipY-4*u);ctx.lineTo(cx+9*u,hipY-4*u);ctx.stroke()}
+  // head and hair
+  ctx.fillStyle=ink;ctx.fillRect(cx-2.5*u,shY-6*u,5*u,6*u);ctx.beginPath();ctx.ellipse(cx,headY,7.5*u,8.8*u,0,0,7);ctx.fill();
+  ctx.fillStyle=mixh(ink,'#ffffff',.18);ctx.beginPath();ctx.ellipse(cx+f*2*u,headY-1*u,4*u,5*u,0,0,7);ctx.fill();
+  if(fig==='colonial'){ctx.fillStyle='#ecebe6';ctx.beginPath();ctx.ellipse(cx,headY-4*u,8.5*u,6*u,0,Math.PI,0);ctx.fill();for(const s of [-1,1]){ctx.beginPath();ctx.arc(cx+s*8*u,headY+1*u,3*u,0,7);ctx.arc(cx+s*8*u,headY+5.5*u,2.6*u,0,7);ctx.fill()}}
+  else if(fig==='dress'){ctx.fillStyle=mixh(ink,'#000000',.5);ctx.beginPath();ctx.ellipse(cx,headY-4*u,9*u,7*u,0,Math.PI,0);ctx.fill();ctx.fillRect(cx-9*u,headY-4*u,3.6*u,15*u);ctx.fillRect(cx+5.4*u,headY-4*u,3.6*u,15*u)}
+  else{ctx.fillStyle=mixh(ink,'#000000',.5);ctx.beginPath();ctx.ellipse(cx,headY-4.5*u,8*u,5*u,0,Math.PI,0);ctx.fill()}
+  // arms and what they hold
+  const sh=[cx-11*u,shY+2*u],sh2=[cx+11*u,shY+2*u],arm=(a,b,c)=>{ctx.strokeStyle=coat;ctx.lineWidth=5.5*u;ctx.beginPath();ctx.moveTo(...a);ctx.lineTo(...b);ctx.lineTo(...c);ctx.stroke();ctx.fillStyle=ink;ctx.beginPath();ctx.arc(c[0],c[1],2.6*u,0,7);ctx.fill()};
+  const wood=mixh(trim,'#8a4b1e',.55);
+  if(inst==='gtr'||inst==='bass'){const L=inst==='bass'?40:32;ctx.strokeStyle=mixh(wood,'#000000',.4);ctx.lineWidth=2.6*u;ctx.beginPath();ctx.moveTo(cx-2*u,hipY-6*u);ctx.lineTo(cx+f*L*u,shY-8*u);ctx.stroke();
+    ctx.fillStyle=wood;ctx.beginPath();ctx.ellipse(cx-f*3*u,hipY-6*u,10*u,7.5*u,f*-.5,0,7);ctx.fill();ctx.fillStyle='rgba(0,0,0,.5)';ctx.beginPath();ctx.arc(cx-f*1*u,hipY-7*u,2.2*u,0,7);ctx.fill();
+    arm(sh,[cx-14*u,hipY-14*u],[cx-f*4*u,hipY-6*u]);arm(sh2,[cx+f*14*u,shY+12*u],[cx+f*(L-8)*u,shY-4*u])}
+  else if(inst==='mic'){arm(sh,[cx-13*u,hipY-6*u],[cx-12*u,hipY+2*u]);arm(sh2,[cx+f*13*u,shY+12*u],[cx+f*6*u,headY+9*u]);ctx.fillStyle='#2a2b30';ctx.fillRect(cx+f*6*u-1.2*u,headY+9*u,2.4*u,9*u);ctx.fillStyle='#9aa0aa';ctx.beginPath();ctx.arc(cx+f*6*u,headY+8*u,2.8*u,0,7);ctx.fill()}
+  else if(inst==='tpt'){ctx.fillStyle='#e0b23a';ctx.fillRect(cx+f*4*u-(f<0?22*u:0),headY+4*u,22*u,2.4*u);ctx.beginPath();ctx.moveTo(cx+f*26*u,headY+5*u);ctx.lineTo(cx+f*32*u,headY);ctx.lineTo(cx+f*32*u,headY+10*u);ctx.fill();arm(sh,[cx-6*u,shY+12*u],[cx+f*10*u,headY+7*u]);arm(sh2,[cx+f*14*u,shY+10*u],[cx+f*18*u,headY+7*u])}
+  else if(inst==='sax'){ctx.strokeStyle='#e0b23a';ctx.lineWidth=4*u;ctx.beginPath();ctx.moveTo(cx+f*3*u,headY+6*u);ctx.lineTo(cx+f*6*u,hipY-4*u);ctx.quadraticCurveTo(cx+f*8*u,hipY+6*u,cx+f*15*u,hipY-6*u);ctx.stroke();arm(sh,[cx-8*u,shY+14*u],[cx+f*5*u,shY+10*u]);arm(sh2,[cx+f*14*u,shY+14*u],[cx+f*8*u,hipY-6*u])}
+  else if(inst==='clr'){ctx.strokeStyle='#1d1d22';ctx.lineWidth=3*u;ctx.beginPath();ctx.moveTo(cx+f*2*u,headY+6*u);ctx.lineTo(cx+f*10*u,hipY+2*u);ctx.stroke();arm(sh,[cx-6*u,shY+14*u],[cx+f*5*u,shY+10*u]);arm(sh2,[cx+f*14*u,shY+14*u],[cx+f*8*u,hipY-4*u])}
+  else if(inst==='vln'){ctx.fillStyle=wood;ctx.beginPath();ctx.ellipse(cx-f*9*u,shY+2*u,5*u,8*u,f*.9,0,7);ctx.fill();ctx.strokeStyle='#ddd';ctx.lineWidth=1*u;ctx.beginPath();ctx.moveTo(cx+f*18*u,shY+16*u);ctx.lineTo(cx-f*16*u,shY-6*u);ctx.stroke();arm(sh,[cx-16*u,shY+8*u],[cx-f*18*u,shY]);arm(sh2,[cx+f*14*u,shY+14*u],[cx+f*18*u,shY+16*u])}
+  else if(inst==='book'){ctx.fillStyle=trim;ctx.fillRect(cx-6*u,shY+12*u,12*u,9*u);ctx.fillStyle='#f6f2e6';ctx.fillRect(cx-5*u,shY+13*u,10*u,7*u);arm(sh,[cx-12*u,shY+14*u],[cx-5*u,shY+17*u]);arm(sh2,[cx+12*u,shY+14*u],[cx+5*u,shY+17*u])}
+  else if(inst==='drm'){arm(sh,[cx-14*u,shY+12*u],[cx-12*u,hipY-2*u]);arm(sh2,[cx+14*u,shY+12*u],[cx+12*u,hipY-2*u]);ctx.strokeStyle='#d9c08a';ctx.lineWidth=1.6*u;ctx.beginPath();ctx.moveTo(cx-12*u,hipY-2*u);ctx.lineTo(cx-20*u,hipY-10*u);ctx.moveTo(cx+12*u,hipY-2*u);ctx.lineTo(cx+20*u,hipY-12*u);ctx.stroke();
+    ctx.fillStyle='#f4f1ea';ctx.strokeStyle=trim;ctx.lineWidth=2.5*u;ctx.beginPath();ctx.arc(cx,base-12*u,12*u,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#e0b23a';ctx.beginPath();ctx.ellipse(cx+20*u,hipY-16*u,9*u,2*u,-.2,0,7);ctx.fill()}
+  else if(inst==='pno'){arm(sh,[cx-12*u,shY+12*u],[cx-8*u,hipY-4*u]);arm(sh2,[cx+12*u,shY+12*u],[cx+8*u,hipY-4*u]);ctx.fillStyle='#16171b';ctx.fillRect(cx-26*u,hipY-3*u,52*u,24*u);ctx.fillStyle='#f4f1ea';ctx.fillRect(cx-24*u,hipY-3*u,48*u,5*u);ctx.fillStyle='#16171b';for(let i=0;i<12;i++)if(i%7!==2&&i%7!==6)ctx.fillRect(cx-23*u+i*4*u,hipY-3*u,2*u,3*u)}
+  else{arm(sh,[cx-13*u,shY+14*u],[cx-12*u,hipY+2*u]);arm(sh2,[cx+f*15*u,shY+6*u],[cx+f*18*u,shY-8*u])}
+  ctx.restore()}
+// a movie poster card: title, year and stars. No characters.
+function nsPoster(ctx,card,x,y,w,h){const p=P[card.pid],t=tOf(card),r=srand(hash(key(card))+5);
+  const px=x+w*.12,py=y+h*.08,pw=w*.76,ph=h*.8;ctx.fillStyle=mixh(t[2],'#000000',.15);ctx.fillRect(px,py,pw,ph);
+  const gr=ctx.createLinearGradient(0,py,0,py+ph);gr.addColorStop(0,mixh(['#2d6cdf','#d94f3d','#2a9d8f','#7b4bb7','#e09f3e'][hash(p.name)%5],'#000000',.1));gr.addColorStop(1,'#0d0d12');ctx.fillStyle=gr;ctx.fillRect(px+3,py+3,pw-6,ph-6);
+  ctx.fillStyle='rgba(255,255,255,.85)';for(let i=0;i<14;i++){const sx=px+6+r()*(pw-12),sy=py+6+r()*ph*.45,s=r()*1.6+.5;ctx.beginPath();ctx.arc(sx,sy,s,0,7);ctx.fill()}
+  // light rays from the bottom
+  ctx.save();ctx.globalAlpha=.18;ctx.fillStyle='#fff3c4';for(let i=-3;i<=3;i++){ctx.beginPath();ctx.moveTo(px+pw/2,py+ph*.95);ctx.lineTo(px+pw/2+i*pw*.16-6,py+ph*.25);ctx.lineTo(px+pw/2+i*pw*.16+6,py+ph*.25);ctx.fill()}ctx.restore();
+  const words=p.name.toUpperCase().split(' '),lines=[];let cur='';words.forEach(wd=>{if((cur+' '+wd).trim().length>11&&cur){lines.push(cur);cur=wd}else cur=(cur+' '+wd).trim()});if(cur)lines.push(cur);
+  const fs=Math.max(9,Math.min(19,pw/(Math.max(...lines.map(l=>l.length))*.62)));ctx.font=F_ANTON.replace('#',fs);ctx.textAlign='center';ctx.textBaseline='middle';
+  lines.forEach((l,i)=>{const ly=py+ph*.62+(i-(lines.length-1)/2)*fs*1.05;ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillText(l,px+pw/2+1.5,ly+1.5);ctx.fillStyle='#fff3c4';ctx.fillText(l,px+pw/2,ly)});
+  ctx.font=F_TYPE.replace('#',9);ctx.fillStyle='rgba(255,243,196,.85)';ctx.fillText(String(p.start),px+pw/2,py+ph*.9);ctx.font=F_TYPE.replace('#',7);ctx.fillText('NOW PLAYING',px+pw/2,py+ph*.12)}
+function drawNSFigure(ctx,card,x,y,w,h,opt={}){
+  const p=P[card.pid],t=tOf(card),hs=hash(key(card));
+  if(p.fig==='film')return nsPoster(ctx,card,x,y,w,h);
+  const ink=mixh(t[2],'#0a0b10',.8),c1=t[2],c2=lum(t[3])>.15?t[3]:'#e9e4d4';
+  const base=y+h*.97,u=Math.min(w/100,h/112);
+  if(p.fig==='dual'){const [a,b]=p.name.split(/ & /);const first=P.find(q=>q.name===a&&q.sport==='ns'),second=P.find(q=>q.name===b&&q.sport==='ns');
+    const fa=first?first.fig:(/Hamilton|Washington|Lafayette|Lewis|Burr|Jefferson/.test(a)?'colonial':'suit'),fb=second?second.fig:'suit';
+    nsPerson(ctx,x+w*.3,base,u*.82,{fig:fa==='dual'||fa==='film'||fa==='band'?'suit':fa,inst:'none',c1,c2,ink,mir:false});
+    nsPerson(ctx,x+w*.7,base,u*.82,{fig:fb==='dual'||fb==='film'||fb==='band'?'suit':fb,inst:p.pose||'none',c1:c2===c1?mixh(c1,'#ffffff',.3):mixh(c2,'#000000',.35),c2:c1,ink,mir:true});return}
+  if(p.fig==='band'){const n={'The Beatles':4,'Wham!':2,'The Everly Brothers':2,'ABBA':4,'Queen':4,'No Doubt':4,'Led Zeppelin':4,'The Monkees':4,'The Temptations':5,'The Supremes':3,'The Jackson 5':5,'The Ronettes':3,'Pentatonix':5,'Fleetwood Mac':5,'Earth, Wind & Fire':5,'Trans-Siberian Orchestra':4}[p.name]||(p.name.includes('&')?2:3+(hs%2)),ins=['gtr','mic','bass','drm','gtr','pno'];
+    for(let i=0;i<n;i++){const fx=x+w*((i+.5)/n);nsPerson(ctx,fx,base-(i%2)*h*.04,u*(n>3?.56:.68),{fig:'suit',inst:i===n-1&&n>2?'drm':ins[(i+hs)%3],c1:i%2?c1:mixh(c1,c2,.35),c2,ink,mir:i>=n/2})}return}
+  nsPerson(ctx,x+w/2,base,u,{fig:p.fig||'suit',inst:p.pose||'none',c1,c2,ink,mir:(hs>>3)&1})}
+
 function drawPitch(ctx,card,x,y,w,h){
   const p=P[card.pid],t=tOf(card),r=srand(hash(key(card))+31),era=eraOf(card.year),hs=hash(key(card)),night=['X','B','P'].includes(era)&&hs%2===0,rain=!night&&hs%11===0;
   const sky=ctx.createLinearGradient(0,y,0,y+h*.3);
@@ -5345,7 +6076,7 @@ function drawArt(ctx,card,x,y,w,h,style,radius=0,fig={}){
     ctx.restore();return;
   }
   if(P[card.pid].sport!=='nba'&&(style==='arcade'||ART!=='arcade'||fig._inner)&&!(ART==='pixel'&&!fig._inner)){
-    ctx.save();rr(ctx,x,y,w,h,radius);ctx.clip();if(P[card.pid].sport==='nfl')drawGridiron(ctx,card,x,y,w,h);else if(P[card.pid].sport==='nhl')drawRink(ctx,card,x,y,w,h);else if(P[card.pid].sport==='soc')drawPitch(ctx,card,x,y,w,h);else drawBallpark(ctx,card,x,y,w,h);
+    ctx.save();rr(ctx,x,y,w,h,radius);ctx.clip();if(P[card.pid].sport==='nfl')drawGridiron(ctx,card,x,y,w,h);else if(P[card.pid].sport==='nhl')drawRink(ctx,card,x,y,w,h);else if(P[card.pid].sport==='soc')drawPitch(ctx,card,x,y,w,h);else if(P[card.pid].sport==='ns')nsBg(ctx,card,x,y,w,h);else drawBallpark(ctx,card,x,y,w,h);
     drawFigure(ctx,card,x+4,y+8,w-8,h-12,style==='arcade'?{...fig,style:'arcade'}:fig);ctx.restore();return;
   }
   if(style==='arcade'){
@@ -5413,7 +6144,7 @@ function emblem(ctx,t,code,x,y,r){
   ctx.strokeStyle=onColor(t[2],t[3]);ctx.lineWidth=r*.14;ctx.beginPath();ctx.arc(x,y,r*.84,0,7);ctx.stroke();
   ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';fit(ctx,code,r*1.4,Math.round(r*.7),F_DISP);ctx.fillText(code,x,y+1);ctx.restore();
 }
-function emblemBall(ctx,x,y,r,pos,c,sp){ctx.save();ctx.fillStyle='#f6ecd2';ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();ctx.strokeStyle=c;ctx.lineWidth=3;ctx.stroke();if(sp==='mlb')baseball(ctx,[x,y-3.5],r*.36);else if(sp==='nhl'){ctx.fillStyle='#16171b';ctx.beginPath();ctx.ellipse(x,y-3,r*.42,r*.2,0,0,7);ctx.fill();ctx.fillRect(x-r*.42,y-3,r*.84,r*.16);ctx.beginPath();ctx.ellipse(x,y-3+r*.16,r*.42,r*.2,0,0,7);ctx.fill()}else if(sp==='nfl')football(ctx,[x,y-3.5],-.5,r*.5);else if(sp==='soc')soccerBall(ctx,[x,y-3.5],r*.42);else ball(ctx,[x,y-3.5],r*.42);ctx.fillStyle=c;ctx.font=F_BODY.replace('#',Math.round(r*.5));ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(pos,x,y+r*.56);ctx.restore()}
+function emblemBall(ctx,x,y,r,pos,c,sp){ctx.save();ctx.fillStyle='#f6ecd2';ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();ctx.strokeStyle=c;ctx.lineWidth=3;ctx.stroke();if(sp==='mlb')baseball(ctx,[x,y-3.5],r*.36);else if(sp==='nhl'){ctx.fillStyle='#16171b';ctx.beginPath();ctx.ellipse(x,y-3,r*.42,r*.2,0,0,7);ctx.fill();ctx.fillRect(x-r*.42,y-3,r*.84,r*.16);ctx.beginPath();ctx.ellipse(x,y-3+r*.16,r*.42,r*.2,0,0,7);ctx.fill()}else if(sp==='nfl')football(ctx,[x,y-3.5],-.5,r*.5);else if(sp==='soc')soccerBall(ctx,[x,y-3.5],r*.42);else if(sp==='ns'){ctx.fillStyle=c;ctx.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr2=i%2?r*.22:r*.52;ctx.lineTo(x+Math.cos(a)*rr2,y-3.5+Math.sin(a)*rr2)}ctx.fill()}else ball(ctx,[x,y-3.5],r*.42);ctx.fillStyle=c;ctx.font=F_BODY.replace('#',Math.round(r*.5));ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(pos,x,y+r*.56);ctx.restore()}
 function rcBadge(ctx,card,x,y,sc=1){
   if(!isRC(card))return;const t=tOf(card);
   ctx.save();ctx.translate(x,y);ctx.scale(sc,sc);ctx.beginPath();ctx.moveTo(-15,-17);ctx.lineTo(15,-17);ctx.lineTo(15,2);ctx.quadraticCurveTo(15,14,0,20);ctx.quadraticCurveTo(-15,14,-15,2);ctx.closePath();
@@ -5461,7 +6192,7 @@ function relicWindow(ctx,card,x,y,w,h,patch){
   ctx.fillStyle='rgba(255,255,255,.1)';for(let yy=y;yy<y+h;yy+=3)ctx.fillRect(x,yy,w,.6);
   ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=5;rr(ctx,x-1.5,y-1.5,w+3,h+3,6);ctx.stroke();
   ctx.restore();
-  pill(ctx,patch?'GAME-WORN PATCH':'GAME-WORN JERSEY',x+w/2,y+h+7,'rgba(10,12,16,.82)','#ffe7a0',9,'center');
+  pill(ctx,P[card.pid]&&P[card.pid].sport==='ns'?(patch?'WORN COSTUME PATCH':'WORN COSTUME'):patch?'GAME-WORN PATCH':'GAME-WORN JERSEY',x+w/2,y+h+7,'rgba(10,12,16,.82)','#ffe7a0',9,'center');
 }
 function autograph(ctx,card,cy,sticker){
   const name=P[card.pid].name;
@@ -5492,7 +6223,7 @@ function renderCard(ctx,card){
     ctx.fillStyle=c1;ctx.fillRect(26,ry,198,32);
     ctx.fillStyle='#fff';ctx.textAlign='center';fit(ctx,p.name,184,29,F_SCRIPT);ctx.fillText(p.name,125,ry+24);
     ctx.fillStyle='#4d3f2b';ctx.font=F_BODY.replace('#',13);ctx.fillText(`${t[0].toUpperCase()} ${NICK}  ·  ${(p.sport==='mlb'&&p.pos==='C'?'CATCHER':POSN[p.pos])}`,125,315);
-    ctx.fillStyle='#7a6b4e';ctx.font=F_TYPE.replace('#',10);ctx.fillText(`${p.sport==='mlb'?'GRANDSTAND BUBBLE GUM':p.sport==='nhl'?'GRANDSTAND HOCKEY GUM':p.sport==='soc'?'GRANDSTAND FOOTBALL CLUB GUM':p.sport==='nfl'?'GRANDSTAND GRIDIRON GUM':'GRANDSTAND GUM CO.'} · ${card.year} · No. ${hs%200+1}`,125,336);
+    ctx.fillStyle='#7a6b4e';ctx.font=F_TYPE.replace('#',10);ctx.fillText(`${p.sport==='mlb'?'GRANDSTAND BUBBLE GUM':p.sport==='nhl'?'GRANDSTAND HOCKEY GUM':p.sport==='soc'?'GRANDSTAND FOOTBALL CLUB GUM':p.sport==='ns'?"GRANDMA'S PARLOR GUM":p.sport==='nfl'?'GRANDSTAND GRIDIRON GUM':'GRANDSTAND GUM CO.'} · ${card.year} · No. ${hs%200+1}`,125,336);
     emblemBall(ctx,208+off,238,19,p.pos,c1,p.sport);
     grain(ctx,.22);
     const vg=ctx.createRadialGradient(125,175,110,125,175,230);vg.addColorStop(0,'rgba(120,85,30,0)');vg.addColorStop(1,'rgba(120,85,30,.32)');ctx.fillStyle=vg;ctx.fillRect(0,0,250,350);
@@ -5507,7 +6238,7 @@ function renderCard(ctx,card){
     ctx.fillStyle=c2o;fit(ctx,NICK,142,18,F_DISP);ctx.textBaseline='middle';ctx.fillText(NICK,24,277);ctx.textBaseline='alphabetic';
     emblem(ctx,t,t[4]||p.team,212,276,21);
     ctx.fillStyle=mix(c1,'#000000',.2);ctx.textAlign='center';fit(ctx,NAME,222,19,F_DISP);ctx.fillText(NAME,125,330);
-    ctx.fillStyle='#8a8272';ctx.font=F_BODY.replace('#',10);ctx.fillText(`${(p.sport==='mlb'&&p.pos==='C'?'CATCHER':POSN[p.pos])} · #${p.num} · ${card.year}`,125,343);
+    ctx.fillStyle='#8a8272';ctx.font=F_BODY.replace('#',10);ctx.fillText(`${(p.sport==='mlb'&&p.pos==='C'?'CATCHER':POSN[p.pos])}${p.sport==='ns'?'':' · #'+p.num} · ${card.year}`,125,343);
     grain(ctx,.12);rcBadge(ctx,card,208+off,50);
   } else if(era==='H'){
     ctx.fillStyle=c1;rr(ctx,0,0,250,350,10);ctx.fill();
@@ -5600,7 +6331,7 @@ function renderCard(ctx,card){
   if(card.par===6){
     borderGrad(ctx,['#000','#f2c24b','#000','#fff1c1','#000'],14);
     ctx.fillStyle='rgba(0,0,0,.8)';rr(ctx,20,20,210,30,6);ctx.fill();
-    ctx.fillStyle='#f2c24b';ctx.font=F_TYPE.replace('#',13);ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText("GRANDPA'S ONE-OF-ONE",125,36);
+    ctx.fillStyle='#f2c24b';ctx.font=F_TYPE.replace('#',13);ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(P[card.pid].sport==='ns'?"GRANDMA'S ONE-OF-ONE":"GRANDPA'S ONE-OF-ONE",125,36);
     ctx.fillStyle='rgba(0,0,0,.8)';rr(ctx,174,210,60,42,8);ctx.fill();
     foilText(ctx,'1/1',204,232,26,'center',F_ANTON);ctx.textBaseline='alphabetic';
   }
@@ -5901,7 +6632,7 @@ function saveSizeHelp(bytes=lastPack){
   tips.push(`<li><b>Tap "Save size"</b> at the bottom of the screen any time to see this again.</li>`);
   if(raw>200)tips.push(`<li><b>Sell cheap one-of-a-kind base cards.</b> ${num(raw)} of your different cards are plain base cards. Use <b>Sell cheap cards</b> and slide it up to $2 or $3; that clears the most room.</li>`);
   if((S.keep||[]).length)tips.push(`<li><b>Check your Save list.</b> Saved players and teams can't be sold, so a big team on the list keeps lots of cards.</li>`);
-  const top=parts.slice(0,3).map(x=>({stacks:'your binder',owned:"the players you've found",pc:'your starred cards',stadiumBoxes:'the stadium lockers',rinkBoxes:'the rink boxes',grading:'cards at Slab Happy',finds:'your find history',bigOnes:'million-dollar 1/1s',places:'the rooms'}[x.k]||x.k)+` ${Math.round(x.n/tot*100)}%`).join(', ');
+  const top=parts.slice(0,3).map(x=>({stacks:'your binder',owned:"the players you've found",pc:'your starred cards',stadiumBoxes:'the stadium lockers',gmaBoxes:"Grandma's hatboxes",rinkBoxes:'the rink boxes',grading:'cards at Slab Happy',finds:'your find history',bigOnes:'million-dollar 1/1s',places:'the rooms'}[x.k]||x.k)+` ${Math.round(x.n/tot*100)}%`).join(', ');
   const ci=cheapInfo(Math.max(2,cheapMax()));
   const m=modal(`<h2>Your save file is getting big</h2><p>${esc(PROFILE.name)}'s save is ${Math.round(bytes/1024)} KB. Big saves take longer and could stop saving online. The biggest parts: ${top}.</p><ul style="text-align:left;line-height:1.45;padding-left:20px">${tips.join('')}</ul>
     <div class="row2">${ci.n?`<button class="btn go" id="szCheap">Sell cheap cards…</button>`:''}<button class="btn" data-close>Later</button></div>`);
@@ -6066,28 +6797,29 @@ function onLevel(l){
   renderTabs();
 }
 function showLetters(){
+  if(S.loc==='grandma'){const done=LOCS.grandma.size-S.pile;const ls=GMA_LEDGER.filter(([n])=>done>=n).map(([n,t])=>`<div><h4>${n?num(n)+' CARDS IN':'THE FIRST NOTE'}</h4><div class="letter">${esc(t)}<br><br>— Grandma</div></div>`);modal(`<h2>Notes from Grandma</h2><div class="letters">${ls.reverse().join('')}</div><div class="row2"><button class="btn go" data-close>Close</button></div>`);return}
   const ls=[`<div><h4>THE FIRST LETTER</h4><div class="letter">The shed's yours now. Ten thousand basketball cards, give or take. Most of it is junk. Some of it isn't. One of them is the best card I ever pulled. Go find it.</div></div>`];
   for(let l=2;l<=S.level;l++)ls.push(`<div><h4>LEVEL ${l}</h4><div class="letter">${esc(letterFor(l))}</div></div>`);
   modal(`<h2>Letters from Grandpa</h2><div class="letters">${ls.reverse().join('')}</div><div class="row2"><button class="btn go" data-close>Close</button></div>`);
 }
 function checkSets(){
   SETS.forEach(s=>{
-    if(S.sets[s.id]==='claimed'||(s.g&&!S.garageOpen)||(s.lost&&!S.basementOpen)||(s.rink&&!S.rinkOpen)||(s.stad&&!S.stadiumOpen))return;
+    if(S.sets[s.id]==='claimed'||(s.g&&!S.garageOpen)||(s.lost&&!S.basementOpen)||(s.rink&&!S.rinkOpen)||(s.stad&&!S.stadiumOpen)||(s.gma&&!S.gmaOpen))return;
     const done=s.pids.length>0&&s.pids.every(id=>setHave(s,id));
     if(done&&!S.sets[s.id]){S.sets[s.id]='ready';toast(`Set complete: ${s.name}! Claim it in Sets.`,'gold');renderTabs()}
     else if(!done&&S.sets[s.id]==='ready'){delete S.sets[s.id];renderTabs()}
   });
 }
-function setReward(s){if(s.stad)return {cash:s.pids.length*700,xp:s.pids.length*70};if(s.rink)return {cash:s.pids.length*500,xp:s.pids.length*60};if(s.lost)return {cash:s.pids.length*400,xp:s.pids.length*50};if(s.vpar)return {cash:1000+s.pids.length*250,xp:s.pids.length*40};if(s.id==='wgoat')return {cash:2000,xp:300};if(s.champYr)return {cash:1500+s.pids.length*200,xp:s.pids.length*40};if(s.champ)return {cash:3000,xp:400};if(s.rc)return {cash:s.pids.length*150,xp:s.pids.length*40};return {cash:s.id==='fmvp'?2500:s.id==='fsteel'||s.id==='fpats'?1200:s.id==='ffam'||s.id==='fbro'?1500:s.id==='mvp'||s.id==='bmvp'||s.id==='roy'?2500:s.id==='world'||s.id==='swat'?1200:s.id==='fathers'||s.id==='b500'?1500:s.pids.length*40,xp:s.pids.length*25}}
+function setReward(s){if(s.gma)return {cash:s.pids.length*900,xp:s.pids.length*80};if(s.stad)return {cash:s.pids.length*700,xp:s.pids.length*70};if(s.rink)return {cash:s.pids.length*500,xp:s.pids.length*60};if(s.lost)return {cash:s.pids.length*400,xp:s.pids.length*50};if(s.vpar)return {cash:1000+s.pids.length*250,xp:s.pids.length*40};if(s.id==='wgoat')return {cash:2000,xp:300};if(s.champYr)return {cash:1500+s.pids.length*200,xp:s.pids.length*40};if(s.champ)return {cash:3000,xp:400};if(s.rc)return {cash:s.pids.length*150,xp:s.pids.length*40};return {cash:s.id==='fmvp'?2500:s.id==='fsteel'||s.id==='fpats'?1200:s.id==='ffam'||s.id==='fbro'?1500:s.id==='mvp'||s.id==='bmvp'||s.id==='roy'?2500:s.id==='world'||s.id==='swat'?1200:s.id==='fathers'||s.id==='b500'?1500:s.pids.length*40,xp:s.pids.length*25}}
 function claimSet(id){const s=SETS.find(x=>x.id===id);if(S.sets[id]!=='ready')return;const r=setReward(s);S.sets[id]='claimed';S.cash+=r.cash;addXP(r.xp);toast(`${s.name} claimed: +${money(r.cash)}, +${r.xp} XP`,'gold');updateHeader();renderTabs()}
 function foundOne(c){
   if(S.curry==='drawn'&&P[c.pid].name==='Stephen Curry'){S.curry='done';const bonus=2500;S.cash+=bonus;save('now');
     celebrate(c,()=>queueModal(()=>modal(`<h2>Wait. What?</h2><p><b style="color:var(--ink)">${esc(cardTitle(c))}</b>, one of one.</p><div class="letter">I almost forgot. This one was in my coat pocket the whole time. Steph's rookie year, 2009, one of one. Nobody in the world has another. I wanted you to have it just because.<br><br>— Grandpa</div><p>It's in your PC, and you got ${money(bonus)}.</p><div class="row2"><button class="btn go" data-close>Best day ever</button></div>`)));return}
-  const lostOneCard=LOST_ONES.some(([n,t])=>P[c.pid].name===n&&P[c.pid].team===t);const lostRoom=lostOneCard||(S.loc==='basement'&&DEF[P[c.pid].team]);const loc=lostRoom?'basement':(LOCS[S.loc]&&LOCS[S.loc].sport===P[c.pid].sport)?S.loc:locOf(c.pid);S.oneDone=S.oneDone||{};if((!lostRoom||!(S.bOnes||[]).length)&&(loc!=='stadium'||!(S.sOnes||[]).length))S.oneDone[loc]=true;if(!lostOneCard||S.loc==='basement')S.oneLeft=null;
+  const lostOneCard=LOST_ONES.some(([n,t])=>P[c.pid].name===n&&P[c.pid].team===t);const lostRoom=lostOneCard||(S.loc==='basement'&&DEF[P[c.pid].team]);const loc=lostRoom?'basement':(LOCS[S.loc]&&LOCS[S.loc].sport===P[c.pid].sport)?S.loc:locOf(c.pid);S.oneDone=S.oneDone||{};if((!lostRoom||!(S.bOnes||[]).length)&&(loc!=='stadium'||!(S.sOnes||[]).length)&&(loc!=='grandma'||!(S.gOnes||[]).length))S.oneDone[loc]=true;if(!lostOneCard||S.loc==='basement')S.oneLeft=null;
   const bonus=2500;S.cash+=bonus;const t=S.oneFound.length-1;S.tier=Object.values(S.oneDone).filter(Boolean).length;
   challengeEvent('one',c);save('now');
   celebrate(c,()=>queueModal(()=>{
-    modal(`<h2>You found it.</h2><p><b style="color:var(--ink)">${esc(cardTitle(c))}</b>, one of one. It goes straight into your personal collection. A collector from Tulsa paid ${money(bonus)} just to photograph it.</p><div class="letter">${loc==='stadium'&&SOC_ONE_NOTES[P[c.pid].name]?SOC_ONE_NOTES[P[c.pid].name]+(S.sOnes&&S.sOnes.length?` ${S.sOnes.length} more ${S.sOnes.length===1?'is':'are'} still out there.`:' That makes all twelve. Every legend in the stadium is yours.'):loc==='rink'?"Macklin Celebrini, 2024. His rookie year in San Jose. I got that one the day it came out and hid it before anybody could ask to see it. The best young player in hockey, one of one, in my old rink. Take care of it.":loc==='basement'?({PRV:"The Providence Steamrollers. 1946, the very first season. They won six games and lost fifty-four, and nobody in Rhode Island cared. I cared. I was a boy in the cheap seats at the Rhode Island Auditorium, and Ernie Calverley hit a shot from past half court. Hardly anyone believes that story. Now you've got the card.",H_INR:"Indianapolis, 1978. A skinny seventeen-year-old played eight games for the Racers before they sold him to Edmonton. Eight games. I drove four hours to see one of them.",SEA:"Seattle, 2007. They let the SuperSonics leave town a year later, and I've been mad about it ever since. Hold on to that one. It's a rookie card of a team that isn't there anymore."}[P[c.pid].team]||"One of the lost ones. Keep it safe."):loc==='shed'?"Knew you'd find it. Now you know why I never sold the shed.":loc==='garage'?"Nineteen eighty-four. His rookie year. I bought it off a kid at a Chicago card show for twenty dollars and a Larry Bird. Best trade I ever made, and I've made a lot of them.":loc==='barn'?"That's the one. I kept it in a coffee can under the hayloft for forty years. Best card I ever owned, and now it's yours.":"The attic's treasure. I held that card the day I bought it and couldn't breathe. Now it's yours."}</div><p>That was the only one in the ${LOCS[loc].name.toLowerCase()}. Hits get a little rarer from here and customers pay a little more. The real finish line is still an empty ${loc==='shed'?'shed':'attic'}.</p><div class="row2"><button class="btn go" data-close>Keep sorting</button></div>`);
+    modal(`<h2>You found it.</h2><p><b style="color:var(--ink)">${esc(cardTitle(c))}</b>, one of one. It goes straight into your personal collection. A collector from Tulsa paid ${money(bonus)} just to photograph it.</p><div class="letter">${loc==='grandma'&&GMA_ONE_NOTES[P[c.pid].name]?GMA_ONE_NOTES[P[c.pid].name]+(S.gOnes&&S.gOnes.length?` ${S.gOnes.length} more ${S.gOnes.length===1?'is':'are'} still in my hatboxes.`:' That\'s all twenty, sweetheart. Every one of my treasures is yours.')+'<br><br>— Grandma':loc==='stadium'&&SOC_ONE_NOTES[P[c.pid].name]?SOC_ONE_NOTES[P[c.pid].name]+(S.sOnes&&S.sOnes.length?` ${S.sOnes.length} more ${S.sOnes.length===1?'is':'are'} still out there.`:' That makes all twelve. Every legend in the stadium is yours.'):loc==='rink'?"Macklin Celebrini, 2024. His rookie year in San Jose. I got that one the day it came out and hid it before anybody could ask to see it. The best young player in hockey, one of one, in my old rink. Take care of it.":loc==='basement'?({PRV:"The Providence Steamrollers. 1946, the very first season. They won six games and lost fifty-four, and nobody in Rhode Island cared. I cared. I was a boy in the cheap seats at the Rhode Island Auditorium, and Ernie Calverley hit a shot from past half court. Hardly anyone believes that story. Now you've got the card.",H_INR:"Indianapolis, 1978. A skinny seventeen-year-old played eight games for the Racers before they sold him to Edmonton. Eight games. I drove four hours to see one of them.",SEA:"Seattle, 2007. They let the SuperSonics leave town a year later, and I've been mad about it ever since. Hold on to that one. It's a rookie card of a team that isn't there anymore."}[P[c.pid].team]||"One of the lost ones. Keep it safe."):loc==='shed'?"Knew you'd find it. Now you know why I never sold the shed.":loc==='garage'?"Nineteen eighty-four. His rookie year. I bought it off a kid at a Chicago card show for twenty dollars and a Larry Bird. Best trade I ever made, and I've made a lot of them.":loc==='barn'?"That's the one. I kept it in a coffee can under the hayloft for forty years. Best card I ever owned, and now it's yours.":"The attic's treasure. I held that card the day I bought it and couldn't breathe. Now it's yours."}</div><p>${loc==='grandma'||loc==='stadium'?'':`That was the only one in the ${LOCS[loc].name.toLowerCase()}. `} Hits get a little rarer from here and customers pay a little more. The real finish line is still an empty ${loc==='shed'?'shed':'attic'}.</p><div class="row2"><button class="btn go" data-close>Keep sorting</button></div>`);
   }));
 }
 function fanfare(){
@@ -6122,6 +6854,8 @@ function celebrate(c,done,o={}){
   $('#celBtn',ov).onclick=close;setTimeout(()=>$('#celBtn',ov)?.focus(),400);
 }
 function checkEnd(){
+  if(S.loc==='grandma'){if(S.pile<=0&&!hand.length&&!S.aside.length&&!S.gmaEnd){S.gmaEnd=true;queueModal(()=>modal(`<h2>Grandma's hatboxes are empty.</h2><div class="letter">Seven hundred and fifty thousand cards, sweetheart. Every hatbox, every closet, every shoebox under the bed. You're the best collector this family ever had, and that includes your grandfather.<br><br>Now come have a cookie.<br><br>— Grandma</div><div class="row2"><button class="btn go" data-close>Keep playing</button></div>`))}return}
+  if(S.loc==='stadium')return; // emptying the stadium opens Grandma's House (checkGrandma)
   if(S.loc==='stadium'){if(S.pile<=0&&!hand.length&&!S.aside.length&&!S.stadiumEnd){S.stadiumEnd=true;queueModal(()=>modal(`<h2>The stadium is empty.</h2><div class="letter">A million and ten thousand cards, kiddo. Every room I ever filled. You looked at every single one.<br><br>Go outside. Kick a ball. I'll be watching.<br><br>— Grandpa</div><div class="row2"><button class="btn go" data-close>Keep playing</button></div>`))}return}
   if(S.loc==='rink')return; // emptying the rink opens the stadium (checkStadium)
   if(S.loc==='rink'){if(S.pile<=0&&!hand.length&&!S.aside.length&&!S.rinkEnd){S.rinkEnd=true;queueModal(()=>modal(`<h2>The rink is empty.</h2><div class="letter">Five hundred and ten thousand cards, kiddo. You did it. I never finished sorting this place in thirty years. You did it in a season.<br><br>— Grandpa</div><div class="row2"><button class="btn go" data-close>Keep playing</button></div>`))}return}
@@ -6191,6 +6925,7 @@ function genPackRaw(pk){
     if(kind==='retail')cards.push(rollCard({sport,yLo:1996,filter:p=>p.end>=1996,parMul:2}));
     else if(kind==='hobby')cards.push(i===pk.n-1?rollCard({sport,par:wpick([2,3,4,5,7,8,9],x=>({2:48,3:20,4:9,5:3,7:8,8:10,9:2})[x]),tw:[30,30,20,13,7]}):rollCard({sport,parMul:1.5}));
     else if(sport==='nfl')cards.push(rollCard({sport,yLo:1950,yHi:1979,filter:p=>p.start<=1979&&p.end>=1950,tw:[35,30,18,11,6]}));
+    else if(sport==='ns')cards.push(rollCard({sport,yLo:1920,yHi:1969,filter:p=>p.start<=1969&&p.end>=1920,tw:[5,40,30,15,10]}));
     else if(sport==='soc')cards.push(rollCard({sport,yLo:1950,yHi:1979,filter:p=>p.start<=1979&&p.end>=1950,tw:[5,40,30,15,10]}));
     else if(sport==='nhl')cards.push(rollCard({sport,yLo:1950,yHi:1979,filter:p=>p.start<=1979&&p.end>=1950,tw:[35,30,18,11,6]}));
     else if(sport==='mlb')cards.push(rollCard({sport,yLo:1952,yHi:1979,filter:p=>p.start<=1979&&p.end>=1952,tw:[35,30,18,11,6]}));
@@ -6198,7 +6933,7 @@ function genPackRaw(pk){
   }
   return cards;
 }
-const PACK_MAX={sretail:6,shobby:3,svintage:2,sblaster:3,smega:2,shobbybox:1,dsoc:1,dnfl:1,gscle:3,hretail:6,hhobby:3,hvintage:2,hblaster:3,hmega:2,hhobbybox:1,dnhl:1,sfg:3,dnba:1,dmlb:1,retail:6,hobby:3,vintage:2,bretail:6,bhobby:3,bvintage:2,fretail:6,fhobby:3,fvintage:2,fblaster:3,fmega:2,fhobbybox:1,blaster:3,mega:2,hobbybox:1,bblaster:3,bmega:2,bhobbybox:1},RESTOCK=150;
+const PACK_MAX={nretail:6,nhobby:3,nvintage:2,nblaster:3,nmega:2,nhobbybox:1,dns:1,sretail:6,shobby:3,svintage:2,sblaster:3,smega:2,shobbybox:1,dsoc:1,dnfl:1,gscle:3,hretail:6,hhobby:3,hvintage:2,hblaster:3,hmega:2,hhobbybox:1,dnhl:1,sfg:3,dnba:1,dmlb:1,retail:6,hobby:3,vintage:2,bretail:6,bhobby:3,bvintage:2,fretail:6,fhobby:3,fvintage:2,fblaster:3,fmega:2,fhobbybox:1,blaster:3,mega:2,hobbybox:1,bblaster:3,bmega:2,bhobbybox:1},RESTOCK=150;
 function packMax(id){return PACK_MAX[id]+2*up('vip')}
 function packCost(pk){return Math.round(pk.cost*(up('vip')?.8:1)*(1-cuAmt('packs')/100)*100)/100}
 const NO_LIMIT={has:()=>true}; // Lenny never runs out of anything
@@ -6420,6 +7155,7 @@ const DEALERS={
   nba:{n:'Hardwood Hank',ico:'🏀',col:'#b5541c',d:'Basketball from every era.',hi:["Hoops only at this table.","I've got Lakers, Celtics, Bulls. Take a look."]},
   mlb:{n:'Diamond Dot',ico:'⚾',col:'#1f5e3a',d:'Baseball from every era.',hi:["Baseball cards, the way they used to be.","Ask me about my Yankees box."]},
   nhl:{n:'Puck Pete',ico:'🏒',col:'#1f4e6b',d:'Hockey from teams that aren\'t around anymore.',hi:["Whalers, Nordiques, North Stars. All gone. All here.","I've got a Gretzky Racers card in the back. Not for sale."]},
+  ns:{n:'Parlor Pearl',ico:'🎭',col:'#7a2a55',d:'Presidents, rock stars and movie posters from Grandma\'s era and yours.',hi:["Honey, I've got a signed Lincoln and a Beatles card in the same box.","Movie posters? Christmas records? I've got all of it."]},
   soc:{n:'Pitchside Paolo',ico:'⚽',col:'#1f6b3a',d:'Soccer from every country and every era.',hi:["The whole world plays. The whole world is on this table.","I've got Pele, I've got Messi, I've got a Wanderers card from 1872."]},
   nfl:{n:'Gridiron Gus',ico:'🏈',col:'#6b1f1f',d:'Football from every era.',hi:["Football cards. Sundays all week long.","I sort these by team. Mostly."]},
   hr:{n:'High Roller Harry',ico:'💎',col:'#1d1a2e',d:'Big-money cards only, $1,000 to $10,000 each. Stars, autos, numbered cards and gem mint slabs.',hi:["If you have to ask the price, kid... no, go ahead, ask. It's on the tag.","Nothing on this table is under a grand. Wipe your hands first."]},
@@ -6475,7 +7211,7 @@ const BOT_X={sal:{n:'Big Sal',ico:'🧢',col:'#5a4a3a',d:'Flea market regular. L
   harry:{n:'High Roller Harry',ico:'🎩',col:'#6b4f00',d:'Only deals in the big stuff.',hi:["I don't do bargain bins, kid. Show me the good stuff.","Gem mints, autos, superstars. That's my game."]},
   mo:{n:'Mystery Mo',ico:'🕶️',col:'#3d2a5c',d:'Every card face down.',hi:["Pick a card, any card. You won't know till it's yours.","Could be junk. Could be a jackpot. That's the fun."]}};
 const botInfo=id=>DEALERS[id]||BOT_X[id];
-const botList=()=>['tom','sal','rita','vic','mike','sally','nba','mlb','nfl','nhl','soc'].concat(up('spectrade')?['harry','mo']:[]).filter(id=>botInfo(id)&&(!['nba','mlb','nfl','nhl','soc'].includes(id)||openSports().includes(id)));
+const botList=()=>['tom','sal','rita','vic','mike','sally','nba','mlb','nfl','nhl','soc','ns'].concat(up('spectrade')?['harry','mo']:[]).filter(id=>botInfo(id)&&(!['nba','mlb','nfl','nhl','soc','ns'].includes(id)||openSports().includes(id)));
 const cleanC=c=>{if(c.par===6)c.par=2;if(c.par===8&&c.year<1997)c.par=1;if(c.par===9&&c.year<2000)c.par=7;return c};
 function botCard(id){const sports=openSports(),sp=sports.includes(id)?id:pick(sports);
   if(id==='harry'){let best=null;for(let t=0;t<40;t++){const c=cleanC(rollCard({sport:sp,tw:[0,0,5,35,60],parMul:8}));if(Math.random()<.6)c.g=wpick([9,10],x=>({9:60,10:40})[x]);if(!best||valueOf(c)>valueOf(best))best=c;if(valueOf(c)>=150)return c}return best}
@@ -6892,8 +7628,8 @@ function updateHeader(){
   $('#cash').textContent=money(S.cash);$('#lvl').textContent=S.level;
   const a=xpNeed(S.level),b=xpNeed(S.level+1);$('#xpfill').style.width=Math.min(100,(S.xp-a)/(b-a)*100)+'%';
   $('#xptext').textContent=`${num(S.xp-a)} / ${num(b-a)} XP`;
-  setTxt($('#logoSub'),`${num(LOCS[S.loc]?.size||10000)} cards. ${S.loc==='basement'?'Three of them are the ones.':'One of them is the one.'}`);
-  $('#pileN').textContent=num(S.pile);renderBoxBar();setTxt($('#pileLbl'),'Left in the '+LOCS[S.loc].name.toLowerCase());
+  setTxt($('#logoSub'),`${num(LOCS[S.loc]?.size||10000)} cards. ${S.loc==='grandma'?'Twenty of them are the ones.':S.loc==='basement'?'Three of them are the ones.':'One of them is the one.'}`);setTxt($('#logoName'),S.loc==='grandma'?"Grandma's House":"Grandpa's Shed");document.body.classList.toggle('gma',S.loc==='grandma');
+  $('#pileN').textContent=num(S.pile);renderBoxBar();setTxt($('#pileLbl'),S.loc==='grandma'?"Left at Grandma's":'Left in the '+LOCS[S.loc].name.toLowerCase());
   if(tab==='shed'){const pc=$('#pcN');if(pc)pc.textContent=num(S.pile);updatePile();updatePrimary()}
 }
 const TABS=[['shed','Shed',1],['binder','Binder',1],['upgrades','Upgrades',1],['packs','Packs',3],['counter','Counter',5],['trade','Trade',4],['show','Card Show',5],['sets','Sets',1]];
@@ -6953,7 +7689,7 @@ function renderShed(v){
         <div class="cb cardback c2" style="--w:74px;transform:translate(-70%,-2px) rotate(-5deg)"></div>
         <div class="cb cardback c1" style="--w:74px;transform:translate(-30%,-6px) rotate(7deg)"></div>
         <div class="cb cardback c0" style="--w:74px;transform:translate(-50%,-10px) rotate(0deg)"></div>
-        <div class="box"><span>${S.loc==='stadium'?'SOCCER<br>in the lockers':S.loc==='rink'?'HOCKEY<br>on the ice':S.loc==='basement'?'LOST<br>TEAMS':S.loc==='garage'?'HOOPS<br>bins &amp; bins':S.loc==='barn'?'FOOTBALL<br>by team':S.loc==='attic'?'BASEBALL<br>1952–?':'CARDS<br>don\'t toss!'}</span></div>
+        <div class="box"><span>${S.loc==='grandma'?'GRANDMA\'S<br>hatboxes':S.loc==='stadium'?'SOCCER<br>in the lockers':S.loc==='rink'?'HOCKEY<br>on the ice':S.loc==='basement'?'LOST<br>TEAMS':S.loc==='garage'?'HOOPS<br>bins &amp; bins':S.loc==='barn'?'FOOTBALL<br>by team':S.loc==='attic'?'BASEBALL<br>1952–?':'CARDS<br>don\'t toss!'}</span></div>
       </button>
       <div>
         <div class="pilecount"><b id="pcN">${num(S.pile)}</b>cards to go</div>
@@ -6963,7 +7699,7 @@ function renderShed(v){
       </div>
     </div>
     <div class="tablecol">
-      ${S.atticOpen?`<div class="locs" role="tablist" aria-label="Where to sort">${['shed','attic'].concat(S.barnOpen?['barn']:[],S.garageOpen?['garage']:[],S.basementOpen?['basement']:[],S.rinkOpen?['rink']:[],S.stadiumOpen?['stadium']:[]).map(l=>{const pl=l===S.loc?S.pile:(S.places[l]?.pile??LOCS[l].size);return `<button class="loc" data-loc="${l}" aria-selected="${S.loc===l}"><b>${LOCS[l].long}</b><span>${LOCS[l].label} · ${num(pl)} left</span></button>`}).join('')}</div>`:''}
+      ${S.atticOpen?`<div class="locs" role="tablist" aria-label="Where to sort">${(S.loc==='grandma'?['grandma']:['shed','attic'].concat(S.barnOpen?['barn']:[],S.garageOpen?['garage']:[],S.basementOpen?['basement']:[],S.rinkOpen?['rink']:[],S.stadiumOpen?['stadium']:[])).map(l=>{const pl=l===S.loc?S.pile:(S.places[l]?.pile??LOCS[l].size);return `<button class="loc" data-loc="${l}" aria-selected="${S.loc===l}"><b>${LOCS[l].long}</b><span>${LOCS[l].label} · ${num(pl)} left</span></button>`}).join('')}${S.gmaOpen?(S.loc==='grandma'?`<button class="loc house" data-loc="${S.gpaLast&&S.gpaLast!=='grandma'?S.gpaLast:'shed'}"><b>← Back to Grandpa's</b><span>Sports cards</span></button>`:`<button class="loc house" data-loc="grandma"><b>🏡 Grandma's House</b><span>Non-sports · ${num(S.places.grandma?.pile??LOCS.grandma.size)} left</span></button>`):''}</div>`:''}
       ${boxedRoom(S.loc)&&roomBoxes()?`<div class="boxbar" id="boxbar"></div>`:''}
       <div class="table" id="table"></div>
       <div class="summary" id="summary"></div>
@@ -6971,7 +7707,7 @@ function renderShed(v){
       <div class="hint" id="keyhint"></div><div class="eye" id="eye"></div>
     </div>
     <aside class="side">
-      <div class="paper"><h3>Grandpa's ledger</h3><p id="ledger"></p><button class="btn sm" id="lettersBtn" style="margin-top:10px;background:#e2d5b4;border-color:#c9b88f;color:#3a2f22">Read his letters</button></div>
+      <div class="paper"><h3 id="ledgerH">Grandpa's ledger</h3><p id="ledger"></p><button class="btn sm" id="lettersBtn" style="margin-top:10px;background:#e2d5b4;border-color:#c9b88f;color:#3a2f22">Read his letters</button></div>
       <div class="panel"><h3>Grandpa's challenges</h3><div id="chals" class="chals"></div></div>
       <div class="panel"><h3>The one-of-one</h3><div id="goose"></div></div>
       <div class="panel"><h3>Recent finds</h3><ul class="finds" id="finds"></ul></div>
@@ -7001,7 +7737,7 @@ function renderHand(){
   const t=$('#table');if(!t)return;t.innerHTML='';
   if(!hand.length){
     const n=batchSize();
-    t.innerHTML=`<div class="empty">${S.pile>0?(S.stats.flips===0?'Grandpa\'s boxes are stacked to the rafters. Grab a card, flip it, then decide: keep it for your binder or toss it in the bulk box for quick cash.':`The table's clear. Grab ${n===1?'another card':n+' more'}.`):'The shed is empty. Rip a pack if you want more to sort.'}</div>`;
+    t.innerHTML=`<div class="empty">${S.pile>0?(S.loc==='grandma'&&S.pile===LOCS.grandma.size?'Grandma\'s hatboxes are stacked in every closet. Pick one, grab a handful of cards and flip them.':S.stats.flips===0?'Grandpa\'s boxes are stacked to the rafters. Grab a card, flip it, then decide: keep it for your binder or toss it in the bulk box for quick cash.':`The table's clear. Grab ${n===1?'another card':n+' more'}.`):'The shed is empty. Rip a pack if you want more to sort.'}</div>`;
     renderSummary();updatePrimary();return;
   }
   const w=tableW(hand.length);
@@ -7027,7 +7763,7 @@ function setTxt(el,t){if(el&&el.textContent!==t)el.textContent=t}
 function updatePrimary(){
   const b=$('#primary'),s2=$('#secondary'),kh=$('#keyhint');if(!b)return;const n=Math.min(batchSize(),Math.max(1,S.pile));
   const grabTxt=n===1?'Grab a card':`Grab ${n} cards`,many=hand.length>1;let show2=false;
-  if(phase==='empty'&&!boxOk()){setTxt(b,'Pick a '+BOXW[S.loc][0]);b.disabled=false;setTxt(kh,`Open one of Grandpa's ${BOXW[S.loc][1]} to start sorting the ${LOCS[S.loc].name.toLowerCase()}.`)}
+  if(phase==='empty'&&!boxOk()){setTxt(b,'Pick a '+BOXW[S.loc][0]);b.disabled=false;setTxt(kh,S.loc==='grandma'?`Open one of Grandma's hatboxes to start sorting.`:`Open one of Grandpa's ${BOXW[S.loc][1]} to start sorting the ${LOCS[S.loc].name.toLowerCase()}.`)}
   else if(phase==='empty'){setTxt(b,S.pile>0?grabTxt:LOCS[S.loc].name+' is empty');b.disabled=S.pile<=0;setTxt(kh,S.pile>0?'Space bar grabs from the pile':'')}
   else if(phase==='down'){setTxt(b,many?'Flip them':'Flip it');b.disabled=false;setTxt(kh,'Space bar flips')}
   else{
@@ -7045,9 +7781,11 @@ function updatePrimary(){
 }
 function refreshSide(){
   const lg=$('#ledger');if(!lg)return;
-  let note=LEDGER[0][1];if(S.loc==='stadium'){const done=LOCS.stadium.size-S.pile;note=STADIUM_LEDGER[0][1];STADIUM_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='rink'){const done=LOCS.rink.size-S.pile;note=RINK_LEDGER[0][1];RINK_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='basement'){const done=LOCS.basement.size-S.pile;note=BASEMENT_LEDGER[0][1];BASEMENT_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='garage'){const done=LOCS.garage.size-S.pile;note=GARAGE_LEDGER[0][1];GARAGE_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='barn'){const done=LOCS.barn.size-S.pile;note=BARN_LEDGER[0][1];BARN_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='attic'){const done=LOCS.attic.size-S.pile;note=ATTIC_LEDGER[0][1];ATTIC_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else LEDGER.forEach(([n,t])=>{if(S.stats.flips>=n)note=t});lg.textContent=note;
+  setTxt($('#ledgerH'),S.loc==='grandma'?"Grandma's notebook":"Grandpa's ledger");setTxt($('#lettersBtn'),S.loc==='grandma'?'Read her notes':'Read his letters');
+  let note=LEDGER[0][1];if(S.loc==='grandma'){const done=LOCS.grandma.size-S.pile;note=GMA_LEDGER[0][1];GMA_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='stadium'){const done=LOCS.stadium.size-S.pile;note=STADIUM_LEDGER[0][1];STADIUM_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='rink'){const done=LOCS.rink.size-S.pile;note=RINK_LEDGER[0][1];RINK_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='basement'){const done=LOCS.basement.size-S.pile;note=BASEMENT_LEDGER[0][1];BASEMENT_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='garage'){const done=LOCS.garage.size-S.pile;note=GARAGE_LEDGER[0][1];GARAGE_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='barn'){const done=LOCS.barn.size-S.pile;note=BARN_LEDGER[0][1];BARN_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else if(S.loc==='attic'){const done=LOCS.attic.size-S.pile;note=ATTIC_LEDGER[0][1];ATTIC_LEDGER.forEach(([n,t])=>{if(done>=n)note=t})}else LEDGER.forEach(([n,t])=>{if(S.stats.flips>=n)note=t});lg.textContent=note;
   const g=$('#goose');
   if(S.level<6)g.innerHTML=`<div class="goose locked"><div class="g">?</div><p><b>Not in reach yet</b>Grandpa hid his best card. Reach level 6 and it goes into the pile.</p></div>`;
+  else if(S.loc==='grandma'){const left=(S.gOnes||GMA_ONES).length,got=GMA_ONES.length-left;g.innerHTML=`<div class="goose"><div class="g">1/1</div><p><b>${got} of ${GMA_ONES.length} found</b>${left?`Twenty of Grandma's treasures: the Beatles, Gwen Stefani, Hamilton, Wham!, Elvis, Lincoln and more. Each one is the last card in a hatbox. ${left} still out there.`:'All twenty are safe in your PC.'}</p></div>`}
   else if(S.loc==='stadium'){const left=(S.sOnes||SOC_ONES).length,got=SOC_ONES.length-left;g.innerHTML=`<div class="goose"><div class="g">1/1</div><p><b>${got} of ${SOC_ONES.length} found</b>${left?`Twelve legends are hidden in the stadium: Messi, Ronaldo, Pele, Maradona, Mia Hamm and more. Each one is the last card in a locker that fits them: their club, the women's game or their country. ${left} still out there.`:'All twelve legends are safe in your PC.'}</p></div>`}
   else if(S.loc==='basement'){const left=(S.bOnes||[0,1,2]).length,got=3-left;g.innerHTML=`<div class="goose"><div class="g">1/1</div><p><b>${got} of 3 found</b>${left?`Three of Grandpa's lost-team one-of-ones are down here. ${left} still in the pile.`:'All three lost-team one-of-ones are safe in your PC.'}</p></div>`}
   else if((S.oneDone||{})[S.loc])g.innerHTML=`<div class="goose"><div class="g">1/1</div><p><b>Found it!</b>Grandpa's ${LOCS[S.loc].name.toLowerCase()} one-of-one is safe in your PC.</p></div>`;
@@ -7075,7 +7813,7 @@ function binderList(sp){
   return ks;
 }
 function statsHTML(total,worth){
-  let pcV=0,slabs=0,slabV=0,slabRaw=0,tens=0,best=null,bestV=0,ones=0;const spV={nba:0,mlb:0,nfl:0,nhl:0,soc:0};
+  let pcV=0,slabs=0,slabV=0,slabRaw=0,tens=0,best=null,bestV=0,ones=0;const spV={nba:0,mlb:0,nfl:0,nhl:0,soc:0,ns:0};
   for(const k in S.stacks){const c=fromKey(k),n=S.stacks[k],v=valueOf(c);
     if(v>bestV){bestV=v;best=c}if(S.pc[k])pcV+=v;spV[P[c.pid].sport]+=v*n;if(c.par===6)ones+=n;
     if(c.g){slabs+=n;slabV+=v*n;const r={...c};delete r.g;slabRaw+=valueOf(r)*n;if(c.g===10)tens+=n}}
@@ -7093,7 +7831,7 @@ function statsHTML(total,worth){
   </div></details>`;
 }
 // every sport you have cards in shows up, even one you haven't reached in the shed yet (gifts and trades)
-function binderSports(){const o=openSports().slice(),have=new Set();for(const k in S.stacks){const p=P[+k.split('.')[0]];if(p)have.add(p.sport)}['nba','mlb','nfl','nhl','soc'].forEach(sp=>{if(have.has(sp)&&!o.includes(sp))o.push(sp)});return o}
+function binderSports(){const o=openSports().slice(),have=new Set();for(const k in S.stacks){const p=P[+k.split('.')[0]];if(p)have.add(p.sport)}['nba','mlb','nfl','nhl','soc','ns'].forEach(sp=>{if(have.has(sp)&&!o.includes(sp))o.push(sp)});return o}
 function renderBinder(v){
   v=v||$('#view');
   const total=Object.values(S.stacks).reduce((a,b)=>a+b,0);
@@ -7273,16 +8011,16 @@ function renderPacks(v){
 /* ---------- team boxes: a box of loose cards from one team, sorted in that sport's room ---------- */
 const TB_PRICE={100:50,250:110,500:200};
 // a sport's team box goes to its boxed room (attic, barn, or the garage for basketball)
-const tbRoom=sp=>sp==='mlb'?(S.atticOpen?'attic':null):sp==='nfl'?(S.barnOpen?'barn':null):sp==='nhl'?(S.rinkOpen?'rink':null):sp==='soc'?(S.stadiumOpen?'stadium':null):(S.garageOpen?'garage':null);
+const tbRoom=sp=>sp==='mlb'?(S.atticOpen?'attic':null):sp==='nfl'?(S.barnOpen?'barn':null):sp==='nhl'?(S.rinkOpen?'rink':null):sp==='soc'?(S.stadiumOpen?'stadium':null):sp==='ns'?(S.gmaOpen?'grandma':null):(S.garageOpen?'garage':null);
 const RIVALS={gscle:{sp:'nba',nick:'Warriors vs Cavs',codes:['GSW','SFW','PHW','CLE'],d:'Warriors and Cavaliers from every era, with a shot at their 2015 to 2018 Finals cards.'},
   sflad:{sp:'mlb',nick:'Giants vs Dodgers',codes:['M_SFG','M_NYG','M_LAD','M_BRO'],d:'Giants and Dodgers from New York to California, with a shot at Giants World Series Champs cards.'}};
 // a rivalry box goes to that sport's boxed room, or to any boxed room you have open
-const rivRoom=sp=>tbRoom(sp)||(S.atticOpen?'attic':S.barnOpen?'barn':S.garageOpen?'garage':S.rinkOpen?'rink':S.stadiumOpen?'stadium':null);
+const rivRoom=sp=>tbRoom(sp)||(S.atticOpen?'attic':S.barnOpen?'barn':S.garageOpen?'garage':S.rinkOpen?'rink':S.stadiumOpen?'stadium':S.gmaOpen?'grandma':null);
 function rivalHTML(){const ok=Object.keys(RIVALS).filter(id=>rivRoom(RIVALS[id].sp));if(!ok.length)return '';
   return `<h3 class="sech">Rivalry boxes</h3><p class="note" style="margin:-4px 0 12px">${ok.map(id=>`<b>${RIVALS[id].nick}:</b> ${RIVALS[id].d}`).join(' ')} Each one shows up as its own box to sort.</p>
   <div class="pk tbox"><div class="tbrow"><label>Rivalry <select id="rvPick">${ok.map(id=>`<option value="${id}">${esc(RIVALS[id].nick)}</option>`).join('')}</select></label>
   <label>Size <select id="rvSize">${Object.keys(TB_PRICE).map(n=>`<option value="${n}">${n} cards</option>`).join('')}</select></label><button class="btn go" id="rvBuy">Buy</button></div></div>`}
-function teamGroups(){const g={};P.forEach(p=>{const t=TEAMS[p.team];if(!t||!tbRoom(p.sport))return;const k=p.sport==='soc'?'soc:'+t[0]+' '+t[1]:p.sport+':'+t[1];(g[k]=g[k]||{sp:p.sport,nick:p.sport==='soc'?t[0]+' '+t[1]:t[1],codes:new Set(),n:0}).codes.add(p.team);g[k].n++});
+function teamGroups(){const g={};P.forEach(p=>{const t=TEAMS[p.team];if(!t||!tbRoom(p.sport))return;const full=p.sport==='soc'||p.sport==='ns';const k=full?p.sport+':'+t[0]+' '+t[1]:p.sport+':'+t[1];(g[k]=g[k]||{sp:p.sport,nick:full?t[0]+' '+t[1]:t[1],codes:new Set(),n:0}).codes.add(p.team);g[k].n++});
   return Object.values(g).map(x=>({...x,codes:[...x.codes]})).sort((a,b)=>a.sp.localeCompare(b.sp)||a.nick.localeCompare(b.nick))}
 function teamBoxHTML(){const gs=teamGroups();if(!gs.length)return '';
   const sports=[...new Set(gs.map(x=>x.sp))];
@@ -7292,7 +8030,7 @@ function teamBoxHTML(){const gs=teamGroups();if(!gs.length)return '';
 function buyTeamBox(val,n){const rv=RIVALS[val];const g=rv?{...rv,riv:val}:teamGroups().find(x=>x.sp+':'+x.nick===val);const cost=TB_PRICE[n];if(!g||!cost)return;
   if(S.cash<cost){toast(`That box costs ${money(cost)}.`);return}
   const loc=g.riv?rivRoom(g.sp):tbRoom(g.sp);if(!loc)return;ensureBoxes();const rb=roomBoxes(loc);if(!rb)return;
-  S.cash-=cost;const id={attic:'b',barn:'f',garage:'g',rink:'r',stadium:'z'}[loc]+'t'+Date.now().toString(36);
+  S.cash-=cost;const id={attic:'b',barn:'f',garage:'g',rink:'r',stadium:'z',grandma:'n'}[loc]+'t'+Date.now().toString(36);
   rb.push({id,label:`${g.nick} box from Lenny's`,teams:g.codes,tm:g.codes[g.codes.length-1],total:n,left:n,...(g.riv?{riv:g.riv,sp:g.sp}:{})});
   if(S.loc===loc)S.pile+=n;else{S.places[loc]=S.places[loc]||{pile:0,oneLeft:null};S.places[loc].pile+=n}
   save('now');updateHeader();
@@ -7424,7 +8162,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-18.1442';
+const APP_VERSION = '2026-11-19.1201';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
