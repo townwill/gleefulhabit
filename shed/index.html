@@ -5170,6 +5170,7 @@ function ensureBoxes(){
   boxGmaOnes();
   // one-time gift from Will: two free instant sorts for Colton, picked from a pop-up (Nov 2026)
   if(isColton()&&!S.gdGift){S.gdGift=true;S.instaTokens=(S.instaTokens||0)+2;save(true);setTimeout(()=>queueModal(()=>instaPick(true)),600)}
+  else if(isColton()&&!S.gdGift2){S.gdGift2=true;S.instaTokens=(S.instaTokens||0)+1;save(true);setTimeout(()=>queueModal(()=>instaPick('more')),600)}
   // Will raised Colton's Good Daddy to 10% (Nov 2026)
   (S.customUps||[]).forEach(u=>{if(u.fx==='instabox'&&/good daddy/i.test(u.name||'')&&u.amt<10)u.amt=10});
   if(S.stadiumOpen&&!S.stadiumBoxes){const pile=S.loc==='stadium'?S.pile:(S.places.stadium?S.places.stadium.pile:LOCS.stadium.size);S.stadiumBoxes=makeBoxes(Math.max(1,pile),STADIUM_TEMPLATES,'z');S.stadiumBoxes.forEach(b=>{if(b.loose0){b.loose=true;b.id='zloose'}});S.stadiumCur=null;
@@ -5259,14 +5260,23 @@ function showBoxPicker(){
   const m=modal(S.loc==='grandma'?`<h2>Which hatbox next?</h2><p>Grandma's closets, the sewing room and under the beds. One hatbox for each kind of card, plus her favorites and the loose cards from packs. Every 1/1 is the last card in its hatbox.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:S.loc==='stadium'?`<h2>Which locker next?</h2><p>The locker rooms, the tunnels, under the stands. One locker for every big club, one for each country, the World Cups, the women's game, the founders, the goalkeepers, MLS and the NWSL, and a locker of loose cards from packs. The twelve 1/1s could be in any of them. ${list.filter(x=>x.crate&&x.left<=0).length} of ${list.filter(x=>x.crate).length} clubs done.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:S.loc==='rink'?`<h2>Which box next?</h2><p>The rink floor is covered in boxes: one for every NHL team (old cities included), the Original Six, goalies, the PWHL, rookies, and a box of loose cards from packs. Hockey packs you rip at Lenny's toss their base cards in that loose box. Finishing all 32 team boxes pays a big bonus. ${list.filter(x=>x.crate&&x.left<=0).length} of 32 teams done.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:gar?`<h2>Which bin next?</h2><p>The garage walls are lined with plastic bins: one for every NBA team, the WNBA teams, Team USA, college cards, and whatever else Grandpa couldn't fit in the house. Finishing a bin pays a bonus, and finishing all 30 NBA team bins pays a big one. ${list.filter(x=>x.crate&&x.left<=0).length} of 30 teams done.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:barn?`<h2>Which crate next?</h2><p>The barn is stacked with crates, one for every NFL team plus a few Grandpa never labeled right. Finishing a crate pays a bonus, and finishing all 32 team crates pays a big one. ${list.filter(x=>x.crate&&x.left<=0).length} of 32 teams done.</p><div class="boxgrid">${tiles}</div>`:`<h2>Which box next?</h2><p>Grandpa's attic is full of boxes. Each one has a different mix of cards, and finishing a box pays a bonus. You can switch boxes any time.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`);
   m.querySelectorAll('[data-box]').forEach(b=>b.onclick=()=>pickBox(b.dataset.box));
   if(S.instaTokens>0){const r=$('.row2',m);if(r)r.insertAdjacentHTML('afterbegin',`<button class="btn go" id="useInsta">⚡ Instant sort a ${BOXW[S.loc][0]} (${S.instaTokens} left)</button>`);const u=$('#useInsta',m);if(u)u.onclick=()=>{closeModal(true);instaPick()}}
+  else if(isColton()){const r=$('.row2',m);if(r)r.insertAdjacentHTML('afterbegin',`<button class="btn" id="earnInsta">⚡ Earn an instant sort</button>`);const u=$('#earnInsta',m);if(u)u.onclick=()=>{closeModal(true);earnInsta()}}
   $('.mbox',m).classList.add('wide');
 }
+// earn an instant sort: pay $1,000,000 or take a 30-minute break
+const INSTA_PRICE=1e6,INSTA_BREAK=30*60e3;
+function earnInsta(){if(S.breakEarn){toast('Your 30-minute break is already earning one.');return}
+  const m=modal(`<h2>⚡ Earn an instant sort</h2><p>An instant sort lets you pick any box and it sorts itself. Two ways to earn one:</p>
+    <div class="caacts"><button class="btn${S.cash>=INSTA_PRICE?' go':''}" id="eiPay" ${S.cash>=INSTA_PRICE?'':'disabled'}>Pay ${money(INSTA_PRICE)}</button><button class="btn go" id="eiBreak">Take a 30-minute break</button></div>
+    <p class="note">The break locks the game for 30 minutes. When it's over, the instant sort is yours.</p><div class="row2"><button class="btn" data-close>Not now</button></div>`);
+  $('#eiPay',m).onclick=()=>{if(S.cash<INSTA_PRICE)return;S.cash-=INSTA_PRICE;S.instaTokens=(S.instaTokens||0)+1;save('now');updateHeader();closeModal(true);toast(`Bought an instant sort for ${money(INSTA_PRICE)}.`,'good');instaPick()};
+  $('#eiBreak',m).onclick=()=>{closeModal(true);if(phase==='up')sortHand('marks',true);S.breakEarn=true;S.breakUntil=Date.now()+INSTA_BREAK;save('now');breakTick(0)}}
 // free instant sorts: pick any box and it sorts itself (hits to the binder, the rest sold as bulk)
 function instaRoom(){return boxedRoom(S.loc)&&roomBoxes(S.loc)?S.loc:S.gmaOpen?'grandma':S.stadiumOpen?'stadium':S.rinkOpen?'rink':null}
 function instaPick(intro){if(!(S.instaTokens>0))return;const room=instaRoom();if(!room)return;if(S.loc!==room)switchLoc(room);ensureBoxes();
   const list=(roomBoxes(room)||[]).filter(b=>b.left>0&&!b.loose&&!b.vault);if(!list.length){toast('No boxes left to sort here.');return}
   const tiles=list.map(b=>`<button class="boxtile" data-ib="${b.id}"${b.tm&&TEAMS[b.tm]?` style="box-shadow:inset 6px 0 0 ${TEAMS[b.tm][2]}"`:''}><span class="bl">${esc(b.label)}</span><span class="bn">${num(b.left)} cards</span></button>`).join('');
-  const m=modal(`<h2>⚡ ${intro?'Good Daddy bonus!':'Instant sort'}</h2><p>${intro?`Dad gave you <b>${S.instaTokens} instant sorts</b>. `:''}Pick a ${BOXW[room][0]} and it sorts itself right now: hits and set cards go to your binder, the rest gets sold as bulk. <b>${S.instaTokens} left.</b></p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Save ${S.instaTokens>1?'them':'it'} for later</button></div>`);
+  const m=modal(`<h2>⚡ ${intro?'Good Daddy bonus!':'Instant sort'}</h2><p>${intro==='more'?`Dad gave you one more instant sort. You can earn more by paying ${money(INSTA_PRICE)} or taking a 30-minute break: look for <b>Earn an instant sort</b> when you pick a box. `:intro?`Dad gave you <b>${S.instaTokens} instant sorts</b>. `:''}Pick a ${BOXW[room][0]} and it sorts itself right now: hits and set cards go to your binder, the rest gets sold as bulk. <b>${S.instaTokens} left.</b></p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Save ${S.instaTokens>1?'them':'it'} for later</button></div>`);
   $('.mbox',m).classList.add('wide');
   m.querySelectorAll('[data-ib]').forEach(t=>t.onclick=()=>{const b=list.find(x=>x.id===t.dataset.ib);if(!b||!(S.instaTokens>0))return;S.instaTokens--;b.ir=true;closeModal(true);setCur(b.id);instaSort(b);
     if(S.instaTokens>0)queueModal(()=>instaPick())})}
@@ -8125,11 +8135,12 @@ function breakTick(dtMs){
   if(!PROFILE||!isColton()){if(breakShown){breakEl().hidden=true;breakShown=false}return false}
   if(breakOn()){const el=breakEl(),left=Math.ceil((S.breakUntil-Date.now())/1000),t=`${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`;
     if(!breakShown){breakShown=true;el.hidden=false;if(modalOpen)closeModal(true);
-      el.innerHTML=`<div class="bkbox"><div class="bkclock" id="bkT">${t}</div><h2>Break time, Colton!</h2><div class="letter">Twenty minutes of sorting. Go get a drink of water, stretch, look out a window. The cards will be right here when you get back.<br><br>— Grandpa</div><p class="note">Your game is saved. The shed opens back up when the timer runs out.</p><button class="btn" id="bkSwitch">Switch player</button></div>`;
+      el.innerHTML=`<div class="bkbox"><div class="bkclock" id="bkT">${t}</div><h2>Break time, Colton!</h2><div class="letter">${S.breakEarn?'Thirty minutes off, and an instant sort waiting for you when you come back. Go play outside or read a book. Good deal.':'Twenty minutes of sorting. Go get a drink of water, stretch, look out a window. The cards will be right here when you get back.'}<br><br>— Grandpa</div><p class="note">Your game is saved. The shed opens back up when the timer runs out.</p><button class="btn" id="bkSwitch">Switch player</button></div>`;
       $('#bkSwitch').onclick=()=>{breakEl().hidden=true;breakShown=false;PROFILE=null;showPicker()}}
     else{const e=$('#bkT');if(e&&e.textContent!==t)e.textContent=t}
     return true}
   if(breakShown){breakShown=false;breakEl().hidden=true;S.playMs=0;S.breakAt=null;save('now');toast('Break is over. Welcome back!','good');render();updateHeader()}
+  if(S.breakEarn){S.breakEarn=false;S.instaTokens=(S.instaTokens||0)+1;save('now');toast('You earned an instant sort for taking a break!','gold',8000);setTimeout(()=>queueModal(()=>instaPick()),800)}
   if(!document.hidden){S.playMs=(S.playMs||0)+dtMs;
     if(S.playMs>=playLimit()-120e3&&!S.breakWarned){S.breakWarned=true;toast('Two more minutes, then Grandpa wants you to take a break.','',6000)}
     if(S.playMs>=playLimit()){S.playMs=0;S.breakAt=null;S.breakWarned=false;S.breakUntil=Date.now()+BREAK_MS;if(phase==='up')sortHand('marks',true);save('now');breakTick(0);return true}}
@@ -8180,7 +8191,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-19.2023';
+const APP_VERSION = '2026-11-20.1228';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
