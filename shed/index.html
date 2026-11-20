@@ -4745,13 +4745,26 @@ function showPicker(){
   const list=allProfiles();
   const m=modal(`<h2>Who's sorting today?</h2><p>Everyone gets their own shed, binder and cash.</p><div class="pgrid">${list.map(p=>`<button class="pcard" data-pid="${esc(p.id)}"><span class="av" style="background:${esc(p.color)}">${esc(p.name.slice(0,2).toUpperCase())}</span><b>${esc(p.name)}</b><span>${esc(summaryFor(p))}</span></button>`).join('')}</div>
     <form class="newp" id="newpForm"><input id="newpName" maxlength="20" placeholder="New player's name" aria-label="New player's name"><button class="btn" type="submit">Add player</button></form>
-    <p class="note" id="syncNote" style="font-size:14px">${dbNS?'Games save to your Google account, so you can keep playing on the iPad or phone.':'Checking for saved games…'}</p>`,{locked:true});
+    <p class="note" id="syncNote" style="font-size:14px">${dbNS?'Games save to your Google account, so you can keep playing on the iPad or phone.':'Checking for saved games…'}</p>${lsGet('grandpas-shed-unlock')?'<button class="btn sm" id="pwLock" type="button">🔒 Lock Will\'s game on this device</button>':''}`,{locked:true});
+  {const lk=$('#pwLock',m);if(lk)lk.onclick=()=>{localStorage.removeItem('grandpas-shed-unlock');lk.remove();toast("Will's game is locked on this device.")}}
   if(dbNS)dbNS.collection('profiles').get().then(snap=>{snap.docs.forEach(d=>{if(d.exists)cloudProfiles[d.id]=d.data()});m.querySelectorAll('[data-pid]').forEach(b=>{const p=allProfiles().find(x=>x.id===b.dataset.pid);const sp=b.querySelector('span:last-child');if(p&&sp)sp.textContent=summaryFor(p)})}).catch(()=>{});
-  m.querySelectorAll('[data-pid]').forEach(b=>b.onclick=()=>{const p=allProfiles().find(x=>x.id===b.dataset.pid);if(p){closeModal(true);choose(p)}});
-  $('#newpForm',m).onsubmit=e=>{e.preventDefault();const n=$('#newpName',m).value.trim();if(!n)return;
+  m.querySelectorAll('[data-pid]').forEach(b=>b.onclick=()=>{const p=allProfiles().find(x=>x.id===b.dataset.pid);if(!p)return;closeModal(true);if(pwLocked(p))askPw(p);else choose(p)});
+  $('#newpForm',m).onsubmit=e=>{e.preventDefault();const n=$('#newpName',m).value.trim();if(!n)return;if(/^\s*will\s*$/i.test(n)){toast('That name is taken.');return}
     const list=localProfiles();let id=slug(n);if(allProfiles().some(p=>p.id===id))id+='-'+Math.random().toString(36).slice(2,6);
     const p={id,name:n,color:PCOLORS[allProfiles().length%PCOLORS.length]};list.push(p);lsSet(LS_PROFILES,list);closeModal(true);choose(p)};
 }
+// Dad's profile has a password (only its SHA-256 is in the code). 'Remember' keeps this device unlocked.
+const PW_HASH='8777d1478efb60f99370a1ae4ddca08fb126966a1837b03df838307f68fdce90',LS_UNLOCK='grandpas-shed-unlock';
+const pwLocked=p=>(p.name||'').trim().toLowerCase()==='will'&&lsGet(LS_UNLOCK)!==PW_HASH;
+async function pwHash(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('grandpas-shed:'+t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+function askPw(p){const m=modal(`<h2>🔒 ${esc(p.name)}'s game</h2><p>This one needs a password.</p><form id="pwForm"><input id="pwIn" type="password" autocomplete="current-password" aria-label="Password" placeholder="Password" style="width:100%;font:inherit;font-size:16px;padding:10px;border-radius:10px;background:var(--panel2);color:inherit;border:1px solid var(--line)">
+    <label style="display:flex;gap:8px;align-items:center;margin:10px 0"><input type="checkbox" id="pwRem"> Remember on this device</label><p class="note" id="pwMsg"></p>
+    <div class="row2"><button class="btn go" type="submit">Open</button><button class="btn" type="button" id="pwBack">Back</button></div></form>`,{locked:true});
+  setTimeout(()=>{const i=$('#pwIn',m);if(i)i.focus()},100);let tries=0;
+  $('#pwBack',m).onclick=()=>{closeModal(true);showPicker()};
+  $('#pwForm',m).onsubmit=async e=>{e.preventDefault();const h=await pwHash($('#pwIn',m).value);
+    if(h!==PW_HASH){tries++;$('#pwMsg',m).textContent=tries>2?'Nope. Ask Dad.':'Wrong password.';$('#pwIn',m).value='';return}
+    if($('#pwRem',m).checked)lsSet(LS_UNLOCK,PW_HASH);closeModal(true);choose(p)}}
 // always read the latest online copy first, so a game played on another device (your phone, the Mac) picks up where it left off
 async function freshCloud(id){
   if(!dbNS)return;try{const snap=await Promise.race([dbNS.doc('profiles/'+id).get(),new Promise((_,r)=>setTimeout(()=>r('slow'),3000))]);if(snap&&snap.exists)cloudProfiles[id]=snap.data()}catch(e){}
@@ -8594,7 +8607,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-20.1457';
+const APP_VERSION = '2026-11-20.1513';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
