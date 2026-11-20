@@ -7340,13 +7340,14 @@ function markDone(id){S.offerDone=S.offerDone||{};S.offerDone[id]=1;const ks=Obj
 async function settleOffers(){if(!PROFILE||!dbNS)return;const me=PROFILE.id;S.offerDone=S.offerDone||{};let changed=false;
   for(const o of OFF_IN){if(o.kind){if(o.status==='open'&&!cuTold.has(o.id)){cuTold.add(o.id);toast(o.kind==='upshare'?`📬 ${o.fromName} sent you an upgrade: ${o.up&&o.up.name}. See Upgrades.`:`📬 ${o.fromName} made an upgrade for you to approve: ${o.up&&o.up.name}. See Upgrades.`,'gold',8000)}continue}if(!(o.gift&&o.status==='open')||S.offerDone[o.id]||offerBusy.has(me+':'+o.id)||PROFILE.id!==me)continue;offerBusy.add(me+':'+o.id);
     markDone(o.id);takeBig(o.big);(o.give||[]).forEach(k=>addCard(fromKey(k),'gift'));changed=true;
-    mailLog(`🎁 ${o.fromName} sent you ${cardsTxt(o.give)}.`);toast(`🎁 ${o.fromName} sent you ${plural(o.give.length,'card')}: ${cardsTxt(o.give)}!`,'gold',8000);
+    if(o.cash>0){const c=Math.round(+o.cash*100)/100;S.cash+=c;mailLog(`💵 ${o.fromName} sent you ${money(c)}.`);toast(`💵 ${o.fromName} sent you ${money(c)}!`,'gold',8000);updateHeader()}
+    else{mailLog(`🎁 ${o.fromName} sent you ${cardsTxt(o.give)}.`);toast(`🎁 ${o.fromName} sent you ${plural(o.give.length,'card')}: ${cardsTxt(o.give)}!`,'gold',8000)}
     try{await dbNS.doc('offers/'+o.id).update({status:'accepted',doneAt:Date.now()})}catch(e){}}
   for(const o of OFF_OUT){if(o.status==='open'||S.offerDone[o.id]||offerBusy.has(me+':'+o.id)||PROFILE.id!==me)continue;offerBusy.add(me+':'+o.id);markDone(o.id);changed=true;
     if(o.kind==='upshare'){const nm=o.toName||'They',n=(o.up&&o.up.name)||'your upgrade';toast(o.status==='accepted'?`${nm} added "${n}" to their Upgrades.`:`${nm} passed on "${n}".`,'good',6000);mailLog(o.status==='accepted'?`${nm} added your upgrade "${n}".`:`${nm} passed on your upgrade "${n}".`);try{await dbNS.doc('offers/'+o.id).delete()}catch(e){}continue}
     if(o.kind==='upgrade'){cuSettle(o);try{await dbNS.doc('offers/'+o.id).delete()}catch(e){}continue}const nm=o.toName||'They';
     if(o.status==='accepted'){if(!o.gift){takeBig(o.wantBig);(o.want||[]).forEach(k=>addCard(fromKey(k),'trade'));S.stats.trades++;addXP(15);mailLog(`${nm} took your trade. You got ${cardsTxt(o.want)}.`);toast(`${nm} took your trade! You got ${cardsTxt(o.want)}.`,'gold',8000)}
-      else mailLog(`${nm} got the ${plural(o.give.length,'card')} you sent.`)}
+      else mailLog(o.cash>0?`${nm} got the ${money(o.cash)} you sent.`:`${nm} got the ${plural(o.give.length,'card')} you sent.`)}
     else{(o.give||[]).forEach(k=>addCard(fromKey(k),'trade'));const why=o.status==='passed'?`${nm} passed on your trade.`:o.status==='countered'?`${nm} sent back a counter offer.`:'You canceled your offer.';
       mailLog(why);toast(`${why} Your cards are back in your binder.`,'',6000)}
     try{await dbNS.doc('offers/'+o.id).delete()}catch(e){}}
@@ -7378,6 +7379,22 @@ async function playerBuilder(to,counter,pre){
   openBuilder({title:counter?`Counter ${to.name}'s offer`:`Propose a trade to ${to.name}`,sub:`Pick your cards on the left and ${esc(to.name)}'s on the right. Your cards wait in the mailbox until ${esc(to.name)} answers.`,
     mine:myItems(true),theirs,theirBig:theirs.big,fair:true,give:counter?counter.want.filter(k=>freeCountP(k)>0):(pre||[]),get:counter?counter.give:[],sendLabel:counter?'Send counter offer':'Send trade offer',
     onSend:async(give,get)=>{const ok=await sendOffer(to,give,get,false,theirs.big);if(ok&&counter){try{await dbNS.doc('offers/'+counter.id).update({status:'countered',doneAt:Date.now()})}catch(e){}}return ok}})}
+// send cash to another player: it leaves your wallet now and lands in theirs next time they play
+function sendCashModal(to){
+  const m=modal(`<h2>💵 Send cash to ${esc(to.name)}</h2><p>You have <b>${money(S.cash)}</b>. It's a gift: ${esc(to.name)} gets it next time they play.</p>
+    <div class="row2" style="justify-content:flex-start;flex-wrap:wrap">${[1000,10000,100000,1000000].map(v=>`<button class="btn sm" data-amt="${v}" ${S.cash>=v?'':'disabled'}>${money(v)}</button>`).join('')}</div>
+    <label>Amount $<input type="number" id="scAmt" min="1" step="1" inputmode="decimal" style="font:inherit;width:10em;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:8px;padding:8px"></label><p class="note" id="scMsg"></p>
+    <div class="row2"><button class="btn go" id="scSend">Send</button><button class="btn" data-close>Cancel</button></div>`);
+  m.querySelectorAll('[data-amt]').forEach(b=>b.onclick=()=>{$('#scAmt',m).value=b.dataset.amt});
+  $('#scSend',m).onclick=async()=>{const a=Math.round(+$('#scAmt',m).value*100)/100,msg=$('#scMsg',m);
+    if(!(a>0)){msg.textContent='Type an amount.';return}if(a>S.cash){msg.textContent=`You only have ${money(S.cash)}.`;return}
+    if(!dbNS){msg.textContent='Sending cash needs the online save.';return}
+    const b=$('#scSend',m);b.disabled=true;S.cash-=a;updateHeader();
+    const id='o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    try{await dbNS.doc('offers/'+id).set({from:PROFILE.id,fromName:PROFILE.name,to:to.id,toName:to.name,give:[],want:[],gift:true,cash:a,status:'open',at:Date.now()})}
+    catch(e){S.cash+=a;updateHeader();b.disabled=false;msg.textContent="Couldn't send it. Your cash is back. Try again.";return}
+    OFF_OUT=OFF_OUT.concat({id,to:to.id,toName:to.name,give:[],want:[],gift:true,cash:a,status:'open'});
+    mailLog(`💵 Sent ${money(a)} to ${to.name}.`);save('now');closeModal(true);toast(`Sent ${money(a)} to ${to.name}.`,'good');if(tab==='trade')render()}}
 function giftBuilder(to,pre){openBuilder({give:pre||[],title:`Send cards to ${to.name}`,sub:`Free! Pick spare cards to give ${esc(to.name)}. They show up in ${esc(to.name)}'s binder next time they play. 1/1s can go to family too.`,mine:myItems(true),theirs:null,sendLabel:'Send gift',onSend:give=>sendOffer(to,give,[],true)})}
 async function pAccept(o){
   if(!haveFree(o.want,true)){toast("You don't have those cards free to trade anymore. Try a counter offer.");return}
@@ -7399,7 +7416,7 @@ function renderMailbox(el){const me=PROFILE.id,others=allProfiles().filter(p=>p.
   (S.inbox||[]).forEach((o,i)=>{const b=botInfo(o.bot);rows.push(offerRowHTML({who:`${b.n} wants to trade`,ico:b.ico,note:o.note,give:o.want,get:o.get,btns:`<button class="btn go sm" data-ba="${i}">Trade</button><button class="btn sm" data-bc="${i}">Counter</button><button class="btn sm" data-bp="${i}">Pass</button>`}))});
   OFF_IN.filter(o=>o.status==='open'&&!o.gift&&!o.kind).forEach(o=>rows.push(offerRowHTML({who:`${o.fromName} wants to trade`,ico:'📨',give:o.want,get:o.give,btns:`<button class="btn go sm" data-pa="${o.id}">Trade</button><button class="btn sm" data-pc="${o.id}">Counter</button><button class="btn sm" data-pp="${o.id}">Pass</button>`})));
   const sent=OFF_OUT.filter(o=>o.status==='open'&&!o.gift&&!o.kind).map(o=>offerRowHTML({who:`Waiting for ${o.toName}`,ico:'⏳',give:o.give,get:o.want,btns:`<button class="btn sm" data-px="${o.id}">Cancel offer</button>`}));
-  const pBtns=!dbNS?'<p class="note">Trading between players needs the online save.</p>':others.length?others.map(p=>`<button class="btn go" data-gift="${esc(p.id)}">🎁 Send cards to ${esc(p.name)}</button><button class="btn go" data-prop="${esc(p.id)}">🔄 Trade with ${esc(p.name)}</button>`).join(''):'<p class="note">Add another player to trade with them.</p>';
+  const pBtns=!dbNS?'<p class="note">Trading between players needs the online save.</p>':others.length?others.map(p=>`<button class="btn go" data-gift="${esc(p.id)}">🎁 Send cards to ${esc(p.name)}</button><button class="btn go" data-cash="${esc(p.id)}">💵 Send cash to ${esc(p.name)}</button><button class="btn go" data-prop="${esc(p.id)}">🔄 Trade with ${esc(p.name)}</button>`).join(''):'<p class="note">Add another player to trade with them.</p>';
   el.innerHTML=`<div class="panel mail"><h3 class="sech" style="margin:0 0 6px">📬 Trade mailbox</h3>
     <div class="mbtns" style="margin-bottom:8px">${pBtns}</div>
     ${rows.length?rows.join(''):'<p class="note">No offers right now. Traders send offers every so often while you play.</p>'}
@@ -7416,6 +7433,7 @@ function renderMailbox(el){const me=PROFILE.id,others=allProfiles().filter(p=>p.
   el.querySelectorAll('[data-pp]').forEach(b=>b.onclick=()=>{const o=pin(b.dataset.pp);if(o)pSet(o,'passed',`You passed on ${o.fromName}'s offer.`)});
   el.querySelectorAll('[data-px]').forEach(b=>b.onclick=()=>{const o=pout(b.dataset.px);if(o)pSet(o,'cancelled')});
   el.querySelectorAll('[data-gift]').forEach(b=>b.onclick=()=>{const p=prof(b.dataset.gift);if(p)giftBuilder(p)});
+  el.querySelectorAll('[data-cash]').forEach(b=>b.onclick=()=>{const p=prof(b.dataset.cash);if(p)sendCashModal(p)});
   el.querySelectorAll('[data-prop]').forEach(b=>b.onclick=()=>{const p=prof(b.dataset.prop);if(p)playerBuilder(p)});
   el.querySelectorAll('[data-bot]').forEach(b=>b.onclick=()=>botBuilder(b.dataset.bot,null));
 }
@@ -8191,7 +8209,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-20.1228';
+const APP_VERSION = '2026-11-20.1325';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
