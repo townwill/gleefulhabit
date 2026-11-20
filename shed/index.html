@@ -4617,7 +4617,7 @@ const CU_FX={
   packs:{t:'Cheaper packs',u:'%',lo:5,hi:40,step:5,per:9000,cap:60,d:a=>`Every pack and box at Lenny's costs ${a}% less.`},
   showcase:{t:'Bigger showcase',u:' spots',lo:1,hi:10,step:1,per:20000,cap:20,d:a=>`${a} more spot${a>1?'s':''} in the showcase.`},
   hand:{t:'More cards when sorting',u:' cards',lo:1,hi:8,step:1,per:40000,cap:8,d:a=>`Pick up ${a} more card${a>1?'s':''} at a time in the shed.`},
-  instabox:{t:'Instant box',u:'%',lo:1,hi:5,step:1,per:60000,cap:10,d:a=>`When you open a new box, a ${a}% chance it sorts itself on the spot: hits go to your binder, the rest gets sold as bulk.`}};
+  instabox:{t:'Instant box',u:'%',lo:1,hi:10,step:1,per:60000,cap:10,d:a=>`When you open a new box, a ${a}% chance it sorts itself on the spot: hits go to your binder, the rest gets sold as bulk.`}};
 const CU_ICONS=['🚀','⚡','🔥','💎','🧲','🎯','🛠️','🍀','👑','🦖','🤖','🌟'];
 const cuPrice=(fx,a)=>Math.round(CU_FX[fx].per*a/1000)*1000;
 const cuClean=u=>{if(!u||!CU_FX[u.fx])return null;const f=CU_FX[u.fx];const a=Math.max(f.lo,Math.min(f.hi,Math.round(+u.amt||0)));
@@ -5168,6 +5168,8 @@ function ensureBoxes(){
   if(S.gmaOpen&&!S.gmaBoxes){const pile=S.loc==='grandma'?S.pile:(S.places.grandma?S.places.grandma.pile:LOCS.grandma.size);S.gmaBoxes=makeBoxes(Math.max(1,pile),GMA_TEMPLATES,'n');S.gmaBoxes.forEach(b=>{if(b.loose0){b.loose=true;b.id='nloose'}});S.gmaCur=null;
     const tot=S.gmaBoxes.reduce((a,b)=>a+b.left,0);if(S.loc==='grandma')S.pile=tot;else if(S.places.grandma)S.places.grandma.pile=tot}
   boxGmaOnes();
+  // Will raised Colton's Good Daddy to 10% (Nov 2026)
+  (S.customUps||[]).forEach(u=>{if(u.fx==='instabox'&&/good daddy/i.test(u.name||'')&&u.amt<10)u.amt=10});
   if(S.stadiumOpen&&!S.stadiumBoxes){const pile=S.loc==='stadium'?S.pile:(S.places.stadium?S.places.stadium.pile:LOCS.stadium.size);S.stadiumBoxes=makeBoxes(Math.max(1,pile),STADIUM_TEMPLATES,'z');S.stadiumBoxes.forEach(b=>{if(b.loose0){b.loose=true;b.id='zloose'}});S.stadiumCur=null;
     const tot=S.stadiumBoxes.reduce((a,b)=>a+b.left,0);if(S.loc==='stadium')S.pile=tot;else if(S.places.stadium)S.places.stadium.pile=tot}
   if(S.garageOpen&&!S.garageBoxes){const pile=S.loc==='garage'?S.pile:(S.places.garage?S.places.garage.pile:LOCS.garage.size);S.garageBoxes=makeBoxes(Math.max(1,pile),GARAGE_TEMPLATES,'g');S.garageCur=null;
@@ -8166,7 +8168,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-19.1624';
+const APP_VERSION = '2026-11-19.1627';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
