@@ -4874,15 +4874,21 @@ function ideaPrompt(o){return `My son ${o.fromName} asked for a new feature in G
 async function ideaAnswer(o,status,note){try{const ref=dbNS.doc('offers/'+o.id);const d=await ref.get();if(!d.exists){toast('That idea is gone.');OFF_IN=OFF_IN.filter(x=>x.id!==o.id);render();return}
     await ref.update({status,note:note||'',doneAt:Date.now()})}catch(e){toast("Couldn't reach the mailbox. Try again.");return}
   o.status=status;toast(status==='approved'?`Told ${o.fromName} yes.`:status==='built'?`Told ${o.fromName} it's built!`:`Told ${o.fromName} not this time.`,'good');render()}
-async function ideaClaude(o){const txt=ideaPrompt(o);let ok=false;try{await navigator.clipboard.writeText(txt);ok=true}catch(e){}
-  window.open('https://claude.ai/code','_blank');toast(ok?'Copied the request. Paste it into Claude.':'Opening Claude.','good',6000)}
+// copies only; you paste it into whichever Claude chat you already have open (no new session each time)
+function ideaPromptAll(list){return list.length===1?ideaPrompt(list[0]):`My son asked for ${list.length} new features in Grandpa's Shed (shed/index.html in townwill/gleefulhabit):\n\n${list.map((o,i)=>`${i+1}. "${o.text}" (${o.fromName})`).join('\n')}\n\nReview each against the code and CLAUDE.md. For each, tell me in a few short bullets what you'd build (and anything you'd change or leave out), then ask me which to approve before you write any code.`}
+async function ideaCopy(list){const txt=ideaPromptAll(list);let ok=false;try{await navigator.clipboard.writeText(txt);ok=true}catch(e){}
+  if(ok){toast(list.length>1?`Copied ${list.length} ideas. Paste them into your Claude chat.`:'Copied. Paste it into your Claude chat.','good',6000);return}
+  const m=modal(`<h2>Copy this for Claude</h2><textarea readonly rows="10" style="width:100%;font:inherit;font-size:14px;padding:10px;border-radius:10px;background:var(--panel2);color:inherit;border:1px solid var(--line)">${esc(txt)}</textarea><div class="row2"><button class="btn" data-close>Done</button></div>`);const ta=$('textarea',m);ta.focus();ta.select()}
+const ideaClaude=o=>ideaCopy([o]);
 function ideaHTML(){if(!PROFILE)return '';const ap=approver();
   if(isApprover()){const list=OFF_IN.filter(o=>o.kind==='idea'&&(o.status==='open'||o.status==='approved')).sort((a,b)=>b.at-a.at);
-    return `<h3 class="sech">💡 Feature ideas${list.filter(o=>o.status==='open').length?` <small style="color:var(--bulb)">${list.filter(o=>o.status==='open').length} new</small>`:''}</h3>`+(list.length?`<div class="grid">${list.map(o=>`<div class="up" data-idea="${esc(o.id)}"><h4>${o.status==='approved'?'👍 Approved':'💡 New'} <small>${esc(o.fromName)} · ${new Date(o.at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</small></h4><p style="white-space:pre-wrap">${esc(o.text)}</p>
-      <div class="row2" style="justify-content:flex-start;flex-wrap:wrap"><button class="btn go sm" data-iclaude="${esc(o.id)}">Ask Claude</button>${o.status==='open'?`<button class="btn sm" data-iok="${esc(o.id)}">Tell ${esc(o.fromName)} yes</button>`:`<button class="btn sm" data-ibuilt="${esc(o.id)}">It's built ✓</button>`}<button class="btn sm" data-ino="${esc(o.id)}">Not now</button></div></div>`).join('')}</div>`
-      :'')+`<p class="note">When Colton sends an idea, it shows up here. <b>Ask Claude</b> copies a request that has Claude look it over and ask you to approve before building. For a phone alert, install the free <b>ntfy</b> app and subscribe to <b>${NTFY_TOPIC}</b>.</p>`}
+    const newOnes=list.filter(o=>o.status==='open');
+    return `<h3 class="sech">💡 Feature ideas${list.filter(o=>o.status==='open').length?` <small style="color:var(--bulb)">${list.filter(o=>o.status==='open').length} new</small>`:''}</h3>`+(newOnes.length>1?`<div class="row2" style="justify-content:flex-start;margin-bottom:8px"><button class="btn go" id="ideaCopyAll">Copy all ${newOnes.length} new ideas for Claude</button></div>`:'')+(list.length?`<div class="grid">${list.map(o=>`<div class="up" data-idea="${esc(o.id)}"><h4>${o.status==='approved'?'👍 Approved':'💡 New'} <small>${esc(o.fromName)} · ${new Date(o.at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</small></h4><p style="white-space:pre-wrap">${esc(o.text)}</p>
+      <div class="row2" style="justify-content:flex-start;flex-wrap:wrap"><button class="btn go sm" data-iclaude="${esc(o.id)}">Copy for Claude</button>${o.status==='open'?`<button class="btn sm" data-iok="${esc(o.id)}">Tell ${esc(o.fromName)} yes</button>`:`<button class="btn sm" data-ibuilt="${esc(o.id)}">It's built ✓</button>`}<button class="btn sm" data-ino="${esc(o.id)}">Not now</button></div></div>`).join('')}</div>`
+      :'')+`<p class="note">When Colton sends an idea, it shows up here. <b>Copy for Claude</b> copies a request (it doesn't open anything): paste it into the Claude chat you already use, and Claude looks it over and asks you to approve before building. For a phone alert, install the free <b>ntfy</b> app and subscribe to <b>${NTFY_TOPIC}</b>.</p>`}
   if(!ap)return '';return `<div class="up" style="margin-bottom:10px"><h4>💡 Got an idea for the game?</h4><p>Send ${esc(isColton()?'Dad':ap.name)} an idea for a new feature. ${ideaLeft()} of 5 left this hour.</p><button class="btn go" id="ideaOpen">Send an idea</button></div>`}
 function ideaWire(v){const b=$('#ideaOpen',v);if(b)b.onclick=ideaModal;
+  const ca=$('#ideaCopyAll',v);if(ca)ca.onclick=()=>ideaCopy(OFF_IN.filter(o=>o.kind==='idea'&&o.status==='open').sort((a,b)=>a.at-b.at));
   const f=id=>OFF_IN.find(x=>x.id===id);
   v.querySelectorAll('[data-iclaude]').forEach(b=>b.onclick=()=>{const o=f(b.dataset.iclaude);if(o)ideaClaude(o)});
   v.querySelectorAll('[data-iok]').forEach(b=>b.onclick=()=>{const o=f(b.dataset.iok);if(o)ideaAnswer(o,'approved')});
@@ -8640,7 +8646,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-20.1528';
+const APP_VERSION = '2026-11-20.1536';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
