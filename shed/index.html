@@ -5168,6 +5168,8 @@ function ensureBoxes(){
   if(S.gmaOpen&&!S.gmaBoxes){const pile=S.loc==='grandma'?S.pile:(S.places.grandma?S.places.grandma.pile:LOCS.grandma.size);S.gmaBoxes=makeBoxes(Math.max(1,pile),GMA_TEMPLATES,'n');S.gmaBoxes.forEach(b=>{if(b.loose0){b.loose=true;b.id='nloose'}});S.gmaCur=null;
     const tot=S.gmaBoxes.reduce((a,b)=>a+b.left,0);if(S.loc==='grandma')S.pile=tot;else if(S.places.grandma)S.places.grandma.pile=tot}
   boxGmaOnes();
+  // one-time gift from Will: two free instant sorts for Colton, picked from a pop-up (Nov 2026)
+  if(isColton()&&!S.gdGift){S.gdGift=true;S.instaTokens=(S.instaTokens||0)+2;save(true);setTimeout(()=>queueModal(()=>instaPick(true)),600)}
   // Will raised Colton's Good Daddy to 10% (Nov 2026)
   (S.customUps||[]).forEach(u=>{if(u.fx==='instabox'&&/good daddy/i.test(u.name||'')&&u.amt<10)u.amt=10});
   if(S.stadiumOpen&&!S.stadiumBoxes){const pile=S.loc==='stadium'?S.pile:(S.places.stadium?S.places.stadium.pile:LOCS.stadium.size);S.stadiumBoxes=makeBoxes(Math.max(1,pile),STADIUM_TEMPLATES,'z');S.stadiumBoxes.forEach(b=>{if(b.loose0){b.loose=true;b.id='zloose'}});S.stadiumCur=null;
@@ -5256,8 +5258,18 @@ function showBoxPicker(){
     return `<button class="boxtile${done?' done':''}${cur?' cur':''}" data-box="${b.id}" ${done?'disabled':''}${b.tm&&TEAMS[b.tm]?` style="box-shadow:inset 6px 0 0 ${TEAMS[b.tm][2]}"`:''}><span class="bl">${esc(b.label)}</span><span class="bn">${done?'Done ✓':`${num(b.left)} ${started?'left':'cards'}`}</span>${started&&!done?`<i class="bp"><b style="width:${(1-b.left/b.total)*100}%"></b></i>`:''}</button>`}).join('');
   const m=modal(S.loc==='grandma'?`<h2>Which hatbox next?</h2><p>Grandma's closets, the sewing room and under the beds. One hatbox for each kind of card, plus her favorites and the loose cards from packs. Every 1/1 is the last card in its hatbox.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:S.loc==='stadium'?`<h2>Which locker next?</h2><p>The locker rooms, the tunnels, under the stands. One locker for every big club, one for each country, the World Cups, the women's game, the founders, the goalkeepers, MLS and the NWSL, and a locker of loose cards from packs. The twelve 1/1s could be in any of them. ${list.filter(x=>x.crate&&x.left<=0).length} of ${list.filter(x=>x.crate).length} clubs done.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:S.loc==='rink'?`<h2>Which box next?</h2><p>The rink floor is covered in boxes: one for every NHL team (old cities included), the Original Six, goalies, the PWHL, rookies, and a box of loose cards from packs. Hockey packs you rip at Lenny's toss their base cards in that loose box. Finishing all 32 team boxes pays a big bonus. ${list.filter(x=>x.crate&&x.left<=0).length} of 32 teams done.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:gar?`<h2>Which bin next?</h2><p>The garage walls are lined with plastic bins: one for every NBA team, the WNBA teams, Team USA, college cards, and whatever else Grandpa couldn't fit in the house. Finishing a bin pays a bonus, and finishing all 30 NBA team bins pays a big one. ${list.filter(x=>x.crate&&x.left<=0).length} of 30 teams done.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`:barn?`<h2>Which crate next?</h2><p>The barn is stacked with crates, one for every NFL team plus a few Grandpa never labeled right. Finishing a crate pays a bonus, and finishing all 32 team crates pays a big one. ${list.filter(x=>x.crate&&x.left<=0).length} of 32 teams done.</p><div class="boxgrid">${tiles}</div>`:`<h2>Which box next?</h2><p>Grandpa's attic is full of boxes. Each one has a different mix of cards, and finishing a box pays a bonus. You can switch boxes any time.</p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Close</button></div>`);
   m.querySelectorAll('[data-box]').forEach(b=>b.onclick=()=>pickBox(b.dataset.box));
+  if(S.instaTokens>0){const r=$('.row2',m);if(r)r.insertAdjacentHTML('afterbegin',`<button class="btn go" id="useInsta">⚡ Instant sort a ${BOXW[S.loc][0]} (${S.instaTokens} left)</button>`);const u=$('#useInsta',m);if(u)u.onclick=()=>{closeModal(true);instaPick()}}
   $('.mbox',m).classList.add('wide');
 }
+// free instant sorts: pick any box and it sorts itself (hits to the binder, the rest sold as bulk)
+function instaRoom(){return boxedRoom(S.loc)&&roomBoxes(S.loc)?S.loc:S.gmaOpen?'grandma':S.stadiumOpen?'stadium':S.rinkOpen?'rink':null}
+function instaPick(intro){if(!(S.instaTokens>0))return;const room=instaRoom();if(!room)return;if(S.loc!==room)switchLoc(room);ensureBoxes();
+  const list=(roomBoxes(room)||[]).filter(b=>b.left>0&&!b.loose&&!b.vault);if(!list.length){toast('No boxes left to sort here.');return}
+  const tiles=list.map(b=>`<button class="boxtile" data-ib="${b.id}"${b.tm&&TEAMS[b.tm]?` style="box-shadow:inset 6px 0 0 ${TEAMS[b.tm][2]}"`:''}><span class="bl">${esc(b.label)}</span><span class="bn">${num(b.left)} cards</span></button>`).join('');
+  const m=modal(`<h2>⚡ ${intro?'Good Daddy bonus!':'Instant sort'}</h2><p>${intro?`Dad gave you <b>${S.instaTokens} instant sorts</b>. `:''}Pick a ${BOXW[room][0]} and it sorts itself right now: hits and set cards go to your binder, the rest gets sold as bulk. <b>${S.instaTokens} left.</b></p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Save ${S.instaTokens>1?'them':'it'} for later</button></div>`);
+  $('.mbox',m).classList.add('wide');
+  m.querySelectorAll('[data-ib]').forEach(t=>t.onclick=()=>{const b=list.find(x=>x.id===t.dataset.ib);if(!b||!(S.instaTokens>0))return;S.instaTokens--;b.ir=true;closeModal(true);setCur(b.id);instaSort(b);
+    if(S.instaTokens>0)queueModal(()=>instaPick())})}
 
 /* ---------- the basement: teams that don't exist anymore ---------- */
 const DEF={PRV:[1946,1949],WSC:[1946,1951],CHS:[1946,1950],STB:[1946,1950],BLB:[1947,1954],IOL:[1949,1953],ANP:[1949,1950],TCB:[1949,1951],TRH:[1946,1947],PHW:[1946,1962],SFW:[1962,1971],FTW:[1948,1957],ROC:[1948,1957],
@@ -8168,7 +8180,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-19.1627';
+const APP_VERSION = '2026-11-19.2023';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
