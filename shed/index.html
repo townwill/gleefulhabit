@@ -4859,10 +4859,11 @@ function ideaModal(){const ap=approver();if(!ap||!dbNS){toast('Sending ideas nee
     <p class="note">${left>0?`You can send ${left} more this hour.`:`That's 5 ideas this hour. You can send more in ${Math.ceil((IDEA_WIN-(Date.now()-S.ideaTimes[0]))/60e3)} minutes.`}</p>
     ${mine.length?`<p class="note"><b>Your ideas</b></p>${mine.map(i=>`<p class="note" style="margin:4px 0">${esc(i.text.slice(0,90))}${i.text.length>90?'…':''}<br><b>${IDEA_WORD[i.status]||''}</b>${i.note?` · "${esc(i.note)}"`:''}</p>`).join('')}`:''}
     <div class="row2"><button class="btn go" id="ideaSend" ${left>0?'':'disabled'}>Send to ${esc(dad)}</button><button class="btn" data-close>Close</button></div>`);
+  {const ta=$('#ideaTxt',m);if(S.ideaDraft&&!ta.disabled)ta.value=S.ideaDraft;ta.oninput=()=>{S.ideaDraft=ta.value.slice(0,500);save(true)}}
   $('#ideaSend',m).onclick=async()=>{const text=$('#ideaTxt',m).value.trim();if(text.length<3){toast('Write your idea first.');return}if(ideaLeft()<=0)return;
     const id='o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
     try{await dbNS.doc('offers/'+id).set({kind:'idea',text,from:PROFILE.id,fromName:PROFILE.name,to:ap.id,toName:ap.name,give:[],want:[],gift:false,status:'open',at:Date.now()})}catch(e){toast("Couldn't send it. Try again.");return}
-    S.ideaTimes.push(Date.now());S.ideas=[{id,text,at:Date.now(),status:'open'}].concat(S.ideas||[]).slice(0,30);save('now');ideaPing(PROFILE.name,text);
+    S.ideaTimes.push(Date.now());S.ideaDraft='';S.ideas=[{id,text,at:Date.now(),status:'open'}].concat(S.ideas||[]).slice(0,30);save('now');ideaPing(PROFILE.name,text);
     closeModal(true);toast(`💡 Sent to ${dad}!`,'good',6000)}}
 // Colton's side: Dad's answer comes back on the offer doc
 async function ideaSettle(o){S.ideas=S.ideas||[];let e=S.ideas.find(x=>x.id===o.id);if(!e){e={id:o.id,text:o.text||'',at:o.at,status:'open'};S.ideas.unshift(e)}
@@ -8637,21 +8638,35 @@ const PLAY_MS=20*60e3,BREAK_MS=5*60e3;
 function playLimit(){if(!up('randbreak'))return PLAY_MS;if(!(S.breakAt>=10*60e3&&S.breakAt<=30*60e3))S.breakAt=Math.round((10+Math.random()*20)*60e3);return S.breakAt}
 const breakOn=()=>!!PROFILE&&isColton()&&(S.breakUntil||0)>Date.now();
 function breakEl(){let el=$('#breakLock');if(!el){el=document.createElement('div');el.id='breakLock';el.setAttribute('role','alertdialog');el.setAttribute('aria-live','polite');document.body.appendChild(el)}return el}
-let breakShown=false;
-// Colton plays 20 minutes, then a 5 minute break. The timer is saved, so reloading doesn't skip it.
+let breakShown=false,breakMode='';
+// Colton plays 20 minutes, then gets asked if he's ready for a 5 minute break. "2 more minutes" just
+// keeps him on the asking screen for 2 minutes, so there's no getting out of it. Nothing underneath is
+// closed (a half-typed idea stays put under the lock). All of it is saved, so reloading doesn't skip it.
+const SNOOZE_MS=2*60e3;
+const mmss=ms=>{const l=Math.max(0,Math.ceil(ms/1000));return `${Math.floor(l/60)}:${String(l%60).padStart(2,'0')}`};
+function startBreak(){S.breakAsk=false;S.breakSnooze=0;S.breakUntil=Date.now()+BREAK_MS;if(phase==='up')sortHand('marks',true);save('now');breakTick(0)}
 function breakTick(dtMs){
-  if(!PROFILE||!isColton()){if(breakShown){breakEl().hidden=true;breakShown=false}return false}
-  if(breakOn()){const el=breakEl(),left=Math.ceil((S.breakUntil-Date.now())/1000),t=`${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`;
-    if(!breakShown){breakShown=true;el.hidden=false;if(modalOpen)closeModal(true);
+  if(!PROFILE||!isColton()){if(breakShown){breakEl().hidden=true;breakShown=false;breakMode=''}return false}
+  if(breakOn()){const el=breakEl(),t=mmss(S.breakUntil-Date.now());
+    if(breakMode!=='lock'){breakShown=true;breakMode='lock';el.hidden=false;
       el.innerHTML=`<div class="bkbox"><div class="bkclock" id="bkT">${t}</div><h2>Break time, Colton!</h2><div class="letter">${S.breakEarn?'Thirty minutes off, and an instant sort waiting for you when you come back. Go play outside or read a book. Good deal.':'Twenty minutes of sorting. Go get a drink of water, stretch, look out a window. The cards will be right here when you get back.'}<br><br>— Grandpa</div><p class="note">Your game is saved. The shed opens back up when the timer runs out.</p><button class="btn" id="bkSwitch">Switch player</button></div>`;
-      $('#bkSwitch').onclick=()=>{breakEl().hidden=true;breakShown=false;PROFILE=null;showPicker()}}
+      $('#bkSwitch').onclick=()=>{breakEl().hidden=true;breakShown=false;breakMode='';PROFILE=null;showPicker()}}
     else{const e=$('#bkT');if(e&&e.textContent!==t)e.textContent=t}
     return true}
-  if(breakShown){breakShown=false;breakEl().hidden=true;S.playMs=0;S.breakAt=null;save('now');toast('Break is over. Welcome back!','good');render();updateHeader()}
+  if(S.breakAsk){const el=breakEl(),snz=(S.breakSnooze||0)>Date.now(),mode=snz?'snooze':'ask';
+    if(breakMode!==mode){breakShown=true;breakMode=mode;el.hidden=false;
+      el.innerHTML=snz?`<div class="bkbox"><div class="bkclock" id="bkT">${mmss(S.breakSnooze-Date.now())}</div><h2>Okay, 2 more minutes…</h2><div class="letter">…right here on this screen. Grandpa will ask you again when the clock runs out. 😄</div><p class="note">You can start your break any time.</p><button class="btn go" id="bkYes">I'm ready now</button></div>`
+        :`<div class="bkbox"><div class="bkclock">☕</div><h2>Ready for a break, Colton?</h2><div class="letter">That's twenty minutes of sorting. Time for a 5 minute break.<br><br>— Grandpa</div><p class="note">Your game is saved, and anything you were typing will still be there.</p><div class="row2" style="justify-content:center"><button class="btn go" id="bkYes">Yes, start my break</button><button class="btn" id="bkNo">2 more minutes</button></div><p style="margin-top:14px"><button class="btn sm" id="bkSwitch">Switch player</button></p></div>`;
+      $('#bkYes').onclick=startBreak;
+      const no=$('#bkNo');if(no)no.onclick=()=>{S.breakSnooze=Date.now()+SNOOZE_MS;S.breakSnoozes=(S.breakSnoozes||0)+1;save('now');breakTick(0)};
+      const sw=$('#bkSwitch');if(sw)sw.onclick=()=>{breakEl().hidden=true;breakShown=false;breakMode='';PROFILE=null;showPicker()}}
+    else if(snz){const e=$('#bkT'),t=mmss(S.breakSnooze-Date.now());if(e&&e.textContent!==t)e.textContent=t}
+    return true}
+  if(breakShown){breakShown=false;breakMode='';breakEl().hidden=true;S.playMs=0;S.breakAt=null;save('now');toast('Break is over. Welcome back!','good');render();updateHeader()}
   if(S.breakEarn){S.breakEarn=false;S.instaTokens=(S.instaTokens||0)+1;save('now');toast('You earned an instant sort for taking a break!','gold',8000);setTimeout(()=>queueModal(()=>instaPick()),800)}
   if(!document.hidden){S.playMs=(S.playMs||0)+dtMs;
     if(S.playMs>=playLimit()-120e3&&!S.breakWarned){S.breakWarned=true;toast('Two more minutes, then Grandpa wants you to take a break.','',6000)}
-    if(S.playMs>=playLimit()){S.playMs=0;S.breakAt=null;S.breakWarned=false;S.breakUntil=Date.now()+BREAK_MS;if(phase==='up')sortHand('marks',true);save('now');breakTick(0);return true}}
+    if(S.playMs>=playLimit()){S.playMs=0;S.breakAt=null;S.breakWarned=false;S.breakAsk=true;S.breakSnooze=0;if(phase==='up')sortHand('marks',true);save('now');breakTick(0);return true}}
   return false}
 const DUPE_N={s:0,b:0,t:0};
 function loop(){
@@ -8688,7 +8703,7 @@ function loop(){
   if(PROFILE){tickShowcase(dt);if(now-lastEvt>1000){lastEvt=now;tickEvents();const st=$('#showT');if(st){const left=Math.max(0,Math.ceil(((S.showUntil||0)-Date.now())/1000));st.textContent=`${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`;if(!left&&tab==='counter'){toast('The card show is over. Nice work!');render()}}}}
 }
 document.addEventListener('keydown',e=>{
-  if(!PROFILE||modalOpen||tab!=='shed'||breakOn())return;if(e.target.matches('input,select,textarea'))return;
+  if(!PROFILE||modalOpen||tab!=='shed'||breakOn()||S.breakAsk)return;if(e.target.matches('input,select,textarea'))return;
   if(e.code==='Space'||e.key===' '){e.preventDefault();if(e.repeat)return;primary()}
 });
 $('#resetBtn').onclick=()=>{
@@ -8699,7 +8714,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-20.2002';
+const APP_VERSION = '2026-11-20.2014';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
