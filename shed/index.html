@@ -489,6 +489,7 @@ body:has(.selbar) .wrap{padding-bottom:110px}body:has(.selbar) #toasts{bottom:12
   <header class="top">
     <div class="logo"><span id="logoName">Grandpa's Shed</span><small id="logoSub">10,000 cards. One of them is the one.</small></div>
     <div class="stats">
+      <button class="player" id="wheelBtn" title="Lucky Wheel" style="padding:4px 12px">🎡 <span id="wheelN">2</span></button>
       <button class="player" id="playerBtn" title="Switch player"><span class="av" id="pAv">?</span><span id="pName">Player</span></button>
       <div class="stat cash"><small>Cash</small><b id="cash">$0.00</b></div>
       <div class="stat"><small>Level <span id="lvl">1</span></small><div class="xpbar"><i id="xpfill"></i></div><span id="xptext">0 / 100 XP</span></div>
@@ -5581,6 +5582,57 @@ function earnInsta(){if(S.breakEarn){toast('Your 30-minute break is already earn
   $('#eiBreak',m).onclick=()=>{closeModal(true);if(phase==='up')sortHand('marks',true);S.breakEarn=true;S.breakUntil=Date.now()+INSTA_BREAK;save('now');breakTick(0)}}
 // free instant sorts: pick any box and it sorts itself (hits to the binder, the rest sold as bulk)
 function instaRoom(){return boxedRoom(S.loc)&&roomBoxes(S.loc)&&roomBoxes(S.loc).some(b=>b.left>0&&!b.loose)?S.loc:S.allOpen?'allstar':S.gmaOpen?'grandma':S.stadiumOpen?'stadium':S.rinkOpen?'rink':null}
+/* ---------- the Lucky Wheel: 2 spins a day, each slice's size is its chance ---------- */
+const WHEEL=[
+  {id:'insta',ico:'🎁',name:'Free instant box',w:5,col:'#ffd23f'},
+  {id:'c10k',ico:'💵',name:'$10,000',w:25,col:'#2e7d32'},
+  {id:'turbo',ico:'⚡',name:'Turbo sort',w:12,col:'#1e88e5'},
+  {id:'c100k',ico:'💰',name:'$100,000',w:12,col:'#00897b'},
+  {id:'hobby',ico:'📦',name:'Free hobby pack',w:15,col:'#8e24aa'},
+  {id:'again',ico:'🎲',name:'Spin again',w:7,col:'#f4511e'},
+  {id:'grade',ico:'🏅',name:'Free Express grading',w:8,col:'#6d4c41'},
+  {id:'c1m',ico:'🤑',name:'$1,000,000',w:2,col:'#c62828'},
+  {id:'blaster',ico:'📦',name:'Free blaster box',w:8,col:'#3949ab'},
+  {id:'hint',ico:'🔍',name:'1/1 hint',w:6,col:'#455a64'},
+];
+const WHEEL_SPINS=2,TURBO_MS=10*60e3;
+function wheelLeft(){const d=new Date().toDateString();if(!S.wheel||S.wheel.day!==d)S.wheel={day:d,left:WHEEL_SPINS};return S.wheel.left}
+function wheelPick(){const tot=WHEEL.reduce((a,s)=>a+s.w,0);let r=Math.random()*tot;for(const s of WHEEL){r-=s.w;if(r<0)return s}return WHEEL[1]}
+function drawWheel(cv){const ctx=cv.getContext('2d'),R=cv.width/2,tot=WHEEL.reduce((a,s)=>a+s.w,0);let a=-Math.PI/2;ctx.clearRect(0,0,cv.width,cv.height);
+  WHEEL.forEach(s=>{const da=s.w/tot*Math.PI*2;ctx.fillStyle=s.col;ctx.beginPath();ctx.moveTo(R,R);ctx.arc(R,R,R-6,a,a+da);ctx.closePath();ctx.fill();ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=2;ctx.stroke();
+    const m=a+da/2,fs=Math.max(34,Math.min(70,da*R*.5)),rr=R-12-fs*.75;ctx.save();ctx.translate(R+Math.cos(m)*rr,R+Math.sin(m)*rr);ctx.rotate(m+Math.PI/2);ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`${fs}px sans-serif`;ctx.fillText(s.ico,0,0);ctx.restore();a+=da});
+  ctx.fillStyle='#1b1b1b';ctx.beginPath();ctx.arc(R,R,R*.16,0,7);ctx.fill();ctx.strokeStyle='#ffd23f';ctx.lineWidth=4;ctx.beginPath();ctx.arc(R,R,R-4,0,7);ctx.stroke()}
+// the 1/1 hint: which box hides one, or how close the room's 1/1 is
+function oneHint(){const rb=boxedRoom(S.loc)&&roomBoxes(S.loc);
+  if(rb){const bs=rb.filter(b=>b.left>0&&((b.aones||[]).length||(b.gones||[]).length||b.one));if(bs.length){const b=bs[Math.floor(Math.random()*bs.length)];return `A 1/1 is waiting at the bottom of “${b.label}”.`}}
+  if(S.oneLeft!=null&&S.oneLeft>=0&&S.pile>0){const n=Math.max(500,Math.ceil((S.oneLeft+1)/500)*500);return `The 1/1 in the ${LOCS[S.loc].name.toLowerCase()} is somewhere in the next ${num(Math.min(n,S.pile))} cards.`}
+  return null}
+function freePack(kind){const sp=(LOCS[S.loc]&&LOCS[S.loc].sport)||'nba';return (PACKS.find(p=>(p.sport||'nba')===sp&&(p.kind||p.id)===kind)||PACKS.find(p=>(p.kind||p.id)===kind)||{}).id}
+function wheelPrize(s){const cash=n=>{S.cash+=n;S.stats.earned=(S.stats.earned||0)+n;updateHeader()};let msg='';
+  if(s.id==='insta'){S.instaTokens=(S.instaTokens||0)+1;save('now');toast('🎁 FREE INSTANT BOX!','gold',8000);if(instaRoom())setTimeout(()=>queueModal(()=>instaPick()),400);else toast('Pick a box in a room with boxes to use it.');return}
+  if(s.id==='c10k'){cash(1e4);msg='💵 You won $10,000!'}
+  else if(s.id==='c100k'){cash(1e5);msg='💰 You won $100,000!'}
+  else if(s.id==='c1m'){cash(1e6);msg='🤑 JACKPOT! $1,000,000!'}
+  else if(s.id==='again'){S.wheel.left++;msg='🎲 Spin again! You got another spin.'}
+  else if(s.id==='turbo'){if(autoRate()<=0){cash(1e5);msg="⚡ Turbo sort! You don't have a helper yet, so here's $100,000 instead."}else{S.turboUntil=Math.max(Date.now(),S.turboUntil||0)+TURBO_MS;msg='⚡ Turbo sort! Your helpers sort twice as fast for 10 minutes.'}}
+  else if(s.id==='grade'){S.freeExp=(S.freeExp||0)+1;msg='🏅 Free Express grading! Your next Express grade is free.'}
+  else if(s.id==='hint'){const h=oneHint();if(h){msg='🔍 '+h;mailLog(msg)}else{cash(1e5);msg="🔍 No 1/1 is hiding here right now, so here's $100,000 instead."}}
+  else if(s.id==='hobby'||s.id==='blaster'){const id=freePack(s.id);save('now');toast(s.id==='hobby'?'📦 Free hobby pack!':'📦📦 Free blaster box!','gold',6000);if(id)setTimeout(()=>openPack(id,true),300);return}
+  save('now');toast(msg,s.id==='c1m'||s.id==='hint'?'gold':'good',s.id==='hint'?15000:7000)}
+function wheelModal(){if(!PROFILE)return;const left=wheelLeft();
+  const m=modal(`<h2>🎡 Lucky Wheel</h2><p>${left>0?`You have <b>${left}</b> spin${left>1?'s':''} today.`:'No spins left today. Come back tomorrow for 2 more!'}</p>
+    <div style="position:relative;width:min(300px,78vw);margin:6px auto"><div style="position:absolute;left:50%;top:-6px;transform:translateX(-50%);z-index:2;font-size:30px;filter:drop-shadow(0 2px 2px #000)">🔻</div><canvas id="whCv" width="600" height="600" style="width:100%;display:block;transition:transform 4.2s cubic-bezier(.12,.75,.12,1)"></canvas></div>
+    <p class="note" id="whMsg" style="min-height:22px;text-align:center"></p>
+    <div class="row2"><button class="btn go" id="whSpin" ${left>0?'':'disabled'}>Spin!</button><button class="btn" data-close id="whClose">Close</button></div>
+    <details style="margin-top:8px"><summary class="note">What's on the wheel</summary><p class="note">${WHEEL.slice().sort((a,b)=>b.w-a.w).map(s=>`${s.ico} ${s.name} · ${s.w}%`).join('<br>')}<br>⚡ Turbo sort: your helpers sort 2× faster for 10 minutes.<br>🔍 1/1 hint: tells you which box hides a 1/1, or how close the next one is.</p></details>`,{locked:true});
+  const cv=$('#whCv',m);drawWheel(cv);let rot=0,busy=false;
+  $('#whSpin',m).onclick=()=>{if(busy||wheelLeft()<=0)return;busy=true;S.wheel.left--;const s=wheelPick();save('now');
+    $('#whSpin',m).disabled=true;$('#whClose',m).disabled=true;
+    const tot=WHEEL.reduce((a,x)=>a+x.w,0);let start=0;for(const x of WHEEL){if(x===s)break;start+=x.w}
+    const mid=(start+s.w*(.2+Math.random()*.6))/tot*360;rot+=360*6+((360-mid)-(rot%360)+360)%360;cv.style.transform=`rotate(${rot}deg)`;
+    setTimeout(()=>{busy=false;$('#whMsg',m).textContent=`${s.ico} ${s.name}!`;wheelPrize(s);updateHeader();
+      const l=wheelLeft();$('#whClose',m).disabled=false;$('#whSpin',m).disabled=l<=0;$('p',m).innerHTML=l>0?`You have <b>${l}</b> spin${l>1?'s':''} today.`:'No spins left today. Come back tomorrow for 2 more!';
+      if(['insta','hobby','blaster'].includes(s.id))closeModal(true)},4400)}}
 function instaPick(intro){if(!(S.instaTokens>0))return;const room=instaRoom();if(!room)return;if(S.loc!==room)switchLoc(room);ensureBoxes();
   const list=(roomBoxes(room)||[]).filter(b=>b.left>0&&!b.loose&&!b.vault);if(!list.length){toast('No boxes left to sort here.');return}
   const tiles=list.map(b=>`<button class="boxtile" data-ib="${b.id}"${b.tm&&TEAMS[b.tm]?` style="box-shadow:inset 6px 0 0 ${TEAMS[b.tm][2]}"`:''}><span class="bl">${esc(b.label)}</span><span class="bn">${num(b.left)} cards</span></button>`).join('');
@@ -7107,7 +7159,7 @@ function rollGrade(c,fresh){
 function sendToGrader(k,opt={}){const tier=gTier(opt.tier||S.gradeTier);
   const c=fromKey(k);const free=(S.stacks[k]||0)-shelfCount(k)-(S.showcase||[]).filter(x=>x===k).length;if(c.g||free<=0)return;S.grading=S.grading||[];
   if(S.grading.length>=GQ_MAX){if(!opt.quiet)toast(`That's ${GQ_MAX} cards at Slab Happy already. Reveal some first.`);return 'full'}
-  const fee=tierFee(c,tier);if(S.cash<fee){if(!opt.quiet)toast(`${GTIERS[tier].name} grading costs ${money(fee)}.`);return 'cash'}
+  const fx=tier==='express'&&(S.freeExp||0)>0,fee=fx?0:tierFee(c,tier);if(S.cash<fee){if(!opt.quiet)toast(`${GTIERS[tier].name} grading costs ${money(fee)}.`);return 'cash'}if(fx){S.freeExp--;toast('🏅 Used your free Express grading from the Lucky Wheel!','good')}
   const fresh=(S.fresh||{})[k]>0;if(fresh){S.fresh[k]--;if(!S.fresh[k])delete S.fresh[k]}
   const fromPC=opt.pc||(avail(k)<=0&&!!S.pc[k]);S.cash-=fee;S.stats.gradeFees=(S.stats.gradeFees||0)+fee;removeCards(k,1);if(fromPC&&(opt.pc||!S.stacks[k]))delete S.pc[k];const it=queueGrade({k,g:rollGrade(c,fresh),pc:fromPC},tier);
   if(!opt.quiet)toast(`Sent ${P[c.pid].name} to Slab Happy (${GTIERS[tier].name}). ${it.wait?`The grader is full, so it's in line. ${GTIERS[tier].ms()>=60000?'':'It grades in '+msText(it.ms)+' once it starts.'}`:`Back in ${msText(it.ms)}.`}`);save(true);updateHeader();renderTabs();return true;
@@ -7366,10 +7418,10 @@ function packCost(pk){return Math.round(pk.cost*(up('vip')?.8:1)*(1-cuAmt('packs
 const NO_LIMIT={has:()=>true}; // Lenny never runs out of anything
 function stockOf(id){S.stock=S.stock||{};if(NO_LIMIT.has(id))return 99;return S.stock[id]??packMax(id)}
 function tickStock(n){S.stockCtr=(S.stockCtr||0)+n;let got=false;while(S.stockCtr>=RESTOCK){S.stockCtr-=RESTOCK;PACKS.forEach(pk=>{const c=stockOf(pk.id);if(c<packMax(pk.id)){S.stock[pk.id]=c+1;got=true}})}if(got&&tab==='packs')render()}
-function openPack(id){
-  const pk=PACKS.find(p=>p.id===id);if(S.level<pk.lv||S.cash<packCost(pk)||stockOf(id)<=0)return;
-  if(!NO_LIMIT.has(id))S.stock[id]=stockOf(id)-1;challengeEvent('pack',pk);
-  S.cash-=packCost(pk);S.stats.packs++;updateHeader();
+function openPack(id,free){
+  const pk=PACKS.find(p=>p.id===id);if(!pk)return;if(!free&&(S.level<pk.lv||S.cash<packCost(pk)||stockOf(id)<=0))return;
+  if(!free&&!NO_LIMIT.has(id))S.stock[id]=stockOf(id)-1;challengeEvent('pack',pk);
+  if(!free)S.cash-=packCost(pk);S.stats.packs++;updateHeader();
   const cards=genPack(pk);
   // split into packs; inside each pack the base cards come first and the good stuff sits at the back
   const per={blaster:4,mega:10,hobbybox:12}[pk.kind]||cards.length;
@@ -8106,6 +8158,7 @@ function declineOffer(){if(!cust)return;cust={...cust,state:'bye',leave:Date.now
    UI: header, tabs, toasts, modal
    ========================================================= */
 function updateHeader(){
+  {const wb=$('#wheelBtn');if(wb){wb.style.display=PROFILE?'':'none';if(PROFILE){const l=wheelLeft();$('#wheelN').textContent=l;wb.style.opacity=l>0?1:.55;wb.style.borderColor=l>0?'#ffd23f':''}if(!wb.onclick)wb.onclick=wheelModal}}
   $('#cash').textContent=money(S.cash);$('#lvl').textContent=S.level;
   const a=xpNeed(S.level),b=xpNeed(S.level+1);$('#xpfill').style.width=Math.min(100,(S.xp-a)/(b-a)*100)+'%';
   $('#xptext').textContent=`${num(S.xp-a)} / ${num(b-a)} XP`;
@@ -8398,7 +8451,7 @@ function cardActions(k){
     <p class="note" style="margin:6px 0 0">${S.pc[k]?'★ In your PC. ':''}${scCount(k)?'In the showcase. ':''}${shelfCount(k)?'On the shelf. ':''}${a>0?`${a} free to sell or trade.`:one?(c.par===10||c.par===15?'Superfractor 1/1. Never sold or traded to the traders, but family can have it.':'Grandpa\'s 1/1. Never sold or traded to the traders, but family can have it.'):'Nothing free to sell: it\'s starred, shelved or showcased.'}</p></div>
     <div class="caacts">
       ${one?'':btn('sell',`Sell · ${money(valueOf(c))}`,a>0,true)}
-      ${!c.g?Object.entries(GTIERS).map(([id,o])=>btn('grade:'+id,`Grade ${o.name} · ${money(tierFee(c,id))} · ${msText(o.ms())}`,n-shelfCount(k)-scCount(k)>0,false)).join(''):up('regrade')?Object.entries(GTIERS).map(([id,o])=>btn('regrade:'+id,`Resubmit ${o.name} · ${money(tierFee({...c,g:0},id))} · ${msText(o.ms())}`,n-shelfCount(k)-scCount(k)>0)).join(''):''}
+      ${!c.g?Object.entries(GTIERS).map(([id,o])=>btn('grade:'+id,`Grade ${o.name} · ${id==='express'&&S.freeExp>0?'FREE (wheel)':money(tierFee(c,id))} · ${msText(o.ms())}`,n-shelfCount(k)-scCount(k)>0,false)).join(''):up('regrade')?Object.entries(GTIERS).map(([id,o])=>btn('regrade:'+id,`Resubmit ${o.name} · ${money(tierFee({...c,g:0},id))} · ${msText(o.ms())}`,n-shelfCount(k)-scCount(k)>0)).join(''):''}
       ${S.level>=4&&!one&&!c.g?btn('trade','Trade 3 for 1',a>=3):''}
       ${S.level>=5&&!one?btn('shelf','Put on shelf',a>0&&S.shelf.length<shelfCap()):''}
       ${S.level>=5?btn('case','Showcase',n-shelfCount(k)-scCount(k)>0&&(S.showcase||[]).length<scSlots()):''}
@@ -8606,7 +8659,7 @@ function loop(){
   if(breakTick(Math.min(1000,performance.now()-last))){last=performance.now();return}
   try{botMailTick()}catch(e){}
   const now=performance.now(),dt=Math.min(1,(now-last)/1000);last=now;
-  const r=S.autoOff?0:autoRate();
+  const r=S.autoOff?0:autoRate()*(S.turboUntil>Date.now()?2:1);
   const pzr=up('nopizza');if(r>0&&pzr>=2&&!(S.shift>0))S.shift=shiftLen();
   if(r>0&&S.shift>0&&S.pile>0&&S.aside.length<asideMax()){if(pzr>=2)S.shift=shiftLen();else if(pzr===1){S.shift=shiftLen();if(Math.random()<dt/240)S.shift=0}else S.shift-=dt;if(S.shift<=0){S.shift=0;toast(up('colton')?`${crewName()} is on a pizza break. Order a pizza to get him back to work.`:'The machine needs a break. Restart it from the Shed.');renderTabs()}
     acc+=r*dt;let n=Math.min(Math.floor(acc),200);acc-=n;
@@ -8646,7 +8699,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-20.1536';
+const APP_VERSION = '2026-11-20.2002';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
