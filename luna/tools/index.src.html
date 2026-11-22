@@ -194,8 +194,8 @@ button{font-family:inherit;-webkit-tap-highlight-color:transparent}
   <!-- ===== VOICES ===== -->
   <div class="overlay hidden" id="voiceOverlay">
     <div class="card" style="width:720px">
-      <h1>Pick a Voice</h1>
-      <div class="note">These are the voices installed on this iPad. Tap one to hear it.</div>
+      <h1>Backup Voice</h1>
+      <div class="note">The game plays recorded voices. This voice is only used for anything without a recording.</div>
       <div id="voiceList"></div>
       <div class="note" style="margin-bottom:16px">More voices: iPad <b>Settings → Accessibility → Read &amp; Speak → Voices → English</b>. Download any you like, then reopen the game and they'll show up here.</div>
       <button class="bigBtn" id="voiceDone">Done</button>
@@ -206,12 +206,12 @@ button{font-family:inherit;-webkit-tap-highlight-color:transparent}
 </div>
 
 <script>
-const APP_VERSION = '2026-11-22.1200';
+const APP_VERSION = '2026-11-22.1254';
 </script>
 <script>
 /* Turn the built-in pictures into in-memory links (works inside the Claude app, which can't load separate files) */
 const ASSET={};
-(function(){for(const k in ASSET_DATA){try{const d=ASSET_DATA[k];if(!d.startsWith('data:')){ASSET[k]=d;continue}const i=d.indexOf(','),mime=d.slice(5,d.indexOf(';')),bin=atob(d.slice(i+1)),u=new Uint8Array(bin.length);
+(function(){for(const k in ASSET_DATA){if(k.startsWith('v_'))continue;try{const d=ASSET_DATA[k];if(!d.startsWith('data:')){ASSET[k]=d;continue}const i=d.indexOf(','),mime=d.slice(5,d.indexOf(';')),bin=atob(d.slice(i+1)),u=new Uint8Array(bin.length);
   for(let j=0;j<bin.length;j++)u[j]=bin.charCodeAt(j);ASSET[k]=URL.createObjectURL(new Blob([u],{type:mime}))}catch(e){ASSET[k]=ASSET_DATA[k]}}})();
 </script>
 <script>
@@ -645,8 +645,8 @@ function buildLevel(i){
   tray.innerHTML='';
   for(const itm of ITEMS){const d=document.createElement('div');d.className='slot';d.dataset.id=itm.id;
     d.innerHTML=`<svg viewBox="-40 -40 80 80" overflow="visible"><use href="#sym-${itm.id}" x="-40" y="-40" width="80" height="80"/></svg>`;
-    d.addEventListener('click',()=>{poke();if(found.has(itm.id)){say(`You found ${NAMES[itm.id]}!`);return}
-      d.classList.remove('wiggle');void d.offsetWidth;d.classList.add('wiggle');say(`Find ${NAMES[itm.id]}!`)});
+    d.addEventListener('click',()=>{poke();if(found.has(itm.id)){vsay([['found_'+itm.id,`You found ${NAMES[itm.id]}!`]]);return}
+      d.classList.remove('wiggle');void d.offsetWidth;d.classList.add('wiggle');vsay([['find_'+itm.id,`Find ${NAMES[itm.id]}!`]])});
     tray.appendChild(d)}
   sizeSlots();
   $('levelPill').textContent=L.name; updateCount();
@@ -677,7 +677,7 @@ function onFound(h){const id=h.dataset.id;if(found.has(id))return;found.add(id);
   const el=scene.querySelector(`.item[data-id="${id}"]`);const r=el.getBoundingClientRect();const p=toStage(r.left+r.width/2,r.top+r.height/2);
   el.classList.add('gone');burst(p.x,p.y,16,['#ffd93b','#ff8acb','#b07bff','#7fe7ff','#ffffff'],120,30);chime();
   const praise=pick([`You found ${NAMES[id]}!`,`Yay! ${NAMES[id][0].toUpperCase()+NAMES[id].slice(1)}!`,`Wow, ${NAMES[id]}!`,`Great finding! ${NAMES[id][0].toUpperCase()+NAMES[id].slice(1)}!`]);
-  say(praise); if(found.size===8){sayMore([["Whoosh! You're really good at this!",'whirly']]);whirlySpin()}
+  vsay([['found_'+id,praise]]); if(found.size===8){vsay([['whirly_half',"Whoosh! You're really good at this!",'whirly']],true);whirlySpin()}
   luna.hop=.001; updateCount();
   const slot=tray.querySelector(`[data-id="${id}"]`);const sr=slot.getBoundingClientRect();const t=toStage(sr.left+sr.width/2,sr.top+sr.height/2);
   const f=document.createElement('div');f.className='flyer';f.innerHTML=`<svg viewBox="-40 -40 80 80" width="80" height="80" overflow="visible"><use href="#sym-${id}" x="-40" y="-40" width="80" height="80"/></svg>`;fx.appendChild(f);
@@ -687,18 +687,18 @@ function onFound(h){const id=h.dataset.id;if(found.has(id))return;found.add(id);
     if(found.size===ITEMS.length&&!bonus)setTimeout(beginBonus,800)}}
 
 /* hints */
-function hint(){if(!playing)return;if(bonus){const sp=bonus.spots[bonus.next];if(!sp)return;clearHint();scroller.scrollTo({left:Math.max(0,sp.x-scroller.clientWidth/2),behavior:'smooth'});hintG.innerHTML=`<circle class="hintRing" cx="${sp.x}" cy="${sp.y}" r="58" fill="${glowG('#fff2a0')}" stroke="#ffd34d" stroke-width="6" stroke-dasharray="14 10"/>`;setTimeout(clearHint,5000);say(`Look by the sparkly circle. Can you find the letter ${bonus.set[bonus.next]}?`);return}
+function hint(){if(!playing)return;if(bonus){const sp=bonus.spots[bonus.next];if(!sp)return;clearHint();scroller.scrollTo({left:Math.max(0,sp.x-scroller.clientWidth/2),behavior:'smooth'});hintG.innerHTML=`<circle class="hintRing" cx="${sp.x}" cy="${sp.y}" r="58" fill="${glowG('#fff2a0')}" stroke="#ffd34d" stroke-width="6" stroke-dasharray="14 10"/>`;setTimeout(clearHint,5000);vsay([['hint','Look by the sparkly circle.'],['findl_'+bonus.set[bonus.next],`Can you find the letter ${bonus.set[bonus.next]}?`]]);return}
   const left=ITEMS.filter(i=>!found.has(i.id));if(!left.length)return;const itm=pick(left);clearHint();
   scroller.scrollTo({left:Math.max(0,itm.x-scroller.clientWidth/2),behavior:'smooth'});
   hintG.innerHTML=`<circle class="hintRing" cx="${itm.x}" cy="${itm.y}" r="58" fill="${glowG('#fff2a0')}" stroke="#ffd34d" stroke-width="6" stroke-dasharray="14 10"/>`;
-  setTimeout(clearHint,5000); say(`Look by the sparkly circle. Can you find ${NAMES[itm.id]}?`); tone(880,.15,'triangle',.08);tone(1175,.2,'triangle',.08,.13)}
+  setTimeout(clearHint,5000); vsay([['hint','Look by the sparkly circle.'],['find_'+itm.id,`Can you find ${NAMES[itm.id]}?`]]); tone(880,.15,'triangle',.08);tone(1175,.2,'triangle',.08,.13)}
 function clearHint(){if(hintG)hintG.innerHTML=''}
 $('helpBtn').addEventListener('click',()=>{poke();hint()});
 function poke(){clearTimeout(idleTimer);if(playing)idleTimer=setTimeout(hint,35000)}
 
 /* characters */
-function lunaTap(){lunaDance();neigh();say(pick(['Hee hee! That tickles!','Keep looking! You can do it!','You are a great helper!','Hello, friend!']),'luna')}
-function whirlyTap(){whirlySpin();whoosh();say(pick(['Whoosh! Hee hee!','Catch me if you can!','Whee! I love the wind!']),'whirly')}
+function lunaTap(){lunaDance();neigh();const T=['Hee hee! That tickles!','Keep looking! You can do it!','You are a great helper!','Hello, friend!'],n=Math.floor(Math.random()*T.length);vsay([['luna_tap'+(n+1),T[n],'luna']])}
+function whirlyTap(){whirlySpin();whoosh();const T=['Whoosh! Hee hee!','Catch me if you can!','Whee! I love the wind!'],n=Math.floor(Math.random()*T.length);vsay([['whirly_tap'+(n+1),T[n],'whirly']])}
 function whirlySpin(){whirly.spin=.001}
 let lastT=performance.now();
 function lunaShow(l,which,frame){if(l.show!==which){for(const k of['run','dance','pose'])l[k].style.display=k===which?'':'none';l.show=which;l.fi=-1}
@@ -734,9 +734,9 @@ const LETTER_SETS=['ABCDE','FGHIJ','KLMNO','PQRST','UVWXYZ'];
 const LCOLORS=['#ff63ad','#9a6cf0','#3fa9f5','#ff9f1c','#2ec4a6','#e85d75'];
 let bonus=null;
 function beginBonus(){if(!playing||bonus)return;lunaDance();chime();setTimeout(fanfare,250);confetti();
-  startBonus(0);sayMore([]);
+  startBonus(0);
   try{speechSynthesis.cancel()}catch(e){}
-  speakLines([["Wow! You found all the treasures!",'n'],["Whoosh! I hid some letters too! Can you find them in ABC order?",'whirly'],[`Start with the letter ${bonus.set[0]}!`,'n']]);
+  vsay([['bonus1',"Wow! You found all the treasures!",'n'],['whirly_bonus2',"Whoosh! I hid some letters too!",'whirly'],['bonus3',"Can you find the letters in ABC order?",'n'],['findl_'+bonus.set[0],`Find the letter ${bonus.set[0]}.`,'n']]);
   whirlySpin();whoosh()}
 function startBonus(n){const set=LETTER_SETS[cur].split('');RNG=mulberry(500+cur*13);
   const spots=[],seg=(W-200)/set.length,segs=set.map((_,i)=>i).sort(()=>RNG()-.5);
@@ -752,11 +752,11 @@ function startBonus(n){const set=LETTER_SETS[cur].split('');RNG=mulberry(500+cur
   set.forEach((ch,i)=>{if(i<bonus.next)return;const c=document.createElementNS(NS,'circle');c.setAttribute('cx',spots[i].x);c.setAttribute('cy',spots[i].y);c.setAttribute('r',40);c.dataset.i=i;c.classList.add('lhit','hit');c.classList.remove('hit');c.setAttribute('class','lhit');c.style.fill='transparent';c.style.cursor='pointer';hitsG.appendChild(c)});
   tray.innerHTML='';
   set.forEach((ch,i)=>{const d=document.createElement('div');d.className='slot lslot'+(i<bonus.next?' found':'');d.dataset.i=i;d.style.setProperty('--lc',LCOLORS[i%LCOLORS.length]);d.innerHTML=`<span>${ch}</span>`;
-    d.addEventListener('click',()=>{poke();if(i<bonus.next){say(`${ch}!`);return}d.classList.remove('wiggle');void d.offsetWidth;d.classList.add('wiggle');say(i===bonus.next?`Find the letter ${ch}!`:`First find the letter ${bonus.set[bonus.next]}.`)});tray.appendChild(d)});
+    d.addEventListener('click',()=>{poke();if(i<bonus.next){vsay([['let_'+ch,`${ch}!`]]);return}d.classList.remove('wiggle');void d.offsetWidth;d.classList.add('wiggle');vsay(i===bonus.next?[['findl_'+ch,`Find the letter ${ch}!`]]:[['oops','Oops!'],['findl_'+bonus.set[bonus.next],`First find the letter ${bonus.set[bonus.next]}.`]])});tray.appendChild(d)});
   sizeSlots();updateCount()}
 function onLetter(i){if(!bonus||!playing)return;const ch=bonus.set[i];
   if(i!==bonus.next){tone(260,.18,'sine',.07);const sl=tray.querySelector(`.lslot[data-i="${bonus.next}"]`);if(sl){sl.classList.remove('wiggle');void sl.offsetWidth;sl.classList.add('wiggle')}
-    say(`That's ${ch}! But first, find the letter ${bonus.set[bonus.next]}.`);return}
+    vsay([['oops',`That's ${ch}!`],['findl_'+bonus.set[bonus.next],`But first, find the letter ${bonus.set[bonus.next]}.`]]);return}
   clearHint();const hit=hitsG.querySelector(`.lhit[data-i="${i}"]`);if(hit)hit.remove();
   const g=$('lettersG').querySelector(`.letterG[data-i="${i}"]`);const r=g.getBoundingClientRect();const p=toStage(r.left+r.width/2,r.top+r.height/2);g.style.transition='opacity .25s';g.style.opacity='0';
   burst(p.x,p.y,18,['#ffd93b','#ff8acb','#b07bff','#7fe7ff','#fff'],130,30);
@@ -765,8 +765,8 @@ function onLetter(i){if(!bonus||!playing)return;const ch=bonus.set[i];
   const slot=tray.querySelector(`.lslot[data-i="${i}"]`);const sr=slot.getBoundingClientRect();const t=toStage(sr.left+sr.width/2,sr.top+sr.height/2);
   const f=document.createElement('div');f.className='flyer';f.innerHTML=`<div style="width:80px;height:80px;display:flex;align-items:center;justify-content:center;font:700 64px Fredoka,system-ui;color:${LCOLORS[i%LCOLORS.length]};-webkit-text-stroke:3px #fff">${ch}</div>`;fx.appendChild(f);
   f.animate([{transform:`translate(${p.x-40}px,${p.y-40}px) scale(1)`},{transform:`translate(${p.x-40}px,${p.y-40}px) scale(1.6)`,offset:.22},{transform:`translate(${t.x-40}px,${t.y-40}px) scale(.6)`}],{duration:950,easing:'ease-in-out'}).onfinish=()=>{f.remove();slot.classList.add('found','bounce');setTimeout(()=>slot.classList.remove('bounce'),700)};
-  if(bonus.next>=bonus.set.length){say(`${ch}! You found all the letters, ${bonus.set.join(', ')}! Amazing!`);setTimeout(levelDone,2200)}
-  else say(`${ch}! Now find the letter ${bonus.set[bonus.next]}.`)}
+  if(bonus.next>=bonus.set.length){vsay([['let_'+ch,`${ch}!`],['lettersdone','You found all the letters! Amazing!']]);setTimeout(levelDone,2200)}
+  else vsay([['let_'+ch,`${ch}!`],['findl_'+bonus.set[bonus.next],`Now find the letter ${bonus.set[bonus.next]}.`]])}
 
 /* =========================================================
    Screens: title, map, story, complete
@@ -792,7 +792,7 @@ function drawMap(){RNG=mulberry(9);
       <text x="${x}" y="${y+104}" text-anchor="middle" font-family="Fredoka" font-weight="700" font-size="26" fill="${open?'#7a4fd6':'#b3a6d6'}" stroke="#fff" stroke-width="6" paint-order="stroke">${L.name}</text></g>`});
   const[cx,cy]=P[current];s+=`<g pointer-events="none">${G(cx+(current===4?-125:125),cy+62,.34,lunaPose(0))}</g>`;
   $('mapSvg').innerHTML=s;$('mapSvg').querySelectorAll('.u-root').forEach(e=>e.removeAttribute('class'));
-  $('mapSvg').querySelectorAll('.node').forEach(n=>n.addEventListener('click',()=>{const i=+n.dataset.i;if(i===0||done.includes(i-1)||done.includes(i)){tone(660,.15,'triangle',.08);openStory(i)}else{tone(220,.2,'sine',.06);say('Finish the level before to open this one!')}}));
+  $('mapSvg').querySelectorAll('.node').forEach(n=>n.addEventListener('click',()=>{const i=+n.dataset.i;if(i===0||done.includes(i-1)||done.includes(i)){tone(660,.15,'triangle',.08);openStory(i)}else{tone(220,.2,'sine',.06);vsay([['locked','Finish the level before this one first!']])}}));
 }
 function storyHTML(lines){return lines.map(([t,w])=>`<p>${w==='luna'?'<span class="who">Luna: </span>':w==='whirly'?'<span class="who" style="color:#4a90d9">Whirly: </span>':''}${t}</p>`).join('')}
 function storyArt(i,happy){RNG=mulberry(30+i);const L=LEVELS[i];
@@ -801,14 +801,14 @@ function storyArt(i,happy){RNG=mulberry(30+i);const L=LEVELS[i];
 function openStory(i){const L=LEVELS[i];storyArt(i,false);
   $('storyKicker').textContent=`Chapter ${i+1}`;$('storyTitle').textContent=L.name;$('storyText').innerHTML=storyHTML(L.intro);
   $('storyBtns').innerHTML=`<button class="bigBtn alt round" id="sbRead" aria-label="Read again">${speakerIcon()}</button><button class="bigBtn breathe" id="sbGo">Let's go!</button>`;
-  $('storyOverlay').classList.remove('hidden');unlockAudio();startMusic(i);speakLines(L.intro);
-  $('sbRead').onclick=()=>speakLines(L.intro);
+  $('storyOverlay').classList.remove('hidden');unlockAudio();startMusic(i);speakStory(i,'i');
+  $('sbRead').onclick=()=>speakStory(i,'i');
   const resume=prog&&prog.level===i&&prog.found.length>0;if(resume)$('sbGo').textContent='Keep going!';
   $('sbGo').onclick=()=>{$('storyOverlay').classList.add('hidden');show('game');buildLevel(i);
     if(prog&&prog.level===i)restoreFound(prog.found);else prog={level:i,found:[],bonus:0};
     playing=true;poke();
-    if(found.size===ITEMS.length){startBonus(prog.bonus||0);say(`Welcome back! Let's finish the bonus round. Find the letter ${bonus.set[bonus.next]}!`)}
-    else if(found.size)say(`Welcome back! You already found ${found.size} treasures. Let's find the rest!`);else say('Find the hidden treasures! Swipe to look around.')}}
+    if(found.size===ITEMS.length){startBonus(prog.bonus||0);vsay([['findl_'+bonus.set[bonus.next],`Welcome back! Find the letter ${bonus.set[bonus.next]}!`]])}
+    else if(found.size)vsay([['back',`Welcome back! Let's find the rest of the treasures!`]]);else vsay([['start','Find the hidden treasures! Swipe to look around.']])}}
 function restoreFound(ids){for(const id of ids){if(!ITEMS.some(x=>x.id===id)||found.has(id))continue;found.add(id);
   const h=hitsG.querySelector(`.hit[data-id="${id}"]`);if(h)h.remove();const el=scene.querySelector(`.item[data-id="${id}"]`);if(el)el.classList.add('gone');
   const sl=tray.querySelector(`[data-id="${id}"]`);if(sl)sl.classList.add('found')}updateCount()}
@@ -817,14 +817,14 @@ function levelDone(){playing=false;clearTimeout(idleTimer);if(!done.includes(cur
   $('storyKicker').textContent=cur===4?'The End':'Hooray!';$('storyTitle').textContent=cur===4?'Best Friends':'You found everything!';
   $('storyText').innerHTML=storyHTML(L.outro);
   $('storyBtns').innerHTML=`<button class="bigBtn alt round" id="sbRead" aria-label="Read again">${speakerIcon()}</button><button class="bigBtn alt" id="sbMap">Map</button>`+(cur<4?`<button class="bigBtn breathe" id="sbNext">Next</button>`:`<button class="bigBtn breathe" id="sbAgain">Play again</button>`);
-  $('storyOverlay').classList.remove('hidden');setTimeout(()=>speakLines(L.outro),900);
-  $('sbRead').onclick=()=>speakLines(L.outro);
+  $('storyOverlay').classList.remove('hidden');setTimeout(()=>speakStory(cur,'o'),900);
+  $('sbRead').onclick=()=>speakStory(cur,'o');
   $('sbMap').onclick=goMap;
   if($('sbNext'))$('sbNext').onclick=()=>openStory(cur+1);
   if($('sbAgain'))$('sbAgain').onclick=()=>openStory(0)}
-function goMap(){playing=false;clearTimeout(idleTimer);try{speechSynthesis.cancel()}catch(e){}$('storyOverlay').classList.add('hidden');drawMap();show('mapScreen');startMusic(0)}
+function goMap(){playing=false;clearTimeout(idleTimer);stopVoice();$('storyOverlay').classList.add('hidden');drawMap();show('mapScreen');startMusic(0)}
 $('homeBtn').addEventListener('click',goMap);
-$('playBtn').addEventListener('click',()=>{unlockAudio();say("Hi! I'm Luna! Will you help me find my treasures?",'luna');goMap()});
+$('playBtn').addEventListener('click',()=>{unlockAudio();vsay([['luna_hello',"Hi! I'm Luna! Will you help me find my treasures?",'luna']]);goMap()});
 
 /* =========================================================
    Voices & speech
@@ -836,6 +836,23 @@ function rankVoice(v){let s=0;if(/\bAva\b/i.test(v.name))s+=100;if(/premium/i.te
 function getVoice(){if(!voices.length)loadVoices();if(voiceURI){const v=voices.find(v=>v.voiceURI===voiceURI);if(v)return v}return voices.slice().sort((a,b)=>rankVoice(b)-rankVoice(a))[0]||null}
 const ROLE={n:{pitch:1.05,rate:.9},luna:{pitch:1.3,rate:.95},whirly:{pitch:1.6,rate:1.05}};
 function utter(text,role='n'){const u=new SpeechSynthesisUtterance(text);const r=ROLE[role]||ROLE.n;u.pitch=r.pitch;u.rate=r.rate;const v=getVoice();if(v)u.voice=v;return u}
+
+/* ---- recorded voices (Ava = narrator, Joelle = Luna and Whirly), falling back to the browser's voice ---- */
+const VBUF={},VPEND={};let vSrc=null,vToken=0,vChain=Promise.resolve();
+const hasClip=k=>!!ASSET_DATA['v_'+k];
+function b64Buf(d){const bin=atob(d.slice(d.indexOf(',')+1)),u=new Uint8Array(bin.length);for(let j=0;j<bin.length;j++)u[j]=bin.charCodeAt(j);return u.buffer}
+function clipBuf(k){if(VBUF[k])return Promise.resolve(VBUF[k]);if(VPEND[k])return VPEND[k];const d=ASSET_DATA['v_'+k];if(!d||!audio)return Promise.resolve(null);
+  const ab=d.startsWith('data:')?Promise.resolve(b64Buf(d)):fetch(d).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()});
+  return VPEND[k]=ab.then(b=>new Promise((res,rej)=>audio.decodeAudioData(b,res,rej))).then(b=>VBUF[k]=b).catch(()=>{delete VPEND[k];return null})}
+function stopVoice(){vToken++;vChain=Promise.resolve();try{if(vSrc)vSrc.stop()}catch(e){}vSrc=null;try{speechSynthesis.cancel()}catch(e){}}
+function playBuf(b,tok){return new Promise(res=>{if(tok!==vToken||!audio)return res();try{const s=audio.createBufferSource(),g=audio.createGain();g.gain.value=1.1;s.buffer=b;s.connect(g).connect(audio.destination);
+  s.onended=()=>{if(vSrc===s)vSrc=null;res()};vSrc=s;s.start()}catch(e){res()}})}
+function vsay(seq,append){if(!sound)return;if(!append)stopVoice();
+  if(!audio||!seq.every(([k])=>hasClip(k))){try{for(const[,t,r]of seq)speechSynthesis.speak(utter(t,r||'n'))}catch(e){}return}
+  const tok=vToken,bufs=seq.map(([k])=>clipBuf(k));
+  vChain=vChain.then(async()=>{for(let j=0;j<bufs.length;j++){const b=await bufs[j];if(tok!==vToken||!sound)return;if(!b){try{const[,t,r]=seq[j];speechSynthesis.speak(utter(t,r||'n'))}catch(e){}continue}await playBuf(b,tok);if(j<bufs.length-1)await new Promise(r=>setTimeout(r,140))}})}
+function speakStory(i,kind){const L=LEVELS[i],lines=kind==='i'?L.intro:L.outro;
+  vsay(lines.map(([t,r],n)=>[(r==='luna'?'luna_':r==='whirly'?'whirly_':'')+'s'+(i+1)+kind+(n+1),t,r]))}
 function say(text,role){if(!sound)return;try{speechSynthesis.cancel();speechSynthesis.speak(utter(text,role))}catch(e){}}
 function sayMore(lines){if(!sound)return;try{for(const[t,r]of lines)speechSynthesis.speak(utter(t,r))}catch(e){}}
 function speakLines(lines){if(!sound)return;try{speechSynthesis.cancel();for(const[t,r]of lines)speechSynthesis.speak(utter(t,r))}catch(e){}}
@@ -868,7 +885,7 @@ function schedule(){if(!audio||!mSong)return;const step=60/mSong.bpm/2;while(mNe
 function mbox(f,t,v,dur=.9){try{for(const[m,vv]of[[1,v],[2,v*.25]]){const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.value=f*m;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vv,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g).connect(audio.destination);o.start(t);o.stop(t+dur+.05)}}catch(e){}}
 function drawToggles(){document.querySelectorAll('.soundBtn').forEach(b=>b.innerHTML=`<svg width="32" height="32" viewBox="0 0 34 34"><polygon points="4,12 11,12 19,5 19,29 11,22 4,22" fill="${sound?'#7a4fd6':'#c2b3e6'}"/>${sound?'<path d="M23,11 q5,6 0,12 M27,7 q9,10 0,20" stroke="#7a4fd6" stroke-width="3" fill="none" stroke-linecap="round"/>':'<path d="M23,12 l9,10 M32,12 l-9,10" stroke="#c2b3e6" stroke-width="3" stroke-linecap="round"/>'}</svg>`);
   document.querySelectorAll('.musicBtn').forEach(b=>b.innerHTML=`<svg width="32" height="32" viewBox="0 0 34 34"><path d="M12,26 V7 L28,4 V22" stroke="${music?'#ff63ad':'#d8c6e0'}" stroke-width="3.5" fill="none" stroke-linejoin="round"/><circle cx="9" cy="26" r="5" fill="${music?'#ff63ad':'#d8c6e0'}"/><circle cx="25" cy="22" r="5" fill="${music?'#ff63ad':'#d8c6e0'}"/>${music?'':'<path d="M4,4 L30,30" stroke="#c2b3e6" stroke-width="3" stroke-linecap="round"/>'}</svg>`)}
-document.querySelectorAll('.soundBtn').forEach(b=>b.addEventListener('click',()=>{sound=!sound;save();drawToggles();if(!sound)try{speechSynthesis.cancel()}catch(e){}else{unlockAudio();chime()}}));
+document.querySelectorAll('.soundBtn').forEach(b=>b.addEventListener('click',()=>{sound=!sound;save();drawToggles();if(!sound)stopVoice();else{unlockAudio();chime()}}));
 document.querySelectorAll('.musicBtn').forEach(b=>b.addEventListener('click',()=>{music=!music;save();unlockAudio();drawToggles()}));
 
 /* =========================================================

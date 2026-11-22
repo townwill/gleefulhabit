@@ -7,15 +7,18 @@ import base64, os, re
 HERE=os.path.dirname(os.path.abspath(__file__)); GAME=os.path.dirname(HERE); ASSETS=os.path.join(GAME,'assets')
 src=open(os.path.join(HERE,'index.src.html')).read()
 VER=re.search(r"const APP_VERSION = '([^']+)'",src).group(1)
-MIME={'.jpg':'image/jpeg','.webp':'image/webp','.png':'image/png'}
-files=[f for f in sorted(os.listdir(ASSETS)) if os.path.splitext(f)[1] in MIME]
+MIME={'.jpg':'image/jpeg','.webp':'image/webp','.png':'image/png','.m4a':'audio/mp4'}
+# (key, path relative to luna/assets) - recorded voice clips in assets/voice become keys v_<name>
+files=[(os.path.splitext(f)[0],f) for f in sorted(os.listdir(ASSETS)) if os.path.splitext(f)[1] in MIME]
+VDIR=os.path.join(ASSETS,'voice')
+if os.path.isdir(VDIR): files+=[('v_'+os.path.splitext(f)[0],'voice/'+f) for f in sorted(os.listdir(VDIR)) if os.path.splitext(f)[1] in MIME]
 cut=src.index("<script>\nconst APP_VERSION")
 # artifact copy
-parts=[f"{os.path.splitext(f)[0]}:'data:{MIME[os.path.splitext(f)[1]]};base64,"+base64.b64encode(open(os.path.join(ASSETS,f),'rb').read()).decode()+"'" for f in files]
+parts=[f"{k}:'data:{MIME[os.path.splitext(f)[1]]};base64,"+base64.b64encode(open(os.path.join(ASSETS,f),'rb').read()).decode()+"'" for k,f in files]
 os.makedirs(os.path.join(HERE,'out'),exist_ok=True)
 open(os.path.join(HERE,'out','index.html'),'w').write(src[:cut]+"<script>const ASSET_DATA={\n"+",\n".join(parts)+"};</script>\n"+src[cut:])
 # GitHub Pages copy
-parts=[f"{os.path.splitext(f)[0]}:'assets/{f}?v={VER}'" for f in files]
+parts=[f"{k}:'assets/{f}?v={VER}'" for k,f in files]
 head='''<link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#bfa6ff">
