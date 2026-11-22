@@ -508,7 +508,7 @@ body:has(.selbar) .wrap{padding-bottom:110px}body:has(.selbar) #toasts{bottom:12
   </header>
   <nav class="tabs" id="tabs" role="tablist"></nav>
   <main id="view"></main>
-  <div class="foot"><span id="savedNote">Saving…</span><span id="saveSize"></span><button id="saveBtn">💾 Save now</button><button id="bkBtn">Backups</button><button id="styleBtn">Card art: Arcade</button><button id="switchBtn">Switch player</button><span id="vtag" style="opacity:.6"></span><button id="resetBtn">New save file</button></div>
+  <div class="foot"><span id="savedNote">Saving…</span><span id="saveSize"></span><button id="saveBtn">💾 Save now</button><button id="bkBtn">Backups</button><button id="styleBtn">Card art: Arcade</button><button id="notesBtn">📜 What's new</button><button id="switchBtn">Switch player</button><span id="vtag" style="opacity:.6"></span><button id="resetBtn">New save file</button></div>
 </div>
 <div id="toasts" aria-live="polite"></div>
 <div id="modal" hidden></div>
@@ -4781,7 +4781,51 @@ async function freshCloud(id){
   if(!dbNS)return;try{const snap=await Promise.race([dbNS.doc('profiles/'+id).get(),new Promise((_,r)=>setTimeout(()=>r('slow'),3000))]);if(snap&&snap.exists)cloudProfiles[id]=snap.data()}catch(e){}
 }
 const LAUNCHED=new Set();
+/* ---------- Release notes: what's new in each update. Newest first; give every new entry the next id. ---------- */
+const RELEASE_NOTES=[
+  {id:12,d:'Nov 22',t:'Puzzles and fair trades',items:[
+    '🧩 Daily Puzzles! A word search, a crossword, a sudoku and trivia, new every day. Each one pays $25,000. Solve all 4 for a free blaster box and an extra Lucky Wheel spin.',
+    '🤝 Trade Night is fair now. Big Sal\'s card is always worth at least as much as what you give him.',
+    '🎁 In the Binder, Select mode has Send and Trade buttons for the cards you picked.',
+    '🛠️ Every upgrade group says what it\'s for, and Miscellaneous got sorted into the right groups.',
+    '📜 Release notes! Tap "What\'s new" at the bottom of the screen any time.']},
+  {id:11,d:'Nov 20',t:'The Lucky Wheel',items:[
+    '🎡 The Lucky Wheel: 2 spins a day. Cash, free packs, Turbo sort, free Express grading, 1/1 hints, and a 5% chance at a free instant box.',
+    '☕ Grandpa asks "Ready for a break?" before break time. Saying "2 more minutes" just keeps you on that screen for 2 minutes!',
+    '✍️ A break never closes what you were typing anymore.',
+    '★ Big Sal brings want-list cards you can\'t afford to the next Trade Night, for spare cards instead of cash.']},
+  {id:10,d:'Nov 20',t:'The All-Star Hall',items:[
+    '🏅 The All-Star Hall opens after Grandma\'s House: 1,000,000 star cards in 100 cases. Olympians, golf, tennis, kid photos of the stars, award cards and twenty 1/1s.',
+    '🏊 The Colton Townsend 1/1 swimmer, the most valuable card ever made. Plus Colton the Warriors legend, the Most Improved award and Colton & Dad at the pool.',
+    '💡 Send Dad ideas for new features from the top of Upgrades (5 an hour).',
+    '💵 Send cash to another player.',
+    '⚡ Instant sorts cost $1 million, then $1.5 million, then $2 million and so on. Or take a 30 minute break for a free one.']},
+  {id:9,d:'Nov 19',t:'Grandma\'s House',items:[
+    '🏠 Grandma\'s House opens after the stadium: 750,000 non-sports cards in hatboxes. Presidents, history, music, movies, space and science, with twenty 1/1s.',
+    '🏆 "Best slabs" fills the whole showcase, duplicates too.',
+    '🤏 No more accidental pinch zoom.']},
+  {id:8,d:'Nov 18',t:'Make your own upgrade',items:[
+    '🛠️ Design your own upgrade and send it to Dad to approve. You set the price, and you can share approved ones with the family.',
+    '🎯 The want list can ask for a 1/1 Superfractor, one for every 10,000 cards you sort.',
+    '🤝 1/1s can be traded or sent between family (never to traders), with a fair-trade check. Special Traders: High Roller Harry and Mystery Mo.',
+    '🏪 New shop upgrades: Neon OPEN Sign Plus and Counter Plus Plus.',
+    '💲 Sell cheap cards with a price slider.']},
+  {id:7,d:'Nov 17',t:'Save list and more',items:[
+    '🔒 The Save list protects a player or a team from being sold.',
+    '🏅 Grade every card of one player at once.',
+    '🎲 Surprise Breaks, five new upgrades, and million-dollar 1/1s.']},
+];
+const LS_NOTES='shed_notesSeen';
+function notesHTML(list){return list.map(n=>`<div style="text-align:left;width:100%"><h3 style="margin:6px 0 4px">${esc(n.t)} <small class="note">${esc(n.d)}</small></h3><ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px">${n.items.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>`).join('<hr style="width:100%;border:0;border-top:1px solid var(--line)">')}
+function notesModal(list,fresh){list=list||RELEASE_NOTES;
+  modal(`<h2>📜 ${fresh?'New in this update':"What's new"}</h2>${notesHTML(list)}<div class="row2"><button class="btn go" data-close>${fresh?'Cool!':'Close'}</button>${fresh&&list.length<RELEASE_NOTES.length?'<button class="btn" id="ntAll">See older updates</button>':''}</div>`);
+  const a=$('#ntAll');if(a)a.onclick=()=>{closeModal(true);notesModal()}}
+// once per device: show the notes you haven't seen yet (a brand-new device only sees the newest one)
+function notesCheck(){const top=RELEASE_NOTES[0].id,seen=+(localStorage.getItem(LS_NOTES)||0);if(seen>=top)return;
+  const list=seen?RELEASE_NOTES.filter(n=>n.id>seen):RELEASE_NOTES.slice(0,1);try{localStorage.setItem(LS_NOTES,String(top))}catch(e){}
+  queueModal(()=>notesModal(list,true))}
 async function choose(p){
+  setTimeout(notesCheck,2500);
   if(PROFILE&&PROFILE.id!==p.id)save('now');
   PROFILE=null;await freshCloud(p.id);
   PROFILE={id:p.id,name:p.name,color:p.color};
@@ -8937,7 +8981,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-22.0158';
+const APP_VERSION = '2026-11-22.1443';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
@@ -8952,7 +8996,7 @@ setInterval(checkForUpdate,5*60000);
 // quiet autosave every few seconds so a refresh or device switch loses almost nothing
 document.addEventListener('click',e=>{if(e.target&&e.target.id==='bkBtn'){showBackups();return}if(e.target&&e.target.id==='saveBtn'){save('now');const b=e.target;b.textContent='✓ Saved';setTimeout(()=>{b.textContent='💾 Save now'},1800)}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)save('now')});
-$('#playerBtn').onclick=showPicker;$('#switchBtn').onclick=showPicker;
+$('#playerBtn').onclick=showPicker;$('#switchBtn').onclick=showPicker;$('#notesBtn').onclick=()=>notesModal();
 function syncArt(){CARD_CACHE.clear();cacheBytes=0;ART=S.art==='classic'?'classic':'arcade';const b=$('#styleBtn');if(b)b.textContent='Card art: '+(ART==='arcade'?'Arcade':'Classic')}
 $('#styleBtn').onclick=()=>{if(!PROFILE)return;S.art=ART==='arcade'?'classic':'arcade';syncArt();save(true);if(tab==='shed')renderHand();else render();toast(`Card art switched to ${ART==='arcade'?'Arcade':'Classic'}`)};
 function intro(){
