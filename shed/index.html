@@ -22,6 +22,15 @@ body.gma .logo{color:var(--bulb);text-shadow:0 0 18px rgba(255,158,199,.4)}
 html,body{touch-action:manipulation}
 body.alls{--bulb:#ffd23f;--bulb2:#f2b705}
 body.alls .logo{color:var(--bulb);text-shadow:0 0 18px rgba(255,210,63,.45)}
+.pzhub{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}.pztile{background:var(--panel2);border:2px solid var(--line);border-radius:14px;padding:14px 8px;color:inherit;font:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;min-height:96px}.pztile.done{border-color:var(--good);opacity:.8}.pzi{font-size:30px}
+.wsg{display:grid;gap:3px;width:100%;max-width:360px}.wsc{aspect-ratio:1;border:1px solid var(--line);background:var(--panel2);color:inherit;font:700 18px/1 system-ui;border-radius:6px;padding:0;min-height:36px}.wsc.hit{background:#2e7d32;color:#fff}.wsc.sel{background:#ffd23f;color:#111}
+.wsw{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}.wsw span{padding:4px 10px;border-radius:99px;background:var(--panel2);font-weight:700}.wsw span.got{background:#2e7d32;color:#fff;text-decoration:line-through}
+.cwg{display:grid;gap:2px;width:100%}.cwc{aspect-ratio:1;background:#f4f1e8;color:#111;border-radius:3px;position:relative;font:700 17px/1 system-ui;display:grid;place-items:center;cursor:pointer;min-height:26px}.cwc.cur{background:#ffe58a}.cwc.ok{background:#b9e3b0}.cwc sup{position:absolute;left:2px;top:1px;font-size:9px;font-weight:600}.cwx{aspect-ratio:1}
+.cwin{width:100%;display:flex;flex-direction:column;gap:8px}.cwclue{font-size:1.05em}#cwIn{font:700 20px system-ui;letter-spacing:4px;text-transform:uppercase;width:11em;max-width:60vw;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:inherit;text-align:center}
+.cwl{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;text-align:left}.cwl>div{display:flex;flex-direction:column;gap:4px}.cwq{background:none;border:1px solid transparent;color:inherit;font:inherit;text-align:left;padding:6px;border-radius:8px;min-height:40px}.cwq.cur{border-color:#ffd23f}.cwq.ok{text-decoration:line-through;opacity:.6}
+.sug{display:grid;grid-template-columns:repeat(6,1fr);width:100%;max-width:330px;border:3px solid var(--text,#eee);border-radius:6px;overflow:hidden}.suc{aspect-ratio:1;border:1px solid var(--line);background:var(--panel2);color:#9fd0ff;font:700 22px/1 system-ui;padding:0}.suc.giv{color:inherit;background:var(--panel);opacity:1}.suc.sel{background:#ffd23f;color:#111}.suc.bad{color:#ff6b6b}.suc.br{border-right:3px solid var(--text,#eee)}.suc.bb{border-bottom:3px solid var(--text,#eee)}
+.sun{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}.sun .btn{min-width:48px;min-height:48px;font-size:20px}
+.trq{display:flex;flex-direction:column;gap:8px;width:100%}.trq .btn{min-height:48px;font-size:1.05em}
 *{box-sizing:border-box}
 html,body{height:100%}
 /* the backdrop lives on its own fixed layer so scrolling never repaints it (fixed backgrounds are slow on iPad) */
@@ -490,6 +499,7 @@ body:has(.selbar) .wrap{padding-bottom:110px}body:has(.selbar) #toasts{bottom:12
     <div class="logo"><span id="logoName">Grandpa's Shed</span><small id="logoSub">10,000 cards. One of them is the one.</small></div>
     <div class="stats">
       <button class="player" id="wheelBtn" title="Lucky Wheel" style="padding:4px 12px">🎡 <span id="wheelN">2</span></button>
+      <button class="player" id="puzBtn" title="Daily Puzzles" style="padding:4px 12px">🧩 <span id="puzN">0/4</span></button>
       <button class="player" id="playerBtn" title="Switch player"><span class="av" id="pAv">?</span><span id="pName">Player</span></button>
       <div class="stat cash"><small>Cash</small><b id="cash">$0.00</b></div>
       <div class="stat"><small>Level <span id="lvl">1</span></small><div class="xpbar"><i id="xpfill"></i></div><span id="xptext">0 / 100 XP</span></div>
@@ -5634,6 +5644,197 @@ function wheelModal(){if(!PROFILE)return;const left=wheelLeft();
     setTimeout(()=>{busy=false;$('#whMsg',m).textContent=`${s.ico} ${s.name}!`;wheelPrize(s);updateHeader();
       const l=wheelLeft();$('#whClose',m).disabled=false;$('#whSpin',m).disabled=l<=0;$('p',m).innerHTML=l>0?`You have <b>${l}</b> spin${l>1?'s':''} today.`:'No spins left today. Come back tomorrow for 2 more!';
       if(['insta','hobby','blaster'].includes(s.id))closeModal(true)},4400)}}
+/* ---------- Daily Puzzles: word search, crossword, sudoku and trivia. Same 4 for everyone each day (seeded by the date). ---------- */
+const PUZ_KINDS=[['ws','🔤','Word Search'],['cw','✏️','Crossword'],['su','🔢','Sudoku'],['tr','❓','Trivia']];
+const PUZ_EACH=25000,PUZ_XP=25;
+const WS_THEMES=[
+  ['Sports',['BALL','HOOP','GOAL','PUCK','SKATE','GLOVE','PITCH','DUNK','SCORE','TEAM','SWIM','BASES']],
+  ['Card collecting',['CARD','PACK','SLAB','RARE','GRADE','BINDER','ROOKIE','AUTO','MINT','TRADE','SHINY','CHASE']],
+  ['Animals',['FROG','LION','BEAR','OWL','FISH','DUCK','TIGER','ZEBRA','SHARK','HORSE','CAMEL','PANDA']],
+  ['Yummy food',['PIZZA','TACO','APPLE','PEAR','CAKE','RICE','SOUP','CORN','BREAD','GRAPE','MANGO','BERRY']],
+  ['Outer space',['MOON','STAR','MARS','COMET','ROCKET','ORBIT','PLANET','EARTH','ALIEN','SPACE','VENUS']],
+  ['At the beach',['WAVE','CRAB','WHALE','SHELL','SAND','BOAT','CORAL','SEAL','TIDE','REEF','SURF','KELP']],
+  ['Weather',['RAIN','SNOW','WIND','STORM','CLOUD','SUNNY','FOG','HAIL','FROST','THUNDER']],
+  ['At school',['BOOK','DESK','PENCIL','CLASS','RECESS','LUNCH','RULER','PAPER','MATH','READ','GLUE']],
+];
+const CW_BANK=[['CAT','A pet that says meow'],['DOG','A pet that barks'],['SUN','It shines in the sky all day'],['MOON','It glows in the night sky'],['BALL','You kick, throw or bounce it'],['HOOP','A basketball goes through it'],['BAT','Swing it to hit a baseball'],['GOAL','What you score in soccer'],['PUCK','The little black disk in hockey'],['TEAM','A group of players on the same side'],['CARD','Collect these in a binder'],['PACK','Rip it open to find cards'],['FISH','It swims and has fins'],['FROG','A green hopper that says ribbit'],['LION','King of the jungle'],['BEAR','A big furry animal that hibernates'],['CAKE','A birthday treat with candles'],['PIZZA','A round food cut into slices'],['APPLE','A red or green fruit'],['TACO','A crunchy shell with filling'],['STAR','It twinkles at night'],['TREE','It has a trunk and leaves'],['RAIN','Water falling from clouds'],['SNOW','Cold white flakes'],['BOOK','You read it'],['DESK','You sit at it in class'],['SHIP','A big boat'],['TRAIN','It runs on tracks'],['BIKE','Pedal it to go'],['KITE','Fly it on a windy day'],['DUCK','A bird that quacks'],['EGG','A chicken lays this'],['MILK','A white drink from cows'],['NEST','A bird\'s home'],['SHOE','You wear it on your foot'],['HAT','You wear it on your head'],['SOCK','It goes on your foot under a shoe'],['RED','The color of a stop sign'],['BLUE','The color of the sky'],['GREEN','The color of grass'],['SEVEN','The number after six'],['TEN','The number of fingers you have'],['DUNK','Slam the ball through the hoop'],['SKATE','Glide on ice'],['SWIM','Move through water'],['RUN','Go fast on your feet'],['JUMP','Push off the ground into the air'],['CLOCK','It tells the time'],['MAP','It shows where places are'],['PIANO','An instrument with black and white keys'],['DRUM','Hit it to make a beat'],['ROBOT','A machine that can move by itself'],['SHARK','A big fish with sharp teeth'],['WHALE','The biggest animal in the ocean'],['ZEBRA','A horse-like animal with stripes'],['OWL','A bird that hoots at night'],['ANT','A tiny bug that lives in a hill'],['BEE','It buzzes and makes honey'],['CORN','Yellow kernels on a cob'],['GLOVE','A baseball player catches with it'],['COACH','The leader of a team'],['WIN','What you want to do in a game'],['GOLF','Hit a small ball into a hole'],['TENNIS','Hit a ball over a net with a racket'],['MEDAL','Olympians win gold ones'],['CHAMP','The winner'],['SLAB','A graded card in a hard case'],['ROOKIE','A player\'s first year']];
+const TRIVIA=[
+  ['How many players are on a basketball court for one team?','5','6','4','11'],
+  ['How many bases are on a baseball field (counting home plate)?','4','3','5','6'],
+  ['In which sport do you score a touchdown?','Football','Soccer','Baseball','Hockey'],
+  ['What do hockey players hit?','A puck','A ball','A birdie','A cone'],
+  ['How many points is a free throw worth in basketball?','1','2','3','5'],
+  ['How many strikes is an out in baseball?','3','4','2','5'],
+  ['Which team does Stephen Curry play for?','Golden State Warriors','Los Angeles Lakers','Boston Celtics','Chicago Bulls'],
+  ['Which city do the Giants baseball team play in?','San Francisco','New York','Chicago','Miami'],
+  ['What color medal is for first place at the Olympics?','Gold','Silver','Bronze','Blue'],
+  ['How many rings are on the Olympic flag?','5','4','6','3'],
+  ['Which sport uses a racket and a net?','Tennis','Golf','Soccer','Swimming'],
+  ['What is a hole-in-one?','Hitting the golf ball in the hole with one shot','A soccer goal from the middle','A basketball dunk','A home run'],
+  ['How many players are on a soccer team on the field?','11','9','5','15'],
+  ['What is the biggest planet in our solar system?','Jupiter','Earth','Mars','Saturn'],
+  ['Which planet is called the Red Planet?','Mars','Venus','Jupiter','Neptune'],
+  ['What do bees make?','Honey','Milk','Silk','Jam'],
+  ['How many legs does a spider have?','8','6','10','4'],
+  ['How many legs does an insect have?','6','8','4','10'],
+  ['What is the largest animal on Earth?','Blue whale','Elephant','Giraffe','Great white shark'],
+  ['What is the tallest animal?','Giraffe','Elephant','Horse','Camel'],
+  ['Which animal is known as the king of the jungle?','Lion','Tiger','Bear','Gorilla'],
+  ['What do caterpillars turn into?','Butterflies','Bees','Spiders','Frogs'],
+  ['What is frozen water called?','Ice','Steam','Fog','Rain'],
+  ['How many days are in a week?','7','5','10','6'],
+  ['How many months are in a year?','12','10','11','13'],
+  ['What is 5 + 7?','12','11','13','10'],
+  ['What is 9 - 4?','5','4','6','3'],
+  ['What is 3 x 4?','12','7','9','14'],
+  ['What is 20 ÷ 4?','5','4','6','10'],
+  ['How many sides does a triangle have?','3','4','5','6'],
+  ['How many sides does a hexagon have?','6','5','8','7'],
+  ['What shape has 4 equal sides?','Square','Triangle','Circle','Oval'],
+  ['What color do you get mixing blue and yellow?','Green','Purple','Orange','Brown'],
+  ['What color do you get mixing red and white?','Pink','Purple','Orange','Gray'],
+  ['Which ocean is the biggest?','Pacific','Atlantic','Indian','Arctic'],
+  ['What is the capital of the United States?','Washington, D.C.','New York City','Los Angeles','Chicago'],
+  ['Which state is San Francisco in?','California','Oregon','Texas','Nevada'],
+  ['Who was the first President of the United States?','George Washington','Abraham Lincoln','Thomas Jefferson','John Adams'],
+  ['What do plants need from the sun to grow?','Light','Snow','Wind','Sand'],
+  ['Which is the closest star to Earth?','The Sun','The Moon','The North Star','Mars'],
+  ['What do you call a baby cat?','Kitten','Puppy','Cub','Calf'],
+  ['What do you call a baby dog?','Puppy','Kitten','Foal','Chick'],
+  ['What do you call a baby cow?','Calf','Kid','Lamb','Foal'],
+  ['Which animal says "moo"?','Cow','Horse','Sheep','Pig'],
+  ['Which bird can not fly?','Penguin','Eagle','Robin','Owl'],
+  ['What gas do we breathe in to live?','Oxygen','Helium','Smoke','Steam'],
+  ['How many hours are in a day?','24','12','20','30'],
+  ['What is the opposite of hot?','Cold','Warm','Wet','Fast'],
+  ['What does a 1/1 card mean?','Only one was ever made','It costs $1','It is the first card','It is a rookie card'],
+  ['What is a rookie card?','A card from a player\'s first year','A card with a mistake','A card with no picture','A card from the last year'],
+  ['What is a card "slab"?','A graded card sealed in a hard case','A broken card','A pack of gum','A card binder'],
+  ['In card grading, what is the best grade?','10','1','5','100'],
+  ['Which sport is played at Wimbledon?','Tennis','Golf','Soccer','Swimming'],
+  ['Which swimmer won 8 gold medals at one Olympics?','Michael Phelps','Usain Bolt','Tom Brady','Simone Biles'],
+  ['Usain Bolt is famous for what?','Running fast','Swimming','Golf','Hockey'],
+  ['Simone Biles is famous for what sport?','Gymnastics','Tennis','Basketball','Soccer'],
+  ['What do you call it when a batter hits the ball out of the park?','Home run','Touchdown','Slam dunk','Goal'],
+  ['How many quarters are in a basketball game?','4','2','3','6'],
+  ['How many periods are in a hockey game?','3','4','2','5'],
+  ['What is the Super Bowl?','The football championship game','A basketball trophy','A big soup bowl','A baseball stadium'],
+  ['What shape is a soccer ball\'s pattern made of?','Hexagons and pentagons','Squares','Stars','Circles'],
+  ['How many cents are in a dollar?','100','10','50','1,000'],
+  ['How many inches are in a foot?','12','10','6','100'],
+  ['What is the fastest land animal?','Cheetah','Horse','Lion','Rabbit'],
+  ['Where do penguins mostly live?','Antarctica','The desert','The jungle','The Arctic'],
+  ['Which month comes after November?','December','October','January','September'],
+  ['What holiday has jack-o\'-lanterns?','Halloween','Thanksgiving','Easter','Valentine\'s Day'],
+  ['What do you call a word that means the same as another word?','A synonym','An antonym','A noun','A verb'],
+  ['Which is a mammal?','Dolphin','Shark','Trout','Octopus'],
+];
+const puzDay=()=>new Date().toDateString();
+const puzRng=k=>srand(hash(puzDay()+'|'+k));
+const shuf=(a,r)=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+function puzState(){const d=puzDay();if(!S.puz||S.puz.day!==d)S.puz={day:d,done:{},ws:[],cw:[],su:null,tr:{i:0,miss:[]},bonus:false};return S.puz}
+const puzDoneN=()=>{const p=puzState();return PUZ_KINDS.filter(([k])=>p.done[k]).length};
+// ---- word search: 8x8, words go right, down or diagonally down-right
+function makeWS(){const r=puzRng('ws'),[theme,list]=WS_THEMES[Math.floor(r()*WS_THEMES.length)],N=8,dirs=[[0,1],[1,0],[1,1]];
+  for(let tries=0;tries<50;tries++){const g=[...Array(N)].map(()=>Array(N).fill('')),words=[],place=[];
+    for(const w of shuf(list,r)){if(words.length>=6)break;let ok=false;
+      for(let t=0;t<80&&!ok;t++){const [dr,dc]=dirs[Math.floor(r()*3)],r0=Math.floor(r()*N),c0=Math.floor(r()*N);if(r0+dr*(w.length-1)>=N||c0+dc*(w.length-1)>=N)continue;
+        let fit=true;for(let i=0;i<w.length;i++){const x=g[r0+dr*i][c0+dc*i];if(x&&x!==w[i]){fit=false;break}}
+        if(fit){for(let i=0;i<w.length;i++)g[r0+dr*i][c0+dc*i]=w[i];words.push(w);place.push([r0,c0,dr,dc]);ok=true}}}
+    if(words.length>=6){const AB='ABCDEFGHIJKLMNOPRSTUWY';for(let i=0;i<N;i++)for(let j=0;j<N;j++)if(!g[i][j])g[i][j]=AB[Math.floor(r()*AB.length)];return {theme,g,words,place,N}}}
+  return null}
+// ---- crossword: crossing words built from the clue bank
+function makeCW(){const r=puzRng('cw'),N=13;
+  for(let tries=0;tries<60;tries++){const g=[...Array(N)].map(()=>Array(N).fill(null)),dirAt={},words=[];const bank=shuf(CW_BANK,r);
+    const put=(w,clue,row,col,d)=>{for(let i=0;i<w.length;i++){const rr=row+(d?i:0),cc=col+(d?0:i);g[rr][cc]=w[i];(dirAt[rr+','+cc]=dirAt[rr+','+cc]||[]).push(d)}words.push({w,clue,row,col,d})};
+    const can=(w,row,col,d)=>{let cross=0;const at=(a,b)=>a>=0&&b>=0&&a<N&&b<N?g[a][b]:null;
+      if(row<0||col<0||row+(d?w.length-1:0)>=N||col+(d?0:w.length-1)>=N)return false;
+      if(at(row-(d?1:0),col-(d?0:1))||at(row+(d?w.length:0),col+(d?0:w.length)))return false;
+      for(let i=0;i<w.length;i++){const rr=row+(d?i:0),cc=col+(d?0:i),x=g[rr][cc];
+        if(x){if(x!==w[i]||(dirAt[rr+','+cc]||[]).includes(d))return false;cross++}
+        else{if(d){if(at(rr,cc-1)||at(rr,cc+1))return false}else{if(at(rr-1,cc)||at(rr+1,cc))return false}}}
+      return cross>0};
+    const first=bank[0];put(first[0],first[1],6,Math.floor((N-first[0].length)/2),0);
+    for(const [w,clue] of bank.slice(1)){if(words.length>=6)break;if(words.some(x=>x.w===w))continue;const opts=[];
+      for(const pw of words)for(let i=0;i<pw.w.length;i++)for(let j=0;j<w.length;j++){if(pw.w[i]!==w[j])continue;const d=pw.d?0:1,rr=pw.row+(pw.d?i:0),cc=pw.col+(pw.d?0:i);const row=d?rr-j:rr,col=d?cc:cc-j;if(can(w,row,col,d))opts.push([row,col,d])}
+      if(opts.length){const o=opts[Math.floor(r()*opts.length)];put(w,clue,...o)}}
+    if(words.length>=5){let r0=N,c0=N,r1=0,c1=0;for(let i=0;i<N;i++)for(let j=0;j<N;j++)if(g[i][j]){r0=Math.min(r0,i);c0=Math.min(c0,j);r1=Math.max(r1,i);c1=Math.max(c1,j)}
+      const grid=g.slice(r0,r1+1).map(row=>row.slice(c0,c1+1));words.forEach(x=>{x.row-=r0;x.col-=c0});
+      // number the starts in reading order
+      const starts=[...new Set(words.map(x=>x.row*100+x.col))].sort((a,b)=>a-b);words.forEach(x=>x.n=starts.indexOf(x.row*100+x.col)+1);
+      words.sort((a,b)=>a.d-b.d||a.n-b.n);return {grid,words}}}
+  return null}
+// ---- sudoku: 6x6 (2x3 boxes), about 18 numbers given, always exactly one answer
+function suCount(b,lim){const i=b.indexOf(0);if(i<0)return 1;const r=Math.floor(i/6),c=i%6;let n=0;
+  for(let v=1;v<=6&&n<lim;v++){let ok=true;for(let k=0;k<6&&ok;k++)if(b[r*6+k]===v||b[k*6+c]===v)ok=false;
+    const br=r-r%2,bc=c-c%3;for(let a=0;a<2&&ok;a++)for(let d=0;d<3&&ok;d++)if(b[(br+a)*6+bc+d]===v)ok=false;
+    if(ok){b[i]=v;n+=suCount(b,lim-n);b[i]=0}}return n}
+function makeSU(){const r=puzRng('su');const base=[];for(let i=0;i<6;i++)for(let j=0;j<6;j++)base.push(((i%2)*3+Math.floor(i/2)+j)%6+1);
+  const dig=shuf([1,2,3,4,5,6],r),bands=shuf([0,1,2],r),rows=[];bands.forEach(b=>shuf([0,1],r).forEach(x=>rows.push(b*2+x)));
+  const stacks=shuf([0,1],r),cols=[];stacks.forEach(s=>shuf([0,1,2],r).forEach(x=>cols.push(s*3+x)));
+  const sol=[];for(let i=0;i<6;i++)for(let j=0;j<6;j++)sol.push(dig[base[rows[i]*6+cols[j]]-1]);
+  const puz=sol.slice();for(const i of shuf([...Array(36).keys()],r)){if(puz.filter(Boolean).length<=18)break;const v=puz[i];puz[i]=0;if(suCount(puz.slice(),2)!==1)puz[i]=v}
+  return {sol,puz}}
+// ---- trivia: 5 questions a day
+function makeTR(){const r=puzRng('tr');return shuf(TRIVIA,r).slice(0,5).map(q=>({q:q[0],a:q[1],opts:shuf(q.slice(1),r)}))}
+let PZ=null;function puzzles(){if(!PZ||PZ.day!==puzDay())PZ={day:puzDay(),ws:makeWS(),cw:makeCW(),su:makeSU(),tr:makeTR()};return PZ}
+function puzFinish(k){const p=puzState();if(p.done[k])return;p.done[k]=true;S.cash+=PUZ_EACH;S.stats.earned=(S.stats.earned||0)+PUZ_EACH;addXP(PUZ_XP);
+  const name=PUZ_KINDS.find(x=>x[0]===k)[2];toast(`🧩 ${name} solved! +${money(PUZ_EACH)}`,'good',6000);
+  if(puzDoneN()===4&&!p.bonus){p.bonus=true;wheelLeft();S.wheel.left++;const id=freePack('blaster');save('now');updateHeader();
+    setTimeout(()=>{const m=modal(`<h2>🏆 All 4 puzzles done!</h2><div class="letter">Word search, crossword, sudoku and trivia, all in one day. That's a sharp mind, kiddo.<br><br>— Grandpa</div><p>Your prize: a <b>free blaster box</b> and an <b>extra spin</b> on the Lucky Wheel. Come back tomorrow for 4 new puzzles.</p><div class="row2"><button class="btn go" id="pzOpen">Open my blaster</button><button class="btn" id="pzSpin">🎡 Spin the wheel</button></div>`,{locked:true});
+      $('#pzOpen',m).onclick=()=>{closeModal(true);if(id)openPack(id,true)};$('#pzSpin',m).onclick=()=>{closeModal(true);if(id)openPack(id,true);setTimeout(wheelModal,300)}},350);return true}
+  save('now');updateHeader()}
+function pzDone(k){closeModal(true);if(!puzFinish(k))puzHub()}
+function puzHub(){if(!PROFILE)return;const p=puzState(),n=puzDoneN();
+  const m=modal(`<h2>🧩 Daily Puzzles</h2><p>Four new puzzles every day. Each one pays <b>${money(PUZ_EACH)}</b>. Solve all four for a <b>free blaster box</b> and an <b>extra Lucky Wheel spin</b>.</p>
+    <div class="pzhub">${PUZ_KINDS.map(([k,ico,name])=>`<button class="pztile${p.done[k]?' done':''}" data-pz="${k}"><span class="pzi">${ico}</span><b>${name}</b><small>${p.done[k]?'✅ Solved':'Play'}</small></button>`).join('')}</div>
+    <p class="note">${n}/4 done today${p.bonus?' · prize collected 🏆':''}</p><div class="row2"><button class="btn" data-close>Close</button></div>`);
+  m.querySelectorAll('[data-pz]').forEach(b=>b.onclick=()=>{closeModal(true);({ws:playWS,cw:playCW,su:playSU,tr:playTR})[b.dataset.pz]()})}
+const pzBack=m=>{const b=$('#pzBack',m);if(b)b.onclick=()=>{closeModal(true);puzHub()}};
+function playWS(){const P0=puzzles().ws,p=puzState();if(!P0){toast("Couldn't make today's word search.");return}
+  const found=new Set(p.ws||[]);let start=null;
+  const cellsOf=w=>{const i=P0.words.indexOf(w),[r0,c0,dr,dc]=P0.place[i];return [...Array(w.length)].map((_,k)=>(r0+dr*k)*P0.N+c0+dc*k)};
+  const m=modal(`<h2>🔤 Word Search: ${esc(P0.theme)}</h2><p class="note">Tap the first letter of a word, then the last letter.</p><div class="wsg" id="wsG" style="grid-template-columns:repeat(${P0.N},1fr)">${P0.g.flat().map((ch,i)=>`<button class="wsc" data-i="${i}">${ch}</button>`).join('')}</div>
+    <div class="wsw" id="wsW"></div><div class="row2"><button class="btn" id="pzBack">Back</button></div>`,{locked:true});pzBack(m);
+  const draw=()=>{const hit=new Set();found.forEach(w=>cellsOf(w).forEach(i=>hit.add(i)));m.querySelectorAll('.wsc').forEach(b=>{const i=+b.dataset.i;b.classList.toggle('hit',hit.has(i));b.classList.toggle('sel',start===i)});
+    $('#wsW',m).innerHTML=P0.words.map(w=>`<span class="${found.has(w)?'got':''}">${w}</span>`).join('')};draw();
+  m.querySelectorAll('.wsc').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(start===null){start=i;draw();return}
+    const a=start;start=null;if(a===i){draw();return}
+    for(const w of P0.words){if(found.has(w))continue;const cs=cellsOf(w);if((cs[0]===a&&cs[cs.length-1]===i)||(cs[0]===i&&cs[cs.length-1]===a)){found.add(w);p.ws=[...found];save(true);toast(`Found ${w}!`,'good');
+      if(found.size===P0.words.length){draw();setTimeout(()=>{pzDone('ws')},700);return}break}}
+    draw()})}
+function playCW(){const C=puzzles().cw,p=puzState();if(!C){toast("Couldn't make today's crossword.");return}
+  const solved=new Set(p.cw||[]);let cur=solved.size<C.words.length?C.words.findIndex((_,i)=>!solved.has(i)):0;
+  const R=C.grid.length,W=C.grid[0].length;
+  const m=modal(`<h2>✏️ Crossword</h2><p class="note">Tap a clue, type the word, then tap Check.</p><div class="cwg" id="cwG" style="grid-template-columns:repeat(${W},1fr);max-width:${Math.min(360,W*40)}px"></div>
+    <div class="cwin"><div id="cwClue" class="cwclue"></div><div style="display:flex;gap:8px;justify-content:center"><input id="cwIn" autocomplete="off" autocapitalize="characters" spellcheck="false"><button class="btn go" id="cwOk">Check</button></div><p class="note" id="cwMsg"></p></div>
+    <div class="cwl" id="cwL"></div><div class="row2"><button class="btn" id="pzBack">Back</button></div>`,{locked:true});pzBack(m);
+  const draw=()=>{const show={},num={},inCur=new Set();C.words.forEach((x,i)=>{num[x.row+','+x.col]=x.n;for(let k=0;k<x.w.length;k++){const key=(x.row+(x.d?k:0))+','+(x.col+(x.d?0:k));if(solved.has(i))show[key]=x.w[k];if(i===cur)inCur.add(key)}});
+    let h='';for(let i=0;i<R;i++)for(let j=0;j<W;j++){const k=i+','+j;h+=C.grid[i][j]?`<div class="cwc${inCur.has(k)?' cur':''}${show[k]?' ok':''}" data-k="${k}">${num[k]?`<sup>${num[k]}</sup>`:''}${show[k]||''}</div>`:'<div class="cwx"></div>'}
+    $('#cwG',m).innerHTML=h;const x=C.words[cur];
+    $('#cwClue',m).innerHTML=`<b>${x.n} ${x.d?'Down':'Across'}</b> · ${esc(x.clue)} <small>(${x.w.length} letters)</small>`;$('#cwIn',m).maxLength=x.w.length;$('#cwIn',m).disabled=solved.has(cur);$('#cwOk',m).disabled=solved.has(cur);
+    $('#cwL',m).innerHTML=['Across','Down'].map((t,d)=>`<div><b>${t}</b>${C.words.map((x,i)=>x.d===d?`<button class="cwq${i===cur?' cur':''}${solved.has(i)?' ok':''}" data-w="${i}">${x.n}. ${esc(x.clue)}</button>`:'').join('')}</div>`).join('');
+    m.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{cur=+b.dataset.w;$('#cwIn',m).value='';$('#cwMsg',m).textContent='';draw();$('#cwIn',m).focus()});
+    m.querySelectorAll('.cwc').forEach(c=>c.onclick=()=>{const [a,b]=c.dataset.k.split(',').map(Number);const hits=C.words.map((x,i)=>i).filter(i=>{const x=C.words[i];return x.d?(x.col===b&&a>=x.row&&a<x.row+x.w.length):(x.row===a&&b>=x.col&&b<x.col+x.w.length)});if(hits.length){cur=hits.find(i=>i!==cur&&!solved.has(i))??hits[0];$('#cwIn',m).value='';draw()}})};
+  const check=()=>{const x=C.words[cur],v=$('#cwIn',m).value.trim().toUpperCase().replace(/[^A-Z]/g,'');
+    if(v===x.w){solved.add(cur);p.cw=[...solved];save(true);$('#cwIn',m).value='';$('#cwMsg',m).textContent='✅ Got it!';
+      if(solved.size===C.words.length){draw();setTimeout(()=>{pzDone('cw')},700);return}
+      const nx=C.words.findIndex((_,i)=>!solved.has(i));cur=nx;draw()}
+    else{$('#cwMsg',m).textContent=v.length!==x.w.length?`It has ${x.w.length} letters.`:'Not quite. Try again!'}};
+  $('#cwOk',m).onclick=check;$('#cwIn',m).onkeydown=e=>{if(e.key==='Enter')check()};draw()}
+function playSU(){const Z=puzzles().su,p=puzState();if(!p.su||p.su.length!==36)p.su=Z.puz.slice();let at=-1;
+  const m=modal(`<h2>🔢 Sudoku</h2><p class="note">Fill the grid so every row, every column and every box has 1 to 6. Tap a square, then a number.</p><div class="sug" id="suG"></div>
+    <div class="sun">${[1,2,3,4,5,6].map(v=>`<button class="btn" data-v="${v}">${v}</button>`).join('')}<button class="btn" data-v="0">Erase</button></div><div class="row2"><button class="btn" id="pzBack">Back</button></div>`,{locked:true});pzBack(m);
+  const draw=()=>{$('#suG',m).innerHTML=p.su.map((v,i)=>{const r=Math.floor(i/6),c=i%6,given=Z.puz[i]>0,bad=v&&!given&&v!==Z.sol[i];
+    return `<button class="suc${given?' giv':''}${bad?' bad':''}${i===at?' sel':''}${c===2?' br':''}${r%2===1&&r<5?' bb':''}" data-i="${i}" ${given?'disabled':''}>${v||''}</button>`}).join('');
+    m.querySelectorAll('.suc').forEach(b=>b.onclick=()=>{at=+b.dataset.i;draw()})};draw();
+  m.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{if(at<0||Z.puz[at])return;p.su[at]=+b.dataset.v;save(true);draw();
+    if(p.su.every((v,i)=>v===Z.sol[i])){setTimeout(()=>{pzDone('su')},600)}})}
+function playTR(){const Q=puzzles().tr,p=puzState();p.tr=p.tr||{i:0,miss:[]};
+  const show=()=>{const i=p.tr.i;if(i>=Q.length){pzDone('tr');return}const q=Q[i];
+    const m=modal(`<h2>❓ Trivia · ${i+1} of ${Q.length}</h2><p style="font-size:1.1em">${esc(q.q)}</p><div class="trq">${q.opts.map((o,j)=>`<button class="btn" data-o="${j}">${esc(o)}</button>`).join('')}</div><p class="note" id="trMsg">Pick an answer. If it's wrong, try again!</p><div class="row2"><button class="btn" id="pzBack">Back</button></div>`,{locked:true});pzBack(m);
+    m.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{const o=q.opts[+b.dataset.o];if(o===q.a){b.classList.add('go');$('#trMsg',m).textContent='✅ Correct!';m.querySelectorAll('[data-o]').forEach(x=>x.disabled=true);p.tr.i++;save(true);setTimeout(()=>{closeModal(true);show()},800)}
+      else{b.disabled=true;b.style.opacity=.45;$('#trMsg',m).textContent='Not that one. Try again!'}})};show()}
 function instaPick(intro){if(!(S.instaTokens>0))return;const room=instaRoom();if(!room)return;if(S.loc!==room)switchLoc(room);ensureBoxes();
   const list=(roomBoxes(room)||[]).filter(b=>b.left>0&&!b.loose&&!b.vault);if(!list.length){toast('No boxes left to sort here.');return}
   const tiles=list.map(b=>`<button class="boxtile" data-ib="${b.id}"${b.tm&&TEAMS[b.tm]?` style="box-shadow:inset 6px 0 0 ${TEAMS[b.tm][2]}"`:''}><span class="bl">${esc(b.label)}</span><span class="bn">${num(b.left)} cards</span></button>`).join('');
@@ -7500,13 +7701,16 @@ function tickEvents(){
   if(f>=S.nextShowAt){S.nextShowAt=f+1200;S.showTickets=Math.min(2,(S.showTickets||0)+1);toast('You got a table at the Tulsa card show! Start it from the Card Show tab whenever you\'re ready.','gold',7000);renderTabs()}
   if(S.trade&&Date.now()>S.trade.until){S.trade=null;renderTabs();if(tab==='counter')render()}
 }
+const tradeFair=(give,get)=>get>=give&&get<=give*2.5;
 function makeTradeNight(){
   const pool=Object.keys(S.stacks).filter(k=>{const c=fromKey(k);return c.par!==6&&avail(k)-scCount(k)>0&&valueOf(c)>=.5});
   const offers=[];
-  if(pool.length>=3)for(let i=0;i<3;i++){
+  let tries=0;if(pool.length>=3)for(let i=0;i<3;i++){
     const wp=()=>wpick(pool,k=>Math.sqrt(valueOf(fromKey(k))));const give=[wp()];if(Math.random()<.5){const g2=wp();if(g2!==give[0])give.push(g2)}
     const V=give.reduce((a,k)=>a+valueOf(fromKey(k)),0);const sp=P[fromKey(give[0]).pid].sport;
     let best=null;for(let t=0;t<120;t++){const c=rollCard({sport:sp,tw:[10,25,30,22,13],parMul:3});const v=valueOf(c);if(v>=V*1.15&&v<=V*2.2){best=c;break}if(!best||Math.abs(v-V*1.5)<Math.abs(valueOf(best)-V*1.5))best=c}
+    // fair trades only: Sal's card must be worth at least what you give (and not silly-high)
+    if(!best||!tradeFair(V,valueOf(best))){if(++tries<12)i--;continue}
     offers.push({give,get:best,done:false});
   }
   const sw=(S.wants||[]).filter(w=>w.sal&&w.offer&&w.kind!=='one');
@@ -7528,6 +7732,7 @@ function passTrade(i){const o=S.trade&&S.trade.offers[i];if(o){o.done='no';rende
 function renderEvents(){
   const el=$('#events');if(!el)return;let h='';salCheck();
   if(showOn()){const left=Math.ceil((S.showUntil-Date.now())/1000);h+=`<div class="panel evt show"><h3>Tulsa Card Show</h3><p><b id="showT">${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}</b> left. Customers come fast and pay 25% more.</p></div>`}
+  if(S.trade)S.trade.offers.forEach(o=>{if(!o.done&&!o.wk&&o.give&&o.get&&!tradeFair(o.give.reduce((a,k)=>a+valueOf(fromKey(k)),0),valueOf(o.get)))o.done='no'});
   if(S.trade&&S.trade.offers.some(o=>!o.done)){
     const mins=Math.max(1,Math.ceil((S.trade.until-Date.now())/60000));
     h+=`<div class="panel evt"><h3>Trade Night with Big Sal <small class="note">leaves in ${mins} min</small></h3><div class="trades">${S.trade.offers.map((o,i)=>{const gv=(o.give||[]).reduce((a,k)=>a+valueOf(fromKey(k)),0),rv=valueOf(o.get);
@@ -8160,6 +8365,7 @@ function declineOffer(){if(!cust)return;cust={...cust,state:'bye',leave:Date.now
    ========================================================= */
 function updateHeader(){
   {const wb=$('#wheelBtn');if(wb){wb.style.display=PROFILE?'':'none';if(PROFILE){const l=wheelLeft();$('#wheelN').textContent=l;wb.style.opacity=l>0?1:.55;wb.style.borderColor=l>0?'#ffd23f':''}if(!wb.onclick)wb.onclick=wheelModal}}
+  {const pb=$('#puzBtn');if(pb){pb.style.display=PROFILE?'':'none';if(PROFILE){const n=puzDoneN();$('#puzN').textContent=n+'/4';pb.style.borderColor=n<4?'#ffd23f':'';pb.style.opacity=n<4?1:.6}if(!pb.onclick)pb.onclick=puzHub}}
   $('#cash').textContent=money(S.cash);$('#lvl').textContent=S.level;
   const a=xpNeed(S.level),b=xpNeed(S.level+1);$('#xpfill').style.width=Math.min(100,(S.xp-a)/(b-a)*100)+'%';
   $('#xptext').textContent=`${num(S.xp-a)} / ${num(b-a)} XP`;
@@ -8469,6 +8675,16 @@ function cardActions(k){
     if(x==='sell')sell(k);else if(x==='regrade'){const V=valueOf(c);if(V>=1000){const m2=modal(`<h2>Crack this slab?</h2><p>Your ${esc(cardTitle(c))} is worth <b style="color:var(--good)">${money(V)}</b>. It's a coin flip: the grade could go up, or it could go down.</p><div class="row2"><button class="btn go" id="reYes">Crack it and resubmit</button><button class="btn" data-close>Keep the ${c.g}</button></div>`);$('#reYes',m2).onclick=()=>{resubmit(k,gt);closeModal(true);renderBinder()};return}resubmit(k,gt);renderGrader()}else if(x==='grade'){sendToGrader(k,{tier:gt});renderGrader()}else if(x==='trade'){closeModal(true);tradeUp(k);renderBinder();return}else if(x==='shelf')toShelf(k);else if(x==='case')toShowcase(k);else if(x==='pc')togglePC(k);
     save(true);if(S.stacks[k]&&x!=='sell'&&x!=='grade')cardActions(k);else{closeModal(true);renderBinder()}});
 }
+// Select mode: send the picked cards to family, or start a trade with them (1/1s only go to family)
+function selSendTrade(a,ks){const free=ks.filter(k=>freeCountP(k)>0),os=allProfiles().filter(x=>x.id!==PROFILE.id),bot=free.filter(k=>!isOne(fromKey(k))&&freeCount(k)>0);
+  if(!free.length){toast("None of those are free to send. Starred, shelved and showcase cards stay put.");return}
+  const fam=dbNS&&os.length,skip=ks.length-free.length;
+  const m=modal(`<h2>${a==='send'?'🎁 Send':'🔄 Trade'} ${plural(free.length,'card')}</h2>${skip?`<p class="note">${skip} can't go (starred, shelved or in the showcase).</p>`:''}
+    <div style="display:flex;flex-direction:column;gap:8px;width:100%">${fam?os.map(x=>`<button class="btn go" data-to="${esc(x.id)}">${a==='send'?`🎁 Send to ${esc(x.name)}`:`🔄 Trade with ${esc(x.name)}`}</button>`).join(''):`<p class="note">${dbNS?'No one else plays yet.':'Sending to family needs the online save.'}</p>`}
+    ${a==='trade'?(bot.length?`<button class="btn" id="stBot">🤝 Trade with a trader${bot.length<free.length?` (${plural(bot.length,'card')}, no 1/1s)`:''}</button>`:'<p class="note">1/1s can go to family, but never to the traders.</p>'):''}</div>
+    <div class="row2"><button class="btn" data-close>Cancel</button></div>`);
+  m.querySelectorAll('[data-to]').forEach(b=>b.onclick=()=>{const to=os.find(x=>x.id===b.dataset.to);closeModal(true);if(a==='send')giftBuilder(to,free);else playerBuilder(to,null,free)});
+  const sb=$('#stBot',m);if(sb)sb.onclick=()=>{closeModal(true);pickTrader(bot)}}
 function renderSelBar(){
   let b=$('#selbar');if(!selMode||tab!=='binder'){if(b)b.remove();return}
   if(!b){b=document.createElement('div');b.id='selbar';b.className='selbar';document.body.appendChild(b)}
@@ -8479,6 +8695,7 @@ function renderSelBar(){
     <button class="btn sm" data-s="grade" ${dis}>Grade</button>
     ${up('regrade')?`<button class="btn sm" data-s="regrade" ${ks.some(k=>fromKey(k).g)?'':'disabled'}>Resubmit</button>`:''}
     ${S.level>=5?`<button class="btn sm" data-s="shelf" ${dis}>Shelf</button><button class="btn sm" data-s="case" ${dis}>Showcase</button>`:''}
+    ${PROFILE&&S.level>=4?`<button class="btn sm" data-s="send" ${dis}>🎁 Send</button><button class="btn sm" data-s="trade" ${dis}>🔄 Trade</button>`:''}
     <button class="btn sm" data-s="pc" ${dis}>${allPC?'Un-★ PC':'★ PC'}</button>
     <button class="btn sm" data-s="all">Select all</button><button class="btn sm" data-s="none" ${dis}>Clear</button><button class="btn sm" data-s="done">Done</button></div>`;
   b.onclick=e=>{const x=e.target.closest('[data-s]');if(!x||x.disabled)return;selAct(x.dataset.s)};
@@ -8490,6 +8707,7 @@ function selAct(a,opt={}){
   if(a==='none'){sel.clear();redraw();return}
   if(a==='all'){(binderF.sp==='all'&&binderSports().length>1?binderSports().flatMap(sp=>binderList(sp).slice(0,(binderF.lims||{})[sp]||12)):binderList().slice(0,binderF.limit)).forEach(k=>sel.add(k));redraw();return}
   if(!ks.length)return;
+  if(a==='send'||a==='trade'){selSendTrade(a,ks);return}
   if(a==='sell'){
     const can=ks.filter(k=>fromKey(k).par!==6&&avail(k)>0),tot=can.reduce((s2,k)=>s2+valueOf(fromKey(k)),0),skip=ks.length-can.length;
     if(!can.length){toast('None of those can be sold. Starred, shelved and showcase cards stay put.');return}
@@ -8530,8 +8748,13 @@ function showCardModal(c,o={}){
 }
 
 function renderUpgrades(v){
-  const groups=[['Sorting by hand',['bins','fan','stack','brick']],['Help around the shed',['colton','machine','pizza','nopizza','mash','flipplus']],['Getting better money',['loupe','bulk','vip']],['Grading',['doctor','regrade','sleeves','express']],['The shop',['shelf','sign','signplus','counterpp','clerk','line','case']],['Miscellaneous',['randbreak','recliner','megacounter','gemhunter','brainboost','goldpass','spectrade']]];
-  v.innerHTML=groups.map(([g,ids])=>`<h3 class="sech">${g}</h3><div class="grid">${ids.map(id=>{const u=UPGRADES.find(x=>x.id===id);const l=up(id),ru=u.req&&UPGRADES.find(x=>x.id===u.req),needs=ru&&up(u.req)<ru.max,locked=S.level<u.lv||needs,maxed=l>=u.max,cost=upCost(u);
+  const groups=[['Sorting by hand',['bins','fan','stack','brick'],'Sort faster yourself: grab more cards at once, and let the bins save the good copies.'],
+    ['Help around the shed',['colton','machine','recliner','pizza','nopizza','mash','flipplus'],'Helpers who sort cards for you, even when you are not tapping.'],
+    ['Money and trading',['loupe','bulk','vip','spectrade'],'More cash for your cards, cheaper packs, and new traders to swap with.'],
+    ['Grading',['doctor','regrade','sleeves','gemhunter','goldpass','express'],'Better grades from Slab Happy, cheaper and faster.'],
+    ['The shop',['shelf','megacounter','sign','signplus','counterpp','clerk','line','case'],'Your card shop: more customers, more shelf and counter space, and a bigger showcase for tips.'],
+    ['Extras',['randbreak','brainboost'],'Odds and ends: surprise break times and bonus XP.']];
+  v.innerHTML=groups.map(([g,ids,blurb])=>`<h3 class="sech">${g}</h3><p class="note" style="margin:-6px 0 10px">${blurb}</p><div class="grid">${ids.map(id=>{const u=UPGRADES.find(x=>x.id===id);const l=up(id),ru=u.req&&UPGRADES.find(x=>x.id===u.req),needs=ru&&up(u.req)<ru.max,locked=S.level<u.lv||needs,maxed=l>=u.max,cost=upCost(u);
     return `<div class="up${locked?' locked':''}${maxed?' maxed':''}"><h4>${esc(upName(u))}${u.max>1?`<small>Lv ${l}/${u.max}</small>`:maxed?'<small style="color:var(--good)">Owned</small>':''}</h4><p>${esc(u.desc)}</p>${locked?`<button class="btn" disabled>${needs?`Needs ${esc(ru.name)} level ${ru.max} first`:`Unlocks at level ${u.lv}`}</button>`:maxed?'':`<button class="btn ${S.cash>=cost?'go':''}" data-buy="${id}" ${S.cash>=cost?'':'disabled'}>Buy · ${money(cost)}</button>`}</div>`}).join('')}</div>`).join('');
   v.insertAdjacentHTML('afterbegin',ideaHTML());ideaWire(v);
   v.insertAdjacentHTML('beforeend',cuHTML());cuWire(v);
@@ -8714,7 +8937,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-20.2014';
+const APP_VERSION = '2026-11-22.0158';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
