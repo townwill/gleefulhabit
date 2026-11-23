@@ -4785,6 +4785,8 @@ async function freshCloud(id){
 const LAUNCHED=new Set();
 /* ---------- Release notes: what's new in each update. Newest first; give every new entry the next id. ---------- */
 const RELEASE_NOTES=[
+  {id:16,d:'Nov 22',t:'Requests to Dad',items:[
+    '📮 Feature ideas and custom upgrades now share one limit: 5 requests to Dad an hour.']},
   {id:15,d:'Nov 22',t:'One pop-up for big level jumps',items:[
     '⬆️ Going up several levels at once now shows one summary instead of a pop-up for every level.']},
   {id:14,d:'Nov 22',t:'All-Star Mega Boxes',items:[
@@ -4896,8 +4898,9 @@ function cuSettle(o){const nm=o.toName||'Will';
     toast(`✅ ${nm} approved your upgrade "${u.name}"! It's in Upgrades for ${money(u.cost)}.`,'gold',9000);mailLog(`${nm} approved your upgrade "${u.name}".`)}
   else{toast(`${nm} said no to "${(o.up&&o.up.name)||'your upgrade'}" this time.${o.note?' "'+o.note+'"':''}`,'',8000);mailLog(`${nm} passed on your upgrade "${(o.up&&o.up.name)||''}".`)}}
 async function cuSend(u){const a=approver();if(!dbNS||!a){toast('Making upgrades needs the online save.');return false}
+  if(ideaLeft()<=0){toast(ideaFullMsg(),'',8000);return false}const tk=Date.now();S.ideaTimes.push(tk);save('now');
   const id='o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  try{await dbNS.doc('offers/'+id).set({kind:'upgrade',from:PROFILE.id,fromName:PROFILE.name,to:a.id,toName:a.name,up:u,give:[],want:[],gift:false,status:'open',at:Date.now()})}catch(e){toast("Couldn't send it. Try again.");return false}
+  try{await dbNS.doc('offers/'+id).set({kind:'upgrade',from:PROFILE.id,fromName:PROFILE.name,to:a.id,toName:a.name,up:u,give:[],want:[],gift:false,status:'open',at:Date.now()})}catch(e){S.ideaTimes=S.ideaTimes.filter(x=>x!==tk);toast("Couldn't send it. Try again.");return false}
   OFF_OUT=OFF_OUT.concat({id,kind:'upgrade',from:PROFILE.id,to:a.id,toName:a.name,up:u,status:'open'});toast(`Sent "${u.name}" to ${a.name} to approve.`,'good',6000);return true}
 async function cuShare(u,to){if(!dbNS){toast('Sending upgrades needs the online save.');return}
   const id='o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);const def={...cuClean(u),src:u.src||u.id,by:u.by||PROFILE.name};
@@ -4912,6 +4915,7 @@ async function cuAnswer(o,ok,u,note){try{const ref=dbNS.doc('offers/'+o.id);cons
   OFF_IN=OFF_IN.filter(x=>x.id!==o.id);toast(ok?`Approved "${u.name}" for ${o.fromName}.`:`Told ${o.fromName} no on "${o.up.name}".`,'good');render()}
 /* ---------- feature ideas: Colton asks Dad for new features (5 an hour) ---------- */
 const IDEA_MAX=5,IDEA_WIN=3600e3,NTFY_TOPIC='townwill-shed-ideas-k7q2m9';
+const ideaFullMsg=()=>`That's 5 requests to ${isColton()?'Dad':'Will'} this hour (ideas and upgrades together). You can send more in ${Math.max(1,Math.ceil((IDEA_WIN-(Date.now()-S.ideaTimes[0]))/60e3))} minutes.`;
 const ideaLeft=()=>{const t=Date.now();S.ideaTimes=(S.ideaTimes||[]).filter(x=>t-x<IDEA_WIN);return IDEA_MAX-S.ideaTimes.length};
 const IDEA_WORD={open:'⏳ Waiting for Dad',approved:'👍 Dad said yes! Coming soon',built:'✅ Built! Go try it',passed:'Not this time'};
 // a push to Dad's phone through ntfy.sh (free app; subscribe to NTFY_TOPIC). Best effort: the in-game mailbox is the real record.
@@ -4921,14 +4925,15 @@ function ideaModal(){const ap=approver();if(!ap||!dbNS){toast('Sending ideas nee
   const mine=(S.ideas||[]).slice(0,6);
   const m=modal(`<h2>💡 Idea for a new feature</h2><p>Tell ${esc(dad)} what you want added to the game. Anything: a new room, a new upgrade, a new kind of card.</p>
     <textarea id="ideaTxt" maxlength="500" rows="5" placeholder="I want..." style="width:100%;font:inherit;font-size:16px;padding:10px;border-radius:10px;background:var(--panel2);color:inherit;border:1px solid var(--line)" ${left>0?'':'disabled'}></textarea>
-    <p class="note">${left>0?`You can send ${left} more this hour.`:`That's 5 ideas this hour. You can send more in ${Math.ceil((IDEA_WIN-(Date.now()-S.ideaTimes[0]))/60e3)} minutes.`}</p>
+    <p class="note">${left>0?`You can send ${left} more this hour.`:ideaFullMsg()}</p>
     ${mine.length?`<p class="note"><b>Your ideas</b></p>${mine.map(i=>`<p class="note" style="margin:4px 0">${esc(i.text.slice(0,90))}${i.text.length>90?'…':''}<br><b>${IDEA_WORD[i.status]||''}</b>${i.note?` · "${esc(i.note)}"`:''}</p>`).join('')}`:''}
     <div class="row2"><button class="btn go" id="ideaSend" ${left>0?'':'disabled'}>Send to ${esc(dad)}</button><button class="btn" data-close>Close</button></div>`);
   {const ta=$('#ideaTxt',m);if(S.ideaDraft&&!ta.disabled)ta.value=S.ideaDraft;ta.oninput=()=>{S.ideaDraft=ta.value.slice(0,500);save(true)}}
-  $('#ideaSend',m).onclick=async()=>{const text=$('#ideaTxt',m).value.trim();if(text.length<3){toast('Write your idea first.');return}if(ideaLeft()<=0)return;
+  $('#ideaSend',m).onclick=async()=>{const sb=$('#ideaSend',m);if(sb.disabled)return;const text=$('#ideaTxt',m).value.trim();if(text.length<3){toast('Write your idea first.');return}if(ideaLeft()<=0){toast(ideaFullMsg(),'',8000);return}
+    sb.disabled=true;const tk=Date.now();S.ideaTimes.push(tk);
     const id='o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-    try{await dbNS.doc('offers/'+id).set({kind:'idea',text,from:PROFILE.id,fromName:PROFILE.name,to:ap.id,toName:ap.name,give:[],want:[],gift:false,status:'open',at:Date.now()})}catch(e){toast("Couldn't send it. Try again.");return}
-    S.ideaTimes.push(Date.now());S.ideaDraft='';S.ideas=[{id,text,at:Date.now(),status:'open'}].concat(S.ideas||[]).slice(0,30);save('now');ideaPing(PROFILE.name,text);
+    try{await dbNS.doc('offers/'+id).set({kind:'idea',text,from:PROFILE.id,fromName:PROFILE.name,to:ap.id,toName:ap.name,give:[],want:[],gift:false,status:'open',at:Date.now()})}catch(e){S.ideaTimes=S.ideaTimes.filter(x=>x!==tk);sb.disabled=false;toast("Couldn't send it. Try again.");return}
+    S.ideaDraft='';S.ideas=[{id,text,at:Date.now(),status:'open'}].concat(S.ideas||[]).slice(0,30);save('now');ideaPing(PROFILE.name,text);
     closeModal(true);toast(`💡 Sent to ${dad}!`,'good',6000)}}
 // Colton's side: Dad's answer comes back on the offer doc
 async function ideaSettle(o){S.ideas=S.ideas||[];let e=S.ideas.find(x=>x.id===o.id);if(!e){e={id:o.id,text:o.text||'',at:o.at,status:'open'};S.ideas.unshift(e)}
@@ -4953,7 +4958,7 @@ function ideaHTML(){if(!PROFILE)return '';const ap=approver();
     return `<h3 class="sech">💡 Feature ideas${list.filter(o=>o.status==='open').length?` <small style="color:var(--bulb)">${list.filter(o=>o.status==='open').length} new</small>`:''}</h3>`+(newOnes.length>1?`<div class="row2" style="justify-content:flex-start;margin-bottom:8px"><button class="btn go" id="ideaCopyAll">Copy all ${newOnes.length} new ideas for Claude</button></div>`:'')+(list.length?`<div class="grid">${list.map(o=>`<div class="up" data-idea="${esc(o.id)}"><h4>${o.status==='approved'?'👍 Approved':'💡 New'} <small>${esc(o.fromName)} · ${new Date(o.at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</small></h4><p style="white-space:pre-wrap">${esc(o.text)}</p>
       <div class="row2" style="justify-content:flex-start;flex-wrap:wrap"><button class="btn go sm" data-iclaude="${esc(o.id)}">Copy for Claude</button>${o.status==='open'?`<button class="btn sm" data-iok="${esc(o.id)}">Tell ${esc(o.fromName)} yes</button>`:`<button class="btn sm" data-ibuilt="${esc(o.id)}">It's built ✓</button>`}<button class="btn sm" data-ino="${esc(o.id)}">Not now</button></div></div>`).join('')}</div>`
       :'')+`<p class="note">When Colton sends an idea, it shows up here. <b>Copy for Claude</b> copies a request (it doesn't open anything): paste it into the Claude chat you already use, and Claude looks it over and asks you to approve before building. For a phone alert, install the free <b>ntfy</b> app and subscribe to <b>${NTFY_TOPIC}</b>.</p>`}
-  if(!ap)return '';return `<div class="up" style="margin-bottom:10px"><h4>💡 Got an idea for the game?</h4><p>Send ${esc(isColton()?'Dad':ap.name)} an idea for a new feature. ${ideaLeft()} of 5 left this hour.</p><button class="btn go" id="ideaOpen">Send an idea</button></div>`}
+  if(!ap)return '';return `<div class="up" style="margin-bottom:10px"><h4>💡 Got an idea for the game?</h4><p>Send ${esc(isColton()?'Dad':ap.name)} an idea for a new feature. ${ideaLeft()} of 5 requests left this hour (ideas and custom upgrades count together).</p><button class="btn go" id="ideaOpen">Send an idea</button></div>`}
 function ideaWire(v){const b=$('#ideaOpen',v);if(b)b.onclick=ideaModal;
   const ca=$('#ideaCopyAll',v);if(ca)ca.onclick=()=>ideaCopy(OFF_IN.filter(o=>o.kind==='idea'&&o.status==='open').sort((a,b)=>a.at-b.at));
   const f=id=>OFF_IN.find(x=>x.id===id);
@@ -4975,7 +4980,7 @@ function cuHTML(){
       <label>What it does <select id="cuFx" style="font:inherit;padding:8px;border-radius:8px;background:var(--panel2);color:inherit">${Object.entries(CU_FX).map(([k,f])=>`<option value="${k}">${f.t}</option>`).join('')}</select></label>
       <label style="display:block;margin-top:8px">How much: <b id="cuAv"></b><input type="range" id="cuAmt" style="width:100%"></label>
       <label style="display:block;margin-top:8px">Your price $<input type="number" id="cuCost" min="1000" step="1000" inputmode="numeric" style="font:inherit;width:10em;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:8px;padding:6px 8px"></label>
-      <p id="cuSum" class="note"></p><button class="btn go" id="cuSend">Send to ${esc(ap.name)}</button></div>`
+      <p id="cuSum" class="note"></p><p class="note">${ideaLeft()} of 5 requests left this hour (ideas and upgrades count together).</p><button class="btn go" id="cuSend">Send to ${esc(ap.name)}</button></div>`
       +(wait.length?`<p class="note">Waiting for ${esc(ap.name)}: ${wait.map(o=>`${o.up.ico} ${esc(o.up.name)}`).join(', ')}</p>`:'')}
   const inc=OFF_IN.filter(o=>o.kind==='upshare'&&o.status==='open');
   if(inc.length)h+=`<h3 class="sech">Upgrades sent to you</h3><div class="grid">${inc.map(o=>{const u=cuClean(o.up)||{};return `<div class="up"><h4>${u.ico} ${esc(u.name)}</h4><p>${esc(CU_FX[u.fx]?CU_FX[u.fx].d(u.amt):'')} Made by ${esc(o.up.by||o.fromName)}, sent by ${esc(o.fromName)}. Costs ${money(u.cost)} to buy.</p><div class="row2" style="justify-content:flex-start"><button class="btn go sm" data-cutake="${esc(o.id)}">Add it</button><button class="btn sm" data-cupass="${esc(o.id)}">No thanks</button></div></div>`}).join('')}</div>`;
@@ -9025,7 +9030,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-22.1711';
+const APP_VERSION = '2026-11-22.1724';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
