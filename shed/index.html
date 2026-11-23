@@ -4785,6 +4785,8 @@ async function freshCloud(id){
 const LAUNCHED=new Set();
 /* ---------- Release notes: what's new in each update. Newest first; give every new entry the next id. ---------- */
 const RELEASE_NOTES=[
+  {id:15,d:'Nov 22',t:'One pop-up for big level jumps',items:[
+    '⬆️ Going up several levels at once now shows one summary instead of a pop-up for every level.']},
   {id:14,d:'Nov 22',t:'All-Star Mega Boxes',items:[
     '📦 All-Star Mega Boxes at the card shop: 10 packs, 100 cards, every one a star from every sport, for $10,000.',
     '🖤 New Patch Auto /5: a signed patch card, only 5 made. There\'s one in every All-Star Mega Box, and once in a long while one turns up anywhere else.',
@@ -7537,10 +7539,20 @@ const UNLOCKS={
 };
 function onLevel(l){
   const bonus=l*5;S.cash+=bonus;S.stock={};S.stockCtr=0;if(tab==='packs')setTimeout(render,0);if(l===6&&!(S.oneDone||{})[S.loc])hideOne();
-  const u=UNLOCKS[l];
-  queueModal(()=>modal(`<h2>Level ${l}${u?': '+esc(u[0]):''}</h2><div class="letter">${esc(letterFor(l))}<br><br>— Grandpa</div>${u?`<p>${esc(u[1].replace('__HELPER__',helperName()))}</p>`:''}<p>Level bonus: <b style="color:var(--good)">+${money(bonus)}</b>. Lenny restocked every pack.</p><div class="row2"><button class="btn go" data-close>Back to sorting</button>${u&&u[2]?`<button class="btn" data-go="${u[2]}">${u[3]}</button>`:''}</div>`));
+  // several levels at once (a big set, a big pack) get one summary instead of a pop-up per level
+  lvlPend.push(l);if(!lvlQueued){lvlQueued=true;setTimeout(()=>queueModal(showLevelUps),0)}
   renderTabs();
 }
+let lvlPend=[],lvlQueued=false;
+function showLevelUps(){const ls=lvlPend.splice(0);lvlQueued=false;if(!ls.length)return;
+  if(ls.length===1){const l=ls[0],u=UNLOCKS[l];
+    modal(`<h2>Level ${l}${u?': '+esc(u[0]):''}</h2><div class="letter">${esc(letterFor(l))}<br><br>— Grandpa</div>${u?`<p>${esc(u[1].replace('__HELPER__',helperName()))}</p>`:''}<p>Level bonus: <b style="color:var(--good)">+${money(l*5)}</b>. Lenny restocked every pack.</p><div class="row2"><button class="btn go" data-close>Back to sorting</button>${u&&u[2]?`<button class="btn" data-go="${u[2]}">${u[3]}</button>`:''}</div>`);return}
+  const first=ls[0],last=ls[ls.length-1],bonus=ls.reduce((a,l)=>a+l*5,0),us=ls.filter(l=>UNLOCKS[l]),lu=us.length?UNLOCKS[us[us.length-1]]:null;
+  modal(`<h2>Level ${first-1} → ${last}!</h2><p>You went up <b>${ls.length} levels</b> at once.</p>
+    ${us.length?`<div style="text-align:left;width:100%">${us.map(l=>`<p><b>Level ${l}: ${esc(UNLOCKS[l][0])}</b><br>${esc(UNLOCKS[l][1].replace('__HELPER__',helperName()))}</p>`).join('')}</div>`:''}
+    <div class="letter">${esc(letterFor(last))}<br><br>— Grandpa</div><p class="note">The other letters are in Letters from Grandpa.</p>
+    <p>Level bonuses: <b style="color:var(--good)">+${money(bonus)}</b>. Lenny restocked every pack.</p>
+    <div class="row2"><button class="btn go" data-close>Back to sorting</button>${lu&&lu[2]?`<button class="btn" data-go="${lu[2]}">${lu[3]}</button>`:''}</div>`)}
 function showLetters(){
   if(S.loc==='grandma'){const done=LOCS.grandma.size-S.pile;const ls=GMA_LEDGER.filter(([n])=>done>=n).map(([n,t])=>`<div><h4>${n?num(n)+' CARDS IN':'THE FIRST NOTE'}</h4><div class="letter">${esc(t)}<br><br>— Grandma</div></div>`);modal(`<h2>Notes from Grandma</h2><div class="letters">${ls.reverse().join('')}</div><div class="row2"><button class="btn go" data-close>Close</button></div>`);return}
   const ls=[`<div><h4>THE FIRST LETTER</h4><div class="letter">The shed's yours now. Ten thousand basketball cards, give or take. Most of it is junk. Some of it isn't. One of them is the best card I ever pulled. Go find it.</div></div>`];
@@ -9013,7 +9025,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-22.1703';
+const APP_VERSION = '2026-11-22.1711';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
