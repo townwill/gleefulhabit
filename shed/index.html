@@ -4787,6 +4787,8 @@ async function freshCloud(id){
 const LAUNCHED=new Set();
 /* ---------- Release notes: what's new in each update. Newest first; give every new entry the next id. ---------- */
 const RELEASE_NOTES=[
+  {id:21,d:'Nov 24',t:'Gift boxes',items:[
+    '🎁 Send someone a gift box! Put in cards, a whole set, packs and boxes from Lenny\'s (they stay sealed so they get to rip them), team boxes, instant sorts and cash, plus a note. Find it in Trade, or pick cards in your binder and tap Send.']},
   {id:20,d:'Nov 24',t:"Dad's ideas",items:[
     '💡 Now Dad can send Colton ideas for the game! Colton says yes or no, and if it\'s a yes, Dad builds it.']},
   {id:19,d:'Nov 24',t:'Colton moved to NBA stars today',items:[
@@ -4914,11 +4916,11 @@ async function cuSend(u){const a=approver();if(!dbNS||!a){toast('Making upgrades
   if(ideaLeft()<=0){toast(ideaFullMsg(),'',8000);return false}const tk=Date.now();S.ideaTimes.push(tk);save('now');
   const id='o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   try{await dbNS.doc('offers/'+id).set({kind:'upgrade',from:PROFILE.id,fromName:PROFILE.name,to:a.id,toName:a.name,up:u,give:[],want:[],gift:false,status:'open',at:Date.now()})}catch(e){S.ideaTimes=S.ideaTimes.filter(x=>x!==tk);toast("Couldn't send it. Try again.");return false}
-  OFF_OUT=OFF_OUT.concat({id,kind:'upgrade',from:PROFILE.id,to:a.id,toName:a.name,up:u,status:'open'});toast(`Sent "${u.name}" to ${a.name} to approve.`,'good',6000);return true}
+  outAdd({id,kind:'upgrade',from:PROFILE.id,to:a.id,toName:a.name,up:u,status:'open'});toast(`Sent "${u.name}" to ${a.name} to approve.`,'good',6000);return true}
 async function cuShare(u,to){if(!dbNS){toast('Sending upgrades needs the online save.');return}
   const id='o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);const def={...cuClean(u),src:u.src||u.id,by:u.by||PROFILE.name};
   try{await dbNS.doc('offers/'+id).set({kind:'upshare',from:PROFILE.id,fromName:PROFILE.name,to:to.id,toName:to.name,up:def,give:[],want:[],gift:false,status:'open',at:Date.now()})}catch(e){toast("Couldn't send it. Try again.");return}
-  OFF_OUT=OFF_OUT.concat({id,kind:'upshare',to:to.id,toName:to.name,up:def,status:'open'});toast(`Sent "${def.name}" to ${to.name}.`,'good')}
+  outAdd({id,kind:'upshare',to:to.id,toName:to.name,up:def,status:'open'});toast(`Sent "${def.name}" to ${to.name}.`,'good')}
 async function cuTake(o,ok){try{const ref=dbNS.doc('offers/'+o.id);const d=await ref.get();if(!d.exists||d.data().status!=='open'){toast('That one is gone.');return}await ref.update({status:ok?'accepted':'passed',doneAt:Date.now()})}catch(e){toast("Couldn't reach the mailbox. Try again.");return}
   OFF_IN=OFF_IN.filter(x=>x.id!==o.id);
   if(ok){const u=cuClean(o.up);if(u){S.customUps=S.customUps||[];const id='cu_'+String(o.up.src||o.id).replace(/^cu_/,'');if(!S.customUps.some(x=>x.id===id))S.customUps.push({id,...u,by:o.up.by||o.fromName});toast(`Added ${u.ico} ${u.name}. It's in Upgrades for ${money(u.cost)}.`,'good');save('now')}}
@@ -4990,7 +4992,7 @@ function dadModal(){const k=kidProfile();if(!k||!dbNS){toast(k?'Sending ideas ne
   $('#dadSend',m).onclick=async()=>{const sb=$('#dadSend',m);if(sb.disabled)return;const text=$('#dadTxt',m).value.trim();if(text.length<3){toast('Write the idea first.');return}sb.disabled=true;
     const id='o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),doc={kind:'dadidea',text,from:PROFILE.id,fromName:PROFILE.name,to:k.id,toName:k.name,give:[],want:[],gift:false,status:'open',at:Date.now()};
     try{await dbNS.doc('offers/'+id).set(doc)}catch(e){sb.disabled=false;toast("Couldn't send it. Try again.");return}
-    OFF_OUT=OFF_OUT.concat({...doc,id});closeModal(true);toast(`💡 Sent to ${k.name}. He'll say yes or no.`,'good',6000);render()}}
+    outAdd({...doc,id});closeModal(true);toast(`💡 Sent to ${k.name}. He'll say yes or no.`,'good',6000);render()}}
 // Colton answers
 async function dadAnswer(o,yes){try{const ref=dbNS.doc('offers/'+o.id);const d=await ref.get();if(!d.exists||d.data().status!=='open'){toast('That idea is gone.');OFF_IN=OFF_IN.filter(x=>x.id!==o.id);render();return}
     await ref.update({status:yes?'yes':'no',doneAt:Date.now()})}catch(e){toast("Couldn't reach the mailbox. Try again.");return}
@@ -8181,18 +8183,19 @@ function botMailTick(){if(S.level<4||document.hidden)return;const now=Date.now()
 function botAccept(o){const i=(S.inbox||[]).indexOf(o);if(i<0)return;if(botDo(o.bot,o.want,o.get)){S.inbox.splice(i,1);save(true);render()}else{S.inbox.splice(i,1);save(true);render()}}
 function botPass(o){const i=(S.inbox||[]).indexOf(o);if(i>=0)S.inbox.splice(i,1);toast(`${botInfo(o.bot).n}: "${pick(['No problem.','Your loss, kid.','Maybe next time.'])}"`);save(true);renderTabs();render()}
 /* ---- trades and gifts between players (through the online store) ---- */
-let offerUnsubs=[],offersFor=null,OFF_IN=[],OFF_OUT=[];const cuTold=new Set();const offerBusy=new Set();
+let offerUnsubs=[],offersFor=null,OFF_IN=[],OFF_OUT=[];const outAdd=o=>{if(!OFF_OUT.some(x=>x.id===o.id))OFF_OUT=OFF_OUT.concat(o)};const cuTold=new Set();const offerBusy=new Set();
 function watchOffers(id){if(!dbNS||!id||offersFor===id)return;offerUnsubs.forEach(u=>{try{u()}catch(e){}});offerUnsubs=[];offersFor=id;OFF_IN=[];OFF_OUT=[];
   const col=dbNS.collection('offers');
   const sub=(field,set)=>{try{offerUnsubs.push(col.where(field,'==',id).onSnapshot(snap=>{if(!PROFILE||PROFILE.id!==id)return;set(snap.docs.filter(d=>d.exists).map(d=>({...d.data(),id:d.id})));settleOffers()},()=>{offersFor=null}))}catch(e){offersFor=null}};
-  sub('to',x=>OFF_IN=x);sub('from',x=>OFF_OUT=x)}
+  sub('to',x=>OFF_IN=x);sub('from',x=>{OFF_OUT=[];x.forEach(outAdd)})}
 function markDone(id){S.offerDone=S.offerDone||{};S.offerDone[id]=1;const ks=Object.keys(S.offerDone);if(ks.length>300)delete S.offerDone[ks[0]]}
 async function settleOffers(){if(!PROFILE||!dbNS)return;const me=PROFILE.id;S.offerDone=S.offerDone||{};let changed=false;
   for(const o of OFF_IN){if(o.kind==='dadidea'){if(o.status==='open'&&!cuTold.has(o.id)){cuTold.add(o.id);toast(`💡 Dad has an idea for the game! Say yes or no.`,'gold',8000);queueModal(()=>dadAskModal(OFF_IN.find(x=>x.id===o.id)))}
       else if(o.status==='built'){S.dadSeen=S.dadSeen||{};if(!S.dadSeen[o.id]){S.dadSeen[o.id]=1;const m=`✅ Dad built the idea you said yes to: "${(o.text||'').slice(0,60)}"`;toast(m,'gold',9000);mailLog(m);save(true)}try{await dbNS.doc('offers/'+o.id).delete()}catch(e){}}continue}
     if(o.kind){if(o.status==='open'&&!cuTold.has(o.id)){cuTold.add(o.id);toast(o.kind==='idea'?`💡 ${o.fromName} has an idea for the game: "${(o.text||'').slice(0,60)}". See Upgrades.`:o.kind==='upshare'?`📬 ${o.fromName} sent you an upgrade: ${o.up&&o.up.name}. See Upgrades.`:`📬 ${o.fromName} made an upgrade for you to approve: ${o.up&&o.up.name}. See Upgrades.`,'gold',8000)}continue}if(!(o.gift&&o.status==='open')||S.offerDone[o.id]||offerBusy.has(me+':'+o.id)||PROFILE.id!==me)continue;offerBusy.add(me+':'+o.id);
     markDone(o.id);takeBig(o.big);(o.give||[]).forEach(k=>addCard(fromKey(k),'gift'));changed=true;
-    if(o.cash>0){const c=Math.round(+o.cash*100)/100;S.cash+=c;mailLog(`💵 ${o.fromName} sent you ${money(c)}.`);toast(`💵 ${o.fromName} sent you ${money(c)}!`,'gold',8000);updateHeader()}
+    if(o.box)takeGiftBox(o);
+    else if(o.cash>0){const c=Math.round(+o.cash*100)/100;S.cash+=c;mailLog(`💵 ${o.fromName} sent you ${money(c)}.`);toast(`💵 ${o.fromName} sent you ${money(c)}!`,'gold',8000);updateHeader()}
     else{mailLog(`🎁 ${o.fromName} sent you ${cardsTxt(o.give)}.`);toast(`🎁 ${o.fromName} sent you ${plural(o.give.length,'card')}: ${cardsTxt(o.give)}!`,'gold',8000)}
     try{await dbNS.doc('offers/'+o.id).update({status:'accepted',doneAt:Date.now()})}catch(e){}}
   for(const o of OFF_OUT){if(o.kind==='idea'){if(o.status!=='open')await ideaSettle(o);continue}
@@ -8200,7 +8203,7 @@ async function settleOffers(){if(!PROFILE||!dbNS)return;const me=PROFILE.id;S.of
     if(o.kind==='upshare'){const nm=o.toName||'They',n=(o.up&&o.up.name)||'your upgrade';toast(o.status==='accepted'?`${nm} added "${n}" to their Upgrades.`:`${nm} passed on "${n}".`,'good',6000);mailLog(o.status==='accepted'?`${nm} added your upgrade "${n}".`:`${nm} passed on your upgrade "${n}".`);try{await dbNS.doc('offers/'+o.id).delete()}catch(e){}continue}
     if(o.kind==='upgrade'){cuSettle(o);try{await dbNS.doc('offers/'+o.id).delete()}catch(e){}continue}const nm=o.toName||'They';
     if(o.status==='accepted'){if(!o.gift){takeBig(o.wantBig);(o.want||[]).forEach(k=>addCard(fromKey(k),'trade'));S.stats.trades++;addXP(15);mailLog(`${nm} took your trade. You got ${cardsTxt(o.want)}.`);toast(`${nm} took your trade! You got ${cardsTxt(o.want)}.`,'gold',8000)}
-      else mailLog(o.cash>0?`${nm} got the ${money(o.cash)} you sent.`:`${nm} got the ${plural(o.give.length,'card')} you sent.`)}
+      else mailLog(o.box?`🎁 ${nm} opened your gift box.`:o.cash>0?`${nm} got the ${money(o.cash)} you sent.`:`${nm} got the ${plural(o.give.length,'card')} you sent.`)}
     else{(o.give||[]).forEach(k=>addCard(fromKey(k),'trade'));const why=o.status==='passed'?`${nm} passed on your trade.`:o.status==='countered'?`${nm} sent back a counter offer.`:'You canceled your offer.';
       mailLog(why);toast(`${why} Your cards are back in your binder.`,'',6000)}
     try{await dbNS.doc('offers/'+o.id).delete()}catch(e){}}
@@ -8246,9 +8249,89 @@ function sendCashModal(to){
     const id='o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
     try{await dbNS.doc('offers/'+id).set({from:PROFILE.id,fromName:PROFILE.name,to:to.id,toName:to.name,give:[],want:[],gift:true,cash:a,status:'open',at:Date.now()})}
     catch(e){S.cash+=a;updateHeader();b.disabled=false;msg.textContent="Couldn't send it. Your cash is back. Try again.";return}
-    OFF_OUT=OFF_OUT.concat({id,to:to.id,toName:to.name,give:[],want:[],gift:true,cash:a,status:'open'});
+    outAdd({id,to:to.id,toName:to.name,give:[],want:[],gift:true,cash:a,status:'open'});
     mailLog(`💵 Sent ${money(a)} to ${to.name}.`);save('now');closeModal(true);toast(`Sent ${money(a)} to ${to.name}.`,'good');if(tab==='trade')render()}}
-function giftBuilder(to,pre){openBuilder({give:pre||[],title:`Send cards to ${to.name}`,sub:`Free! Pick spare cards to give ${esc(to.name)}. They show up in ${esc(to.name)}'s binder next time they play. 1/1s can go to family too.`,mine:myItems(true),theirs:null,sendLabel:'Send gift',onSend:give=>sendOffer(to,give,[],true)})}
+function giftBuilder(to,pre){giftBoxModal(to,pre)}
+/* ---------- gift boxes (Nov 2026, Colton's idea): cards, whole sets, sealed packs/boxes, team boxes, instant sorts and cash in one present.
+   The offer doc is a normal gift (gift:true) plus box:true, packs:[pack ids], tboxes:[{val,n,nick,sp}], insta, note. Packs arrive sealed in S.giftPacks. */
+const GB_MAX_CARDS=60;let GB=null;
+const gbPacks=()=>PACKS.filter(pk=>S.level>=pk.lv&&(pk.kind==='delight'&&pk.box||openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen)));
+function fitsSet(st,c){if(!st.pids.includes(c.pid))return false;return st.vpar?(c.par===st.vpar&&(!st.vyr||c.year===st.vyr)):st.champYr?(c.par===11&&c.year===st.champYr):st.champ?c.par===11:st.rc?isRC(c):true}
+// the cheapest free copy of every card in a set that you can spare, not counting cards already picked
+function setPick(st,taken){const used={};(taken||[]).forEach(k=>used[k]=(used[k]||0)+1);const out=[];
+  st.pids.forEach(pid=>{let best=null;for(const k in S.stacks){const c=fromKey(k);if(c.pid!==pid||!fitsSet(st,c))continue;if(freeCountP(k)-(used[k]||0)<=0)continue;const v=valueOf(c);if(!best||v<best.v)best={k,v}}
+    if(best){out.push(best.k);used[best.k]=(used[best.k]||0)+1}});return out}
+function gbCards(){let ks=GB.cards.slice();GB.sets.forEach(id=>{const st=SETD[id];if(st)ks=ks.concat(setPick(st,ks))});return ks}
+function gbCost(){return GB.packs.reduce((a,id)=>{const pk=PACKS.find(x=>x.id===id);return a+(pk?packCost(pk):0)},0)+GB.tb.reduce((a,t)=>a+(TB_PRICE[t.n]||0),0)+(GB.cash||0)}
+function giftBoxModal(to,pre){if(!dbNS){toast('Sending gifts needs the online save.');return}
+  if(to)GB={to,cards:(pre||[]).slice(0,GB_MAX_CARDS),sets:[],packs:[],tb:[],insta:0,cash:0,note:''};if(!GB)return;to=GB.to;
+  const cards=gbCards(),cost=gbCost(),pk=gbPacks(),cnt={};GB.packs.forEach(id=>cnt[id]=(cnt[id]||0)+1);
+  const setOpts=SETS.filter(st=>!GB.sets.includes(st.id)&&setPick(st,cards).length).map(st=>`<option value="${st.id}">${esc(st.name)} (${setPick(st,cards).length} of ${st.pids.length} cards)</option>`).join('');
+  const tg=teamGroups(),rv=Object.keys(RIVALS).filter(id=>rivRoom(RIVALS[id].sp));
+  const row=(ico,txt,btn)=>`<div style="display:flex;align-items:center;gap:8px;margin:4px 0"><span style="flex:1">${ico} ${txt}</span>${btn||''}</div>`;
+  const inp='font:inherit;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:8px;padding:6px 8px';
+  const empty=!cards.length&&!GB.packs.length&&!GB.tb.length&&!GB.insta&&!(GB.cash>0);
+  const redraw=!pre&&!arguments.length,sy=redraw?($('#modal')||{}).scrollTop||0:0;
+  const m=modal(`<h2>🎁 Gift box for ${esc(to.name)}</h2><p class="note">Fill it with anything: cards, whole sets, packs and boxes from Lenny's (still sealed, so ${esc(to.name)} gets to rip them), instant sorts and cash.</p>
+    <h4 class="mh">In the box</h4><div id="gbList">${empty?'<p class="note">Nothing yet.</p>':''}
+      ${GB.cards.length?row('🃏',`${plural(GB.cards.length,'card')} you picked <b>${money(keysVal(GB.cards))}</b>`,`<button class="btn sm" data-gbx="cards">Remove</button>`):''}
+      ${GB.sets.map((id,i)=>row('📚',`${esc(SETD[id].name)} set`,`<button class="btn sm" data-gbx="set${i}">Remove</button>`)).join('')}
+      ${Object.entries(cnt).map(([id,n])=>{const p=PACKS.find(x=>x.id===id);return row(p.box?'📦':'🎴',`${esc(p.name)}${n>1?' ×'+n:''} <b>${money(packCost(p)*n)}</b>`,`<button class="btn sm" data-gbm="${id}">−</button><button class="btn sm" data-gbp="${id}">+</button>`)}).join('')}
+      ${GB.tb.map((t,i)=>row('🗃️',`${esc(t.nick)} box, ${t.n} cards <b>${money(TB_PRICE[t.n])}</b>`,`<button class="btn sm" data-gbx="tb${i}">Remove</button>`)).join('')}
+      ${GB.insta?row('⚡',plural(GB.insta,'instant sort'),`<button class="btn sm" data-gbx="insta">Remove</button>`):''}
+      ${GB.cash>0?row('💵',money(GB.cash),`<button class="btn sm" data-gbx="cash">Remove</button>`):''}</div>
+    <h4 class="mh">Add</h4>
+    <div class="row2" style="justify-content:flex-start;flex-wrap:wrap"><button class="btn sm go" id="gbPick">🃏 Pick cards</button>${(S.instaTokens||0)>GB.insta?`<button class="btn sm" id="gbInsta">⚡ Add an instant sort (you have ${S.instaTokens-GB.insta})</button>`:''}</div>
+    ${setOpts?`<label style="display:block;margin:8px 0">📚 A whole set (one spare copy of each card you have) <select id="gbSet" style="${inp};max-width:100%">${setOpts}</select> <button class="btn sm" id="gbSetAdd">Add</button></label>`:''}
+    <label style="display:block;margin:8px 0">🎴 A pack or box from Lenny's <select id="gbPack" style="${inp};max-width:100%">${pk.map(p=>`<option value="${p.id}">${esc(p.name)} · ${money(packCost(p))}</option>`).join('')}</select> <button class="btn sm" id="gbPackAdd">Add</button></label>
+    ${tg.length||rv.length?`<label style="display:block;margin:8px 0">🗃️ A team box <select id="gbTb" style="${inp};max-width:100%">${rv.map(id=>`<option value="${id}">${esc(RIVALS[id].nick)}</option>`).join('')}${tg.map(g=>`<option value="${esc(g.sp+':'+g.nick)}">${esc(g.nick)}</option>`).join('')}</select> <select id="gbTbN" style="${inp}">${Object.keys(TB_PRICE).map(n=>`<option value="${n}">${n} cards · ${money(TB_PRICE[n])}</option>`).join('')}</select> <button class="btn sm" id="gbTbAdd">Add</button></label>`:''}
+    <label style="display:block;margin:8px 0">💵 Cash $<input type="number" id="gbCash" min="0" step="1" inputmode="decimal" value="${GB.cash||''}" style="${inp};width:9em"></label>
+    <label style="display:block;margin:8px 0">✏️ Note <input id="gbNote" maxlength="80" placeholder="Happy birthday!" value="${esc(GB.note)}" style="${inp};width:100%"></label>
+    <p class="note" id="gbMsg">${plural(cards.length,'card')} · costs you ${money(cost)} · you have ${money(S.cash)}</p>
+    <div class="row2"><button class="btn go" id="gbSend" ${empty?'disabled':''}>🎁 Send to ${esc(to.name)}</button><button class="btn" id="gbCancel">Cancel</button></div>`);
+  $('.mbox',m).classList.add('wide');if(redraw){$('.mbox',m).style.animation='none';m.scrollTop=sy}
+  const keep=()=>{const c=$('#gbCash',m),n=$('#gbNote',m);GB.cash=Math.max(0,Math.round((+c.value||0)*100)/100);GB.note=n.value.slice(0,80)},again=()=>{keep();giftBoxModal()};
+  $('#gbCash',m).onchange=again;$('#gbNote',m).oninput=()=>{GB.note=$('#gbNote',m).value.slice(0,80)};
+  $('#gbCancel',m).onclick=()=>{GB=null;closeModal()};
+  $('#gbPick',m).onclick=()=>{keep();openBuilder({give:GB.cards,title:`Cards for ${to.name}'s gift box`,sub:'Tap cards to put them in the box.',mine:myItems(true),theirs:null,sendLabel:'Put in the gift box',
+    onSend:give=>{GB.cards=give;setTimeout(()=>giftBoxModal(),0);return true}});const c=$('.mbox [data-close]');if(c)c.onclick=e=>{e.stopPropagation();closeModal(true);giftBoxModal()}};
+  const ib=$('#gbInsta',m);if(ib)ib.onclick=()=>{GB.insta++;again()};
+  const sa=$('#gbSetAdd',m);if(sa)sa.onclick=()=>{GB.sets.push($('#gbSet',m).value);again()};
+  $('#gbPackAdd',m).onclick=()=>{GB.packs.push($('#gbPack',m).value);again()};
+  const ta=$('#gbTbAdd',m);if(ta)ta.onclick=()=>{const val=$('#gbTb',m).value,n=+$('#gbTbN',m).value,r=RIVALS[val],g=r?{nick:r.nick,sp:r.sp}:tg.find(x=>x.sp+':'+x.nick===val);if(g){GB.tb.push({val,n,nick:g.nick,sp:g.sp});again()}};
+  m.querySelectorAll('[data-gbp]').forEach(b=>b.onclick=()=>{GB.packs.push(b.dataset.gbp);again()});
+  m.querySelectorAll('[data-gbm]').forEach(b=>b.onclick=()=>{GB.packs.splice(GB.packs.indexOf(b.dataset.gbm),1);again()});
+  m.querySelectorAll('[data-gbx]').forEach(b=>b.onclick=()=>{const x=b.dataset.gbx;if(x==='cards')GB.cards=[];else if(x==='insta')GB.insta=0;else if(x==='cash'){GB.cash=0;$('#gbCash',m).value=''}else if(x.startsWith('set'))GB.sets.splice(+x.slice(3),1);else if(x.startsWith('tb'))GB.tb.splice(+x.slice(2),1);again()});
+  $('#gbSend',m).onclick=()=>{keep();sendGiftBox()}}
+async function sendGiftBox(){const to=GB.to,cards=gbCards(),cost=gbCost(),msg=t=>{const e=$('#gbMsg');if(e)e.textContent=t},sb=$('#gbSend');
+  if(!cards.length&&!GB.packs.length&&!GB.tb.length&&!GB.insta&&!(GB.cash>0)){msg('Put something in the box first.');return}
+  if(cards.length>GB_MAX_CARDS){msg(`That's ${cards.length} cards. A gift box holds ${GB_MAX_CARDS}.`);return}
+  if(cost>S.cash){msg(`This box costs ${money(cost)} and you have ${money(S.cash)}.`);return}
+  if(GB.insta>(S.instaTokens||0)){msg("You don't have that many instant sorts.");return}
+  if(!haveFree(cards,true)){msg("Some of those cards aren't free anymore.");return}
+  if(sb)sb.disabled=true;
+  const id='o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),big=bigOf(cards,S.bigOnes);
+  cards.forEach(k=>removeCards(k,1));S.cash-=cost;S.instaTokens=(S.instaTokens||0)-GB.insta;save('now');updateHeader();
+  const doc={from:PROFILE.id,fromName:PROFILE.name,to:to.id,toName:to.name,give:cards,want:[],gift:true,box:true,cash:GB.cash||0,packs:GB.packs.slice(),tboxes:GB.tb.slice(),insta:GB.insta,note:GB.note.trim(),status:'open',at:Date.now(),big,wantBig:{}};
+  try{await dbNS.doc('offers/'+id).set(doc)}
+  catch(e){cards.forEach(k=>addCard(fromKey(k),'trade'));S.cash+=cost;S.instaTokens+=GB.insta;save('now');updateHeader();if(sb)sb.disabled=false;msg("Couldn't send it. Everything is back. Try again.");return}
+  outAdd({...doc,id});mailLog(`🎁 Sent ${to.name} a gift box: ${giftTxt(doc)}.`);GB=null;closeModal(true);toast(`🎁 Gift box sent to ${to.name}!`,'good',6000);renderTabs();if(tab==='trade')render()}
+function giftTxt(o){const a=[];if((o.give||[]).length)a.push(plural(o.give.length,'card'));const c={};(o.packs||[]).forEach(id=>c[id]=(c[id]||0)+1);
+  Object.entries(c).forEach(([id,n])=>{const p=PACKS.find(x=>x.id===id);if(p)a.push(`${n>1?n+' ':''}${p.name}${n>1?'s':''}`)});(o.tboxes||[]).forEach(t=>a.push(`a ${t.nick} box`));
+  if(o.insta)a.push(plural(o.insta,'instant sort'));if(o.cash>0)a.push(money(o.cash));return a.join(', ')||'nothing'}
+// the receiving side; cards and big-card info were already added by settleOffers
+function takeGiftBox(o){if(o.cash>0)S.cash+=Math.round(+o.cash*100)/100;if(o.insta>0)S.instaTokens=(S.instaTokens||0)+(o.insta|0);
+  (o.packs||[]).forEach(id=>{if(PACKS.find(x=>x.id===id))(S.giftPacks=S.giftPacks||[]).push({id,from:o.fromName})});
+  (o.tboxes||[]).forEach(t=>{if(!addTeamBox(t.val,t.n,o.fromName)){S.cash+=TB_PRICE[t.n]||0;mailLog(`${o.fromName}'s ${t.nick} box needs a room you haven't opened yet, so it turned into ${money(TB_PRICE[t.n]||0)}.`)}});
+  mailLog(`🎁 ${o.fromName} sent you a gift box: ${giftTxt(o)}.${o.note?' "'+o.note+'"':''}`);updateHeader();queueModal(()=>giftUnwrap(o))}
+function giftUnwrap(o){const n=(o.packs||[]).length;
+  const m=modal(`<div style="text-align:center"><div style="font-size:64px">🎁</div><h2>${esc(o.fromName)} sent you a gift box!</h2>${o.note?`<p style="font-size:18px">"${esc(o.note)}"</p>`:''}<p>Inside: <b>${esc(giftTxt(o))}</b>.</p>
+    ${(o.give||[]).length?`<p class="note">The cards are in your binder.</p>`:''}${(o.tboxes||[]).length?`<p class="note">Team boxes are waiting in their rooms.</p>`:''}${n?`<p class="note">The packs are sealed. Rip them now or later from the Packs tab.</p>`:''}</div>
+    <div class="row2">${n?`<button class="btn go" id="guRip">Rip a pack</button>`:''}<button class="btn${n?'':' go'}" data-close>${n?'Later':'Thanks!'}</button></div>`);
+  const r=$('#guRip',m);if(r)r.onclick=()=>{closeModal(true);ripGift(0)}}
+function ripGift(i){const g=(S.giftPacks||[])[i];if(!g)return;S.giftPacks.splice(i,1);save('now');openPack(g.id,true);renderTabs()}
+function giftPacksHTML(){const g=S.giftPacks||[];if(!g.length)return '';return `<h3 class="sech">🎁 Gift packs</h3><p class="note" style="margin:-4px 0 12px">Sealed packs and boxes people sent you. Free to rip.</p><div class="packs">${g.map((x,i)=>{const pk=PACKS.find(p=>p.id===x.id);if(!pk)return '';
+  return `<div class="pk"><div class="wrapper ${pk.cls}"><b>${pk.title}</b><span>${pk.sub}</span></div><h4>${esc(pk.name)}</h4><p class="note">From ${esc(x.from||'family')}</p><button class="btn go" data-grip="${i}">Rip it</button></div>`}).join('')}</div>`}
 async function pAccept(o){
   if(!haveFree(o.want,true)){toast("You don't have those cards free to trade anymore. Try a counter offer.");return}
   {const keep=S.bigOnes;S.bigOnes=Object.assign({},keep||{},o.big||{});const gv=keysVal(o.want),rv=keysVal(o.give);S.bigOnes=keep;if(!isFair(gv,rv)){toast(`That trade isn't fair: ${money(gv)} for ${money(rv)}. Pass or send a counter offer.`,'',7000);return}}
@@ -8269,7 +8352,7 @@ function renderMailbox(el){const me=PROFILE.id,others=allProfiles().filter(p=>p.
   (S.inbox||[]).forEach((o,i)=>{const b=botInfo(o.bot);rows.push(offerRowHTML({who:`${b.n} wants to trade`,ico:b.ico,note:o.note,give:o.want,get:o.get,btns:`<button class="btn go sm" data-ba="${i}">Trade</button><button class="btn sm" data-bc="${i}">Counter</button><button class="btn sm" data-bp="${i}">Pass</button>`}))});
   OFF_IN.filter(o=>o.status==='open'&&!o.gift&&!o.kind).forEach(o=>rows.push(offerRowHTML({who:`${o.fromName} wants to trade`,ico:'📨',give:o.want,get:o.give,btns:`<button class="btn go sm" data-pa="${o.id}">Trade</button><button class="btn sm" data-pc="${o.id}">Counter</button><button class="btn sm" data-pp="${o.id}">Pass</button>`})));
   const sent=OFF_OUT.filter(o=>o.status==='open'&&!o.gift&&!o.kind).map(o=>offerRowHTML({who:`Waiting for ${o.toName}`,ico:'⏳',give:o.give,get:o.want,btns:`<button class="btn sm" data-px="${o.id}">Cancel offer</button>`}));
-  const pBtns=!dbNS?'<p class="note">Trading between players needs the online save.</p>':others.length?others.map(p=>`<button class="btn go" data-gift="${esc(p.id)}">🎁 Send cards to ${esc(p.name)}</button><button class="btn go" data-cash="${esc(p.id)}">💵 Send cash to ${esc(p.name)}</button><button class="btn go" data-prop="${esc(p.id)}">🔄 Trade with ${esc(p.name)}</button>`).join(''):'<p class="note">Add another player to trade with them.</p>';
+  const pBtns=!dbNS?'<p class="note">Trading between players needs the online save.</p>':others.length?others.map(p=>`<button class="btn go" data-gift="${esc(p.id)}">🎁 Send ${esc(p.name)} a gift box</button><button class="btn go" data-cash="${esc(p.id)}">💵 Send cash to ${esc(p.name)}</button><button class="btn go" data-prop="${esc(p.id)}">🔄 Trade with ${esc(p.name)}</button>`).join(''):'<p class="note">Add another player to trade with them.</p>';
   el.innerHTML=`<div class="panel mail"><h3 class="sech" style="margin:0 0 6px">📬 Trade mailbox</h3>
     <div class="mbtns" style="margin-bottom:8px">${pBtns}</div>
     ${rows.length?rows.join(''):'<p class="note">No offers right now. Traders send offers every so often while you play.</p>'}
@@ -8921,8 +9004,8 @@ function renderUpgrades(v){
   v.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{buyUp(b.dataset.buy);renderUpgrades(v)});
 }
 function renderPacks(v){
-  v.innerHTML=`<p class="note" style="margin:0 0 14px">Lenny's Cards on Route 9. Good cards go in your binder. Base cards get tossed on the pile, so every pack pushes the finish line back.</p><h3 class="sech">Packs</h3><div class="packs">${PACKS.filter(pk=>!pk.box&&openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen)).map(pk=>{const st=stockOf(pk.id),ok=S.cash>=packCost(pk)&&st>0;return `<div class="pk"><div class="wrapper ${pk.cls}"><b>${pk.title}</b><span>${pk.sub}</span></div><h4>${esc(pk.name)}</h4><p>${esc(pk.desc)}</p><div class="stock">${NO_LIMIT.has(pk.id)?'<span>Always in stock</span>':`${Array.from({length:packMax(pk.id)},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}<span>${st?`${st} left`:'Sold out'}</span>`}</div><button class="btn ${ok?'go':''}" data-pk="${pk.id}" ${ok?'':'disabled'}>${st?`Buy &amp; rip · ${money(packCost(pk))}`:'Sold out'}</button></div>`}).join('')}</div><h3 class="sech">Boxes</h3><p class="note" style="margin:-4px 0 12px">Big boxes of new cards, packed like the real thing.</p><div class="packs">${PACKS.filter(pk=>pk.box&&(pk.kind==='delight'||openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen))).map(pk=>{const st=stockOf(pk.id),ok=S.cash>=packCost(pk)&&st>0;return `<div class="pk"><div class="wrapper ${pk.cls}"><b>${pk.title}</b><span>${pk.sub}</span></div><h4>${esc(pk.name)}</h4><p>${esc(pk.desc)}</p><div class="stock">${NO_LIMIT.has(pk.id)?'<span>Always in stock</span>':`${Array.from({length:packMax(pk.id)},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}<span>${st?`${st} left`:'Sold out'}</span>`}</div><button class="btn ${ok?'go':''}" data-pk="${pk.id}" ${ok?'':'disabled'}>${st?`Buy &amp; rip · ${money(packCost(pk))}`:'Sold out'}</button></div>`}).join('')}</div>${teamBoxHTML()}${rivalHTML()}<p class="note" style="margin-top:16px">${num(S.stats.packs)} packs ripped so far.</p>`;
-  v.querySelectorAll('[data-pk]').forEach(b=>b.onclick=()=>openPack(b.dataset.pk));
+  v.innerHTML=`<p class="note" style="margin:0 0 14px">Lenny's Cards on Route 9. Good cards go in your binder. Base cards get tossed on the pile, so every pack pushes the finish line back.</p>${giftPacksHTML()}<h3 class="sech">Packs</h3><div class="packs">${PACKS.filter(pk=>!pk.box&&openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen)).map(pk=>{const st=stockOf(pk.id),ok=S.cash>=packCost(pk)&&st>0;return `<div class="pk"><div class="wrapper ${pk.cls}"><b>${pk.title}</b><span>${pk.sub}</span></div><h4>${esc(pk.name)}</h4><p>${esc(pk.desc)}</p><div class="stock">${NO_LIMIT.has(pk.id)?'<span>Always in stock</span>':`${Array.from({length:packMax(pk.id)},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}<span>${st?`${st} left`:'Sold out'}</span>`}</div><button class="btn ${ok?'go':''}" data-pk="${pk.id}" ${ok?'':'disabled'}>${st?`Buy &amp; rip · ${money(packCost(pk))}`:'Sold out'}</button></div>`}).join('')}</div><h3 class="sech">Boxes</h3><p class="note" style="margin:-4px 0 12px">Big boxes of new cards, packed like the real thing.</p><div class="packs">${PACKS.filter(pk=>pk.box&&(pk.kind==='delight'||openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen))).map(pk=>{const st=stockOf(pk.id),ok=S.cash>=packCost(pk)&&st>0;return `<div class="pk"><div class="wrapper ${pk.cls}"><b>${pk.title}</b><span>${pk.sub}</span></div><h4>${esc(pk.name)}</h4><p>${esc(pk.desc)}</p><div class="stock">${NO_LIMIT.has(pk.id)?'<span>Always in stock</span>':`${Array.from({length:packMax(pk.id)},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}<span>${st?`${st} left`:'Sold out'}</span>`}</div><button class="btn ${ok?'go':''}" data-pk="${pk.id}" ${ok?'':'disabled'}>${st?`Buy &amp; rip · ${money(packCost(pk))}`:'Sold out'}</button></div>`}).join('')}</div>${teamBoxHTML()}${rivalHTML()}<p class="note" style="margin-top:16px">${num(S.stats.packs)} packs ripped so far.</p>`;
+  v.querySelectorAll('[data-pk]').forEach(b=>b.onclick=()=>openPack(b.dataset.pk));v.querySelectorAll('[data-grip]').forEach(b=>b.onclick=()=>ripGift(+b.dataset.grip));
   const tb=$('#tbBuy',v);if(tb){const upd=()=>{const n=+$('#tbSize',v).value;tb.textContent=`Buy · ${money(TB_PRICE[n])}`;tb.disabled=S.cash<TB_PRICE[n]};$('#tbSize',v).onchange=upd;upd();
     tb.onclick=()=>buyTeamBox($('#tbTeam',v).value,+$('#tbSize',v).value)}
   const rb=$('#rvBuy',v);if(rb){const upd=()=>{const n=+$('#rvSize',v).value;rb.textContent=`Buy · ${money(TB_PRICE[n])}`;rb.disabled=S.cash<TB_PRICE[n]};$('#rvSize',v).onchange=upd;upd();
@@ -8947,12 +9030,15 @@ function teamBoxHTML(){const gs=teamGroups();if(!gs.length)return '';
   return `<h3 class="sech">Team boxes</h3><p class="note" style="margin:-4px 0 12px">A box of loose cards from one team, random players from every era. It shows up as its own box to sort: ${sports.map(sp=>`${SPORT_WORD[sp].toLowerCase()} in the ${LOCS[tbRoom(sp)].name.toLowerCase()}`).join(', ')}.</p>
   <div class="pk tbox"><div class="tbrow"><label>Team <select id="tbTeam">${sports.map(sp=>`<optgroup label="${SPORT_WORD[sp]}">${gs.filter(x=>x.sp===sp).map(x=>`<option value="${x.sp}:${esc(x.nick)}"${x.nick==='Athletics'?' selected':''}>${esc(x.nick)}</option>`).join('')}</optgroup>`).join('')}</select></label>
   <label>Size <select id="tbSize">${Object.keys(TB_PRICE).map(n=>`<option value="${n}">${n} cards</option>`).join('')}</select></label><button class="btn go" id="tbBuy">Buy</button></div></div>`}
+// put a team or rivalry box in its room; from = who gave it (gift boxes). Returns {id,loc} or null when the room isn't open.
+function addTeamBox(val,n,from){const rv=RIVALS[val];const g=rv?{...rv,riv:val}:teamGroups().find(x=>x.sp+':'+x.nick===val);if(!g||!TB_PRICE[n])return null;
+  const loc=g.riv?rivRoom(g.sp):tbRoom(g.sp);if(!loc)return null;ensureBoxes();const rb=roomBoxes(loc);if(!rb)return null;
+  const id={attic:'b',barn:'f',garage:'g',rink:'r',stadium:'z',grandma:'n',allstar:'a'}[loc]+'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,4);
+  rb.push({id,label:from?`${g.nick} box from ${from}`:`${g.nick} box from Lenny's`,teams:g.codes,tm:g.codes[g.codes.length-1],total:n,left:n,...(g.riv?{riv:g.riv,sp:g.sp}:{})});
+  if(S.loc===loc)S.pile+=n;else{S.places[loc]=S.places[loc]||{pile:0,oneLeft:null};S.places[loc].pile+=n}return {id,loc}}
 function buyTeamBox(val,n){const rv=RIVALS[val];const g=rv?{...rv,riv:val}:teamGroups().find(x=>x.sp+':'+x.nick===val);const cost=TB_PRICE[n];if(!g||!cost)return;
   if(S.cash<cost){toast(`That box costs ${money(cost)}.`);return}
-  const loc=g.riv?rivRoom(g.sp):tbRoom(g.sp);if(!loc)return;ensureBoxes();const rb=roomBoxes(loc);if(!rb)return;
-  S.cash-=cost;const id={attic:'b',barn:'f',garage:'g',rink:'r',stadium:'z',grandma:'n',allstar:'a'}[loc]+'t'+Date.now().toString(36);
-  rb.push({id,label:`${g.nick} box from Lenny's`,teams:g.codes,tm:g.codes[g.codes.length-1],total:n,left:n,...(g.riv?{riv:g.riv,sp:g.sp}:{})});
-  if(S.loc===loc)S.pile+=n;else{S.places[loc]=S.places[loc]||{pile:0,oneLeft:null};S.places[loc].pile+=n}
+  const r=addTeamBox(val,n);if(!r)return;const {id,loc}=r;S.cash-=cost;
   save('now');updateHeader();
   modal(`<h2>${esc(g.nick)} box</h2><p>Lenny hands over a shoebox with ${n} ${esc(g.nick)} cards in it. It's waiting in the ${LOCS[loc].name.toLowerCase()}.</p><div class="row2"><button class="btn go" id="tbGo">Sort it now</button><button class="btn" data-close>Later</button></div>`);
   $('#tbGo').onclick=()=>{closeModal(true);if(phase==='up')sortHand('marks',true);setCur(id,loc);if(S.loc!==loc)switchLoc(loc);go('shed');save(true)}}
@@ -9097,7 +9183,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-24.1156';
+const APP_VERSION = '2026-11-24.1206';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
