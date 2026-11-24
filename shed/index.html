@@ -201,6 +201,7 @@ button:focus-visible, input:focus-visible, select:focus-visible{outline:2px soli
 .loc[aria-selected="true"]{border-color:var(--bulb);background:linear-gradient(180deg,rgba(255,198,92,.16),var(--panel))}
 .w-delight{background:conic-gradient(from 20deg,#ff3ca8,#ffe14d,#3cf0ff,#7a3cff,#ff3ca8);width:170px;height:170px;box-shadow:0 0 30px rgba(255,200,80,.5)}.w-delight b{color:#fff;text-shadow:0 2px 4px #000}.w-oretail{background:linear-gradient(160deg,#ffd23f,#0a6ebd 60%,#c62828)}.w-oblaster{background:linear-gradient(160deg,#ffd23f,#0b3d6e 60%,#111);width:150px;height:170px}.w-ohobbybox{background:linear-gradient(160deg,#111,#0b3d6e 40%,#ffd23f);width:180px;height:150px}
 .w-amega{background:linear-gradient(150deg,#111 0%,#ffd700 30%,#c8102e 55%,#0b2a6b 80%,#111);width:190px;height:160px}
+.wrapper.w-box.w-case{width:230px;height:170px;border:5px solid #c9a13b;outline:3px dashed rgba(255,255,255,.55);outline-offset:-14px}.wrapper.w-box.w-case.packlet{width:170px;height:170px;border:0;outline:0}
 .w-delighto{background:conic-gradient(from 70deg,#ffd23f,#0a6ebd,#f2f2f2,#c62828,#ffd23f)}
 .w-nretail{background:linear-gradient(160deg,#d63384,#5a1a3d 60%,#f5d76e)}.w-nvintage{background:repeating-linear-gradient(135deg,#7a0f2e 0 16px,#f2e8cf 16px 32px)}.w-nvintage b{color:#fff5d6}
 .w-nblaster{background:linear-gradient(160deg,#ff7ab8,#5a1a3d 60%,#111);width:150px;height:170px}.w-nmega{background:linear-gradient(160deg,#ffc2dd,#7a2a55 60%,#111);width:160px;height:190px}.w-nhobbybox{background:linear-gradient(160deg,#1a0a12,#5a1a3d 40%,#d4af37);width:180px;height:150px}
@@ -4604,6 +4605,9 @@ const PACKS = [
   {id:'dnfl',sport:'nfl',kind:'delight',box:true,cls:'w-box w-delight w-delightf',title:"BREAKER'S DELIGHT",sub:'Football',name:"Breaker's Delight: Football",cost:4000,n:10,lv:3,desc:'10 cards, every one numbered, autographed or a relic, from today\'s stars. About 1 box in 40 has a Superfractor 1/1.'},
   {id:'bvintage',sport:'mlb',kind:'vintage',cls:'w-bvintage',title:'GRANDSTAND',sub:'Baseball 1952–1979',name:'Baseball Vintage Wax',cost:90,n:10,lv:3,desc:'10 baseball cards from the 50s, 60s and 70s, the golden age. The gum is older than your dad.'},
 ];
+// cases (Colton's idea, Nov 2026): a sealed case of 8 Breaker's Delight boxes, opened all at once. Exactly 8x the box price, no case discount.
+const CASE_BOXES=8;
+PACKS.filter(pk=>pk.kind==='delight').forEach(b=>PACKS.push({id:'c'+b.id,sport:b.sport,kind:'case',caseOf:b.id,boxes:CASE_BOXES,box:true,cls:b.cls+' w-case',title:"DELIGHT CASE",sub:b.sub,name:`Breaker's Delight Case: ${b.sub}`,cost:b.cost*CASE_BOXES,n:b.n*CASE_BOXES,lv:b.lv,desc:`${CASE_BOXES} sealed Breaker's Delight boxes (${b.n*CASE_BOXES} cards), opened all at once. Same cards and odds as ${CASE_BOXES} boxes bought one by one, same price too.`}));
 
 const ATTIC_LEDGER = [
   [0,"The attic. I carried every one of these boxes up that ladder myself. Your grandmother held the flashlight and told me I was crazy."],
@@ -4789,6 +4793,9 @@ async function freshCloud(id){
 const LAUNCHED=new Set();
 /* ---------- Release notes: what's new in each update. Newest first; give every new entry the next id. ---------- */
 const RELEASE_NOTES=[
+  {id:25,d:'Nov 24',t:'Cases',items:[
+    "📦 Lenny's sells whole cases now: 8 Breaker's Delight boxes in one case, ripped all at once (Packs tab, Cases). Colton's idea!",
+    '💵 A case costs exactly 8 boxes. No discount, same cards and odds.']},
   {id:24,d:'Nov 24',t:'A secret',items:[
     '🤫 Grandpa hid a secret game somewhere in the shed. Colton knows where. (Hint: count the cards.)']},
   {id:23,d:'Nov 24',t:'Older gift boxes',items:[
@@ -7746,7 +7753,7 @@ function wiltBoost(pk,cards){
   return cards.map(c=>{if(Math.random()>=.055)return c;const year=Math.random()<.2?W.start:W.start+Math.floor(Math.random()*(W.end-W.start+1));
     let par=c.par;if(modern&&par===0)par=1;if(par===8||par===9)par=7;return {pid:W.id,year,par}});
 }
-function genPack(pk){return giantsBoost(pk,wiltBoost(pk,rookieRush(pk,genPackRaw(pk))))}
+function genPack(pk){if(pk.caseOf){const b=PACKS.find(x=>x.id===pk.caseOf);const out=[];for(let i=0;i<pk.boxes;i++)out.push(...genPack(b));return out}return giantsBoost(pk,wiltBoost(pk,rookieRush(pk,genPackRaw(pk))))}
 // basketball packs are loaded with the last two rookie classes
 const NBA_ROOKIES=()=>P.filter(p=>p.sport==='nba'&&p.start>=2025&&p.start<=2026);
 function rookieRush(pk,cards){
@@ -7791,32 +7798,32 @@ function stockOf(id){S.stock=S.stock||{};if(NO_LIMIT.has(id))return 99;return S.
 function tickStock(n){S.stockCtr=(S.stockCtr||0)+n;let got=false;while(S.stockCtr>=RESTOCK){S.stockCtr-=RESTOCK;PACKS.forEach(pk=>{const c=stockOf(pk.id);if(c<packMax(pk.id)){S.stock[pk.id]=c+1;got=true}})}if(got&&tab==='packs')render()}
 function openPack(id,free){
   const pk=PACKS.find(p=>p.id===id);if(!pk)return;if(!free&&(S.level<pk.lv||S.cash<packCost(pk)||stockOf(id)<=0))return;
-  if(!free&&!NO_LIMIT.has(id))S.stock[id]=stockOf(id)-1;challengeEvent('pack',pk);
-  if(!free)S.cash-=packCost(pk);S.stats.packs++;updateHeader();
+  if(!free&&!NO_LIMIT.has(id))S.stock[id]=stockOf(id)-1;const nb=pk.boxes||1;for(let b=0;b<nb;b++)challengeEvent('pack',pk);
+  if(!free)S.cash-=packCost(pk);S.stats.packs+=nb;updateHeader();
   const cards=genPack(pk);
   // split into packs; inside each pack the base cards come first and the good stuff sits at the back
-  const per={blaster:4,mega:10,hobbybox:12}[pk.kind]||cards.length;
+  const per=pk.caseOf?cards.length/pk.boxes:{blaster:4,mega:10,hobbybox:12}[pk.kind]||cards.length;const unit=pk.caseOf?'box':'pack';
   const packs=[];for(let a=0;a<cards.length;a+=per)packs.push(cards.slice(a,a+per).sort((x,y)=>valueOf(x)-valueOf(y)));
   let pi=0,i=-1;
   const m=modal(`<h2>${esc(pk.name)}</h2><div id="pkStage" style="display:flex;flex-direction:column;align-items:center;gap:12px"></div><div class="row2" id="pkBtns"></div>`,{locked:true});
   const stage=$('#pkStage',m),btns=$('#pkBtns',m);
   function wrapper(label,sub,big){
-    stage.innerHTML=`<div class="wrapper ${pk.cls}${big?'':' packlet'} shake" id="pkW" role="button" tabindex="0" aria-label="${big?'Open the box':'Rip the pack'}"><b>${pk.title}</b><span>${sub}</span><span>${label}</span></div><p>${big?'Tap the box to open it.':`Tap to rip pack ${pi+1} of ${packs.length}.`}</p>`;
+    stage.innerHTML=`<div class="wrapper ${pk.cls}${big?'':' packlet'} shake" id="pkW" role="button" tabindex="0" aria-label="${big?'Open the box':'Rip the pack'}"><b>${pk.title}</b><span>${sub}</span><span>${label}</span></div><p>${big?(pk.caseOf?'Tap the case to open all '+packs.length+' boxes.':'Tap the box to open it.'):`Tap to rip ${unit} ${pi+1} of ${packs.length}.`}</p>`;
     btns.innerHTML=pk.box?`<button class="btn" id="pkSkip">Skip to the end</button>`:'';
     const sk=$('#pkSkip',m);if(sk)sk.onclick=finish;
-    const w=$('#pkW',m);const go2=()=>{w.classList.remove('shake');w.classList.add('torn');setTimeout(big&&pk.box?()=>wrapper(`${per} cards`,`Pack ${pi+1} of ${packs.length}`,false):next,380)};
+    const w=$('#pkW',m);const go2=()=>{w.classList.remove('shake');w.classList.add('torn');setTimeout(big&&pk.box?()=>wrapper(`${per} cards`,`${pk.caseOf?'Box':'Pack'} ${pi+1} of ${packs.length}`,false):next,380)};
     w.addEventListener('click',go2,{once:true});w.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go2()}},{once:true});
   }
-  if(pk.box)wrapper(`${packs.length} packs · ${pk.n} cards`,pk.sub,true);else wrapper(`${pk.n} cards`,pk.sub,true);
+  if(pk.box)wrapper(`${packs.length} ${unit==='box'?'boxes':'packs'} · ${pk.n} cards`,pk.sub,true);else wrapper(`${pk.n} cards`,pk.sub,true);
   function next(){
     const pack=packs[pi];i++;
-    if(i>=pack.length){if(pi<packs.length-1){pi++;i=-1;wrapper(`${per} cards`,`Pack ${pi+1} of ${packs.length}`,false);return}return finish()}
+    if(i>=pack.length){if(pi<packs.length-1){pi++;i=-1;wrapper(`${per} cards`,`${pk.caseOf?'Box':'Pack'} ${pi+1} of ${packs.length}`,false);return}return finish()}
     const c=pack[i];const w=Math.min(240,window.innerWidth-90);
     stage.innerHTML='';const fc=flipCard(c,w);stage.appendChild(fc);
     const lab=document.createElement('div');lab.className='lbl';lab.style.setProperty('--w',w+'px');lab.innerHTML=labelHTML(c);lab.style.visibility='hidden';stage.appendChild(lab);
     setTimeout(()=>{fc.classList.add('flipped');lab.style.visibility='visible';if(isBig(c))toast(`${parName(c)}!`,'gold')},120);
     const lastCard=i===pack.length-1,lastPack=pi===packs.length-1;
-    btns.innerHTML=`<button class="btn go" id="pkNext">${lastCard?(lastPack?'See the haul':'Next pack'):'Next card'} (${i+1}/${pack.length})</button>${pk.box&&!lastPack?`<button class="btn" id="pkSkipPack">Skip rest of pack</button>`:''}${pk.box?`<button class="btn" id="pkSkip">Skip to the end</button>`:''}`;
+    btns.innerHTML=`<button class="btn go" id="pkNext">${lastCard?(lastPack?'See the haul':'Next '+unit):'Next card'} (${i+1}/${pack.length})</button>${pk.box&&!lastPack?`<button class="btn" id="pkSkipPack">Skip rest of ${unit}</button>`:''}${pk.box?`<button class="btn" id="pkSkip">Skip to the end</button>`:''}`;
     $('#pkNext',m).onclick=next;$('#pkNext',m).focus();fc.onclick=next;
     const sp=$('#pkSkipPack',m);if(sp)sp.onclick=()=>{i=pack.length;next()};
     const sk=$('#pkSkip',m);if(sk)sk.onclick=finish;
@@ -8267,7 +8274,7 @@ function giftBuilder(to,pre){giftBoxModal(to,pre)}
 /* ---------- gift boxes (Nov 2026, Colton's idea): cards, whole sets, sealed packs/boxes, team boxes, instant sorts and cash in one present.
    The offer doc is a normal gift (gift:true) plus box:true, packs:[pack ids], tboxes:[{val,n,nick,sp}], insta, note. Packs arrive sealed in S.giftPacks. */
 const GB_MAX_CARDS=60;let GB=null;
-const gbPacks=()=>PACKS.filter(pk=>S.level>=pk.lv&&(pk.kind==='delight'&&pk.box||openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen)));
+const gbPacks=()=>PACKS.filter(pk=>S.level>=pk.lv&&((pk.kind==='delight'||pk.kind==='case')&&pk.box||openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen)));
 function fitsSet(st,c){if(!st.pids.includes(c.pid))return false;return st.vpar?(c.par===st.vpar&&(!st.vyr||c.year===st.vyr)):st.champYr?(c.par===11&&c.year===st.champYr):st.champ?c.par===11:st.rc?isRC(c):true}
 // the cheapest free copy of every card in a set that you can spare, not counting cards already picked
 // free cards grouped by player, built once per draw (looping the whole binder for every set card froze big saves for 20+ seconds)
@@ -9078,7 +9085,7 @@ function renderUpgrades(v){
   v.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{buyUp(b.dataset.buy);renderUpgrades(v)});
 }
 function renderPacks(v){
-  v.innerHTML=`<p class="note" style="margin:0 0 14px">Lenny's Cards on Route 9. Good cards go in your binder. Base cards get tossed on the pile, so every pack pushes the finish line back.</p>${giftPacksHTML()}<h3 class="sech">Packs</h3><div class="packs">${PACKS.filter(pk=>!pk.box&&openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen)).map(pk=>{const st=stockOf(pk.id),ok=S.cash>=packCost(pk)&&st>0;return `<div class="pk"><div class="wrapper ${pk.cls}"><b>${pk.title}</b><span>${pk.sub}</span></div><h4>${esc(pk.name)}</h4><p>${esc(pk.desc)}</p><div class="stock">${NO_LIMIT.has(pk.id)?'<span>Always in stock</span>':`${Array.from({length:packMax(pk.id)},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}<span>${st?`${st} left`:'Sold out'}</span>`}</div><button class="btn ${ok?'go':''}" data-pk="${pk.id}" ${ok?'':'disabled'}>${st?`Buy &amp; rip · ${money(packCost(pk))}`:'Sold out'}</button></div>`}).join('')}</div><h3 class="sech">Boxes</h3><p class="note" style="margin:-4px 0 12px">Big boxes of new cards, packed like the real thing.</p><div class="packs">${PACKS.filter(pk=>pk.box&&(pk.kind==='delight'||openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen))).map(pk=>{const st=stockOf(pk.id),ok=S.cash>=packCost(pk)&&st>0;return `<div class="pk"><div class="wrapper ${pk.cls}"><b>${pk.title}</b><span>${pk.sub}</span></div><h4>${esc(pk.name)}</h4><p>${esc(pk.desc)}</p><div class="stock">${NO_LIMIT.has(pk.id)?'<span>Always in stock</span>':`${Array.from({length:packMax(pk.id)},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}<span>${st?`${st} left`:'Sold out'}</span>`}</div><button class="btn ${ok?'go':''}" data-pk="${pk.id}" ${ok?'':'disabled'}>${st?`Buy &amp; rip · ${money(packCost(pk))}`:'Sold out'}</button></div>`}).join('')}</div>${teamBoxHTML()}${rivalHTML()}<p class="note" style="margin-top:16px">${num(S.stats.packs)} packs ripped so far.</p>`;
+  v.innerHTML=`<p class="note" style="margin:0 0 14px">Lenny's Cards on Route 9. Good cards go in your binder. Base cards get tossed on the pile, so every pack pushes the finish line back.</p>${giftPacksHTML()}<h3 class="sech">Packs</h3><div class="packs">${PACKS.filter(pk=>!pk.box&&openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen)).map(pk=>{const st=stockOf(pk.id),ok=S.cash>=packCost(pk)&&st>0;return `<div class="pk"><div class="wrapper ${pk.cls}"><b>${pk.title}</b><span>${pk.sub}</span></div><h4>${esc(pk.name)}</h4><p>${esc(pk.desc)}</p><div class="stock">${NO_LIMIT.has(pk.id)?'<span>Always in stock</span>':`${Array.from({length:packMax(pk.id)},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}<span>${st?`${st} left`:'Sold out'}</span>`}</div><button class="btn ${ok?'go':''}" data-pk="${pk.id}" ${ok?'':'disabled'}>${st?`Buy &amp; rip · ${money(packCost(pk))}`:'Sold out'}</button></div>`}).join('')}</div><h3 class="sech">Boxes</h3><p class="note" style="margin:-4px 0 12px">Big boxes of new cards, packed like the real thing.</p><div class="packs">${PACKS.filter(pk=>pk.box&&pk.kind!=='case'&&(pk.kind==='delight'||openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen))).map(pk=>{const st=stockOf(pk.id),ok=S.cash>=packCost(pk)&&st>0;return `<div class="pk"><div class="wrapper ${pk.cls}"><b>${pk.title}</b><span>${pk.sub}</span></div><h4>${esc(pk.name)}</h4><p>${esc(pk.desc)}</p><div class="stock">${NO_LIMIT.has(pk.id)?'<span>Always in stock</span>':`${Array.from({length:packMax(pk.id)},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}<span>${st?`${st} left`:'Sold out'}</span>`}</div><button class="btn ${ok?'go':''}" data-pk="${pk.id}" ${ok?'':'disabled'}>${st?`Buy &amp; rip · ${money(packCost(pk))}`:'Sold out'}</button></div>`}).join('')}</div><h3 class="sech">Cases</h3><p class="note" style="margin:-4px 0 12px">A whole case of ${CASE_BOXES} Breaker's Delight boxes, ripped all at once. Same price as ${CASE_BOXES} boxes.</p><div class="packs">${PACKS.filter(pk=>pk.kind==='case').map(pk=>{const st=stockOf(pk.id),ok=S.cash>=packCost(pk)&&st>0;return `<div class="pk"><div class="wrapper ${pk.cls}"><b>${pk.title}</b><span>${pk.sub}</span></div><h4>${esc(pk.name)}</h4><p>${esc(pk.desc)}</p><div class="stock">${NO_LIMIT.has(pk.id)?'<span>Always in stock</span>':`${Array.from({length:packMax(pk.id)},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}<span>${st?`${st} left`:'Sold out'}</span>`}</div><button class="btn ${ok?'go':''}" data-pk="${pk.id}" ${ok?'':'disabled'}>${st?`Buy &amp; rip · ${money(packCost(pk))}`:'Sold out'}</button></div>`}).join('')}</div>${teamBoxHTML()}${rivalHTML()}<p class="note" style="margin-top:16px">${num(S.stats.packs)} packs ripped so far.</p>`;
   v.querySelectorAll('[data-pk]').forEach(b=>b.onclick=()=>openPack(b.dataset.pk));v.querySelectorAll('[data-grip]').forEach(b=>b.onclick=()=>ripGift(+b.dataset.grip));
   const tb=$('#tbBuy',v);if(tb){const upd=()=>{const n=+$('#tbSize',v).value;tb.textContent=`Buy · ${money(TB_PRICE[n])}`;tb.disabled=S.cash<TB_PRICE[n]};$('#tbSize',v).onchange=upd;upd();
     tb.onclick=()=>buyTeamBox($('#tbTeam',v).value,+$('#tbSize',v).value)}
@@ -9257,7 +9264,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-24.1243';
+const APP_VERSION = '2026-11-24.1401';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
