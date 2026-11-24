@@ -4787,6 +4787,8 @@ async function freshCloud(id){
 const LAUNCHED=new Set();
 /* ---------- Release notes: what's new in each update. Newest first; give every new entry the next id. ---------- */
 const RELEASE_NOTES=[
+  {id:20,d:'Nov 24',t:"Dad's ideas",items:[
+    '💡 Now Dad can send Colton ideas for the game! Colton says yes or no, and if it\'s a yes, Dad builds it.']},
   {id:19,d:'Nov 24',t:'Colton moved to NBA stars today',items:[
     '🌟 The Colton Townsend Warriors 1/1 moved to the NBA stars today case. If you haven\'t found it yet, it\'s the last card in that case.']},
   {id:18,d:'Nov 23',t:'Number 80 and a bigger line',items:[
@@ -4977,6 +4979,47 @@ function ideaWire(v){const b=$('#ideaOpen',v);if(b)b.onclick=ideaModal;
   v.querySelectorAll('[data-iok]').forEach(b=>b.onclick=()=>{const o=f(b.dataset.iok);if(o)ideaAnswer(o,'approved')});
   v.querySelectorAll('[data-ibuilt]').forEach(b=>b.onclick=()=>{const o=f(b.dataset.ibuilt);if(o)ideaAnswer(o,'built')});
   v.querySelectorAll('[data-ino]').forEach(b=>b.onclick=()=>{const o=f(b.dataset.ino);if(!o)return;if(b.dataset.sure!=='1'){b.dataset.sure='1';b.textContent='Tap again: not now';return}ideaAnswer(o,'passed')})}
+/* ---------- Dad's ideas: Will suggests a feature, Colton says yes or no (Nov 2026) ----------
+   offers doc kind:'dadidea' from Will to Colton; status open -> yes | no (Colton) -> built (Will). Colton's yes pings ntfy. */
+const kidProfile=()=>allProfiles().find(p=>(p.name||'').trim().toLowerCase()==='colton');
+function dadPing(text){try{fetch('https://ntfy.sh/'+NTFY_TOPIC,{method:'POST',body:`Colton said YES to: ${text}`.slice(0,600),headers:{Title:"Colton approved your Grandpa's Shed idea",Tags:'white_check_mark'}}).catch(()=>{})}catch(e){}}
+function dadModal(){const k=kidProfile();if(!k||!dbNS){toast(k?'Sending ideas needs the online save.':'There is no Colton player yet.');return}
+  const m=modal(`<h2>💡 Suggest a feature to ${esc(k.name)}</h2><p>${esc(k.name)} gets to say yes or no. If he says yes, it comes back here for you to build.</p>
+    <textarea id="dadTxt" maxlength="500" rows="5" placeholder="What if the game had..." style="width:100%;font:inherit;font-size:16px;padding:10px;border-radius:10px;background:var(--panel2);color:inherit;border:1px solid var(--line)"></textarea>
+    <div class="row2"><button class="btn go" id="dadSend">Send to ${esc(k.name)}</button><button class="btn" data-close>Close</button></div>`);
+  $('#dadSend',m).onclick=async()=>{const sb=$('#dadSend',m);if(sb.disabled)return;const text=$('#dadTxt',m).value.trim();if(text.length<3){toast('Write the idea first.');return}sb.disabled=true;
+    const id='o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),doc={kind:'dadidea',text,from:PROFILE.id,fromName:PROFILE.name,to:k.id,toName:k.name,give:[],want:[],gift:false,status:'open',at:Date.now()};
+    try{await dbNS.doc('offers/'+id).set(doc)}catch(e){sb.disabled=false;toast("Couldn't send it. Try again.");return}
+    OFF_OUT=OFF_OUT.concat({...doc,id});closeModal(true);toast(`💡 Sent to ${k.name}. He'll say yes or no.`,'good',6000);render()}}
+// Colton answers
+async function dadAnswer(o,yes){try{const ref=dbNS.doc('offers/'+o.id);const d=await ref.get();if(!d.exists||d.data().status!=='open'){toast('That idea is gone.');OFF_IN=OFF_IN.filter(x=>x.id!==o.id);render();return}
+    await ref.update({status:yes?'yes':'no',doneAt:Date.now()})}catch(e){toast("Couldn't reach the mailbox. Try again.");return}
+  o.status=yes?'yes':'no';if(yes)dadPing(o.text||'');const dad=o.fromName&&o.fromName.toLowerCase()!=='will'?o.fromName:'Dad';
+  toast(yes?`👍 You said yes! ${dad} will build it.`:`You said no. ${dad} will think of something else.`,'good',6000);mailLog(yes?`👍 You said yes to ${dad}'s idea: "${(o.text||'').slice(0,60)}"`:`You said no to ${dad}'s idea: "${(o.text||'').slice(0,60)}"`);
+  if(modalOpen&&$('#dadAsk'))closeModal(true);render()}
+function dadAskModal(o){if(!o||o.status!=='open'){if(!modalOpen){const n=modalQ.shift();if(n)n()}return}const m=modal(`<div id="dadAsk"><h2>💡 Dad has an idea!</h2><p style="white-space:pre-wrap;font-size:18px">${esc(o.text)}</p><p>Should Dad add this to the game?</p>
+  <div class="row2"><button class="btn go" id="dadYes">👍 Yes, add it</button><button class="btn" id="dadNo">👎 No thanks</button></div><div class="row2"><button class="btn sm" data-close>Decide later</button></div></div>`);
+  $('#dadYes',m).onclick=()=>dadAnswer(o,true);$('#dadNo',m).onclick=()=>dadAnswer(o,false)}
+async function dadBuilt(o){try{await dbNS.doc('offers/'+o.id).update({status:'built',doneAt:Date.now()})}catch(e){toast("Couldn't reach the mailbox. Try again.");return}o.status='built';toast(`Told ${o.toName} it's built!`,'good');render()}
+async function dadDrop(o){try{await dbNS.doc('offers/'+o.id).delete()}catch(e){}OFF_OUT=OFF_OUT.filter(x=>x.id!==o.id);render()}
+function dadPrompt(o){return `Colton approved my feature idea for Grandpa's Shed (shed/index.html in townwill/gleefulhabit):\n\n"${o.text}"\n\nPlease build it (if anything is unclear, ask me first), test it, and deploy it the usual way.`}
+async function dadCopy(o){const txt=dadPrompt(o);try{await navigator.clipboard.writeText(txt);toast('Copied. Paste it into your Claude chat.','good',6000);return}catch(e){}
+  const m=modal(`<h2>Copy this for Claude</h2><textarea readonly rows="8" style="width:100%;font:inherit;font-size:14px;padding:10px;border-radius:10px;background:var(--panel2);color:inherit;border:1px solid var(--line)">${esc(txt)}</textarea><div class="row2"><button class="btn" data-close>Done</button></div>`);const ta=$('textarea',m);ta.focus();ta.select()}
+const DAD_WORD={open:'⏳ Waiting for Colton',yes:'👍 Colton said yes! Build it',no:'👎 Colton said no',built:'✅ Built'};
+function dadHTML(){if(!PROFILE)return '';const when=t=>new Date(t).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  if(isApprover()){const k=kidProfile();if(!k)return '';const list=OFF_OUT.filter(o=>o.kind==='dadidea').sort((a,b)=>({yes:0,open:1,no:2,built:3}[a.status]-{yes:0,open:1,no:2,built:3}[b.status])||b.at-a.at);
+    return `<h3 class="sech">🧒 Ask ${esc(k.name)}</h3><div class="up" style="margin-bottom:10px"><h4>💡 Suggest a feature to ${esc(k.name)}</h4><p>He says yes or no. A yes comes back here (and to ntfy) for you to build.</p><button class="btn go" id="dadOpen">Suggest a feature</button></div>`
+      +(list.length?`<div class="grid">${list.map(o=>`<div class="up"><h4>${DAD_WORD[o.status]||''} <small>${when(o.at)}</small></h4><p style="white-space:pre-wrap">${esc(o.text)}</p><div class="row2" style="justify-content:flex-start;flex-wrap:wrap">`
+        +(o.status==='yes'?`<button class="btn go sm" data-dclaude="${esc(o.id)}">Copy for Claude</button><button class="btn sm" data-dbuilt="${esc(o.id)}">It's built ✓</button>`:'')
+        +(o.status==='open'?`<button class="btn sm" data-ddrop="${esc(o.id)}">Take it back</button>`:o.status==='yes'?'':`<button class="btn sm" data-ddrop="${esc(o.id)}">Clear</button>`)+`</div></div>`).join('')}</div>`:'')}
+  const list=OFF_IN.filter(o=>o.kind==='dadidea'&&o.status==='open');if(!list.length)return '';
+  return `<h3 class="sech">💡 Dad's ideas</h3><div class="grid">${list.map(o=>`<div class="up"><h4>💡 Dad has an idea! <small>${when(o.at)}</small></h4><p style="white-space:pre-wrap">${esc(o.text)}</p><p>Should Dad add this to the game?</p><div class="row2" style="justify-content:flex-start"><button class="btn go sm" data-dyes="${esc(o.id)}">👍 Yes</button><button class="btn sm" data-dno="${esc(o.id)}">👎 No</button></div></div>`).join('')}</div>`}
+function dadWire(v){const b=$('#dadOpen',v);if(b)b.onclick=dadModal;const fo=id=>OFF_OUT.find(x=>x.id===id),fi=id=>OFF_IN.find(x=>x.id===id);
+  v.querySelectorAll('[data-dclaude]').forEach(b=>b.onclick=()=>{const o=fo(b.dataset.dclaude);if(o)dadCopy(o)});
+  v.querySelectorAll('[data-dbuilt]').forEach(b=>b.onclick=()=>{const o=fo(b.dataset.dbuilt);if(o)dadBuilt(o)});
+  v.querySelectorAll('[data-ddrop]').forEach(b=>b.onclick=()=>{const o=fo(b.dataset.ddrop);if(!o)return;if(o.status==='open'&&b.dataset.sure!=='1'){b.dataset.sure='1';b.textContent='Tap again to take it back';return}dadDrop(o)});
+  v.querySelectorAll('[data-dyes]').forEach(b=>b.onclick=()=>{const o=fi(b.dataset.dyes);if(o)dadAnswer(o,true)});
+  v.querySelectorAll('[data-dno]').forEach(b=>b.onclick=()=>{const o=fi(b.dataset.dno);if(!o)return;if(b.dataset.sure!=='1'){b.dataset.sure='1';b.textContent='Tap again: no';return}dadAnswer(o,false)})}
 function cuHTML(){
   if(!PROFILE)return '';const ap=approver();const mine=(S.customUps||[]);let h='';
   if(isApprover()){const req=OFF_IN.filter(o=>o.kind==='upgrade'&&o.status==='open');
@@ -8145,12 +8188,15 @@ function watchOffers(id){if(!dbNS||!id||offersFor===id)return;offerUnsubs.forEac
   sub('to',x=>OFF_IN=x);sub('from',x=>OFF_OUT=x)}
 function markDone(id){S.offerDone=S.offerDone||{};S.offerDone[id]=1;const ks=Object.keys(S.offerDone);if(ks.length>300)delete S.offerDone[ks[0]]}
 async function settleOffers(){if(!PROFILE||!dbNS)return;const me=PROFILE.id;S.offerDone=S.offerDone||{};let changed=false;
-  for(const o of OFF_IN){if(o.kind){if(o.status==='open'&&!cuTold.has(o.id)){cuTold.add(o.id);toast(o.kind==='idea'?`💡 ${o.fromName} has an idea for the game: "${(o.text||'').slice(0,60)}". See Upgrades.`:o.kind==='upshare'?`📬 ${o.fromName} sent you an upgrade: ${o.up&&o.up.name}. See Upgrades.`:`📬 ${o.fromName} made an upgrade for you to approve: ${o.up&&o.up.name}. See Upgrades.`,'gold',8000)}continue}if(!(o.gift&&o.status==='open')||S.offerDone[o.id]||offerBusy.has(me+':'+o.id)||PROFILE.id!==me)continue;offerBusy.add(me+':'+o.id);
+  for(const o of OFF_IN){if(o.kind==='dadidea'){if(o.status==='open'&&!cuTold.has(o.id)){cuTold.add(o.id);toast(`💡 Dad has an idea for the game! Say yes or no.`,'gold',8000);queueModal(()=>dadAskModal(OFF_IN.find(x=>x.id===o.id)))}
+      else if(o.status==='built'){S.dadSeen=S.dadSeen||{};if(!S.dadSeen[o.id]){S.dadSeen[o.id]=1;const m=`✅ Dad built the idea you said yes to: "${(o.text||'').slice(0,60)}"`;toast(m,'gold',9000);mailLog(m);save(true)}try{await dbNS.doc('offers/'+o.id).delete()}catch(e){}}continue}
+    if(o.kind){if(o.status==='open'&&!cuTold.has(o.id)){cuTold.add(o.id);toast(o.kind==='idea'?`💡 ${o.fromName} has an idea for the game: "${(o.text||'').slice(0,60)}". See Upgrades.`:o.kind==='upshare'?`📬 ${o.fromName} sent you an upgrade: ${o.up&&o.up.name}. See Upgrades.`:`📬 ${o.fromName} made an upgrade for you to approve: ${o.up&&o.up.name}. See Upgrades.`,'gold',8000)}continue}if(!(o.gift&&o.status==='open')||S.offerDone[o.id]||offerBusy.has(me+':'+o.id)||PROFILE.id!==me)continue;offerBusy.add(me+':'+o.id);
     markDone(o.id);takeBig(o.big);(o.give||[]).forEach(k=>addCard(fromKey(k),'gift'));changed=true;
     if(o.cash>0){const c=Math.round(+o.cash*100)/100;S.cash+=c;mailLog(`💵 ${o.fromName} sent you ${money(c)}.`);toast(`💵 ${o.fromName} sent you ${money(c)}!`,'gold',8000);updateHeader()}
     else{mailLog(`🎁 ${o.fromName} sent you ${cardsTxt(o.give)}.`);toast(`🎁 ${o.fromName} sent you ${plural(o.give.length,'card')}: ${cardsTxt(o.give)}!`,'gold',8000)}
     try{await dbNS.doc('offers/'+o.id).update({status:'accepted',doneAt:Date.now()})}catch(e){}}
-  for(const o of OFF_OUT){if(o.kind==='idea'){if(o.status!=='open')await ideaSettle(o);continue}if(o.status==='open'||S.offerDone[o.id]||offerBusy.has(me+':'+o.id)||PROFILE.id!==me)continue;offerBusy.add(me+':'+o.id);markDone(o.id);changed=true;
+  for(const o of OFF_OUT){if(o.kind==='idea'){if(o.status!=='open')await ideaSettle(o);continue}
+    if(o.kind==='dadidea'){S.dadSeen=S.dadSeen||{};if((o.status==='yes'||o.status==='no')&&S.dadSeen[o.id]!==o.status){S.dadSeen[o.id]=o.status;const t=(o.text||'').slice(0,60),m=o.status==='yes'?`👍 ${o.toName} said YES to your idea: "${t}". See Upgrades to build it.`:`👎 ${o.toName} said no to your idea: "${t}"`;toast(m,'gold',9000);mailLog(m);changed=true}continue}if(o.status==='open'||S.offerDone[o.id]||offerBusy.has(me+':'+o.id)||PROFILE.id!==me)continue;offerBusy.add(me+':'+o.id);markDone(o.id);changed=true;
     if(o.kind==='upshare'){const nm=o.toName||'They',n=(o.up&&o.up.name)||'your upgrade';toast(o.status==='accepted'?`${nm} added "${n}" to their Upgrades.`:`${nm} passed on "${n}".`,'good',6000);mailLog(o.status==='accepted'?`${nm} added your upgrade "${n}".`:`${nm} passed on your upgrade "${n}".`);try{await dbNS.doc('offers/'+o.id).delete()}catch(e){}continue}
     if(o.kind==='upgrade'){cuSettle(o);try{await dbNS.doc('offers/'+o.id).delete()}catch(e){}continue}const nm=o.toName||'They';
     if(o.status==='accepted'){if(!o.gift){takeBig(o.wantBig);(o.want||[]).forEach(k=>addCard(fromKey(k),'trade'));S.stats.trades++;addXP(15);mailLog(`${nm} took your trade. You got ${cardsTxt(o.want)}.`);toast(`${nm} took your trade! You got ${cardsTxt(o.want)}.`,'gold',8000)}
@@ -8870,7 +8916,7 @@ function renderUpgrades(v){
     ['Extras',['randbreak','brainboost'],'Odds and ends: surprise break times and bonus XP.']];
   v.innerHTML=groups.map(([g,ids,blurb])=>`<h3 class="sech">${g}</h3><p class="note" style="margin:-6px 0 10px">${blurb}</p><div class="grid">${ids.map(id=>{const u=UPGRADES.find(x=>x.id===id);const l=up(id),ru=u.req&&UPGRADES.find(x=>x.id===u.req),needs=ru&&up(u.req)<ru.max,locked=S.level<u.lv||needs,maxed=l>=u.max,cost=upCost(u);
     return `<div class="up${locked?' locked':''}${maxed?' maxed':''}"><h4>${esc(upName(u))}${u.max>1?`<small>Lv ${l}/${u.max}</small>`:maxed?'<small style="color:var(--good)">Owned</small>':''}</h4><p>${esc(u.desc)}</p>${locked?`<button class="btn" disabled>${needs?`Needs ${esc(ru.name)} level ${ru.max} first`:`Unlocks at level ${u.lv}`}</button>`:maxed?'':`<button class="btn ${S.cash>=cost?'go':''}" data-buy="${id}" ${S.cash>=cost?'':'disabled'}>Buy · ${money(cost)}</button>`}</div>`}).join('')}</div>`).join('');
-  v.insertAdjacentHTML('afterbegin',ideaHTML());ideaWire(v);
+  v.insertAdjacentHTML('afterbegin',dadHTML()+ideaHTML());ideaWire(v);dadWire(v);
   v.insertAdjacentHTML('beforeend',cuHTML());cuWire(v);
   v.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{buyUp(b.dataset.buy);renderUpgrades(v)});
 }
@@ -9051,7 +9097,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-23.1631';
+const APP_VERSION = '2026-11-24.1156';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
