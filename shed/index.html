@@ -8194,6 +8194,8 @@ function watchOffers(id){if(!dbNS||!id||offersFor===id)return;offerUnsubs.forEac
   sub('to',x=>OFF_IN=x);sub('from',x=>{OFF_OUT=[];x.forEach(outAdd)})}
 function markDone(id){S.offerDone=S.offerDone||{};S.offerDone[id]=1;const ks=Object.keys(S.offerDone);if(ks.length>300)delete S.offerDone[ks[0]]}
 async function settleOffers(){if(!PROFILE||!dbNS)return;const me=PROFILE.id;S.offerDone=S.offerDone||{};let changed=false;
+  // any gift box still in the mailbox gets remembered, so boxes sent before 'Look inside' existed come back with their cards
+  OFF_IN.forEach(o=>{if(o.box&&o.status!=='open')giftRemember(o,'got')});OFF_OUT.forEach(o=>{if(o.box)giftRemember(o,'sent')});
   for(const o of OFF_IN){if(o.kind==='dadidea'){if(o.status==='open'&&!cuTold.has(o.id)){cuTold.add(o.id);toast(`💡 Dad has an idea for the game! Say yes or no.`,'gold',8000);queueModal(()=>dadAskModal(OFF_IN.find(x=>x.id===o.id)))}
       else if(o.status==='built'){S.dadSeen=S.dadSeen||{};if(!S.dadSeen[o.id]){S.dadSeen[o.id]=1;const m=`✅ Dad built the idea you said yes to: "${(o.text||'').slice(0,60)}"`;toast(m,'gold',9000);mailLog(m);save(true)}try{await dbNS.doc('offers/'+o.id).delete()}catch(e){}}continue}
     if(o.kind){if(o.status==='open'&&!cuTold.has(o.id)){cuTold.add(o.id);toast(o.kind==='idea'?`💡 ${o.fromName} has an idea for the game: "${(o.text||'').slice(0,60)}". See Upgrades.`:o.kind==='upshare'?`📬 ${o.fromName} sent you an upgrade: ${o.up&&o.up.name}. See Upgrades.`:`📬 ${o.fromName} made an upgrade for you to approve: ${o.up&&o.up.name}. See Upgrades.`,'gold',8000)}continue}if(!(o.gift&&o.status==='open')||S.offerDone[o.id]||offerBusy.has(me+':'+o.id)||PROFILE.id!==me)continue;offerBusy.add(me+':'+o.id);
@@ -8323,7 +8325,7 @@ async function sendGiftBox(){const to=GB.to,cards=gbCards(),cost=gbCost(),msg=t=
   try{await dbNS.doc('offers/'+id).set(doc)}
   catch(e){cards.forEach(k=>addCard(fromKey(k),'trade'));S.cash+=cost;S.instaTokens+=GB.insta;save('now');updateHeader();if(sb)sb.disabled=false;msg("Couldn't send it. Everything is back. Try again.");return}
   outAdd({...doc,id});giftRemember({...doc,id},'sent');mailLog(`🎁 Sent ${to.name} a gift box: ${giftTxt(doc)}.`);GB=null;closeModal(true);toast(`🎁 Gift box sent to ${to.name}!`,'good',6000);renderTabs();if(tab==='trade')render()}
-function giftTxt(o){const a=[];if((o.give||[]).length)a.push(plural(o.give.length,'card'));const c={};(o.packs||[]).forEach(id=>c[id]=(c[id]||0)+1);
+function giftTxt(o){if(o.summary)return o.summary;const a=[];if((o.give||[]).length)a.push(plural(o.give.length,'card'));const c={};(o.packs||[]).forEach(id=>c[id]=(c[id]||0)+1);
   Object.entries(c).forEach(([id,n])=>{const p=PACKS.find(x=>x.id===id);if(p)a.push(`${n>1?n+' ':''}${p.name}${n>1?'s':''}`)});(o.tboxes||[]).forEach(t=>a.push(`a ${t.nick} box`));
   if(o.insta)a.push(plural(o.insta,'instant sort'));if(o.cash>0)a.push(money(o.cash));return a.join(', ')||'nothing'}
 // the receiving side; cards and big-card info were already added by settleOffers
@@ -8333,17 +8335,22 @@ function takeGiftBox(o){if(o.cash>0)S.cash+=Math.round(+o.cash*100)/100;if(o.ins
   giftRemember(o,'got');mailLog(`🎁 ${o.fromName} sent you a gift box: ${giftTxt(o)}.${o.note?' "'+o.note+'"':''}`);updateHeader();queueModal(()=>giftUnwrap(o))}
 // the last 10 boxes you got and sent, so you can look inside again later (Trade tab)
 function giftRemember(o,dir){S.giftBoxes=S.giftBoxes||[];if(S.giftBoxes.some(x=>x.id===o.id))return;
+  {const who=dir==='got'?o.fromName:o.toName,i=S.giftBoxes.findIndex(x=>x.summary&&x.dir===dir&&x.who===who&&x.at>=(o.at||0)-6e4);if(i>=0)S.giftBoxes.splice(i,1)}
   S.giftBoxes.unshift({id:o.id,dir,who:dir==='got'?o.fromName:o.toName,at:o.at||Date.now(),note:o.note||'',give:(o.give||[]).slice(0,60),packs:(o.packs||[]).slice(),tboxes:(o.tboxes||[]).map(t=>({nick:t.nick,n:t.n})),insta:o.insta||0,cash:o.cash||0});
   ['got','sent'].forEach(d=>{let n=0;S.giftBoxes=S.giftBoxes.filter(x=>x.dir!==d||++n<=10)})}
 function gbCardsInto(el,keys){if(!el)return;el.innerHTML=keys.map(k=>`<figure><canvas></canvas><figcaption>${esc(capTxt(fromKey(k)))}<br><b>${money(valueOf(fromKey(k)))}</b></figcaption></figure>`).join('');
   el.querySelectorAll('canvas').forEach((cv,i)=>{const c=fromKey(keys[i]);drawCard(cv,c,84);cv.onclick=()=>showCardModal(c)})}
-function giftBoxesHTML(){const g=S.giftBoxes||[];if(!g.length)return '';const when=t=>new Date(t).toLocaleDateString([], {month:'short',day:'numeric'});
+function giftFromMail(){if(S.gbMail)return;S.gbMail=true;S.giftBoxes=S.giftBoxes||[];
+  (S.mail||[]).forEach(m=>{let r=/^🎁 (.+?) sent you a gift box: (.+?)\.(?: "(.*)")?$/.exec(m.msg),dir='got';if(!r){r=/^🎁 Sent (.+?) a gift box: (.+?)\.$/.exec(m.msg);dir='sent'}
+    if(r&&!S.giftBoxes.some(x=>x.dir===dir&&x.who===r[1]&&Math.abs(x.at-m.t)<6e5))S.giftBoxes.push({id:'mail'+m.t,dir,who:r[1],at:m.t,note:r[3]||'',summary:r[2],give:[],packs:[],tboxes:[],insta:0,cash:0})});
+  S.giftBoxes.sort((a,b)=>b.at-a.at)}
+function giftBoxesHTML(){giftFromMail();const g=S.giftBoxes||[];if(!g.length)return '';const when=t=>new Date(t).toLocaleDateString([], {month:'short',day:'numeric'});
   return `<h4 class="mh">🎁 Gift boxes</h4>${g.map((x,i)=>`<div style="display:flex;align-items:center;gap:8px;margin:6px 0;text-align:left"><span style="flex:1">${x.dir==='got'?`From <b>${esc(x.who)}</b>`:`To <b>${esc(x.who)}</b>`} · ${when(x.at)}<br><small>${esc(giftTxt(x))}</small></span><button class="btn sm" data-gbview="${i}">Look inside</button></div>`).join('')}`}
 function giftUnwrap(o,look){const sent=look&&o.dir==='sent',who=o.fromName||o.who,n=look?0:(o.packs||[]).length;
   const m=modal(`<div style="text-align:center"><div style="font-size:64px">🎁</div><h2>${sent?`Your gift box for ${esc(who)}`:look?`Gift box from ${esc(who)}`:`${esc(who)} sent you a gift box!`}</h2>${o.note?`<p style="font-size:18px">"${esc(o.note)}"</p>`:''}<p>Inside: <b>${esc(giftTxt(o))}</b>.</p>
     ${(o.give||[]).length?`<div class="gbcards" id="guCv"></div>`:''}
     ${sent?'':`${(o.give||[]).length?`<p class="note">The cards are in your binder. Tap one to look closer.</p>`:''}${(o.tboxes||[]).length?`<p class="note">Team boxes are waiting in their rooms.</p>`:''}${(o.packs||[]).length?`<p class="note">The packs are sealed. Rip them ${look?'':'now or later '}from the Packs tab.</p>`:''}`}
-    <p class="note">You can look inside again any time: Trade tab, 🎁 Gift boxes.</p></div>
+    ${o.summary?`<p class="note">This box came before the game kept a picture of each card, so only the list is saved. The cards are in your binder.</p>`:`<p class="note">You can look inside again any time: Trade tab, 🎁 Gift boxes.</p>`}</div>
     <div class="row2">${n?`<button class="btn go" id="guRip">Rip a pack</button>`:''}<button class="btn${n?'':' go'}" data-close>${look?'Close':n?'Later':'Thanks!'}</button></div>`);
   $('.mbox',m).classList.add('wide');gbCardsInto($('#guCv',m),o.give||[]);
   const r=$('#guRip',m);if(r)r.onclick=()=>{closeModal(true);ripGift(0)}}
@@ -9202,7 +9209,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-24.1219';
+const APP_VERSION = '2026-11-24.1222';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
