@@ -483,6 +483,7 @@ body:has(.selbar) .wrap{padding-bottom:110px}body:has(.selbar) #toasts{bottom:12
 .tbx{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%}.tbx.one{grid-template-columns:1fr}@media(max-width:640px){.tbx{grid-template-columns:1fr}}
 .tbcol{display:flex;flex-direction:column;gap:6px;min-width:0}.tbh{font-weight:800;text-align:left;font-size:18px}.tbh b{color:var(--good)}
 .tbq{width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:inherit;font:inherit}
+.gbcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;max-height:46vh;overflow:auto;width:100%;margin-top:8px}.gbcards figure{margin:0;font-size:11px;text-align:center}.gbcards canvas{cursor:pointer}
 .tbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px;max-height:52vh;overflow:auto;padding:4px;align-content:start}
 .tbc{position:relative;background:rgba(255,255,255,.04);border:2px solid transparent;border-radius:8px;padding:4px;color:inherit;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font:inherit;font-size:13px}
 .tbc canvas{width:104px;border-radius:5px}.tbc span{line-height:1.2;max-height:2.5em;overflow:hidden}.tbc b{color:var(--good);font-size:15px}
@@ -4787,6 +4788,9 @@ async function freshCloud(id){
 const LAUNCHED=new Set();
 /* ---------- Release notes: what's new in each update. Newest first; give every new entry the next id. ---------- */
 const RELEASE_NOTES=[
+  {id:22,d:'Nov 24',t:'Look inside gift boxes',items:[
+    '👀 Gift boxes show the actual cards now, and you can look inside any box you got or sent again from the Trade tab (🎁 Gift boxes).',
+    '⚡ Opening the gift box is fast again (it used to freeze for a few seconds with a big binder).']},
   {id:21,d:'Nov 24',t:'Gift boxes',items:[
     '🎁 Send someone a gift box! Put in cards, a whole set, packs and boxes from Lenny\'s (they stay sealed so they get to rip them), team boxes, instant sorts and cash, plus a note. Find it in Trade, or pick cards in your binder and tap Send.']},
   {id:20,d:'Nov 24',t:"Dad's ideas",items:[
@@ -8258,15 +8262,16 @@ const GB_MAX_CARDS=60;let GB=null;
 const gbPacks=()=>PACKS.filter(pk=>S.level>=pk.lv&&(pk.kind==='delight'&&pk.box||openSports().includes(pk.sport||'nba')&&(pk.sport!=='nhl'||S.rinkOpen)));
 function fitsSet(st,c){if(!st.pids.includes(c.pid))return false;return st.vpar?(c.par===st.vpar&&(!st.vyr||c.year===st.vyr)):st.champYr?(c.par===11&&c.year===st.champYr):st.champ?c.par===11:st.rc?isRC(c):true}
 // the cheapest free copy of every card in a set that you can spare, not counting cards already picked
-function setPick(st,taken){const used={};(taken||[]).forEach(k=>used[k]=(used[k]||0)+1);const out=[];
-  st.pids.forEach(pid=>{let best=null;for(const k in S.stacks){const c=fromKey(k);if(c.pid!==pid||!fitsSet(st,c))continue;if(freeCountP(k)-(used[k]||0)<=0)continue;const v=valueOf(c);if(!best||v<best.v)best={k,v}}
-    if(best){out.push(best.k);used[best.k]=(used[best.k]||0)+1}});return out}
-function gbCards(){let ks=GB.cards.slice();GB.sets.forEach(id=>{const st=SETD[id];if(st)ks=ks.concat(setPick(st,ks))});return ks}
+// free cards grouped by player, built once per draw (looping the whole binder for every set card froze big saves for 20+ seconds)
+function gbIndex(){const ix={};for(const k in S.stacks){const n=freeCountP(k);if(n<=0)continue;const c=fromKey(k);(ix[c.pid]=ix[c.pid]||[]).push({k,c,n,v:valueOf(c)})}for(const pid in ix)ix[pid].sort((a,b)=>a.v-b.v);return ix}
+function setPick(st,taken,ix){ix=ix||gbIndex();const used={};(taken||[]).forEach(k=>used[k]=(used[k]||0)+1);const out=[];
+  st.pids.forEach(pid=>{const best=(ix[pid]||[]).find(x=>fitsSet(st,x.c)&&x.n-(used[x.k]||0)>0);if(best){out.push(best.k);used[best.k]=(used[best.k]||0)+1}});return out}
+function gbCards(ix){ix=ix||gbIndex();let ks=GB.cards.slice();GB.sets.forEach(id=>{const st=SETD[id];if(st)ks=ks.concat(setPick(st,ks,ix))});return ks}
 function gbCost(){return GB.packs.reduce((a,id)=>{const pk=PACKS.find(x=>x.id===id);return a+(pk?packCost(pk):0)},0)+GB.tb.reduce((a,t)=>a+(TB_PRICE[t.n]||0),0)+(GB.cash||0)}
 function giftBoxModal(to,pre){if(!dbNS){toast('Sending gifts needs the online save.');return}
   if(to)GB={to,cards:(pre||[]).slice(0,GB_MAX_CARDS),sets:[],packs:[],tb:[],insta:0,cash:0,note:''};if(!GB)return;to=GB.to;
-  const cards=gbCards(),cost=gbCost(),pk=gbPacks(),cnt={};GB.packs.forEach(id=>cnt[id]=(cnt[id]||0)+1);
-  const setOpts=SETS.filter(st=>!GB.sets.includes(st.id)&&setPick(st,cards).length).map(st=>`<option value="${st.id}">${esc(st.name)} (${setPick(st,cards).length} of ${st.pids.length} cards)</option>`).join('');
+  const ix=gbIndex(),cards=gbCards(ix),cost=gbCost(),pk=gbPacks(),cnt={};GB.packs.forEach(id=>cnt[id]=(cnt[id]||0)+1);
+  const setOpts=SETS.filter(st=>!GB.sets.includes(st.id)).map(st=>[st,setPick(st,cards,ix).length]).filter(x=>x[1]).map(([st,n])=>`<option value="${st.id}">${esc(st.name)} (${n} of ${st.pids.length} cards)</option>`).join('');
   const tg=teamGroups(),rv=Object.keys(RIVALS).filter(id=>rivRoom(RIVALS[id].sp));
   const row=(ico,txt,btn)=>`<div style="display:flex;align-items:center;gap:8px;margin:4px 0"><span style="flex:1">${ico} ${txt}</span>${btn||''}</div>`;
   const inp='font:inherit;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:8px;padding:6px 8px';
@@ -8280,6 +8285,7 @@ function giftBoxModal(to,pre){if(!dbNS){toast('Sending gifts needs the online sa
       ${GB.tb.map((t,i)=>row('🗃️',`${esc(t.nick)} box, ${t.n} cards <b>${money(TB_PRICE[t.n])}</b>`,`<button class="btn sm" data-gbx="tb${i}">Remove</button>`)).join('')}
       ${GB.insta?row('⚡',plural(GB.insta,'instant sort'),`<button class="btn sm" data-gbx="insta">Remove</button>`):''}
       ${GB.cash>0?row('💵',money(GB.cash),`<button class="btn sm" data-gbx="cash">Remove</button>`):''}</div>
+    ${cards.length?`<details id="gbSee"${GB.see?' open':''}><summary>👀 See the ${plural(cards.length,'card')} in the box</summary><div class="gbcards" id="gbCv"></div></details>`:''}
     <h4 class="mh">Add</h4>
     <div class="row2" style="justify-content:flex-start;flex-wrap:wrap"><button class="btn sm go" id="gbPick">🃏 Pick cards</button>${(S.instaTokens||0)>GB.insta?`<button class="btn sm" id="gbInsta">⚡ Add an instant sort (you have ${S.instaTokens-GB.insta})</button>`:''}</div>
     ${setOpts?`<label style="display:block;margin:8px 0">📚 A whole set (one spare copy of each card you have) <select id="gbSet" style="${inp};max-width:100%">${setOpts}</select> <button class="btn sm" id="gbSetAdd">Add</button></label>`:''}
@@ -8290,6 +8296,7 @@ function giftBoxModal(to,pre){if(!dbNS){toast('Sending gifts needs the online sa
     <p class="note" id="gbMsg">${plural(cards.length,'card')} · costs you ${money(cost)} · you have ${money(S.cash)}</p>
     <div class="row2"><button class="btn go" id="gbSend" ${empty?'disabled':''}>🎁 Send to ${esc(to.name)}</button><button class="btn" id="gbCancel">Cancel</button></div>`);
   $('.mbox',m).classList.add('wide');if(redraw){$('.mbox',m).style.animation='none';m.scrollTop=sy}
+  {const d=$('#gbSee',m);if(d){const fill=()=>{GB.see=d.open;if(d.open)gbCardsInto($('#gbCv',m),cards)};d.ontoggle=fill;fill()}}
   const keep=()=>{const c=$('#gbCash',m),n=$('#gbNote',m);GB.cash=Math.max(0,Math.round((+c.value||0)*100)/100);GB.note=n.value.slice(0,80)},again=()=>{keep();giftBoxModal()};
   $('#gbCash',m).onchange=again;$('#gbNote',m).oninput=()=>{GB.note=$('#gbNote',m).value.slice(0,80)};
   $('#gbCancel',m).onclick=()=>{GB=null;closeModal()};
@@ -8315,7 +8322,7 @@ async function sendGiftBox(){const to=GB.to,cards=gbCards(),cost=gbCost(),msg=t=
   const doc={from:PROFILE.id,fromName:PROFILE.name,to:to.id,toName:to.name,give:cards,want:[],gift:true,box:true,cash:GB.cash||0,packs:GB.packs.slice(),tboxes:GB.tb.slice(),insta:GB.insta,note:GB.note.trim(),status:'open',at:Date.now(),big,wantBig:{}};
   try{await dbNS.doc('offers/'+id).set(doc)}
   catch(e){cards.forEach(k=>addCard(fromKey(k),'trade'));S.cash+=cost;S.instaTokens+=GB.insta;save('now');updateHeader();if(sb)sb.disabled=false;msg("Couldn't send it. Everything is back. Try again.");return}
-  outAdd({...doc,id});mailLog(`🎁 Sent ${to.name} a gift box: ${giftTxt(doc)}.`);GB=null;closeModal(true);toast(`🎁 Gift box sent to ${to.name}!`,'good',6000);renderTabs();if(tab==='trade')render()}
+  outAdd({...doc,id});giftRemember({...doc,id},'sent');mailLog(`🎁 Sent ${to.name} a gift box: ${giftTxt(doc)}.`);GB=null;closeModal(true);toast(`🎁 Gift box sent to ${to.name}!`,'good',6000);renderTabs();if(tab==='trade')render()}
 function giftTxt(o){const a=[];if((o.give||[]).length)a.push(plural(o.give.length,'card'));const c={};(o.packs||[]).forEach(id=>c[id]=(c[id]||0)+1);
   Object.entries(c).forEach(([id,n])=>{const p=PACKS.find(x=>x.id===id);if(p)a.push(`${n>1?n+' ':''}${p.name}${n>1?'s':''}`)});(o.tboxes||[]).forEach(t=>a.push(`a ${t.nick} box`));
   if(o.insta)a.push(plural(o.insta,'instant sort'));if(o.cash>0)a.push(money(o.cash));return a.join(', ')||'nothing'}
@@ -8323,11 +8330,22 @@ function giftTxt(o){const a=[];if((o.give||[]).length)a.push(plural(o.give.lengt
 function takeGiftBox(o){if(o.cash>0)S.cash+=Math.round(+o.cash*100)/100;if(o.insta>0)S.instaTokens=(S.instaTokens||0)+(o.insta|0);
   (o.packs||[]).forEach(id=>{if(PACKS.find(x=>x.id===id))(S.giftPacks=S.giftPacks||[]).push({id,from:o.fromName})});
   (o.tboxes||[]).forEach(t=>{if(!addTeamBox(t.val,t.n,o.fromName)){S.cash+=TB_PRICE[t.n]||0;mailLog(`${o.fromName}'s ${t.nick} box needs a room you haven't opened yet, so it turned into ${money(TB_PRICE[t.n]||0)}.`)}});
-  mailLog(`🎁 ${o.fromName} sent you a gift box: ${giftTxt(o)}.${o.note?' "'+o.note+'"':''}`);updateHeader();queueModal(()=>giftUnwrap(o))}
-function giftUnwrap(o){const n=(o.packs||[]).length;
-  const m=modal(`<div style="text-align:center"><div style="font-size:64px">🎁</div><h2>${esc(o.fromName)} sent you a gift box!</h2>${o.note?`<p style="font-size:18px">"${esc(o.note)}"</p>`:''}<p>Inside: <b>${esc(giftTxt(o))}</b>.</p>
-    ${(o.give||[]).length?`<p class="note">The cards are in your binder.</p>`:''}${(o.tboxes||[]).length?`<p class="note">Team boxes are waiting in their rooms.</p>`:''}${n?`<p class="note">The packs are sealed. Rip them now or later from the Packs tab.</p>`:''}</div>
-    <div class="row2">${n?`<button class="btn go" id="guRip">Rip a pack</button>`:''}<button class="btn${n?'':' go'}" data-close>${n?'Later':'Thanks!'}</button></div>`);
+  giftRemember(o,'got');mailLog(`🎁 ${o.fromName} sent you a gift box: ${giftTxt(o)}.${o.note?' "'+o.note+'"':''}`);updateHeader();queueModal(()=>giftUnwrap(o))}
+// the last 10 boxes you got and sent, so you can look inside again later (Trade tab)
+function giftRemember(o,dir){S.giftBoxes=S.giftBoxes||[];if(S.giftBoxes.some(x=>x.id===o.id))return;
+  S.giftBoxes.unshift({id:o.id,dir,who:dir==='got'?o.fromName:o.toName,at:o.at||Date.now(),note:o.note||'',give:(o.give||[]).slice(0,60),packs:(o.packs||[]).slice(),tboxes:(o.tboxes||[]).map(t=>({nick:t.nick,n:t.n})),insta:o.insta||0,cash:o.cash||0});
+  ['got','sent'].forEach(d=>{let n=0;S.giftBoxes=S.giftBoxes.filter(x=>x.dir!==d||++n<=10)})}
+function gbCardsInto(el,keys){if(!el)return;el.innerHTML=keys.map(k=>`<figure><canvas></canvas><figcaption>${esc(capTxt(fromKey(k)))}<br><b>${money(valueOf(fromKey(k)))}</b></figcaption></figure>`).join('');
+  el.querySelectorAll('canvas').forEach((cv,i)=>{const c=fromKey(keys[i]);drawCard(cv,c,84);cv.onclick=()=>showCardModal(c)})}
+function giftBoxesHTML(){const g=S.giftBoxes||[];if(!g.length)return '';const when=t=>new Date(t).toLocaleDateString([], {month:'short',day:'numeric'});
+  return `<h4 class="mh">🎁 Gift boxes</h4>${g.map((x,i)=>`<div style="display:flex;align-items:center;gap:8px;margin:6px 0;text-align:left"><span style="flex:1">${x.dir==='got'?`From <b>${esc(x.who)}</b>`:`To <b>${esc(x.who)}</b>`} · ${when(x.at)}<br><small>${esc(giftTxt(x))}</small></span><button class="btn sm" data-gbview="${i}">Look inside</button></div>`).join('')}`}
+function giftUnwrap(o,look){const sent=look&&o.dir==='sent',who=o.fromName||o.who,n=look?0:(o.packs||[]).length;
+  const m=modal(`<div style="text-align:center"><div style="font-size:64px">🎁</div><h2>${sent?`Your gift box for ${esc(who)}`:look?`Gift box from ${esc(who)}`:`${esc(who)} sent you a gift box!`}</h2>${o.note?`<p style="font-size:18px">"${esc(o.note)}"</p>`:''}<p>Inside: <b>${esc(giftTxt(o))}</b>.</p>
+    ${(o.give||[]).length?`<div class="gbcards" id="guCv"></div>`:''}
+    ${sent?'':`${(o.give||[]).length?`<p class="note">The cards are in your binder. Tap one to look closer.</p>`:''}${(o.tboxes||[]).length?`<p class="note">Team boxes are waiting in their rooms.</p>`:''}${(o.packs||[]).length?`<p class="note">The packs are sealed. Rip them ${look?'':'now or later '}from the Packs tab.</p>`:''}`}
+    <p class="note">You can look inside again any time: Trade tab, 🎁 Gift boxes.</p></div>
+    <div class="row2">${n?`<button class="btn go" id="guRip">Rip a pack</button>`:''}<button class="btn${n?'':' go'}" data-close>${look?'Close':n?'Later':'Thanks!'}</button></div>`);
+  $('.mbox',m).classList.add('wide');gbCardsInto($('#guCv',m),o.give||[]);
   const r=$('#guRip',m);if(r)r.onclick=()=>{closeModal(true);ripGift(0)}}
 function ripGift(i){const g=(S.giftPacks||[])[i];if(!g)return;S.giftPacks.splice(i,1);save('now');openPack(g.id,true);renderTabs()}
 function giftPacksHTML(){const g=S.giftPacks||[];if(!g.length)return '';return `<h3 class="sech">🎁 Gift packs</h3><p class="note" style="margin:-4px 0 12px">Sealed packs and boxes people sent you. Free to rip.</p><div class="packs">${g.map((x,i)=>{const pk=PACKS.find(p=>p.id===x.id);if(!pk)return '';
@@ -8358,7 +8376,7 @@ function renderMailbox(el){const me=PROFILE.id,others=allProfiles().filter(p=>p.
     ${rows.length?rows.join(''):'<p class="note">No offers right now. Traders send offers every so often while you play.</p>'}
     ${sent.length?`<h4 class="mh">Your offers</h4>${sent.join('')}`:''}
     <h4 class="mh">Make an offer to a trader</h4><div class="mbtns">${botList().map(id=>`<button class="btn sm" data-bot="${id}">${botInfo(id).ico} ${esc(botInfo(id).n)}</button>`).join('')}</div>
-    ${(S.mail||[]).length?`<details class="mlog"><summary>Recent trades and gifts</summary>${S.mail.slice(0,8).map(x=>`<div>${esc(x.msg)}</div>`).join('')}</details>`:''}</div>`;
+    ${giftBoxesHTML()}${(S.mail||[]).length?`<details class="mlog"><summary>Recent trades and gifts</summary>${S.mail.slice(0,8).map(x=>`<div>${esc(x.msg)}</div>`).join('')}</details>`:''}</div>`;
   el.querySelectorAll('canvas[data-mk]').forEach(cv=>{drawCard(cv,fromKey(cv.dataset.mk),120);cv.onclick=()=>showCardModal(fromKey(cv.dataset.mk))});
   const inb=i=>(S.inbox||[])[+i],pin=id=>OFF_IN.find(o=>o.id===id),pout=id=>OFF_OUT.find(o=>o.id===id),prof=id=>allProfiles().find(p=>p.id===id);
   el.querySelectorAll('[data-ba]').forEach(b=>b.onclick=()=>botAccept(inb(b.dataset.ba)));
@@ -8369,6 +8387,7 @@ function renderMailbox(el){const me=PROFILE.id,others=allProfiles().filter(p=>p.
   el.querySelectorAll('[data-pp]').forEach(b=>b.onclick=()=>{const o=pin(b.dataset.pp);if(o)pSet(o,'passed',`You passed on ${o.fromName}'s offer.`)});
   el.querySelectorAll('[data-px]').forEach(b=>b.onclick=()=>{const o=pout(b.dataset.px);if(o)pSet(o,'cancelled')});
   el.querySelectorAll('[data-gift]').forEach(b=>b.onclick=()=>{const p=prof(b.dataset.gift);if(p)giftBuilder(p)});
+  el.querySelectorAll('[data-gbview]').forEach(b=>b.onclick=()=>{const g=(S.giftBoxes||[])[+b.dataset.gbview];if(g)giftUnwrap(g,true)});
   el.querySelectorAll('[data-cash]').forEach(b=>b.onclick=()=>{const p=prof(b.dataset.cash);if(p)sendCashModal(p)});
   el.querySelectorAll('[data-prop]').forEach(b=>b.onclick=()=>{const p=prof(b.dataset.prop);if(p)playerBuilder(p)});
   el.querySelectorAll('[data-bot]').forEach(b=>b.onclick=()=>botBuilder(b.dataset.bot,null));
@@ -9183,7 +9202,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-24.1206';
+const APP_VERSION = '2026-11-24.1219';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
