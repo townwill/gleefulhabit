@@ -483,6 +483,7 @@ body:has(.selbar) .wrap{padding-bottom:110px}body:has(.selbar) #toasts{bottom:12
 .tbx{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%}.tbx.one{grid-template-columns:1fr}@media(max-width:640px){.tbx{grid-template-columns:1fr}}
 .tbcol{display:flex;flex-direction:column;gap:6px;min-width:0}.tbh{font-weight:800;text-align:left;font-size:18px}.tbh b{color:var(--good)}
 .tbq{width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:inherit;font:inherit}
+.memgrid{display:grid;gap:8px;width:100%;max-width:600px;margin:0 auto}.memc{background:none;border:0;padding:0;cursor:pointer;border-radius:8px;transition:transform .18s}.memc canvas{display:block;width:100%;height:auto;border-radius:7px}.memc.up{transform:scale(1.03)}.memc.got{opacity:.55;transform:none;cursor:default;box-shadow:0 0 0 3px var(--good,#4c4)}
 .gbcards{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:12px;max-height:50vh;overflow:auto;width:100%;margin:8px 0;padding:4px}.gbcards figure{margin:0;width:100px;font-size:11px;line-height:1.3;text-align:center}.gbcards canvas{display:block;width:100px;height:auto;margin:0 auto 4px;border-radius:6px;cursor:zoom-in}
 .tbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px;max-height:52vh;overflow:auto;padding:4px;align-content:start}
 .tbc{position:relative;background:rgba(255,255,255,.04);border:2px solid transparent;border-radius:8px;padding:4px;color:inherit;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font:inherit;font-size:13px}
@@ -510,7 +511,7 @@ body:has(.selbar) .wrap{padding-bottom:110px}body:has(.selbar) #toasts{bottom:12
   </header>
   <nav class="tabs" id="tabs" role="tablist"></nav>
   <main id="view"></main>
-  <div class="foot"><span id="savedNote">Saving…</span><span id="saveSize"></span><button id="saveBtn">💾 Save now</button><button id="bkBtn">Backups</button><button id="styleBtn">Card art: Arcade</button><button id="notesBtn">📜 What's new</button><button id="switchBtn">Switch player</button><span id="vtag" style="opacity:.6"></span><button id="resetBtn">New save file</button></div>
+  <div class="foot"><span id="savedNote">Saving…</span><span id="saveSize"></span><button id="saveBtn">💾 Save now</button><button id="bkBtn">Backups</button><button id="styleBtn">Card art: Arcade</button><button id="notesBtn">📜 What's new</button><button id="memBtn" style="display:none">🃏 Memory</button><button id="switchBtn">Switch player</button><span id="vtag" style="opacity:.6"></span><button id="resetBtn">New save file</button></div>
 </div>
 <div id="toasts" aria-live="polite"></div>
 <div id="modal" hidden></div>
@@ -4788,6 +4789,8 @@ async function freshCloud(id){
 const LAUNCHED=new Set();
 /* ---------- Release notes: what's new in each update. Newest first; give every new entry the next id. ---------- */
 const RELEASE_NOTES=[
+  {id:24,d:'Nov 24',t:'A secret',items:[
+    '🤫 Grandpa hid a secret game somewhere in the shed. Colton knows where. (Hint: count the cards.)']},
   {id:23,d:'Nov 24',t:'Older gift boxes',items:[
     '🎁 Gift boxes from before today show up in Trade too (🎁 Gift boxes), so you can see what was in them.',
     '🃏 The cards inside a gift box line up neatly in the middle now.']},
@@ -8693,6 +8696,48 @@ function render(){
   ({shed:renderShed,binder:renderBinder,upgrades:renderUpgrades,packs:renderPacks,counter:renderCounter,trade:renderTrade,show:renderShowTab,sets:renderSets})[tab](v);
 }
 
+/* ---------- Grandpa's Memory (Colton's idea, Nov 2026): a hidden match game made from your own dupes.
+   Secret: tap the "cards to go" count 5 times fast. Once found, a 🃏 Memory button shows in the footer.
+   Pairs are cards you own 2+ of; nothing is used up. Wins pay (MEM_PAID_WINS a day), records per size in S.mem.best. */
+const MEM_SIZES=[[6,'Easy',4],[8,'Medium',4],[10,'Hard',5]],MEM_PAID_WINS=5,MEM_PAY=4000;
+let memTaps=[];
+function memSecretTap(){const t=Date.now();memTaps=memTaps.filter(x=>t-x<2500);memTaps.push(t);if(memTaps.length>=5){memTaps=[];memOpen(true)}}
+const memDupes=()=>Object.keys(S.stacks).filter(k=>S.stacks[k]>=2);
+function memState(){const d=new Date().toDateString();S.mem=S.mem||{best:{}};S.mem.best=S.mem.best||{};if(S.mem.day!==d){S.mem.day=d;S.mem.wins=0}return S.mem}
+function memBtnShow(){const b=$('#memBtn');if(b)b.style.display=S.memFound?'':'none'}
+function memOpen(secret){const first=!S.memFound;if(first){S.memFound=true;save('now');memBtnShow()}
+  if(modalOpen&&!$('#memHub'))return;const st=memState(),d=memDupes().length;
+  modal(`<div id="memHub" style="width:100%">${first&&secret?`<div style="font-size:54px;line-height:1">🤫</div><h2>You found Grandpa's secret game!</h2><div class="letter">Kiddo, when it rained we'd lay out our doubles face down on the kitchen table and play Memory. Your grandmother always won. Let's see if you can beat her.<br><br>— Grandpa</div>`:`<h2>🃏 Grandpa's Memory</h2>`}
+    <p>Your doubles are face down. Flip two at a time and find the matching pairs. Your cards stay in your binder.</p>
+    ${d<3?`<p class="note"><b>You need at least 3 cards you have doubles of.</b> You have ${d}. Keep sorting and come back!</p>`:
+    `<div class="row2" style="flex-wrap:wrap">${MEM_SIZES.map(([n,nm])=>`<button class="btn ${n===6?'go':''}" data-memn="${n}" ${d>=n?'':'disabled'}>${nm} · ${n} pairs${st.best[n]?`<br><small>Best: ${st.best[n]} moves</small>`:''}</button>`).join('')}</div>
+    <p class="note">${st.wins<MEM_PAID_WINS?`Win to earn cash: ${MEM_PAID_WINS-st.wins} paid game${MEM_PAID_WINS-st.wins===1?'':'s'} left today. Fewer misses = bigger prize.`:`You've won all ${MEM_PAID_WINS} paid games today. You can still play for fun and beat your best!`} You have ${d} cards with doubles.</p>`}
+    <div class="row2"><button class="btn" data-close>Close</button></div></div>`);
+  document.querySelectorAll('[data-memn]').forEach(b=>b.onclick=()=>memPlay(+b.dataset.memn))}
+function memPlay(n){const cols=(MEM_SIZES.find(x=>x[0]===n)||[0,0,4])[2];
+  const pool=memDupes().sort(()=>Math.random()-.5).slice(0,n);if(pool.length<n){memOpen();return}
+  const deck=pool.concat(pool).map((k,i)=>({k,i})).sort(()=>Math.random()-.5);
+  let open=[],matched=new Set(),moves=0,misses=0,lock=false;
+  const m=modal(`<h2>🃏 Grandpa's Memory</h2><p id="memInfo" class="note">Flip two cards.</p><div class="memgrid" style="grid-template-columns:repeat(${cols},1fr)">${deck.map((c,i)=>`<button class="memc" data-mi="${i}" aria-label="Face-down card"><canvas></canvas></button>`).join('')}</div>
+    <div class="row2"><button class="btn" id="memQuit">Quit</button></div>`);
+  $('.mbox',m).classList.add('wide');
+  const cvs=[...m.querySelectorAll('.memc canvas')],btns=[...m.querySelectorAll('.memc')],W=Math.min(110,Math.floor(Math.min(window.innerWidth-80,600)/cols)-8);
+  const face=i=>{drawCard(cvs[i],fromKey(deck[i].k),W);btns[i].classList.add('up')},back=i=>{cardBackMystery(cvs[i],W);btns[i].classList.remove('up')};
+  deck.forEach((_,i)=>back(i));
+  const info=()=>{$('#memInfo',m).textContent=`Moves: ${moves} · Pairs found: ${matched.size/2} of ${n}${misses?` · Misses: ${misses}`:''}`};
+  btns.forEach((b,i)=>b.onclick=()=>{if(lock||matched.has(i)||open.includes(i))return;face(i);open.push(i);if(open.length<2)return;
+    moves++;const [a,c]=open;
+    if(deck[a].k===deck[c].k){matched.add(a);matched.add(c);btns[a].classList.add('got');btns[c].classList.add('got');open=[];info();if(matched.size===deck.length)setTimeout(()=>memWin(n,moves,misses),500)}
+    else{misses++;lock=true;info();setTimeout(()=>{back(a);back(c);open=[];lock=false},900)}});
+  $('#memQuit',m).onclick=()=>memOpen()}
+function memWin(n,moves,misses){const st=memState(),best=st.best[n],rec=!best||moves<best;if(rec)st.best[n]=moves;
+  const paid=st.wins<MEM_PAID_WINS;let prize=0;
+  if(paid){st.wins++;prize=Math.round(MEM_PAY*n*(misses<=n/2?2:misses<=n?1.5:1));S.cash+=prize;S.stats.earned=(S.stats.earned||0)+prize;addXP(10+n)}
+  save('now');updateHeader();
+  modal(`<div style="width:100%"><div style="font-size:54px;line-height:1">🏆</div><h2>You matched them all!</h2><p>${moves} moves, ${misses} miss${misses===1?'':'es'}.${rec?' <b>New best!</b>':` Your best is ${best} moves.`}</p>
+    ${paid?`<p style="font-size:20px">+${money(prize)}${misses<=n/2?' <small>(sharp memory bonus ×2)</small>':misses<=n?' <small>(×1.5 bonus)</small>':''}</p>`:`<p class="note">Just for fun: all ${MEM_PAID_WINS} paid wins are used up today.</p>`}
+    <div class="row2"><button class="btn go" id="memAgain">Play again</button><button class="btn" data-close>Done</button></div></div>`);
+  $('#memAgain').onclick=()=>memPlay(n)}
 function renderShed(v){
   v.innerHTML=`<section class="shed">
     <div class="pilecol">
@@ -8727,7 +8772,7 @@ function renderShed(v){
     </aside>
   </section>`;
   document.querySelectorAll('[data-loc]').forEach(b=>b.onclick=()=>switchLoc(b.dataset.loc));
-  $('#pileBtn').onclick=grab;$('#primary').onclick=primary;fastTap($('#primary'),primary);$('#secondary').onclick=secondary;$('#lettersBtn').onclick=showLetters;
+  $('#pileBtn').onclick=grab;{const pc=$('.pilecount',v);if(pc)pc.addEventListener('click',memSecretTap)}memBtnShow();$('#primary').onclick=primary;fastTap($('#primary'),primary);$('#secondary').onclick=secondary;$('#lettersBtn').onclick=showLetters;
   renderHand();refreshSide();updatePile();renderChals();updateEye();
   setTimeout(autoDeal,250);
 }
@@ -9212,7 +9257,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-24.1236';
+const APP_VERSION = '2026-11-24.1243';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
@@ -9227,7 +9272,7 @@ setInterval(checkForUpdate,5*60000);
 // quiet autosave every few seconds so a refresh or device switch loses almost nothing
 document.addEventListener('click',e=>{if(e.target&&e.target.id==='bkBtn'){showBackups();return}if(e.target&&e.target.id==='saveBtn'){save('now');const b=e.target;b.textContent='✓ Saved';setTimeout(()=>{b.textContent='💾 Save now'},1800)}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)save('now')});
-$('#playerBtn').onclick=showPicker;$('#switchBtn').onclick=showPicker;$('#notesBtn').onclick=()=>notesModal();
+$('#playerBtn').onclick=showPicker;$('#switchBtn').onclick=showPicker;$('#notesBtn').onclick=()=>notesModal();$('#memBtn').onclick=()=>memOpen();
 function syncArt(){CARD_CACHE.clear();cacheBytes=0;ART=S.art==='classic'?'classic':'arcade';const b=$('#styleBtn');if(b)b.textContent='Card art: '+(ART==='arcade'?'Arcade':'Classic')}
 $('#styleBtn').onclick=()=>{if(!PROFILE)return;S.art=ART==='arcade'?'classic':'arcade';syncArt();save(true);if(tab==='shed')renderHand();else render();toast(`Card art switched to ${ART==='arcade'?'Arcade':'Classic'}`)};
 function intro(){
