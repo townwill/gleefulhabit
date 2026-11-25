@@ -4530,6 +4530,7 @@ const UPGRADES = [
   {id:'gemhunter',name:'Gem Hunter',cost:300000,max:1,lv:5,desc:'Slab Happy never gives you a grade below 5 again.'},
   {id:'brainboost',name:'Brain Boost',cost:350000,max:1,lv:5,desc:'Every bit of XP you earn counts 25% more.'},
   {id:'spectrade',name:'Special Traders',cost:250000,max:1,lv:5,desc:'Two new traders show up in the Trade tab: High Roller Harry, who only deals in gem mints, autos and superstars, and Mystery Mo, whose cards stay face down until they\'re yours.'},
+  {id:'autograde',name:'Auto Grader',cost:150000,max:1,lv:5,desc:"Colton's idea. Every raw card worth $450 or more that you get goes straight to Slab Happy at your grading speed. 1/1s and starred cards stay with you. Turn it on or off in the Binder."},
   {id:'goldpass',name:'Golden Grader Pass',cost:400000,max:1,lv:5,desc:'Grading costs half price at every speed, Express too.'},
   {id:'nopizza',name:'Pizza Remover',cost:5000,max:2,grow:4,lv:6,desc:'No more shift timer. Level 1: your helper works with no clock, and pizza breaks just happen at random. Level 2: no pizza, no timer, no shifts. Your helper sorts until the pile is empty.'},
   {id:'flipplus',name:'Flip Plus',cost:2500,max:2,grow:4,lv:6,desc:'A bigger set-aside pile for your helper. Level 1 holds 50 cards instead of 30. Level 2 holds 100.'},
@@ -4793,6 +4794,8 @@ async function freshCloud(id){
 const LAUNCHED=new Set();
 /* ---------- Release notes: what's new in each update. Newest first; give every new entry the next id. ---------- */
 const RELEASE_NOTES=[
+  {id:26,d:'Nov 25',t:'Auto Grader',items:[
+    '🤖 New upgrade: Auto Grader ($150k, in Grading). Every raw card worth $450 or more goes straight to Slab Happy. 1/1s and starred cards stay with you, and you can turn it off in the Binder.']},
   {id:25,d:'Nov 25',t:'Big saves',items:[
     '💾 Big saves keep their online backups now, and the "save is getting big" reminder only pops up when it really matters.']},
   {id:25,d:'Nov 24',t:'Cases',items:[
@@ -7223,7 +7226,7 @@ function addCard(c,src){
   maybeDebut(c,src);
   // about half the 1/1s found from now on are million-dollar cards (more often for the biggest stars)
   if(isOne(c)&&src!=='grade'&&src!=='gift'&&src!=='trade'&&src!=='test'){S.bigOnes=S.bigOnes||{};const bk=c.pid+'.'+c.year+'.'+c.par;if(S.bigOnes[bk]==null&&Math.random()<(P[c.pid].tier>=5?.6:.4)){S.bigOnes[bk]=Math.round((1+Math.random()*2.5)*200)*5000;setTimeout(()=>toast(`The appraiser called. ${cardTitle(c)} is worth ${money(valueOf(c))}!`,'gold',10000),2500)}}
-  const k=key(c);S.stacks[k]=(S.stacks[k]||0)+1;
+  const k=key(c);S.stacks[k]=(S.stacks[k]||0)+1;agQueue(k,src);
   const had=S.owned[c.pid]||0;S.owned[c.pid]=had+1;let rcNew=false;if(isRC(c)){rcNew=!RCO[c.pid];RCO[c.pid]=(RCO[c.pid]||0)+1}if(c.par===12||c.par===13||c.par===14){if(!VK[c.pid+'.'+c.par]||!VK[c.pid+'.'+c.year+'.'+c.par])rcNew=true;vkAdd(c,1)}if(c.par===11){const cy=c.pid+'.'+c.year;if(!CHY[cy])rcNew=true;CHO[c.pid]=(CHO[c.pid]||0)+1;CHY[cy]=(CHY[cy]||0)+1}if(!had||rcNew){checkSets();if(!had)pairToast(c.pid)}
   if(c.par===10||c.par===15||c.par===16)S.pc[k]=true;
   if(c.par===6){S.pc[k]=true;
@@ -7524,7 +7527,20 @@ function sendToGrader(k,opt={}){const tier=gTier(opt.tier||S.gradeTier);
   if(!opt.quiet)toast(`Sent ${P[c.pid].name} to Slab Happy (${GTIERS[tier].name}). ${it.wait?`The grader is full, so it's in line. ${GTIERS[tier].ms()>=60000?'':'It grades in '+msText(it.ms)+' once it starts.'}`:`Back in ${msText(it.ms)}.`}`);save(true);updateHeader();renderTabs();return true;
 }
 function gradeReady(){return (S.grading||[]).filter(x=>!x.wait&&Date.now()>=x.ready)}
-function tickGrading(){if(runGradeQueue()&&tab==='binder')renderGrader();(S.grading||[]).forEach(x=>{if(!x.told&&!x.wait&&Date.now()>=x.ready){x.told=true;toast(`${P[fromKey(x.k).pid].name} is back from the grader! Reveal it in your Binder.`,'gold',7000);renderTabs();if(tab==='binder')renderGrader()}})}
+/* ---------- Auto Grader (Colton's idea, Nov 2026): raw cards worth AG_MIN+ go to Slab Happy on their own.
+   Queued at addCard and sent a moment later (after sorting, PC stars and 1/1 moments have settled); cards the
+   grader can't take yet (full or no cash) wait in S.agPend and are retried. */
+const AG_MIN=450;let agT=0,agLast=0;
+const agOn=()=>up('autograde')&&!S.agOff;
+function agWant(k){if(!agOn()||!S.stacks[k])return false;const c=fromKey(k);return !c.g&&!isOne(c)&&!S.pc[k]&&valueOf(c)>=AG_MIN}
+function agQueue(k,src){if(src==='grade'||src==='test'||!agOn())return;S.agPend=S.agPend||[];if(S.agPend.length<200)S.agPend.push(k);if(!agT)agT=setTimeout(agFlush,1200)}
+function agFlush(){agT=0;agLast=Date.now();const p=S.agPend||[];if(!p.length)return;const left=[],names=[];let why='';
+  for(const k of p){if(!agWant(k))continue;const r=sendToGrader(k,{quiet:true});if(r===true)names.push(P[fromKey(k).pid].name);else if(r==='full'||r==='cash'){left.push(k);why=r}}
+  S.agPend=left.slice(0,200);
+  if(names.length)toast(`🤖 Auto Grader sent ${names.length===1?names[0]:names.length+' cards'} to Slab Happy.`,'good',5000);
+  if(left.length&&why==='cash'&&!S.agCashTold){S.agCashTold=true;toast(`🤖 Auto Grader is waiting: not enough cash for the grading fee.`,'',6000)}
+  if(!left.length)S.agCashTold=false;if(names.length||left.length!==p.length)save(true)}
+function tickGrading(){if((S.agPend||[]).length&&!agT&&Date.now()-agLast>30000)agFlush();if(runGradeQueue()&&tab==='binder')renderGrader();(S.grading||[]).forEach(x=>{if(!x.told&&!x.wait&&Date.now()>=x.ready){x.told=true;toast(`${P[fromKey(x.k).pid].name} is back from the grader! Reveal it in your Binder.`,'gold',7000);renderTabs();if(tab==='binder')renderGrader()}})}
 // crack the slab and try again: 50/50 the grade goes up or down (usually by 1, sometimes 2)
 function resubmit(k,tier,quiet){tier=gTier(tier||S.gradeTier);const say=quiet?()=>{}:toast;
   const c=fromKey(k);if(!c.g||!up('regrade'))return false;S.grading=S.grading||[];
@@ -7557,7 +7573,7 @@ function regradeLow(){const ks=lowSlabs();let sent=0,broke=false;
 function renderGrader(){
   const b=$('#grader');if(!b)return;runGradeQueue();const q=S.grading||[];
   const low=up('regrade')?lowSlabs().reduce((a,k)=>a+(S.stacks[k]||0)-shelfCount(k)-scCount(k),0):0,lowCost=low?lowSlabs().reduce((a,k)=>a+tierFee({...fromKey(k),g:0},S.gradeTier)*((S.stacks[k]||0)-shelfCount(k)-scCount(k)),0):0;
-  const pick=`<p class="note" style="margin:0 0 6px">Grading speed for the Binder's Grade buttons:</p>${tierPick()}${low?`<div style="margin-top:8px"><button class="btn go sm" id="regLow">Regrade all 6 and under (${low}) · ${money(lowCost)}</button></div>`:''}`;
+  const pick=`${up('autograde')?`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px"><span>🤖 Auto Grader: <b>${S.agOff?'Off':'On'}</b> <small class="note">(raw cards $${AG_MIN}+${(S.agPend||[]).length?` · ${S.agPend.length} waiting`:''})</small></span><button class="btn sm" id="agTog">Turn ${S.agOff?'on':'off'}</button></div>`:''}<p class="note" style="margin:0 0 6px">Grading speed for the Binder's Grade buttons:</p>${tierPick()}${low?`<div style="margin-top:8px"><button class="btn go sm" id="regLow">Regrade all 6 and under (${low}) · ${money(lowCost)}</button></div>`:''}`;
   if(!q.length){b.innerHTML=`<div class="panel gpanel"><h3>At the grader</h3>${pick}<p class="note" style="margin:8px 0 0">Send a card to Slab Happy with the Grade button. You get a grade from 1 to 10, and a 10 is worth 8× the raw card. Vintage cards are hard to get high grades on. The grader works on ${gradeMax()} cards at a time; send as many as you like and the rest wait in line.</p></div>`}
   else{const order=q.map((x,i)=>i).sort((a,b)=>{const A=q[a],B=q[b],r=x=>x.wait?2:Date.now()>=x.ready?0:1;return r(A)-r(B)||(A.wait?0:A.ready-B.ready)});
   const done=q.filter(x=>!x.wait&&Date.now()>=x.ready).length;
@@ -7566,6 +7582,7 @@ function renderGrader(){
   b.querySelectorAll('[data-reveal]').forEach(bt=>bt.onclick=()=>revealGrade(+bt.dataset.reveal));
   b.querySelectorAll('[data-gtier]').forEach(bt=>bt.onclick=()=>{S.gradeTier=bt.dataset.gtier;save(true);renderGrader();if(tab==='binder')renderBinder()});
   const ra=$('#revealAll',b);if(ra)ra.onclick=revealAll;const rl=$('#regLow',b);if(rl)rl.onclick=regradeLow;
+  const at=$('#agTog',b);if(at)at.onclick=()=>{S.agOff=!S.agOff;if(S.agOff)S.agPend=[];save(true);renderGrader();toast(`🤖 Auto Grader is ${S.agOff?'off':'on'}.`)};
 }
 // show every finished slab in one go, best grade first
 function revealAll(){const q=S.grading||[],now=Date.now();const ready=q.filter(x=>!x.wait&&now>=x.ready);if(!ready.length)return;
@@ -9077,7 +9094,7 @@ function renderUpgrades(v){
   const groups=[['Sorting by hand',['bins','fan','stack','brick'],'Sort faster yourself: grab more cards at once, and let the bins save the good copies.'],
     ['Help around the shed',['colton','machine','recliner','pizza','nopizza','mash','flipplus'],'Helpers who sort cards for you, even when you are not tapping.'],
     ['Money and trading',['loupe','bulk','vip','spectrade'],'More cash for your cards, cheaper packs, and new traders to swap with.'],
-    ['Grading',['doctor','regrade','sleeves','gemhunter','goldpass','express'],'Better grades from Slab Happy, cheaper and faster.'],
+    ['Grading',['doctor','regrade','sleeves','gemhunter','goldpass','express','autograde'],'Better grades from Slab Happy, cheaper and faster.'],
     ['The shop',['shelf','megacounter','sign','signplus','counterpp','clerk','line','bigline','case'],'Your card shop: more customers, more shelf and counter space, and a bigger showcase for tips.'],
     ['Extras',['randbreak','brainboost'],'Odds and ends: surprise break times and bonus XP.']];
   v.innerHTML=groups.map(([g,ids,blurb])=>`<h3 class="sech">${g}</h3><p class="note" style="margin:-6px 0 10px">${blurb}</p><div class="grid">${ids.map(id=>{const u=UPGRADES.find(x=>x.id===id);const l=up(id),ru=u.req&&UPGRADES.find(x=>x.id===u.req),needs=ru&&up(u.req)<ru.max,locked=S.level<u.lv||needs,maxed=l>=u.max,cost=upCost(u);
@@ -9266,7 +9283,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-25.0703';
+const APP_VERSION = '2026-11-25.0849';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
