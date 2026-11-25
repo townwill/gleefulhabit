@@ -4670,13 +4670,13 @@ async function docState(id,d){if(!d)return null;if(d.state)return d.state;if(DOC
       if(ps.some(p=>!p.exists||p.data().stamp!==d.stamp))return null;s=ps.map(p=>p.data().d).join('')}
     if(!s)return null;const st=JSON.parse(await unpackStr(d.enc,s));try{DOC_ST.set(d,st)}catch(e){}return st}catch(e){return null}}
 const docFlips=d=>(d&&((d.summary&&d.summary.flips)||(d.state&&d.state.stats&&d.state.stats.flips)))||0;
-let saveFails=0;
+let saveFails=0,lsFullTold=false;
 function saveTrouble(on,why){let el=$('#saveWarn');if(!el){el=document.createElement('div');el.id='saveWarn';document.body.appendChild(el)}
   el.hidden=!on;if(on)el.innerHTML=`⚠️ ${esc(why||"Online saving isn't working right now.")} <b>Don't close the game.</b> Tap 💾 Save now to try again.`}
 function setSaved(t){const n=$('#savedNote');if(n)n.textContent=t}
 function save(force){
   if(!PROFILE)return;S._hand=hand;S._t=Date.now();
-  const okLocal=lsSet(LS_SAVE+PROFILE.id,S);if(!okLocal&&!dbNS)saveTrouble(true,"This browser won't save the game.");
+  const okLocal=lsSet(LS_SAVE+PROFILE.id,S);if(!okLocal&&!dbNS)saveTrouble(true,"This browser won't save the game.");if(!okLocal&&dbNS&&!lsFullTold){lsFullTold=true;toast("This device's own copy of the save is full. Online saving still works.",'',8000)}
   cloudDirty=true;if(!dbNS)setSaved(`${PROFILE.name}'s game saves in this browser.`);
   // online saves are batched: a quiet one every 20s, important moments within 3s, and right away when you leave the page
   if(force==='now'){clearTimeout(cloudT);cloudT=0;pushCloud();return}
@@ -4694,11 +4694,11 @@ function pushCloud(force){
   runCloud();
 }
 /* ---------- backups: every 15 minutes of saves, a copy goes into one of 6 online backup slots ---------- */
-const BK_SLOTS=6,BK_EVERY=15*60000;
+const BK_SLOTS=6,BK_EVERY=15*60000,BK_MAX=900000;// one online doc holds 1 MiB; backups used to stop at 240 KB
 function bkSummary(st){return {level:st.level,cash:Math.round(st.cash),pile:st.pile,loc:st.loc,flips:(st.stats&&st.stats.flips)||0}}
 async function backupCloud(job,id){try{if(!dbNS||!id)return;const st=job.doc.state;
   const meta=lsGet('gs-bk:'+id)||{at:0,slot:-1};if(Date.now()-meta.at<BK_EVERY)return;const slot=(meta.slot+1)%BK_SLOTS;lsSet('gs-bk:'+id,{at:Date.now(),slot});
-  const {enc,s}=await packStr(JSON.stringify(st));if(s.length>CHUNK*1.2)return;await dbNS.doc('backups/'+id+'-'+slot).set({who:id,slot,updated:Date.now(),sess:SESS,summary:bkSummary(st),enc,z:s})}catch(e){}}
+  const {enc,s}=await packStr(JSON.stringify(st));if(s.length>BK_MAX)return;await dbNS.doc('backups/'+id+'-'+slot).set({who:id,slot,updated:Date.now(),sess:SESS,summary:bkSummary(st),enc,z:s})}catch(e){}}
 async function showBackups(){
   if(!PROFILE)return;const id=PROFILE.id,list=[];
   const loc=lsGet(LS_SAVE+id+':backup');if(loc&&loc.stats)list.push({src:'This device',updated:loc._backupAt||loc._t||0,summary:bkSummary(loc),state:loc});
@@ -4793,6 +4793,8 @@ async function freshCloud(id){
 const LAUNCHED=new Set();
 /* ---------- Release notes: what's new in each update. Newest first; give every new entry the next id. ---------- */
 const RELEASE_NOTES=[
+  {id:25,d:'Nov 25',t:'Big saves',items:[
+    '💾 Big saves keep their online backups now, and the "save is getting big" reminder only pops up when it really matters.']},
   {id:25,d:'Nov 24',t:'Cases',items:[
     "📦 Lenny's sells whole cases now: 8 Breaker's Delight boxes in one case, ripped all at once (Packs tab, Cases). Colton's idea!",
     '💵 A case costs exactly 8 boxes. No discount, same cards and odds.']},
@@ -7453,7 +7455,7 @@ function sellCheap(after){
   $('#cheapYes',m).onclick=()=>{if(!ci.n)return;for(const x of ci.plan)removeCards(x.k,x.n);S.cash+=ci.v;S.stats.sold+=ci.n;S.stats.earned+=ci.v;addXP(Math.max(1,Math.round(ci.n*.2)));
     closeModal(true);toast(`Sold ${num(ci.n)} cards under ${money(cheapMax())} for ${money(ci.v)}.`,'good');save('now');updateHeader();if(tab==='binder')render();if(after)after()}}
 // big save reminder (Colton's idea): when the save file gets large, suggest selling some cards first
-const SAVE_WARN=150000;let lastPack=0,sizeWarned=false;
+const SAVE_WARN=400000;let lastPack=0,sizeWarned=false;
 function sizeCheck(bytes){lastPack=bytes;const n=$('#saveSize');if(n){n.textContent=`Save size ${Math.round(bytes/1024)} KB`;n.style.cursor='pointer';n.title='What makes it big?';n.onclick=()=>{if(PROFILE)saveSizeHelp()}}
   if(bytes<SAVE_WARN||sizeWarned||modalOpen||!PROFILE)return;sizeWarned=true;const ci=cheapInfo(),di=dupeInfo();
   queueModal(()=>saveSizeHelp(bytes))}
@@ -9264,7 +9266,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-24.1401';
+const APP_VERSION = '2026-11-25.0703';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
