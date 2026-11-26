@@ -225,6 +225,7 @@ button:focus-visible, input:focus-visible, select:focus-visible{outline:2px soli
 .w-box{border-radius:4px;box-shadow:0 12px 26px rgba(0,0,0,.55),inset 0 0 0 3px rgba(255,255,255,.18)}.w-box::before,.w-box::after{display:none}
 .w-blaster{background:linear-gradient(160deg,#e23a3a,#6d0f1a 60%,#111);width:150px;height:170px}
 .w-mega{background:linear-gradient(160deg,#18b5a6,#0b4a55 60%,#111);width:160px;height:190px}
+.w-jumbo{width:200px!important;height:166px!important;box-shadow:0 0 0 3px #b98cff,0 0 18px #b98cff88}
 .w-hobbybox{background:linear-gradient(160deg,#1a1a1a,#3d3d3d 40%,#c9a13b);width:180px;height:150px}
 .w-bblaster{background:linear-gradient(160deg,#1f6fd1,#0c2d5c 60%,#111);width:150px;height:170px}
 .w-bmega{background:linear-gradient(160deg,#2e8b57,#123d27 60%,#111);width:160px;height:190px}
@@ -4610,6 +4611,8 @@ const PACKS = [
 ];
 // cases (Colton's idea, Nov 2026): a sealed case of 8 Breaker's Delight boxes, opened all at once. Exactly 8x the box price, no case discount.
 const CASE_BOXES=8;
+// Jumbo Boxes (Colton's idea, Nov 2026): pricier than a hobby box with fewer, better cards (stars only, 4 autos + 2 relics + ~15 numbered)
+PACKS.filter(pk=>pk.kind==='hobbybox').forEach(h=>{const sp=h.sub.replace(/ hobby box$/i,'');PACKS.splice(PACKS.indexOf(h)+1,0,{id:'j'+h.id,sport:h.sport,kind:'jumbo',box:true,cls:h.cls+' w-jumbo',title:h.title,sub:sp+' jumbo box',name:h.name.replace('Hobby Box','Jumbo Box'),cost:2000,n:60,lv:h.lv,desc:`5 jumbo packs, 60 ${sp.toLowerCase()} cards, stars only. 4 autographs and 2 relics guaranteed, about 12 numbered cards, and a better shot at a Superfractor or Patch Auto.`})});
 PACKS.filter(pk=>pk.kind==='delight').forEach(b=>PACKS.push({id:'c'+b.id,sport:b.sport,kind:'case',caseOf:b.id,boxes:CASE_BOXES,box:true,cls:b.cls+' w-case',title:"DELIGHT CASE",sub:b.sub,name:`Breaker's Delight Case: ${b.sub}`,cost:b.cost*CASE_BOXES,n:b.n*CASE_BOXES,lv:b.lv,desc:`${CASE_BOXES} sealed Breaker's Delight boxes (${b.n*CASE_BOXES} cards), opened all at once. Same cards and odds as ${CASE_BOXES} boxes bought one by one, same price too.`}));
 
 const ATTIC_LEDGER = [
@@ -4796,6 +4799,8 @@ async function freshCloud(id){
 const LAUNCHED=new Set();
 /* ---------- Release notes: what's new in each update. Newest first; give every new entry the next id. ---------- */
 const RELEASE_NOTES=[
+  {id:28,d:'Nov 26',t:'Jumbo Boxes',items:[
+    '📦 New at Lenny\'s: Jumbo Boxes for every sport! $2,000 for 60 cards: fewer cards than a Hobby Box, but all stars, with 4 autographs and 2 relics guaranteed.']},
   {id:27,d:'Nov 25',t:'Break meter',items:[
     '⏳ A break meter at the top shows how close your break is: 0% after a break, 100% when it\'s break time. Tap it to see the minutes left.',
     '🎡 Say "Yes" the first time Grandpa asks for a break and you get a free Lucky Wheel spin when the break is over (up to 3 a day).']},
@@ -7750,16 +7755,18 @@ function checkEnd(){
 const BOX_CFG={
   blaster:{guar:[[2,3],[()=>Math.random()<.7?1:2,6]],autoChance:.05},
   mega:{guar:[[2,14],[()=>Math.random()<.6?1:2,6]],autoChance:.1},
+  jumbo:{guar:[[()=>Math.random()<.2?9:7,4],[8,2],[()=>wpick([3,4,5],x=>({3:12,4:3,5:.6})[x]),12],[()=>Math.random()<.6?2:1,15]],autoChance:0,tw:[0,25,40,25,10],sf:.025,pa:.04},
   hobbybox:{guar:[[()=>Math.random()<.2?9:7,2],[()=>wpick([2,3,4,5,8],x=>({2:16,3:3.5,4:1.5,5:.5,8:1.5})[x]),22],[1,10]],autoChance:0},
 };
 function genBox(pk){
   const sport=pk.sport||'nba',cfg=BOX_CFG[pk.kind];
   if(pk.kind==='delight'){const cards=[];for(let i=0;i<pk.n;i++){const c=rollCard({sport,yLo:2016,filter:p=>p.end>=2016&&p.tier>=3,tw:sport==='nba'?[0,0,36,40,24]:[0,0,32,42,26],par:0});
     c.par=Math.random()<.0025?10:wpick([3,4,5,7,8,9],x=>({3:25,4:20,5:10,7:20,8:15,9:10})[x]);if(c.par===8&&c.year<1997)c.par=7;cards.push(c)}return cards}
-  const cards=[];for(let i=0;i<pk.n;i++)cards.push(rollCard({sport,yLo:2016,filter:p=>p.end>=2016,par:0}));
+  const cards=[];for(let i=0;i<pk.n;i++)cards.push(rollCard({sport,yLo:2016,filter:cfg.tw?p=>p.end>=2016&&p.tier>=1:p=>p.end>=2016,par:0,...(cfg.tw?{tw:cfg.tw}:{})}));
   let idx=0;cfg.guar.forEach(([par,cnt])=>{for(let j=0;j<cnt&&idx<cards.length;j++,idx++){cards[idx].par=typeof par==='function'?par():par}});
   for(;idx<cards.length;idx++){cards[idx].par=rollPar(1.2)}
   if(cfg.autoChance&&Math.random()<cfg.autoChance)cards[cards.length-1].par=7;
+  if(cfg.sf&&Math.random()<cfg.sf)cards[cards.length-1].par=10;if(cfg.pa&&Math.random()<cfg.pa)cards[cards.length-2].par=17;
   for(let i=cards.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[cards[i],cards[j]]=[cards[j],cards[i]]}
   return cards;
 }
@@ -7826,7 +7833,7 @@ function openPack(id,free){
   if(!free)S.cash-=packCost(pk);S.stats.packs+=nb;updateHeader();
   const cards=genPack(pk);
   // split into packs; inside each pack the base cards come first and the good stuff sits at the back
-  const per=pk.caseOf?cards.length/pk.boxes:{blaster:4,mega:10,hobbybox:12}[pk.kind]||cards.length;const unit=pk.caseOf?'box':'pack';
+  const per=pk.caseOf?cards.length/pk.boxes:{blaster:4,mega:10,hobbybox:12,jumbo:12}[pk.kind]||cards.length;const unit=pk.caseOf?'box':'pack';
   const packs=[];for(let a=0;a<cards.length;a+=per)packs.push(cards.slice(a,a+per).sort((x,y)=>valueOf(x)-valueOf(y)));
   let pi=0,i=-1;
   const m=modal(`<h2>${esc(pk.name)}</h2><div id="pkStage" style="display:flex;flex-direction:column;align-items:center;gap:12px"></div><div class="row2" id="pkBtns"></div>`,{locked:true});
@@ -9302,7 +9309,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-25.0910';
+const APP_VERSION = '2026-11-25.2022';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
