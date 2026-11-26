@@ -4799,6 +4799,7 @@ async function freshCloud(id){
 const LAUNCHED=new Set();
 /* ---------- Release notes: what's new in each update. Newest first; give every new entry the next id. ---------- */
 const RELEASE_NOTES=[
+  {id:30,d:'Nov 26',t:'Happy Thanksgiving!',items:['🦃 Happy Thanksgiving from Grandpa\'s Shed!']},
   {id:29,d:'Nov 26',t:'Card Match puzzle',items:[
     '🃏 Sudoku is gone from the Daily Puzzles. Now it\'s Card Match: flip your own cards and find the 6 pairs. Still $25k, and still counts toward the all-4 prize.']},
   {id:28,d:'Nov 26',t:'Jumbo Boxes',items:[
@@ -4886,8 +4887,13 @@ function notesModal(list,fresh){list=list||RELEASE_NOTES;
 function notesCheck(){const top=RELEASE_NOTES[0].id,seen=+(localStorage.getItem(LS_NOTES)||0);if(seen>=top)return;
   const list=seen?RELEASE_NOTES.filter(n=>n.id>seen):RELEASE_NOTES.slice(0,1);try{localStorage.setItem(LS_NOTES,String(top))}catch(e){}
   queueModal(()=>notesModal(list,true))}
+// Thanksgiving 2026 surprise from Will: one free instant sort for Colton, once (S.tgGift)
+function tgGift(){if(!PROFILE||!isColton()||S.tgGift)return;S.tgGift=true;S.instaTokens=(S.instaTokens||0)+1;save('now');mailLog('🦃 Happy Thanksgiving! Grandpa and Dad gave you a free instant sort.');
+  queueModal(()=>{const m=modal(`<div style="text-align:center;width:100%"><div style="font-size:64px;line-height:1">🦃</div><h2>Happy Thanksgiving, kiddo!</h2><div class="letter">I'm thankful for a lot of things this year, and you're right at the top of the list. So your dad and I put something extra in the shed for you: a <b>free instant sort</b>. Pick any box and it's done in a snap.<br><br>Now go eat some pie.<br><br>— Grandpa (and Dad)</div>
+    <div class="row2"><button class="btn go" id="tgUse">⚡ Use it now</button><button class="btn" data-close>Save it for later</button></div></div>`,{locked:true});
+    $('#tgUse',m).onclick=()=>{closeModal(true);setTimeout(()=>instaPick('free'),200)}})}
 async function choose(p){
-  setTimeout(notesCheck,2500);
+  setTimeout(notesCheck,2500);setTimeout(tgGift,3500);
   if(PROFILE&&PROFILE.id!==p.id)save('now');
   PROFILE=null;await freshCloud(p.id);
   PROFILE={id:p.id,name:p.name,color:p.color};
@@ -9316,7 +9322,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-26.0729';
+const APP_VERSION = '2026-11-26.1120';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
