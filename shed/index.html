@@ -4799,6 +4799,8 @@ async function freshCloud(id){
 const LAUNCHED=new Set();
 /* ---------- Release notes: what's new in each update. Newest first; give every new entry the next id. ---------- */
 const RELEASE_NOTES=[
+  {id:29,d:'Nov 26',t:'Card Match puzzle',items:[
+    '🃏 Sudoku is gone from the Daily Puzzles. Now it\'s Card Match: flip your own cards and find the 6 pairs. Still $25k, and still counts toward the all-4 prize.']},
   {id:28,d:'Nov 26',t:'Jumbo Boxes',items:[
     '📦 New at Lenny\'s: Jumbo Boxes for every sport! $2,000 for 60 cards: fewer cards than a Hobby Box, but all stars, with 4 autographs and 2 relics guaranteed.']},
   {id:27,d:'Nov 25',t:'Break meter',items:[
@@ -5805,7 +5807,7 @@ function wheelModal(){if(!PROFILE)return;const left=wheelLeft();
       const l=wheelLeft();$('#whClose',m).disabled=false;$('#whSpin',m).disabled=l<=0;$('p',m).innerHTML=l>0?`You have <b>${l}</b> spin${l>1?'s':''} today.`:'No spins left today. Come back tomorrow for 2 more!';
       if(['insta','hobby','blaster'].includes(s.id))closeModal(true)},4400)}}
 /* ---------- Daily Puzzles: word search, crossword, sudoku and trivia. Same 4 for everyone each day (seeded by the date). ---------- */
-const PUZ_KINDS=[['ws','🔤','Word Search'],['cw','✏️','Crossword'],['su','🔢','Sudoku'],['tr','❓','Trivia']];
+const PUZ_KINDS=[['ws','🔤','Word Search'],['cw','✏️','Crossword'],['mm','🃏','Card Match'],['tr','❓','Trivia']];
 const PUZ_EACH=25000,PUZ_XP=25;
 const WS_THEMES=[
   ['Sports',['BALL','HOOP','GOAL','PUCK','SKATE','GLOVE','PITCH','DUNK','SCORE','TEAM','SWIM','BASES']],
@@ -5892,7 +5894,7 @@ const TRIVIA=[
 const puzDay=()=>new Date().toDateString();
 const puzRng=k=>srand(hash(puzDay()+'|'+k));
 const shuf=(a,r)=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
-function puzState(){const d=puzDay();if(!S.puz||S.puz.day!==d)S.puz={day:d,done:{},ws:[],cw:[],su:null,tr:{i:0,miss:[]},bonus:false};return S.puz}
+function puzState(){const d=puzDay();if(!S.puz||S.puz.day!==d)S.puz={day:d,done:{},ws:[],cw:[],su:null,tr:{i:0,miss:[]},bonus:false};if(S.puz.done.su&&!S.puz.done.mm)S.puz.done.mm=true;return S.puz}
 const puzDoneN=()=>{const p=puzState();return PUZ_KINDS.filter(([k])=>p.done[k]).length};
 // ---- word search: 8x8, words go right, down or diagonally down-right
 function makeWS(){const r=puzRng('ws'),[theme,list]=WS_THEMES[Math.floor(r()*WS_THEMES.length)],N=8,dirs=[[0,1],[1,0],[1,1]];
@@ -5937,11 +5939,11 @@ function makeSU(){const r=puzRng('su');const base=[];for(let i=0;i<6;i++)for(let
   return {sol,puz}}
 // ---- trivia: 5 questions a day
 function makeTR(){const r=puzRng('tr');return shuf(TRIVIA,r).slice(0,5).map(q=>({q:q[0],a:q[1],opts:shuf(q.slice(1),r)}))}
-let PZ=null;function puzzles(){if(!PZ||PZ.day!==puzDay())PZ={day:puzDay(),ws:makeWS(),cw:makeCW(),su:makeSU(),tr:makeTR()};return PZ}
+let PZ=null;function puzzles(){if(!PZ||PZ.day!==puzDay())PZ={day:puzDay(),ws:makeWS(),cw:makeCW(),tr:makeTR()};return PZ}
 function puzFinish(k){const p=puzState();if(p.done[k])return;p.done[k]=true;S.cash+=PUZ_EACH;S.stats.earned=(S.stats.earned||0)+PUZ_EACH;addXP(PUZ_XP);
   const name=PUZ_KINDS.find(x=>x[0]===k)[2];toast(`🧩 ${name} solved! +${money(PUZ_EACH)}`,'good',6000);
   if(puzDoneN()===4&&!p.bonus){p.bonus=true;wheelLeft();S.wheel.left++;const id=freePack('blaster');save('now');updateHeader();
-    setTimeout(()=>{const m=modal(`<h2>🏆 All 4 puzzles done!</h2><div class="letter">Word search, crossword, sudoku and trivia, all in one day. That's a sharp mind, kiddo.<br><br>— Grandpa</div><p>Your prize: a <b>free blaster box</b> and an <b>extra spin</b> on the Lucky Wheel. Come back tomorrow for 4 new puzzles.</p><div class="row2"><button class="btn go" id="pzOpen">Open my blaster</button><button class="btn" id="pzSpin">🎡 Spin the wheel</button></div>`,{locked:true});
+    setTimeout(()=>{const m=modal(`<h2>🏆 All 4 puzzles done!</h2><div class="letter">Word search, crossword, card match and trivia, all in one day. That's a sharp mind, kiddo.<br><br>— Grandpa</div><p>Your prize: a <b>free blaster box</b> and an <b>extra spin</b> on the Lucky Wheel. Come back tomorrow for 4 new puzzles.</p><div class="row2"><button class="btn go" id="pzOpen">Open my blaster</button><button class="btn" id="pzSpin">🎡 Spin the wheel</button></div>`,{locked:true});
       $('#pzOpen',m).onclick=()=>{closeModal(true);if(id)openPack(id,true)};$('#pzSpin',m).onclick=()=>{closeModal(true);if(id)openPack(id,true);setTimeout(wheelModal,300)}},350);return true}
   save('now');updateHeader()}
 function pzDone(k){closeModal(true);if(!puzFinish(k))puzHub()}
@@ -5949,7 +5951,7 @@ function puzHub(){if(!PROFILE)return;const p=puzState(),n=puzDoneN();
   const m=modal(`<h2>🧩 Daily Puzzles</h2><p>Four new puzzles every day. Each one pays <b>${money(PUZ_EACH)}</b>. Solve all four for a <b>free blaster box</b> and an <b>extra Lucky Wheel spin</b>.</p>
     <div class="pzhub">${PUZ_KINDS.map(([k,ico,name])=>`<button class="pztile${p.done[k]?' done':''}" data-pz="${k}"><span class="pzi">${ico}</span><b>${name}</b><small>${p.done[k]?'✅ Solved':'Play'}</small></button>`).join('')}</div>
     <p class="note">${n}/4 done today${p.bonus?' · prize collected 🏆':''}</p><div class="row2"><button class="btn" data-close>Close</button></div>`);
-  m.querySelectorAll('[data-pz]').forEach(b=>b.onclick=()=>{closeModal(true);({ws:playWS,cw:playCW,su:playSU,tr:playTR})[b.dataset.pz]()})}
+  m.querySelectorAll('[data-pz]').forEach(b=>b.onclick=()=>{closeModal(true);({ws:playWS,cw:playCW,mm:playMM,tr:playTR})[b.dataset.pz]()})}
 const pzBack=m=>{const b=$('#pzBack',m);if(b)b.onclick=()=>{closeModal(true);puzHub()}};
 function playWS(){const P0=puzzles().ws,p=puzState();if(!P0){toast("Couldn't make today's word search.");return}
   const found=new Set(p.ws||[]);let start=null;
@@ -5982,6 +5984,11 @@ function playCW(){const C=puzzles().cw,p=puzState();if(!C){toast("Couldn't make 
       const nx=C.words.findIndex((_,i)=>!solved.has(i));cur=nx;draw()}
     else{$('#cwMsg',m).textContent=v.length!==x.w.length?`It has ${x.w.length} letters.`:'Not quite. Try again!'}};
   $('#cwOk',m).onclick=check;$('#cwIn',m).onkeydown=e=>{if(e.key==='Enter')check()};draw()}
+// Card Match (replaced Sudoku, Colton's call, Nov 2026): Grandpa's Memory with 6 pairs, as a daily puzzle.
+// Pairs come from his doubles first, then any cards he owns; it pays the puzzle prize, not Memory's.
+function pzMatchPool(){const d=memDupes().sort(()=>Math.random()-.5).slice(0,6);if(d.length<6){const more=Object.keys(S.stacks).filter(k=>!d.includes(k)).sort(()=>Math.random()-.5);d.push(...more.slice(0,6-d.length))}
+  while(d.length<6){const p=P[(Math.random()*P.length)|0];const k=key({pid:p.id,year:p.start,par:0});if(!d.includes(k))d.push(k)}return d}
+function playMM(){memPlay(6,true)}
 function playSU(){const Z=puzzles().su,p=puzState();if(!p.su||p.su.length!==36)p.su=Z.puz.slice();let at=-1;
   const m=modal(`<h2>🔢 Sudoku</h2><p class="note">Fill the grid so every row, every column and every box has 1 to 6. Tap a square, then a number.</p><div class="sug" id="suG"></div>
     <div class="sun">${[1,2,3,4,5,6].map(v=>`<button class="btn" data-v="${v}">${v}</button>`).join('')}<button class="btn" data-v="0">Erase</button></div><div class="row2"><button class="btn" id="pzBack">Back</button></div>`,{locked:true});pzBack(m);
@@ -8753,11 +8760,11 @@ function memOpen(secret){const first=!S.memFound;if(first){S.memFound=true;save(
     <p class="note">${st.wins<MEM_PAID_WINS?`Win to earn cash: ${MEM_PAID_WINS-st.wins} paid game${MEM_PAID_WINS-st.wins===1?'':'s'} left today. Fewer misses = bigger prize.`:`You've won all ${MEM_PAID_WINS} paid games today. You can still play for fun and beat your best!`} You have ${d} cards with doubles.</p>`}
     <div class="row2"><button class="btn" data-close>Close</button></div></div>`);
   document.querySelectorAll('[data-memn]').forEach(b=>b.onclick=()=>memPlay(+b.dataset.memn))}
-function memPlay(n){const cols=(MEM_SIZES.find(x=>x[0]===n)||[0,0,4])[2];
-  const pool=memDupes().sort(()=>Math.random()-.5).slice(0,n);if(pool.length<n){memOpen();return}
+function memPlay(n,daily){const cols=(MEM_SIZES.find(x=>x[0]===n)||[0,0,4])[2];
+  const pool=daily?pzMatchPool():memDupes().sort(()=>Math.random()-.5).slice(0,n);if(pool.length<n){memOpen();return}
   const deck=pool.concat(pool).map((k,i)=>({k,i})).sort(()=>Math.random()-.5);
   let open=[],matched=new Set(),moves=0,misses=0,lock=false;
-  const m=modal(`<h2>🃏 Grandpa's Memory</h2><p id="memInfo" class="note">Flip two cards.</p><div class="memgrid" style="grid-template-columns:repeat(${cols},1fr)">${deck.map((c,i)=>`<button class="memc" data-mi="${i}" aria-label="Face-down card"><canvas></canvas></button>`).join('')}</div>
+  const m=modal(`<h2>🃏 ${daily?'Card Match':"Grandpa's Memory"}</h2><p id="memInfo" class="note">Flip two cards. Find all ${n} pairs.</p><div class="memgrid" style="grid-template-columns:repeat(${cols},1fr)">${deck.map((c,i)=>`<button class="memc" data-mi="${i}" aria-label="Face-down card"><canvas></canvas></button>`).join('')}</div>
     <div class="row2"><button class="btn" id="memQuit">Quit</button></div>`);
   $('.mbox',m).classList.add('wide');
   const cvs=[...m.querySelectorAll('.memc canvas')],btns=[...m.querySelectorAll('.memc')],W=Math.min(110,Math.floor(Math.min(window.innerWidth-80,600)/cols)-8);
@@ -8766,9 +8773,9 @@ function memPlay(n){const cols=(MEM_SIZES.find(x=>x[0]===n)||[0,0,4])[2];
   const info=()=>{$('#memInfo',m).textContent=`Moves: ${moves} · Pairs found: ${matched.size/2} of ${n}${misses?` · Misses: ${misses}`:''}`};
   btns.forEach((b,i)=>b.onclick=()=>{if(lock||matched.has(i)||open.includes(i))return;face(i);open.push(i);if(open.length<2)return;
     moves++;const [a,c]=open;
-    if(deck[a].k===deck[c].k){matched.add(a);matched.add(c);btns[a].classList.add('got');btns[c].classList.add('got');open=[];info();if(matched.size===deck.length)setTimeout(()=>memWin(n,moves,misses),500)}
+    if(deck[a].k===deck[c].k){matched.add(a);matched.add(c);btns[a].classList.add('got');btns[c].classList.add('got');open=[];info();if(matched.size===deck.length)setTimeout(()=>daily?pzDone('mm'):memWin(n,moves,misses),500)}
     else{misses++;lock=true;info();setTimeout(()=>{back(a);back(c);open=[];lock=false},900)}});
-  $('#memQuit',m).onclick=()=>memOpen()}
+  $('#memQuit',m).textContent=daily?'Back':'Quit';$('#memQuit',m).onclick=()=>{if(daily){closeModal(true);puzHub()}else memOpen()}}
 function memWin(n,moves,misses){const st=memState(),best=st.best[n],rec=!best||moves<best;if(rec)st.best[n]=moves;
   const paid=st.wins<MEM_PAID_WINS;let prize=0;
   if(paid){st.wins++;prize=Math.round(MEM_PAY*n*(misses<=n/2?2:misses<=n?1.5:1));S.cash+=prize;S.stats.earned=(S.stats.earned||0)+prize;addXP(10+n)}
@@ -9309,7 +9316,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-25.2022';
+const APP_VERSION = '2026-11-26.0729';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
