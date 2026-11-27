@@ -4799,6 +4799,7 @@ async function freshCloud(id){
 const LAUNCHED=new Set();
 /* ---------- Release notes: what's new in each update. Newest first; give every new entry the next id. ---------- */
 const RELEASE_NOTES=[
+  {id:34,d:'Nov 27',t:'Instant sort loose cards',items:['⚡ You can use an instant sort on "Loose cards from packs" now. Big piles show a progress bar while they sort.']},
   {id:33,d:'Nov 27',t:'Sort together',items:['👥 Pick family to sort with you! Tap "Sort together" on the shed screen. They help sort your pile, and they get paid a thank-you for every 500 cards.']},
   {id:32,d:'Nov 27',t:"Grandpa's Storage Unit",items:['🗝️ Empty the All-Star Hall and Grandpa hands you the key to his Storage Unit: a million cards in totes, one for every lost team plus four special ones. Every tote has a 1/1 at the bottom.']},
   {id:31,d:'Nov 26',t:'Instant sort gifts',items:['⚡ Dad can send you an instant sort as a gift now, with a note. Keep an eye on your mailbox!']},
@@ -5759,9 +5760,15 @@ function pickBox(id){const b=(roomBoxes()||[]).find(x=>x.id===id);if(!b||b.left<
   if(!b.ir&&!b.loose&&cuAmt('instabox')){b.ir=true;if(Math.random()<cuAmt('instabox')/100){closeModal(true);instaSort(b);return}}
   save(true);closeModal(true);render();updateHeader();toast(`Opened the "${b.label}" ${BOXW[S.loc][0]}.`)}
 // sort a whole box at once: hits and set needs go to the binder, everything else is sold as bulk
-function instaSort(b){const rate=up('bulk')?1:.5;let n=0,keep=0,bv=0,bn=0;const hits=[];if(hand.length){hand=[];phase='empty'}
-  while(b.left>0&&S.pile>0){const c=drawFromPile(false);if(!c)break;n++;S.stats.flips++;
-    if(isHit(c)||isOne(c)||helpsSet(c)||isSteam(c)){addCard(c,'auto');keep++;if(isHit(c))hits.push(c)}else{bv+=valueOf(c)*rate;bn++}}
+// big boxes (loose piles can be huge) sort in chunks behind a progress bar so the page never freezes
+const INSTA_CHUNK=1500;let instaBusy=false;
+async function instaSort(b){if(instaBusy)return;const rate=up('bulk')?1:.5;let n=0,keep=0,bv=0,bn=0;const hits=[];if(hand.length){hand=[];phase='empty'}
+  const total=b.left,big=total>INSTA_CHUNK*2;let pm=null;
+  if(big){instaBusy=true;pm=modal(`<h2>⚡ Instant sort</h2><p>Sorting <b>${num(total)}</b> cards from "${esc(b.label)}"…</p><div style="width:100%;align-self:stretch;height:14px;border-radius:8px;background:rgba(255,255,255,.12);overflow:hidden;margin:14px 0 6px"><i id="isBar" style="display:block;height:100%;width:0%;background:var(--good);transition:width .25s linear"></i></div><p class="note" id="isTxt">0 of ${num(total)}</p>`,{locked:true})}
+  try{while(b.left>0&&S.pile>0){const c=drawFromPile(false);if(!c)break;n++;S.stats.flips++;
+    if(isHit(c)||isOne(c)||helpsSet(c)||isSteam(c)){addCard(c,'auto');keep++;if(isHit(c))hits.push(c)}else{bv+=valueOf(c)*rate;bn++}
+    if(big&&n%INSTA_CHUNK===0){const f=$('#isBar'),t=$('#isTxt');if(f)f.style.width=Math.min(100,n/total*100).toFixed(1)+'%';if(t)t.textContent=`${num(n)} of ${num(total)} · ${num(keep)} to your binder`;await new Promise(r=>setTimeout(r,0))}}}
+  finally{if(big){instaBusy=false;if($('#isBar')){const m=$('#modal');m.hidden=true;m.innerHTML='';modalOpen=false}}}// close quietly: anything queued meanwhile (box finished, 1/1 letter) waits until after the result
   bv=Math.round(bv*100)/100;S.cash+=bv;S.stats.sold+=bn;S.stats.earned+=bv;addXP(Math.round(n/2));
   hits.sort((a,c)=>valueOf(c)-valueOf(a));
   queueModal(()=>{const m=modal(`<h2>⚡ Instant box!</h2><p>The whole "${esc(b.label)}" ${BOXW[S.loc][0]} sorted itself: <b>${num(n)}</b> cards. <b>${num(keep)}</b> went to your binder and <b>${num(bn)}</b> were sold as bulk for <b style="color:var(--good)">${money(bv)}</b>.</p>${hits.length?`<p class="note">Best finds:</p><div class="gq" id="ibGrid" style="justify-content:center"></div>`:''}<div class="row2"><button class="btn go" data-close>Awesome</button></div>`);
@@ -5786,7 +5793,7 @@ function earnInsta(){if(S.breakEarn){toast('Your 30-minute break is already earn
   $('#eiPay',m).onclick=()=>{const pr=instaPrice();if(S.cash<pr)return;S.cash-=pr;S.instaBuys=(S.instaBuys||0)+1;S.instaTokens=(S.instaTokens||0)+1;save('now');updateHeader();closeModal(true);toast(`Bought an instant sort for ${money(pr)}. The next one costs ${money(instaPrice())}.`,'good');instaPick()};
   $('#eiBreak',m).onclick=()=>{closeModal(true);if(phase==='up')sortHand('marks',true);S.breakEarn=true;S.breakUntil=Date.now()+INSTA_BREAK;save('now');breakTick(0)}}
 // free instant sorts: pick any box and it sorts itself (hits to the binder, the rest sold as bulk)
-function instaRoom(){return boxedRoom(S.loc)&&roomBoxes(S.loc)&&roomBoxes(S.loc).some(b=>b.left>0&&!b.loose)?S.loc:S.unitOpen?'storage':S.allOpen?'allstar':S.gmaOpen?'grandma':S.stadiumOpen?'stadium':S.rinkOpen?'rink':null}
+function instaRoom(){return boxedRoom(S.loc)&&roomBoxes(S.loc)&&roomBoxes(S.loc).some(b=>b.left>0&&!b.vault)?S.loc:S.unitOpen?'storage':S.allOpen?'allstar':S.gmaOpen?'grandma':S.stadiumOpen?'stadium':S.rinkOpen?'rink':null}
 /* ---------- the Lucky Wheel: 2 spins a day, each slice's size is its chance ---------- */
 const WHEEL=[
   {id:'insta',ico:'🎁',name:'Free instant box',w:5,col:'#ffd23f'},
@@ -6035,11 +6042,11 @@ function playTR(){const Q=puzzles().tr,p=puzState();p.tr=p.tr||{i:0,miss:[]};
     m.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{const o=q.opts[+b.dataset.o];if(o===q.a){b.classList.add('go');$('#trMsg',m).textContent='✅ Correct!';m.querySelectorAll('[data-o]').forEach(x=>x.disabled=true);p.tr.i++;save(true);setTimeout(()=>{closeModal(true);show()},800)}
       else{b.disabled=true;b.style.opacity=.45;$('#trMsg',m).textContent='Not that one. Try again!'}})};show()}
 function instaPick(intro){if(!(S.instaTokens>0))return;const room=instaRoom();if(!room)return;if(S.loc!==room)switchLoc(room);ensureBoxes();
-  const list=(roomBoxes(room)||[]).filter(b=>b.left>0&&!b.loose&&!b.vault);if(!list.length){toast('No boxes left to sort here.');return}
-  const tiles=list.map(b=>`<button class="boxtile" data-ib="${b.id}"${b.tm&&TEAMS[b.tm]?` style="box-shadow:inset 6px 0 0 ${TEAMS[b.tm][2]}"`:''}><span class="bl">${esc(b.label)}</span><span class="bn">${num(b.left)} cards</span></button>`).join('');
+  const list=(roomBoxes(room)||[]).filter(b=>b.left>0&&!b.vault).sort((a,b)=>(b.loose?1:0)-(a.loose?1:0));if(!list.length){toast('No boxes left to sort here.');return}
+  const tiles=list.map(b=>`<button class="boxtile" data-ib="${b.id}"${b.tm&&TEAMS[b.tm]?` style="box-shadow:inset 6px 0 0 ${TEAMS[b.tm][2]}"`:''}><span class="bl">${b.loose?'📦 ':''}${esc(b.label)}</span><span class="bn">${num(b.left)} cards</span></button>`).join('');
   const m=modal(`<h2>⚡ ${intro?'Good Daddy bonus!':'Instant sort'}</h2><p>${intro==='free'?'Dad gave you a free instant sort for the All-Star Hall. ':intro==='more'?`Dad gave you one more instant sort. You can earn more by paying ${money(instaPrice())} or taking a 30-minute break: look for <b>Earn an instant sort</b> when you pick a box. `:intro?`Dad gave you <b>${S.instaTokens} instant sorts</b>. `:''}Pick a ${BOXW[room][0]} and it sorts itself right now: hits and set cards go to your binder, the rest gets sold as bulk. <b>${S.instaTokens} left.</b></p><div class="boxgrid">${tiles}</div><div class="row2"><button class="btn" data-close>Save ${S.instaTokens>1?'them':'it'} for later</button></div>`);
   $('.mbox',m).classList.add('wide');
-  m.querySelectorAll('[data-ib]').forEach(t=>t.onclick=()=>{const b=list.find(x=>x.id===t.dataset.ib);if(!b||!(S.instaTokens>0))return;S.instaTokens--;b.ir=true;closeModal(true);setCur(b.id);instaSort(b);
+  m.querySelectorAll('[data-ib]').forEach(t=>t.onclick=async()=>{const b=list.find(x=>x.id===t.dataset.ib);if(!b||!(S.instaTokens>0)||instaBusy)return;S.instaTokens--;b.ir=true;closeModal(true);setCur(b.id);await instaSort(b);
     if(S.instaTokens>0)queueModal(()=>instaPick())})}
 
 /* ---------- the basement: teams that don't exist anymore ---------- */
@@ -7811,7 +7818,7 @@ function celebrate(c,done,o={}){
     if(now-start<12000||parts.length)requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  const close=()=>{alive=false;ov.remove();modalOpen=false;done&&done()};
+  const close=()=>{alive=false;ov.remove();modalOpen=!$('#modal').hidden;done&&done()};
   $('#celBtn',ov).onclick=close;setTimeout(()=>$('#celBtn',ov)?.focus(),400);
 }
 function checkEnd(){
@@ -9429,7 +9436,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-27.0855';
+const APP_VERSION = '2026-11-27.1104';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
