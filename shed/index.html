@@ -4799,6 +4799,7 @@ async function freshCloud(id){
 const LAUNCHED=new Set();
 /* ---------- Release notes: what's new in each update. Newest first; give every new entry the next id. ---------- */
 const RELEASE_NOTES=[
+  {id:33,d:'Nov 27',t:'Sort together',items:['👥 Pick family to sort with you! Tap "Sort together" on the shed screen. They help sort your pile, and they get paid a thank-you for every 500 cards.']},
   {id:32,d:'Nov 27',t:"Grandpa's Storage Unit",items:['🗝️ Empty the All-Star Hall and Grandpa hands you the key to his Storage Unit: a million cards in totes, one for every lost team plus four special ones. Every tote has a 1/1 at the bottom.']},
   {id:31,d:'Nov 26',t:'Instant sort gifts',items:['⚡ Dad can send you an instant sort as a gift now, with a note. Keep an eye on your mailbox!']},
   {id:30,d:'Nov 26',t:'Happy Thanksgiving!',items:['🦃 Happy Thanksgiving from Grandpa\'s Shed!']},
@@ -8878,7 +8879,7 @@ function renderShed(v){
       </button>
       <div>
         <div class="pilecount"><b id="pcN">${num(S.pile)}</b>cards to go</div>
-        <div class="auto" id="autoInfo"></div>
+        <div class="auto" id="autoInfo"></div><div class="auto" id="buddyInfo"></div>
         <div id="asideBox"></div>
         <div id="toastSlot" class="toastslot" aria-live="polite"></div>
       </div>
@@ -8915,7 +8916,7 @@ function updatePile(){
       :S.autoOff?`Auto-sort is <b style="color:var(--bulb)">paused</b>.<br><button class="btn sm" id="autoBtn" style="margin-top:6px">Resume auto-sort</button>`
       :`${esc(crewName())} ${up('colton')?'is sorting':'is running'}: <b>${perMin} cards/min</b>${up('nopizza')>=2?'<br><span>No shifts. Sorting until the pile is empty.</span>':up('nopizza')===1?'<br><span>No shift timer. Pizza breaks happen at random.</span>':'<div class="shiftbar"><i id="shiftFill"></i></div><span id="shiftT"></span>'}<br><button class="btn sm" id="autoBtn" style="margin-top:4px">Pause auto-sort</button>`;
     if(a.dataset.h!==html){a.dataset.h=html;a.innerHTML=html;const b=$('#autoBtn');if(b)b.onclick=()=>{S.autoOff=!S.autoOff;save(true);updatePile();toast(S.autoOff?'Auto-sort paused.':'Auto-sort is back on.')};const pz=$('#pizzaBtn');if(pz)pz.onclick=orderPizza}
-    const f=$('#shiftFill'),tt=$('#shiftT');if(f){const sec=Math.max(0,Math.ceil(S.shift||0));f.style.width=Math.min(100,sec/shiftLen()*100)+'%';tt.textContent=`Shift: ${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')} left`}}
+    buddyInfo();const f=$('#shiftFill'),tt=$('#shiftT');if(f){const sec=Math.max(0,Math.ceil(S.shift||0));f.style.width=Math.min(100,sec/shiftLen()*100)+'%';tt.textContent=`Shift: ${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')} left`}}
 }
 function tableW(n){const ph=window.innerWidth<640;const tw=Math.max(ph?240:280,($('#table')?.clientWidth||600)-(ph?16:32));if(ph&&n>=4&&n<=8)return Math.min(110,Math.floor((tw-3*8-4)/4));if(n===1)return Math.min(240,tw-20);if(n<=3)return Math.min(160,Math.floor((tw-28)/3));if(n<=6)return Math.min(150,Math.floor((tw-42)/3));if(n<=8)return Math.min(135,Math.floor((tw-3*18-8)/4));if(n<=9)return Math.min(140,Math.floor((tw-42)/3));if(n<=10)return Math.min(96,Math.floor((tw-56)/5));return Math.min(70,Math.floor((tw-70)/6))}
 function renderHand(){
@@ -9352,6 +9353,50 @@ function breakTick(dtMs){
     brkMeter();
     if(S.playMs>=playLimit()){S.playMs=0;S.breakAt=null;S.breakWarned=false;S.breakAsk=true;S.breakSnooze=0;S.breakSnoozed=false;if(phase==='up')sortHand('marks',true);save('now');brkMeter();breakTick(0);return true}}
   return false}
+/* ---------- Sort together (Colton's idea, Nov 2026): pick up to 2 other family players as sorting buddies.
+   They sort YOUR pile alongside you (own accumulator in loop(), no pizza shifts; paused with auto-sort), faster at higher levels.
+   Their finds are yours; every BUDDY_PAY_EVERY cards a buddy sorts, a thank-you gift box (cash) is mailed to that player. */
+const BUDDY_MAX=2,BUDDY_PAY_EVERY=500,BUDDY_PAY_PER=2;let bAcc=0;
+function buddyLevel(pid){const p=allProfiles().find(x=>x.id===pid);if(!p)return 1;const loc=lsGet(LS_SAVE+pid),cl=cloudProfiles[pid];const st=(cl&&(!loc||(cl.updated||0)>(loc._t||0)))?cl.summary:(loc?{level:loc.level}:null);return (st&&st.level)||1}
+const buddyRateOf=pid=>.2+Math.min(.6,buddyLevel(pid)/1000);
+function buddyList(){S.buddies=(S.buddies||[]).filter(id=>id!==PROFILE.id&&allProfiles().some(p=>p.id===id));return S.buddies}
+const buddyName=id=>{const p=allProfiles().find(x=>x.id===id);if(!p)return 'Your buddy';return isColton()&&/^will$/i.test(p.name)?'Dad':p.name};
+function buddyRate(){return S.autoOff?0:buddyList().reduce((a,id)=>a+buddyRateOf(id),0)*(S.turboUntil>Date.now()?2:1)}
+function buddyPick(){const list=buddyList();const w=list.map(id=>buddyRateOf(id)),t=w.reduce((a,b)=>a+b,0);let r=Math.random()*t;for(let i=0;i<list.length;i++){r-=w[i];if(r<=0)return list[i]}return list[0]}
+function buddyCredit(id,n){S.buddyOwed=S.buddyOwed||{};S.buddyOwed[id]=(S.buddyOwed[id]||0)+n;if(S.buddyOwed[id]>=BUDDY_PAY_EVERY)buddyPay(id)}
+async function buddyPay(id){const n=(S.buddyOwed||{})[id]||0;if(!n||!dbNS)return;S.buddyOwed[id]=0;const to=allProfiles().find(p=>p.id===id);if(!to)return;
+  const cash=n*BUDDY_PAY_PER,oid='o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const doc={from:PROFILE.id,fromName:PROFILE.name,to:id,toName:to.name,give:[],want:[],gift:true,box:true,cash,packs:[],tboxes:[],insta:0,note:`Thanks for helping me sort! You sorted ${num(n)} cards in my ${LOCS[S.loc]?LOCS[S.loc].long:'shed'}.`,status:'open',at:Date.now(),big:{},wantBig:{}};
+  try{await dbNS.doc('offers/'+oid).set(doc);outAdd({...doc,id:oid})}catch(e){S.buddyOwed[id]=(S.buddyOwed[id]||0)+n}}
+function buddyStop(id){if((S.buddyOwed||{})[id])buddyPay(id);S.buddies=(S.buddies||[]).filter(x=>x!==id)}
+function buddyModal(){const others=allProfiles().filter(p=>p.id!==PROFILE.id);if(!others.length){toast('There is nobody else in the family to sort with yet.');return}
+  const sel=new Set(buddyList());
+  const draw=()=>{const m=modal(`<h2>👥 Sort together</h2><p>Pick up to ${BUDDY_MAX} family players to help sort your pile. They find cards for you, and every ${BUDDY_PAY_EVERY} cards they sort, they get ${money(BUDDY_PAY_EVERY*BUDDY_PAY_PER)} as a thank-you. Higher levels sort faster.</p>
+    <div style="display:flex;flex-direction:column;gap:8px;width:100%">${others.map(p=>{const on=sel.has(p.id);return `<button class="btn${on?' go':''}" data-bud="${esc(p.id)}" style="display:flex;align-items:center;gap:10px;justify-content:flex-start"><span style="width:22px;height:22px;border-radius:50%;background:${esc(p.color||'#888')};flex:none"></span><span style="flex:1;text-align:left">${esc(isColton()&&/^will$/i.test(p.name)?'Dad':p.name)} <small>Level ${num(buddyLevel(p.id))} · ${Math.round(buddyRateOf(p.id)*60)} cards/min</small></span><b>${on?'✓ Sorting':'Ask'}</b></button>`}).join('')}</div>
+    <div class="row2"><button class="btn go" data-close>Done</button></div>`);
+    m.querySelectorAll('[data-bud]').forEach(b=>b.onclick=()=>{const id=b.dataset.bud;if(sel.has(id)){sel.delete(id);buddyStop(id);toast(`${buddyName(id)} stopped sorting with you.`)}else{if(sel.size>=BUDDY_MAX){toast(`You can sort with ${BUDDY_MAX} buddies at a time.`);return}sel.add(id);S.buddies=[...sel];toast(`👥 ${buddyName(id)} is sorting with you!`,'good')}save(true);draw();updatePile()})};
+  draw()}
+function buddyInfo(){const el=$('#buddyInfo');if(!el)return;const L=buddyList(),html=L.length?`👥 ${L.map(id=>`<b>${esc(buddyName(id))}</b>`).join(' and ')} ${L.length>1?'are':'is'} sorting with you: <b>${Math.round(L.reduce((a,id)=>a+buddyRateOf(id),0)*60)} cards/min</b><br><button class="btn sm" id="budBtn" style="margin-top:4px">Change buddies</button>`:`<button class="btn sm" id="budBtn">👥 Sort together</button>`;
+  if(el.dataset.h!==html){el.dataset.h=html;el.innerHTML=html;$('#budBtn').onclick=buddyModal}}
+function autoBatch(n,who,onCard){
+    const had=S.aside.length,rate=up('bulk')?1:.5,seen=new Set(S.aside.map(c=>c.pid));let bv=0,bn=0,dShelf=0,dBind=0;
+    while(n-->0&&S.pile>0&&S.aside.length<asideMax()){const c=drawFromPile(true);if(!c)break;
+      if(isHit(c)){const kk=key(c);
+        if(!isOne(c)&&!isSteam(c)&&(S.stacks[kk]>0||S.aside.some(x=>key(x)===kk))){addCard(c,'auto');if(S.level>=5&&S.shelf.length<shelfCap()&&avail(kk)>0){S.shelf.push(kk);dShelf++}else dBind++}
+        else if(isOne(c)&&up('mash')){addCard(c,'auto');S.finds.unshift({k:kk,src:'auto'});S.finds=S.finds.slice(0,8);if(c.par!==6)toast(`${who()} found a ${parName(c)} 1/1 of ${cardTitle(c)} and put it straight in your binder!`,'gold',9000)}
+        else{S.aside.push(c);seen.add(c.pid);if(isOne(c))toast(`${who()} stopped and set one card aside very, very carefully. Go flip it!`,'gold',9000)}}
+      else if(helpsSet(c)||isSteam(c)){addCard(c,'auto')}
+      else{bv+=valueOf(c)*rate;bn++}
+      S.stats.flips++;addXP(1);if(onCard)onCard(c)}
+    if(bn){bv=Math.round(bv*100)/100;S.cash+=bv;S.stats.sold+=bn;S.stats.earned+=bv}
+    tickStock(bn+(S.aside.length-had));
+    if(dShelf||dBind){DUPE_N.s+=dShelf;DUPE_N.b+=dBind;if(Date.now()-DUPE_N.t>45000){const parts=[];if(DUPE_N.s)parts.push(`put ${DUPE_N.s} on the Counter shelf`);if(DUPE_N.b)parts.push(`filed ${DUPE_N.b} in your binder${S.level>=5?' (the shelf is full)':''}`);toast(`Dupe hits: ${who()} ${parts.join(' and ')}.`,'good',5000);DUPE_N.s=DUPE_N.b=0;DUPE_N.t=Date.now();if(tab==='counter'&&!modalOpen)render()}}
+    if(!had&&S.aside.length){toast(`${who()} set a card aside for you to flip.`);renderTabs()}
+    if(S.aside.length>=asideMax()&&had<asideMax())toast(`${who()}'s set-aside pile is full. Flip those cards to keep auto-sort going.`);
+    if(had!==S.aside.length)renderAside();
+    if(S.pile<=0)checkEnd();
+    checkAttic();
+}
 const DUPE_N={s:0,b:0,t:0};
 function loop(){
   if(!PROFILE){last=performance.now();return}
@@ -9362,24 +9407,10 @@ function loop(){
   const pzr=up('nopizza');if(r>0&&pzr>=2&&!(S.shift>0))S.shift=shiftLen();
   if(r>0&&S.shift>0&&S.pile>0&&S.aside.length<asideMax()){if(pzr>=2)S.shift=shiftLen();else if(pzr===1){S.shift=shiftLen();if(Math.random()<dt/240)S.shift=0}else S.shift-=dt;if(S.shift<=0){S.shift=0;toast(up('colton')?`${crewName()} is on a pizza break. Order a pizza to get him back to work.`:'The machine needs a break. Restart it from the Shed.');renderTabs()}
     acc+=r*dt;let n=Math.min(Math.floor(acc),200);acc-=n;
-    const had=S.aside.length,rate=up('bulk')?1:.5,seen=new Set(S.aside.map(c=>c.pid));let bv=0,bn=0,dShelf=0,dBind=0;
-    while(n-->0&&S.pile>0&&S.aside.length<asideMax()){const c=drawFromPile(true);if(!c)break;
-      if(isHit(c)){const kk=key(c);
-        if(!isOne(c)&&!isSteam(c)&&(S.stacks[kk]>0||S.aside.some(x=>key(x)===kk))){addCard(c,'auto');if(S.level>=5&&S.shelf.length<shelfCap()&&avail(kk)>0){S.shelf.push(kk);dShelf++}else dBind++}
-        else if(isOne(c)&&up('mash')){addCard(c,'auto');S.finds.unshift({k:kk,src:'auto'});S.finds=S.finds.slice(0,8);if(c.par!==6)toast(`${helperWho()} found a ${parName(c)} 1/1 of ${cardTitle(c)} and put it straight in your binder!`,'gold',9000)}
-        else{S.aside.push(c);seen.add(c.pid);if(isOne(c))toast(`${helperWho()} stopped and set one card aside very, very carefully. Go flip it!`,'gold',9000)}}
-      else if(helpsSet(c)||isSteam(c)){addCard(c,'auto')}
-      else{bv+=valueOf(c)*rate;bn++}
-      S.stats.flips++;addXP(1)}
-    if(bn){bv=Math.round(bv*100)/100;S.cash+=bv;S.stats.sold+=bn;S.stats.earned+=bv}
-    tickStock(bn+(S.aside.length-had));
-    if(dShelf||dBind){DUPE_N.s+=dShelf;DUPE_N.b+=dBind;if(Date.now()-DUPE_N.t>45000){const parts=[];if(DUPE_N.s)parts.push(`put ${DUPE_N.s} on the Counter shelf`);if(DUPE_N.b)parts.push(`filed ${DUPE_N.b} in your binder${S.level>=5?' (the shelf is full)':''}`);toast(`Dupe hits: ${helperWho()} ${parts.join(' and ')}.`,'good',5000);DUPE_N.s=DUPE_N.b=0;DUPE_N.t=Date.now();if(tab==='counter'&&!modalOpen)render()}}
-    if(!had&&S.aside.length){toast(`${helperWho()} set a card aside for you to flip.`);renderTabs()}
-    if(S.aside.length>=asideMax()&&had<asideMax())toast(`${helperWho()}'s set-aside pile is full. Flip those cards to keep auto-sort going.`);
-    if(had!==S.aside.length)renderAside();
-    if(S.pile<=0)checkEnd();
-    checkAttic();
+    autoBatch(n,helperWho);
   }
+  {const br=PROFILE?buddyRate():0;if(br>0&&S.pile>0&&S.aside.length<asideMax()){bAcc+=br*dt;let n=Math.min(Math.floor(bAcc),200);bAcc-=n;
+    if(n>0){let who=buddyPick();const cnt={};autoBatch(n,()=>buddyName(who),c=>{cnt[who]=(cnt[who]||0)+1;if(isHit(c)&&!isOne(c)&&Date.now()-(window._budT||0)>20000){window._budT=Date.now();toast(`👥 ${buddyName(who)} found a ${parName(c)}: ${cardTitle(c)}!`,'good',5000)}who=buddyPick()});for(const id in cnt)buddyCredit(id,cnt[id])}}}
   tickCounter(Date.now());if(now-lastSlow>1000){tickGrading();if(tab==='binder')document.querySelectorAll('[data-gt]').forEach(el=>{const x=(S.grading||[])[+el.dataset.gt];if(!x)return;const left=Math.max(0,Math.ceil((x.ready-Date.now())/1000));if(!left)renderGrader();else el.textContent=`Back in ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`})}
   if(now-lastUi>250){lastUi=now;updateHeader();if(tab==='counter')updateTimer()}
   if(now-lastSlow>1000){lastSlow=now;if(tab==='shed'&&r>0)refreshSide();if((tab==='upgrades'&&!cuBusy())||tab==='packs'){const sig=tab+S.level+UPGRADES.map(u=>(S.cash>=upCost(u)?1:0)+''+up(u.id)).join('')+PACKS.map(p=>S.cash>=packCost(p)?1:0).join('');if(sig!==lastSig){lastSig=sig;const v=$('#view');const y=window.scrollY;tab==='upgrades'?renderUpgrades(v):renderPacks(v);window.scrollTo(0,y)}}}
@@ -9398,7 +9429,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-27.0722';
+const APP_VERSION = '2026-11-27.0855';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
