@@ -4799,6 +4799,7 @@ async function freshCloud(id){
 const LAUNCHED=new Set();
 /* ---------- Release notes: what's new in each update. Newest first; give every new entry the next id. ---------- */
 const RELEASE_NOTES=[
+  {id:31,d:'Nov 26',t:'Instant sort gifts',items:['⚡ Dad can send you an instant sort as a gift now, with a note. Keep an eye on your mailbox!']},
   {id:30,d:'Nov 26',t:'Happy Thanksgiving!',items:['🦃 Happy Thanksgiving from Grandpa\'s Shed!']},
   {id:29,d:'Nov 26',t:'Card Match puzzle',items:[
     '🃏 Sudoku is gone from the Daily Puzzles. Now it\'s Card Match: flip your own cards and find the 6 pairs. Still $25k, and still counts toward the all-4 prize.']},
@@ -5049,14 +5050,31 @@ async function dadCopy(o){const txt=dadPrompt(o);try{await navigator.clipboard.w
   const m=modal(`<h2>Copy this for Claude</h2><textarea readonly rows="8" style="width:100%;font:inherit;font-size:14px;padding:10px;border-radius:10px;background:var(--panel2);color:inherit;border:1px solid var(--line)">${esc(txt)}</textarea><div class="row2"><button class="btn" data-close>Done</button></div>`);const ta=$('textarea',m);ta.focus();ta.select()}
 const DAD_WORD={open:'⏳ Waiting for Colton',yes:'👍 Colton said yes! Build it',no:'👎 Colton said no',built:'✅ Built'};
 function dadHTML(){if(!PROFILE)return '';const when=t=>new Date(t).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-  if(isApprover()){const k=kidProfile();if(!k)return '';const list=OFF_OUT.filter(o=>o.kind==='dadidea').sort((a,b)=>({yes:0,open:1,no:2,built:3}[a.status]-{yes:0,open:1,no:2,built:3}[b.status])||b.at-a.at);
-    return `<h3 class="sech">🧒 Ask ${esc(k.name)}</h3><div class="up" style="margin-bottom:10px"><h4>💡 Suggest a feature to ${esc(k.name)}</h4><p>He says yes or no. A yes comes back here (and to ntfy) for you to build.</p><button class="btn go" id="dadOpen">Suggest a feature</button></div>`
+  if(isApprover()){const k=kidProfile();if(!k)return giveInstaHTML();const list=OFF_OUT.filter(o=>o.kind==='dadidea').sort((a,b)=>({yes:0,open:1,no:2,built:3}[a.status]-{yes:0,open:1,no:2,built:3}[b.status])||b.at-a.at);
+    return giveInstaHTML()+`<h3 class="sech">🧒 Ask ${esc(k.name)}</h3><div class="up" style="margin-bottom:10px"><h4>💡 Suggest a feature to ${esc(k.name)}</h4><p>He says yes or no. A yes comes back here (and to ntfy) for you to build.</p><button class="btn go" id="dadOpen">Suggest a feature</button></div>`
       +(list.length?`<div class="grid">${list.map(o=>`<div class="up"><h4>${DAD_WORD[o.status]||''} <small>${when(o.at)}</small></h4><p style="white-space:pre-wrap">${esc(o.text)}</p><div class="row2" style="justify-content:flex-start;flex-wrap:wrap">`
         +(o.status==='yes'?`<button class="btn go sm" data-dclaude="${esc(o.id)}">Copy for Claude</button><button class="btn sm" data-dbuilt="${esc(o.id)}">It's built ✓</button>`:'')
         +(o.status==='open'?`<button class="btn sm" data-ddrop="${esc(o.id)}">Take it back</button>`:o.status==='yes'?'':`<button class="btn sm" data-ddrop="${esc(o.id)}">Clear</button>`)+`</div></div>`).join('')}</div>`:'')}
   const list=OFF_IN.filter(o=>o.kind==='dadidea'&&o.status==='open');if(!list.length)return '';
   return `<h3 class="sech">💡 Dad's ideas</h3><div class="grid">${list.map(o=>`<div class="up"><h4>💡 Dad has an idea! <small>${when(o.at)}</small></h4><p style="white-space:pre-wrap">${esc(o.text)}</p><p>Should Dad add this to the game?</p><div class="row2" style="justify-content:flex-start"><button class="btn go sm" data-dyes="${esc(o.id)}">👍 Yes</button><button class="btn sm" data-dno="${esc(o.id)}">👎 No</button></div></div>`).join('')}</div>`}
-function dadWire(v){const b=$('#dadOpen',v);if(b)b.onclick=dadModal;const fo=id=>OFF_OUT.find(x=>x.id===id),fi=id=>OFF_IN.find(x=>x.id===id);
+/* ---------- Will gives instant sorts (Nov 2026): free and unlimited, to any other player, with a note.
+   Sent as a gift-box doc carrying only `insta`, so the receiver's takeGiftBox + giftUnwrap handle it. Will's own tokens are untouched. */
+function giveInstaHTML(){if(!isApprover()||!allProfiles().some(p=>p.id!==PROFILE.id))return '';
+  return `<h3 class="sech">⚡ Give an instant sort</h3><div class="up" style="margin-bottom:10px"><h4>⚡ Give anyone an instant sort</h4><p>Free from you, as many as you like. They get it with your note.</p><button class="btn go" id="giOpen">Give an instant sort</button></div>`}
+function giveInstaModal(){if(!dbNS){toast('Giving needs the online save.');return}const ps=allProfiles().filter(p=>p.id!==PROFILE.id);if(!ps.length){toast('There is nobody else to give to yet.');return}
+  const inp='font:inherit;font-size:16px;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:10px;padding:10px';
+  const m=modal(`<h2>⚡ Give an instant sort</h2>
+    <label style="display:block;margin:8px 0">To <select id="giTo" style="${inp}">${ps.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select></label>
+    <label style="display:block;margin:8px 0">How many <input id="giN" type="number" min="1" max="99" value="1" inputmode="numeric" style="${inp};width:5em"></label>
+    <label style="display:block;margin:8px 0">Note<textarea id="giNote" maxlength="200" rows="3" placeholder="Great job this week!" style="${inp};width:100%;display:block;margin-top:4px"></textarea></label>
+    <p class="note" id="giMsg">Free. It doesn't use any of your own instant sorts.</p>
+    <div class="row2"><button class="btn go" id="giSend">⚡ Send</button><button class="btn" data-close>Cancel</button></div>`);
+  $('#giSend',m).onclick=async()=>{const sb=$('#giSend',m);if(sb.disabled)return;const to=ps.find(p=>p.id===$('#giTo',m).value),n=Math.max(1,Math.min(99,Math.floor(+$('#giN',m).value||1))),note=$('#giNote',m).value.trim().slice(0,200);if(!to)return;
+    sb.disabled=true;const id='o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    const doc={from:PROFILE.id,fromName:PROFILE.name,to:to.id,toName:to.name,give:[],want:[],gift:true,box:true,cash:0,packs:[],tboxes:[],insta:n,note,status:'open',at:Date.now(),big:{},wantBig:{}};
+    try{await dbNS.doc('offers/'+id).set(doc)}catch(e){sb.disabled=false;$('#giMsg',m).textContent="Couldn't send it. Try again.";return}
+    outAdd({...doc,id});giftRemember({...doc,id},'sent');mailLog(`⚡ Gave ${to.name} ${plural(n,'instant sort')}.`);closeModal(true);toast(`⚡ Sent ${to.name} ${plural(n,'instant sort')}!`,'good',6000);save(true)}}
+function dadWire(v){const b=$('#dadOpen',v);if(b)b.onclick=dadModal;{const g=$('#giOpen',v);if(g)g.onclick=giveInstaModal}const fo=id=>OFF_OUT.find(x=>x.id===id),fi=id=>OFF_IN.find(x=>x.id===id);
   v.querySelectorAll('[data-dclaude]').forEach(b=>b.onclick=()=>{const o=fo(b.dataset.dclaude);if(o)dadCopy(o)});
   v.querySelectorAll('[data-dbuilt]').forEach(b=>b.onclick=()=>{const o=fo(b.dataset.dbuilt);if(o)dadBuilt(o)});
   v.querySelectorAll('[data-ddrop]').forEach(b=>b.onclick=()=>{const o=fo(b.dataset.ddrop);if(!o)return;if(o.status==='open'&&b.dataset.sure!=='1'){b.dataset.sure='1';b.textContent='Tap again to take it back';return}dadDrop(o)});
@@ -8403,12 +8421,13 @@ function giftFromMail(){if(S.gbMail)return;S.gbMail=true;S.giftBoxes=S.giftBoxes
   S.giftBoxes.sort((a,b)=>b.at-a.at)}
 function giftBoxesHTML(){giftFromMail();const g=S.giftBoxes||[];if(!g.length)return '';const when=t=>new Date(t).toLocaleDateString([], {month:'short',day:'numeric'});
   return `<h4 class="mh">🎁 Gift boxes</h4>${g.map((x,i)=>`<div style="display:flex;align-items:center;gap:8px;margin:6px 0;text-align:left"><span style="flex:1">${x.dir==='got'?`From <b>${esc(x.who)}</b>`:`To <b>${esc(x.who)}</b>`} · ${when(x.at)}<br><small>${esc(giftTxt(x))}</small></span><button class="btn sm" data-gbview="${i}">Look inside</button></div>`).join('')}`}
-function giftUnwrap(o,look){const sent=look&&o.dir==='sent',who=o.fromName||o.who,n=look?0:(o.packs||[]).length;
+function giftUnwrap(o,look){const sent=look&&o.dir==='sent',who0=o.fromName||o.who,who=!sent&&isColton()&&/^will$/i.test(who0||'')?'Dad':who0,n=look?0:(o.packs||[]).length;
   const m=modal(`<div style="text-align:center;width:100%;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="font-size:64px;line-height:1">🎁</div><h2>${sent?`Your gift box for ${esc(who)}`:look?`Gift box from ${esc(who)}`:`${esc(who)} sent you a gift box!`}</h2>${o.note?`<p style="font-size:18px">"${esc(o.note)}"</p>`:''}<p>Inside: <b>${esc(giftTxt(o))}</b>.</p>
     ${(o.give||[]).length?`<div class="gbcards" id="guCv"></div>`:''}
     ${sent?'':`${(o.give||[]).length?`<p class="note">The cards are in your binder. Tap one to look closer.</p>`:''}${(o.tboxes||[]).length?`<p class="note">Team boxes are waiting in their rooms.</p>`:''}${(o.packs||[]).length?`<p class="note">The packs are sealed. Rip them ${look?'':'now or later '}from the Packs tab.</p>`:''}`}
     ${o.summary?`<p class="note">This box came before the game kept a picture of each card, so only the list is saved. The cards are in your binder.</p>`:`<p class="note">You can look inside again any time: Trade tab, 🎁 Gift boxes.</p>`}</div>
-    <div class="row2">${n?`<button class="btn go" id="guRip">Rip a pack</button>`:''}<button class="btn${n?'':' go'}" data-close>${look?'Close':n?'Later':'Thanks!'}</button></div>`);
+    <div class="row2">${n?`<button class="btn go" id="guRip">Rip a pack</button>`:''}${!look&&!sent&&o.insta>0&&!n?`<button class="btn go" id="guIns">⚡ Use it now</button>`:''}<button class="btn${n||(!look&&o.insta>0)?'':' go'}" data-close>${look?'Close':n?'Later':o.insta>0?'Save it for later':'Thanks!'}</button></div>`);
+  {const u=$('#guIns',m);if(u)u.onclick=()=>{closeModal(true);setTimeout(()=>instaPick('free'),200)}}
   $('.mbox',m).classList.add('wide');gbCardsInto($('#guCv',m),o.give||[]);
   const r=$('#guRip',m);if(r)r.onclick=()=>{closeModal(true);ripGift(0)}}
 function ripGift(i){const g=(S.giftPacks||[])[i];if(!g)return;S.giftPacks.splice(i,1);save('now');openPack(g.id,true);renderTabs()}
@@ -9322,7 +9341,7 @@ $('#resetBtn').onclick=()=>{
 window.addEventListener('beforeunload',()=>save('now'));
 window.addEventListener('pagehide',()=>save('now'));
 /* update check: the page is cached for a while, so look for a newer version and offer a one-tap update */
-const APP_VERSION = '2026-11-26.1120';
+const APP_VERSION = '2026-11-26.1929';
 let updateShown=false;
 async function checkForUpdate(){if(updateShown||location.protocol==='file:')return;
   try{const r=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
