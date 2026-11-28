@@ -227,6 +227,15 @@ h1 .sort { color: var(--cat); }
 }
 .toast.show { animation: toast 1.4s ease forwards; }
 @keyframes toast { 0% { opacity: 0; transform: translate(-50%, 10px) } 12%, 80% { opacity: 1; transform: translate(-50%, 0) } 100% { opacity: 0 } }
+.hint-src { box-shadow: 0 0 0 3px #ffd34d, 0 10px 24px #000a !important; animation: hintPulse 1s ease 2; }
+.hint-dst { position: relative; }
+.tray.hint-dst::after, .col.hint-dst::after, .stock.hint-dst::after {
+  content: ""; position: absolute; inset: -5px; border-radius: calc(var(--cw) * .14);
+  border: 3px solid #ffd34d; background: #ffd34d1a; pointer-events: none; animation: hintPulse 1s ease 2;
+}
+@keyframes hintPulse { 50% { transform: scale(1.04); } }
+.seg button { padding: 5px 10px; }
+.toolbar > button { padding: 8px 12px; }
 #ghost { position: fixed; pointer-events: none; z-index: 50; }
 #ghost .card { cursor: grabbing; }
 
@@ -259,7 +268,8 @@ h1 .sort { color: var(--cat); }
       <button id="m-nba" type="button" data-mode="nba">NBA</button>
     </div>
     <button id="undo" type="button">Undo</button>
-    <button id="newdeal" type="button">New deal</button>
+    <button id="hintbtn" type="button">Hint 3</button>
+    <button id="newdeal" type="button">New</button>
   </div>
 
   <div id="board" style="display:flex;flex-direction:column;gap:16px">
@@ -655,17 +665,29 @@ function pickMove(st) {
   if (g4.length && Math.random() < .5) return g4[rand(g4.length)];
   return null;
 }
-function solve(st0, nCats) {
+function solveRun(st0, nCats) {
   const st = clone(st0);
-  let moves = 0, idle = 0;
+  let moves = 0, idle = 0, first = null;
   for (let guard = 0; guard < 3000; guard++) {
-    if (st.done.length === nCats) return moves;
+    if (st.done.length === nCats) return { moves, first };
     const m = pickMove(st);
-    if (m) { apply(st, m[0], m[1]); moves++; idle = 0; continue; }
-    if (!drawCard(st)) return -1;
-    if (++idle > st.stock.length + st.waste.length + 2) return -1;
+    if (m) { first ||= { src: m[0], d: m[1] }; apply(st, m[0], m[1]); moves++; idle = 0; continue; }
+    if (!drawCard(st)) return null;
+    first ||= { draw: true };
+    if (++idle > st.stock.length + st.waste.length + 2) return null;
   }
-  return -1;
+  return null;
+}
+function solve(st0, nCats) { const r = solveRun(st0, nCats); return r ? r.moves : -1; }
+/* Best line from the current position: many randomized tries, keep the shortest win that fits the moves left. */
+function bestLine(tries = 40) {
+  const st0 = { ...S, sel: null }, n = Object.keys(D.cats).length;
+  let best = null;
+  for (let a = 0; a < tries; a++) {
+    const r = solveRun(st0, n);
+    if (r && r.moves <= S.moves && (!best || r.moves < best.moves)) best = r;
+  }
+  return best;
 }
 function generate() {
   for (let t = 0; t < 300; t++) {
@@ -754,8 +776,22 @@ function tap(info) {
     render();
   }
 }
+let deadT;
+function checkDead() {
+  clearTimeout(deadT);
+  deadT = setTimeout(() => {
+    const n = Object.keys(D.cats).length;
+    if (S.done.length === n || S.moves <= 0 || !$('overlay').hidden) return;
+    if (bestLine(60)) return;
+    showOverlay('Can\u2019t win from here',
+      `There\u2019s no way to sort the rest with ${S.moves} moves left. Undo a few moves, or start over.`,
+      [['Undo', () => { hideOverlay(); undo(); }], ['Retry deal', () => { countLoss(); retry(); }], ['New deal', () => { countLoss(); newDeal(); }, true]]);
+  }, 350);
+}
+function countLoss() { if (!D.lost) { D.lost = true; const st = STATS[D.mode]; st.losses++; st.streak = 0; saveStats(); } }
 function checkEnd() {
   const n = Object.keys(D.cats).length;
+  if (S.done.length < n && S.moves > 0) checkDead();
   if (S.done.length === n) {
     if (LEVEL[D.mode] === D.level) { LEVEL[D.mode] = D.level + 1; store.set('cc-level-' + D.mode, LEVEL[D.mode]); }
     const st = STATS[D.mode];
@@ -766,7 +802,7 @@ function checkEnd() {
       `${n} categories with ${S.moves} moves to spare. Level ${D.level + 1} gets a little tougher.`,
       [[`Play level ${D.level + 1}`, newDeal, true]]), 800);
   } else if (S.moves <= 0) {
-    if (!D.lost) { D.lost = true; const st = STATS[D.mode]; st.losses++; st.streak = 0; saveStats(); }
+    countLoss();
     showOverlay('Out of moves', `You sorted ${S.done.length} of ${n} categories.`,
       [['Undo', () => { hideOverlay(); undo(); }], ['Retry deal', retry], ['New deal', newDeal, true]]);
   }
@@ -781,9 +817,32 @@ function showOverlay(t, p, btns, body = '') {
   $('overlay').hidden = false;
 }
 function hideOverlay() { $('overlay').hidden = true; }
-function undo() { if (!history.length) return; S = JSON.parse(history.pop()); stampAt = null; render(); }
-function retry() { hideOverlay(); S = initState(D, D.limit); history = []; stampAt = null; layout(); }
-function newDeal() { hideOverlay(); D = generate(); S = initState(D, D.limit); history = []; stampAt = null; layout(); }
+function undo() { if (!history.length) return; S = JSON.parse(history.pop()); stampAt = null; render(); checkDead(); }
+function retry() { hideOverlay(); S = initState(D, D.limit); history = []; stampAt = null; hintsLeft = HINTS; layout(); }
+function newDeal() { hideOverlay(); D = generate(); S = initState(D, D.limit); history = []; stampAt = null; hintsLeft = HINTS; layout(); }
+
+/* ---------- Hints: 3 per deal; shows the first move of a winning line ---------- */
+const HINTS = 3;
+let hintsLeft = HINTS, hintShown = null;
+function showHint() {
+  if (!hintsLeft || !D) return;
+  const line = bestLine(60);
+  if (!line) return checkDead();
+  hintsLeft--;
+  S.sel = null;
+  hintShown = line.first;
+  render();
+}
+function hintMarks() {
+  const h = hintShown; hintShown = null;
+  const hb = $('hintbtn');
+  if (hb) { hb.textContent = `Hint ${hintsLeft}`; hb.disabled = !hintsLeft; }
+  if (!h) return;
+  if (h.draw) { $('stock').classList.add('hint-dst'); return toast('Draw from the deck'); }
+  if (h.src.from === 'waste') $('waste').querySelector('[data-waste]')?.classList.add('hint-src');
+  else $('tableau').querySelectorAll(`.card[data-col="${h.src.i}"]`).forEach(el => { if (+el.dataset.idx >= h.src.idx) el.classList.add('hint-src'); });
+  document.querySelector(h.d.t === 'slot' ? `.tray[data-slot="${h.d.i}"]` : `.col[data-col="${h.d.i}"]`)?.classList.add('hint-dst');
+}
 
 /* ---------- Rendering ---------- */
 function cardHTML(id, cls = '', attrs = '') {
@@ -870,6 +929,7 @@ function render() {
   }).join('');
   revealIds.clear();
   flip(before);
+  hintMarks();
 }
 function layout() {
   const W = $('app').clientWidth;
@@ -963,6 +1023,7 @@ window.addEventListener('pointercancel', e => {
 });
 
 $('undo').addEventListener('click', undo);
+$('hintbtn').addEventListener('click', showHint);
 function showStats() {
   const c = STATS.classic, n = STATS.nba;
   const pct = s => s.wins + s.losses ? Math.round(100 * s.wins / (s.wins + s.losses)) + '%' : '–';
@@ -996,7 +1057,7 @@ window.addEventListener('resize', () => { if (!P) layout(); });
 newDeal();
 
 /* ---------- version + update check (home-screen apps can hold on to an old copy) ---------- */
-const APP_VERSION = '2026-10-29.1200';
+const APP_VERSION = '2026-11-02.1200';
 let updateShown = false;
 async function checkForUpdate() {
   if (updateShown || location.protocol === 'file:') return;

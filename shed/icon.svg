@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="14%" r="70%">
+      <stop offset="0" stop-color="#ffc65c" stop-opacity=".55"/>
+      <stop offset=".45" stop-color="#ff9a3d" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#15181e" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="boxFront" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c99a5e"/>
+      <stop offset="1" stop-color="#9a6d3c"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff1b8"/>
+      <stop offset=".45" stop-color="#f2c24b"/>
+      <stop offset="1" stop-color="#b8841f"/>
+    </linearGradient>
+    <pattern id="back" width="18" height="18" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="18" height="18" fill="#2f4f8f"/>
+      <rect width="9" height="18" fill="#28457f"/>
+    </pattern>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="#15181e"/>
+  <rect width="512" height="512" rx="112" fill="url(#glow)"/>
+
+  <!-- bare bulb on its cord -->
+  <line x1="256" y1="0" x2="256" y2="58" stroke="#3a4354" stroke-width="6"/>
+  <rect x="243" y="56" width="26" height="18" rx="4" fill="#6f7888"/>
+  <circle cx="256" cy="92" r="22" fill="#ffe7a8"/>
+  <circle cx="256" cy="92" r="34" fill="#ffc65c" opacity=".25"/>
+
+  <!-- cards fanned out of the box (blue backs) -->
+  <g stroke="#f1ebe0" stroke-width="8" stroke-linejoin="round">
+    <rect x="120" y="190" width="120" height="168" rx="12" fill="url(#back)" transform="rotate(-20 180 330)"/>
+    <rect x="272" y="190" width="120" height="168" rx="12" fill="url(#back)" transform="rotate(20 332 330)"/>
+    <rect x="160" y="168" width="120" height="168" rx="12" fill="url(#back)" transform="rotate(-8 220 320)"/>
+  </g>
+  <!-- the one-of-one: gold, front and center -->
+  <g transform="rotate(7 300 300)">
+    <rect x="232" y="146" width="128" height="178" rx="12" fill="url(#gold)" stroke="#fff6d6" stroke-width="8"/>
+    <path d="M296 186 l13 27 30 4 -22 21 6 30 -27 -14 -27 14 6 -30 -22 -21 30 -4z" fill="#15181e" opacity=".85"/>
+    <rect x="262" y="284" width="68" height="20" rx="10" fill="#15181e" opacity=".85"/>
+    <text x="296" y="300" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="17" fill="#f2c24b">1/1</text>
+  </g>
+
+  <!-- Grandpa's box -->
+  <path d="M92 300 L420 300 L404 444 Q402 456 390 456 L122 456 Q110 456 108 444 Z" fill="url(#boxFront)"/>
+  <path d="M84 286 L428 286 L420 316 L92 316 Z" fill="#94693a"/>
+  <rect x="196" y="352" width="120" height="58" rx="6" fill="#f1ebe0" opacity=".9" transform="rotate(-3 256 381)"/>
+  <g transform="rotate(-3 256 381)" stroke="#94693a" stroke-width="6" stroke-linecap="round">
+    <line x1="214" y1="372" x2="298" y2="372"/>
+    <line x1="214" y1="390" x2="276" y2="390"/>
+  </g>
+</svg>
